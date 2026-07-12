@@ -51,3 +51,33 @@ test("resolver exposes safe, distinct failure codes", () => {
   }
   assert.doesNotMatch(backend, /error: "[^"]*(Supabase|SQL|service role|stacktrace)/i);
 });
+
+test("optional customer context failures do not reject a valid customer", () => {
+  const backend = read("functions/website-factory.js");
+  assert.match(backend, /readOptionalCustomerRows/);
+  assert.match(backend, /readOptionalCustomerLeads/);
+  assert.match(backend, /return \[\];/);
+  assert.match(backend, /websiteContextFromCustomer/);
+  assert.match(backend, /getBuildHistory[\s\S]*\.catch/);
+});
+
+test("universal selector keeps customerId and leadId routes separate", () => {
+  const backend = read("functions/website-factory.js");
+  const factory = read("public/admin-website-factory.html");
+  assert.match(backend, /action === "search_entities"/);
+  assert.match(backend, /entityType: "customer"/);
+  assert.match(backend, /entityType: "lead"/);
+  assert.match(factory, /Lead of klant naar website/);
+  assert.match(factory, /entity\.entityType === "customer"[\s\S]*\?customerId=/);
+  assert.match(factory, /\?leadId=/);
+  assert.match(factory, /Klantwerkruimte kon niet worden geladen/);
+  assert.match(factory, /factory-lead-commandbar"\)\?\.setAttribute\("hidden"/);
+});
+
+test("universal search is read-only and bounded", () => {
+  const backend = read("functions/website-factory.js");
+  const searchBlock = backend.slice(backend.indexOf("async function searchWebsiteFactoryEntitiesResponse"), backend.indexOf("async function readCustomersByIds"));
+  assert.doesNotMatch(searchBlock, /method: "POST"|method: "PATCH"|method: "DELETE"/);
+  assert.match(searchBlock, /\.slice\(0, 20\)/);
+  assert.match(searchBlock, /linkedCustomerIds/);
+});

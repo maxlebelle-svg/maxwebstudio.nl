@@ -546,16 +546,16 @@
                 <div class="factory-lead-commandbar-main">
                   <span aria-hidden="true">↗</span>
                   <label for="factory-lead-command-search">
-                    <small>Lead naar demo-site</small>
-                    <input id="factory-lead-command-search" type="search" placeholder="Zoek een lead op bedrijfsnaam, plaats, branche, telefoon of website..." autocomplete="off" />
+                    <small>Lead of klant naar website</small>
+                    <input id="factory-lead-command-search" type="search" placeholder="Zoek een lead of klant op naam, bedrijf, plaats, branche, telefoon of website…" autocomplete="off" />
                   </label>
                   <div class="factory-lead-command-actions">
-                    <button class="button primary" id="factory-lead-command-load" type="button">Lead laden</button>
+                    <button class="button primary" id="factory-lead-command-load" type="button">Selectie laden</button>
                     <button class="button secondary" id="factory-lead-command-scan" type="button">Website scannen</button>
                   </div>
                 </div>
-                <div class="factory-lead-command-results" id="factory-lead-command-results" role="listbox" aria-label="Leadresultaten"></div>
-                <div class="factory-lead-command-meta" id="factory-lead-command-meta">Kies een lead om automatisch bedrijfsgegevens, website en demo journey klaar te zetten.</div>
+                <div class="factory-lead-command-results" id="factory-lead-command-results" role="listbox" aria-label="Lead- en klantresultaten"></div>
+                <div class="factory-lead-command-meta" id="factory-lead-command-meta">Zoek een lead of klant om de juiste Website Factory-context te openen.</div>
               </div>
               <aside class="factory-lead-command-preview" id="factory-lead-command-preview" aria-label="Gekozen lead herkenning">
                 <span class="factory-lead-command-avatar">?</span>
@@ -21161,6 +21161,9 @@
         const elements = {};
         let leads = [];
         let factoryCustomerContext = null;
+        let factoryEntityResults = [];
+        let factoryEntitySearchTimer = 0;
+        let factoryContextState = "general_selector";
         let journey = null;
         let events = [];
         let buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
@@ -21470,8 +21473,8 @@
               previousPackage: payload?.previousPackage || payload?.previous_package || "",
               newPackage: payload?.newPackage || payload?.new_package || "",
             };
-            console.error(`${failureLabel}\n${formatApiDiagnostics(diagnostics)}`);
             if (developerMode) {
+              console.error(`${failureLabel}\n${formatApiDiagnostics(diagnostics)}`);
               console.error(`${failureLabel} full diagnostics:\n${JSON.stringify(diagnostics, null, 2)}`);
               console.dir(diagnostics);
               console.table({
@@ -21490,6 +21493,8 @@
                 reason: diagnostics.diagnostics?.reason || "",
                 url: diagnostics.url,
               });
+            } else {
+              console.warn(failureLabel, { status: diagnostics.status, code: diagnostics.code || "request_failed" });
             }
             const errorMessage = typeof data.error === "string"
               ? data.error
@@ -21692,6 +21697,38 @@
           return (query ? leads.filter((lead) => leadSearchText(lead).includes(query)) : leads).slice(0, 6);
         }
 
+        function selectedFactoryEntity() {
+          const selected = elements.leadCommandResults?.querySelector("[data-entity-selected='true']");
+          return factoryEntityResults.find((item) => item.entityType === selected?.dataset.entityType && item.id === selected?.dataset.entityId) || null;
+        }
+
+        async function searchFactoryEntities() {
+          const query = String(elements.leadCommandSearch?.value || "").trim();
+          if (query.length < 2) {
+            factoryEntityResults = [];
+            renderLeadCommandbar();
+            return;
+          }
+          try {
+            const data = await apiRequest(`${factoryEndpoint}?action=search_entities&query=${encodeURIComponent(query)}`);
+            factoryEntityResults = Array.isArray(data.results) ? data.results : [];
+            renderLeadCommandbar();
+          } catch (error) {
+            factoryEntityResults = [];
+            setMessage(elements.message, error.message || "Leads en klanten konden niet worden doorzocht.", "error");
+            renderLeadCommandbar();
+          }
+        }
+
+        function openFactoryEntity(entity) {
+          if (!entity?.id) return;
+          if (entity.entityType === "customer") {
+            window.location.assign(`admin-website-factory.html?customerId=${encodeURIComponent(entity.id)}`);
+            return;
+          }
+          window.location.assign(`admin-website-factory.html?leadId=${encodeURIComponent(entity.id)}`);
+        }
+
         function renderLeadCommandPreview(lead = selectedLead()) {
           if (!elements.leadCommandPreview) return;
           if (!lead) {
@@ -21774,6 +21811,16 @@
 
         function renderLeadCommandbar() {
           if (!elements.leadCommandResults) return;
+          if (factoryEntityResults.length) {
+            elements.leadCommandResults.innerHTML = factoryEntityResults.map((entity) => `
+              <button type="button" class="factory-lead-command-option" data-entity-type="${escapeHtml(entity.entityType)}" data-entity-id="${escapeHtml(entity.id)}" data-entity-selected="false" role="option" aria-selected="false">
+                <strong>${escapeHtml(entity.title)}</strong>
+                <span><mark class="status-badge ${entity.entityType === "customer" ? "status-active" : "status-prepared"}">${entity.entityType === "customer" ? "Klant" : "Lead"}</mark> ${escapeHtml(entity.subtitle || (entity.hasWebsite ? "Website aanwezig" : "Website ontbreekt"))}</span>
+              </button>
+            `).join("");
+            if (elements.leadCommandMeta) elements.leadCommandMeta.textContent = `${factoryEntityResults.length} resultaat${factoryEntityResults.length === 1 ? "" : "en"}. Kies een lead of klant.`;
+            return;
+          }
           const selectedId = elements.lead?.value || "";
           const visibleLeads = factoryCommandLeadMatches();
           elements.leadCommandResults.innerHTML = visibleLeads.length
@@ -23204,10 +23251,12 @@
         }
 
         async function loadCustomerFactoryContext(customerId) {
+          factoryContextState = "loading_customer";
           const data = await apiRequest(`${factoryEndpoint}?action=resolve_context&customerId=${encodeURIComponent(customerId)}`);
           factoryCustomerContext = data.context || null;
           const customer = factoryCustomerContext?.customer;
           if (!customer?.id) throw new Error("Deze klant kon niet worden geladen in de Website Factory.");
+          factoryContextState = "customer_loaded";
           const website = factoryCustomerContext.website || {};
           const customerOption = {
             id: `customer-context-${customer.id}`,
@@ -23245,6 +23294,17 @@
           setMessage(elements.message, domain
             ? "Klantcontext geladen. De huidige website kan worden gescand, verbeterd of verder uitgebouwd."
             : "Klantcontext geladen. Start een nieuwe website zodra de briefing gereed is.", "success");
+        }
+
+        function renderCustomerContextError(customerId, error = {}) {
+          factoryContextState = error?.diagnostics?.status === 401 ? "unauthorized" : error?.diagnostics?.status === 403 ? "forbidden" : error?.diagnostics?.status === 404 ? "customer_not_found" : "context_error";
+          document.querySelector(".factory-lead-commandbar")?.setAttribute("hidden", "");
+          const section = document.createElement("section");
+          section.className = "admin-card factory-customer-context factory-customer-context-error";
+          section.innerHTML = `<div><span>Website Factory</span><strong>Klantwerkruimte kon niet worden geladen</strong><small>De gegevens van deze klant konden niet worden opgehaald.</small></div><div class="admin-action-group"><button class="button primary" type="button" data-customer-context-retry>Opnieuw proberen</button><a class="button secondary" href="admin-klanten.html">Terug naar klantenoverzicht</a><a class="button secondary" href="admin-website-factory.html">Andere lead of klant kiezen</a></div>`;
+          section.querySelector("[data-customer-context-retry]")?.addEventListener("click", () => window.location.reload());
+          document.querySelector("main")?.prepend(section);
+          setMessage(elements.message, factoryContextState === "unauthorized" ? "Je adminsessie is verlopen. Log opnieuw in om verder te gaan." : factoryContextState === "forbidden" ? "Je hebt geen toegang tot deze klantwerkruimte." : factoryContextState === "customer_not_found" ? "Deze klant kon niet worden gevonden." : "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw.", "error");
         }
 
         async function loadJourney(expectedLeadId = elements.lead?.value || "", expectedVersion = leadSelectionVersion) {
@@ -24655,7 +24715,8 @@
             elements.lead.dispatchEvent(new Event("change", { bubbles: true }));
           });
           elements.leadCommandSearch?.addEventListener("input", () => {
-            renderLeadCommandbar();
+            window.clearTimeout(factoryEntitySearchTimer);
+            factoryEntitySearchTimer = window.setTimeout(searchFactoryEntities, 250);
           });
           elements.leadCommandSearch?.addEventListener("focus", () => {
             elements.leadCommandSearch.select?.();
@@ -24664,11 +24725,15 @@
           elements.leadCommandSearch?.addEventListener("keydown", (event) => {
             if (event.key !== "Enter") return;
             event.preventDefault();
+            const entity = selectedFactoryEntity() || factoryEntityResults[0];
+            if (entity) return openFactoryEntity(entity);
             const hasQuery = Boolean(String(elements.leadCommandSearch?.value || "").trim());
             const lead = hasQuery ? factoryCommandLeadMatches()[0] : selectedLead();
             if (lead?.id) selectFactoryLead(lead.id);
           });
           elements.leadCommandLoad?.addEventListener("click", () => {
+            const entity = selectedFactoryEntity() || factoryEntityResults[0];
+            if (entity) return openFactoryEntity(entity);
             const hasQuery = Boolean(String(elements.leadCommandSearch?.value || "").trim());
             const lead = hasQuery ? factoryCommandLeadMatches()[0] : selectedLead();
             if (lead?.id) {
@@ -24694,6 +24759,18 @@
             renderLeadCommandbar();
           });
           elements.leadCommandResults?.addEventListener("click", (event) => {
+            const entityButton = event.target.closest("[data-entity-id]");
+            if (entityButton) {
+              event.preventDefault();
+              event.stopPropagation();
+              elements.leadCommandResults.querySelectorAll("[data-entity-id]").forEach((item) => {
+                const selected = item === entityButton;
+                item.dataset.entitySelected = selected ? "true" : "false";
+                item.setAttribute("aria-selected", selected ? "true" : "false");
+                item.classList.toggle("is-selected", selected);
+              });
+              return;
+            }
             const button = event.target.closest("[data-lead-id]");
             if (!button) return;
             event.preventDefault();
@@ -24884,7 +24961,7 @@
             try {
               await loadCustomerFactoryContext(requestedCustomerId);
             } catch (error) {
-              setMessage(elements.message, error.message || "De klantcontext kon niet worden geladen.", "error");
+              renderCustomerContextError(requestedCustomerId, error);
             }
             renderMetrics();
             return;

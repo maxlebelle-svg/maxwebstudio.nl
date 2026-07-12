@@ -41,6 +41,7 @@ async function handler(event) {
     const action = cleanText(payload.action || (event.httpMethod === "GET" ? "get_build_history" : ""));
     const context = { supabaseUrl, serviceRoleKey, admin: adminCheck.admin };
     if (action === "resolve_context") return resolveWebsiteFactoryContextResponse(context, payload);
+    if (action === "search_entities") return searchWebsiteFactoryEntitiesResponse(context, payload);
     if (action === "create_build_job") return createBuildJobResponse(context, payload);
     if (action === "run_build_job") return runBuildJobResponse(context, payload);
     if (action === "get_build_status") return getBuildStatusResponse(context, payload);
@@ -116,16 +117,19 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
 
   try {
     const [websites, projects, leads, journeys] = await Promise.all([
-      readRowsForCustomer(context, "websites", customerId),
-      readRowsForCustomer(context, "projects", customerId),
-      readLeadsForCustomer(context, customerId),
-      readRowsForCustomer(context, "demo_journeys", customerId),
+      readOptionalCustomerRows(context, "websites", customerId),
+      readOptionalCustomerRows(context, "projects", customerId),
+      readOptionalCustomerLeads(context, customerId),
+      readOptionalCustomerRows(context, "demo_journeys", customerId),
     ]);
-    const website = selectPrimaryWebsite(websites);
+    const website = selectPrimaryWebsite(websites) || websiteContextFromCustomer(customer);
     const project = selectPrimaryProject(projects, website);
     const demoJourney = journeys[0] || null;
     const history = demoJourney?.id
-      ? await getBuildHistory(context, { demoJourneyId: demoJourney.id })
+      ? await getBuildHistory(context, { demoJourneyId: demoJourney.id }).catch((error) => {
+        logOptionalContextFailure("build_history", error);
+        return { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+      })
       : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
     const normalizedCustomer = normalizeRecord(customer);
     const normalizedWebsite = normalizeRecord(website);
@@ -159,6 +163,108 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
     return jsonResponse(500, { success: false, code: "context_resolution_failed", error: "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw." });
   }
 }
+
+async function readOptionalCustomerRows(context, table, customerId) {
+  try {
+    return await readRowsForCustomer(context, table, customerId);
+  } catch (error) {
+    logOptionalContextFailure(table, error);
+    return [];
+  }
+}
+
+async function readOptionalCustomerLeads(context, customerId) {
+  try {
+    return await readLeadsForCustomer(context, customerId);
+  } catch (error) {
+    logOptionalContextFailure("leads", error);
+    return [];
+  }
+}
+
+function logOptionalContextFailure(source, error = {}) {
+  console.warn("Website Factory optional context unavailable", { source, status: error.status || 500, code: error.code || "" });
+}
+
+function websiteContextFromCustomer(customer = {}) {
+  const url = cleanText(customer.website || customer.website_url || customer.domain || customer.live_url);
+  if (!url) return null;
+  return {
+    id: null,
+    customer_id: cleanText(customer.id),
+    name: cleanText(customer.company || customer.company_name || customer.name) || "Website",
+    domain: url,
+    live_url: /^https?:\/\//i.test(url) ? url : `https://${url}`,
+    status: "existing",
+    source: "customer",
+    metadata: {},
+  };
+}
+
+async function searchWebsiteFactoryEntitiesResponse(context, payload = {}) {
+  const query = cleanText(payload.query || payload.q);
+  if (query.length < 2) return jsonResponse(200, { success: true, results: [] });
+  const safeQuery = query.replace(/[,%()]/g, " ").trim().slice(0, 80);
+  if (safeQuery.length < 2) return jsonResponse(200, { success: true, results: [] });
+  try {
+    const [customers, leads, websites] = await Promise.all([
+      searchRows(context, "customers", ["name", "company", "company_name", "email", "phone", "website", "website_url"], safeQuery),
+      searchRows(context, "leads", ["name", "company", "company_name", "email", "phone", "website_url", "branch", "region"], safeQuery),
+      searchRows(context, "websites", ["name", "domain", "live_url"], safeQuery),
+    ]);
+    const websitesByCustomer = new Map();
+    websites.forEach((website) => {
+      const id = cleanText(website.customer_id || website.profile_id);
+      if (id && !websitesByCustomer.has(id)) websitesByCustomer.set(id, website);
+    });
+    const customerIdsFromWebsites = [...websitesByCustomer.keys()];
+    const websiteCustomers = customerIdsFromWebsites.length ? await readCustomersByIds(context, customerIdsFromWebsites) : [];
+    const allCustomers = dedupeById([...customers, ...websiteCustomers]);
+    const customerResults = allCustomers.map((customer) => entitySearchCustomer(customer, websitesByCustomer.get(cleanText(customer.id))));
+    const linkedCustomerIds = new Set(allCustomers.map((customer) => cleanText(customer.id)));
+    const leadResults = leads
+      .filter((lead) => ![lead.customer_id, lead.converted_customer_id].map(cleanText).some((id) => id && linkedCustomerIds.has(id)))
+      .map(entitySearchLead);
+    const needle = safeQuery.toLowerCase();
+    const results = [...customerResults, ...leadResults]
+      .sort((a, b) => Number(searchResultExact(b, needle)) - Number(searchResultExact(a, needle)) || a.title.localeCompare(b.title, "nl"))
+      .slice(0, 20);
+    return jsonResponse(200, { success: true, results });
+  } catch (error) {
+    console.error("Website Factory entity search failed", { reason: "entity_search_failed", status: error.status || 500, code: error.code || "" });
+    return jsonResponse(500, { success: false, code: "entity_search_failed", error: "Leads en klanten konden niet worden doorzocht. Probeer het opnieuw." });
+  }
+}
+
+async function searchRows(context, table, fields, query) {
+  const filters = fields.map((field) => `${field}.ilike.*${query}*`).join(",");
+  try {
+    return await supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?select=*&or=(${encodeURIComponent(filters)})&order=updated_at.desc.nullslast&limit=20`, { method: "GET", headers: restHeaders(context.serviceRoleKey) });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    const fallbackFields = table === "customers" ? ["name", "company", "email", "phone", "website"] : table === "leads" ? ["name", "company", "email", "phone", "website_url"] : ["name", "domain", "live_url"];
+    const fallback = fallbackFields.map((field) => `${field}.ilike.*${query}*`).join(",");
+    return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?select=*&or=(${encodeURIComponent(fallback)})&order=updated_at.desc.nullslast&limit=20`, { method: "GET", headers: restHeaders(context.serviceRoleKey) });
+  }
+}
+
+async function readCustomersByIds(context, ids = []) {
+  const valid = ids.map(cleanUuid).filter(Boolean).slice(0, 20);
+  if (!valid.length) return [];
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/customers?select=*&id=in.(${valid.join(",")})&limit=20`, { method: "GET", headers: restHeaders(context.serviceRoleKey) });
+}
+
+function dedupeById(rows = []) { return [...new Map(rows.filter((row) => row?.id).map((row) => [row.id, row])).values()]; }
+function normalizedWebsiteValue(row = {}) { return cleanText(row.domain || row.live_url || row.website || row.website_url); }
+function entitySearchCustomer(customer = {}, website = null) {
+  const websiteValue = normalizedWebsiteValue(website || customer);
+  return { entityType: "customer", id: cleanText(customer.id), title: cleanText(customer.company || customer.company_name || customer.name) || "Klant", subtitle: ["Klant", websiteValue, websiteValue ? "Bestaande website" : "Website ontbreekt"].filter(Boolean).join(" · "), website: websiteValue, branch: cleanText(customer.industry || customer.branch), location: cleanText(customer.city || customer.region), status: cleanText(customer.status), hasWebsite: Boolean(websiteValue) };
+}
+function entitySearchLead(lead = {}) {
+  const websiteValue = normalizedWebsiteValue(lead);
+  return { entityType: "lead", id: cleanText(lead.id), title: cleanText(lead.company || lead.company_name || lead.name) || "Lead", subtitle: ["Lead", cleanText(lead.branch || lead.industry), websiteValue ? "Website aanwezig" : "Website ontbreekt"].filter(Boolean).join(" · "), website: websiteValue, branch: cleanText(lead.branch || lead.industry), location: cleanText(lead.region || lead.city), status: cleanText(lead.status), hasWebsite: Boolean(websiteValue) };
+}
+function searchResultExact(result = {}, needle = "") { return [result.title, result.website].map((value) => cleanText(value).toLowerCase()).includes(needle); }
 
 async function readRowsForCustomer(context, table, customerId) {
   return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?select=*&customer_id=eq.${encodeURIComponent(customerId)}&order=updated_at.desc.nullslast&limit=100`, {
