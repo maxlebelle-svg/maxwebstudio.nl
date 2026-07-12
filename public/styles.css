@@ -31799,22 +31799,37 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   box-shadow: inset 3px 0 0 var(--color-primary, #2563eb);
 }
 
-.factory-customer-context {
-  display: flex;
+.factory-context-banner {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, auto) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
+  width: 100%;
+  min-width: 0;
 }
 
-.factory-customer-context div {
+.factory-context-main {
   display: grid;
   gap: .2rem;
+  min-width: 0;
 }
 
-.factory-customer-context strong { font-size: 1.2rem; }
-.factory-customer-context small { color: var(--text-muted, #64748b); }
+.factory-context-main strong { font-size: 1.2rem; overflow-wrap: anywhere; }
+.factory-context-main small { color: var(--text-muted, #64748b); overflow-wrap: anywhere; }
+.factory-context-kicker { color: var(--mws-cyan, #19c2ff); font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.factory-context-meta,
+.factory-context-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; min-width: 0; }
+.factory-context-actions { justify-content: flex-end; }
+.factory-context-actions .button { white-space: normal; min-width: max-content; text-align: center; }
+.factory-context-error { grid-template-columns: minmax(220px, 1fr) auto; border-color: rgba(239, 68, 68, .35); }
 
-@media (max-width: 720px) {
-  .factory-customer-context { align-items: stretch; flex-direction: column; }
+@media (max-width: 1024px) {
+  .factory-context-banner { grid-template-columns: 1fr; align-items: stretch; }
+  .factory-context-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 540px) {
+  .factory-context-actions { display: grid; grid-template-columns: 1fr; }
+  .factory-context-actions .button { min-width: 0; width: 100%; }
 }

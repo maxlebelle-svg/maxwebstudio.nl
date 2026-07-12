@@ -71,7 +71,7 @@ test("universal selector keeps customerId and leadId routes separate", () => {
   assert.match(factory, /entity\.entityType === "customer"[\s\S]*\?customerId=/);
   assert.match(factory, /\?leadId=/);
   assert.match(factory, /Klantwerkruimte kon niet worden geladen/);
-  assert.match(factory, /factory-lead-commandbar"\)\?\.setAttribute\("hidden"/);
+  assert.doesNotMatch(factory, /factory-lead-commandbar"\)\?\.setAttribute\("hidden"/);
 });
 
 test("universal search is read-only and bounded", () => {
@@ -80,4 +80,34 @@ test("universal search is read-only and bounded", () => {
   assert.doesNotMatch(searchBlock, /method: "POST"|method: "PATCH"|method: "DELETE"/);
   assert.match(searchBlock, /\.slice\(0, 20\)/);
   assert.match(searchBlock, /linkedCustomerIds/);
+});
+
+test("active context hydrates the existing Factory shell instead of replacing it", () => {
+  const factory = read("public/admin-website-factory.html");
+  const styles = read("public/styles.css");
+  assert.match(factory, /id="demo-klantreis"[\s\S]*id="factory-active-context"[\s\S]*Website Factory Control Center/);
+  assert.match(factory, /function renderActiveContextBanner/);
+  assert.match(factory, /entityType: "customer"/);
+  assert.match(factory, /entityType: "lead"/);
+  assert.doesNotMatch(factory, /document\.querySelector\("main"\)\?\.prepend/);
+  assert.doesNotMatch(factory, /renderCustomerWorkspace\(\)[\s\S]{0,80}return/);
+  assert.match(styles, /\.factory-context-banner/);
+  assert.doesNotMatch(styles, /\.factory-customer-context div/);
+});
+
+test("customer, lead, general and error modes retain core Factory sections", () => {
+  const factory = read("public/admin-website-factory.html");
+  for (const marker of ["factory-control-center", "factory-control-cockpit", "demo-intake-fields", "demo-journey-build-history", "factory-preview-stage"]) {
+    assert.match(factory, new RegExp(`id="${marker}"|class="[^"]*${marker}`));
+  }
+  assert.match(factory, /if \(requestedCustomerId\)[\s\S]*renderMetrics\(\);[\s\S]*return;/);
+  assert.match(factory, /renderCustomerContextError[\s\S]*elements\.activeContext/);
+  assert.doesNotMatch(factory, /renderCustomerContextError[\s\S]{0,1200}factory-lead-commandbar.*hidden/);
+});
+
+test("context banner is responsive without creating a shell column", () => {
+  const styles = read("public/styles.css");
+  assert.match(styles, /\.factory-context-banner[\s\S]*width: 100%/);
+  assert.match(styles, /@media \(max-width: 1024px\)[\s\S]*\.factory-context-banner \{ grid-template-columns: 1fr/);
+  assert.match(styles, /@media \(max-width: 540px\)[\s\S]*\.factory-context-actions \.button \{ min-width: 0; width: 100%/);
 });

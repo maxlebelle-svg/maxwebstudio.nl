@@ -526,6 +526,7 @@
         </section>
 
         <section class="admin-section" id="demo-klantreis">
+          <section class="factory-context-banner" id="factory-active-context" aria-live="polite" hidden></section>
           <div class="admin-section-heading factory-command-heading factory-control-heading">
             <div>
               <p class="section-kicker">Website Factory</p>
@@ -21222,6 +21223,7 @@
             leadCommandScan: document.getElementById("factory-lead-command-scan"),
             leadCommandMeta: document.getElementById("factory-lead-command-meta"),
             leadCommandPreview: document.getElementById("factory-lead-command-preview"),
+            activeContext: document.getElementById("factory-active-context"),
             business: document.getElementById("demo-journey-business"),
             contact: document.getElementById("demo-journey-contact"),
             email: document.getElementById("demo-journey-email"),
@@ -23285,25 +23287,65 @@
           renderIntakeFields();
           renderJourney();
 
-          const banner = document.createElement("section");
-          banner.className = "admin-card factory-customer-context";
           const domain = website.domain || website.live_url || customer.website || "";
-          banner.innerHTML = `<div><span>Website Factory</span><strong>${escapeHtml(customerOption.companyName || customerOption.contactName)}</strong><small>${escapeHtml(domain ? `Huidige website: ${domain}` : "Nog geen website gekoppeld")}</small></div><a class="button secondary" href="admin-klanten.html?customerId=${encodeURIComponent(customer.id)}">Terug naar klant</a>`;
-          document.querySelector("main")?.prepend(banner);
+          renderActiveContextBanner({
+            entityType: "customer",
+            title: customerOption.companyName || customerOption.contactName,
+            subtitle: domain || "Geen website gekoppeld",
+            website: domain,
+            customerId: customer.id,
+            packageName: customerOption.package,
+            status: customer.status,
+            hasLead: Boolean(factoryCustomerContext.lead),
+          });
           document.title = `${customerOption.companyName || customerOption.contactName} · Website Factory`;
           setMessage(elements.message, domain
             ? "Klantcontext geladen. De huidige website kan worden gescand, verbeterd of verder uitgebouwd."
             : "Klantcontext geladen. Start een nieuwe website zodra de briefing gereed is.", "success");
         }
 
+        function renderActiveContextBanner(context = null) {
+          if (!elements.activeContext) return;
+          if (!context) {
+            elements.activeContext.hidden = true;
+            elements.activeContext.innerHTML = "";
+            return;
+          }
+          const isCustomer = context.entityType === "customer";
+          const website = String(context.website || "").trim();
+          const websiteHref = website ? (website.startsWith("http") ? website : `https://${website}`) : "";
+          const backHref = isCustomer && context.customerId
+            ? `admin-klanten.html?customerId=${encodeURIComponent(context.customerId)}`
+            : "admin-sales.html";
+          const badges = [
+            isCustomer ? "Klant" : "Lead",
+            website ? "Website aanwezig" : "Geen website",
+            isCustomer ? (context.hasLead ? "Lead gekoppeld" : "Geen lead nodig") : "Leadcontext",
+            context.packageName || "",
+            context.status || "",
+          ].filter(Boolean);
+          elements.activeContext.className = "factory-context-banner admin-card";
+          elements.activeContext.innerHTML = `
+            <div class="factory-context-main">
+              <span class="factory-context-kicker">${isCustomer ? "Actieve klant" : "Actieve lead"}</span>
+              <strong>${escapeHtml(context.title || (isCustomer ? "Klant" : "Lead"))}</strong>
+              <small>${escapeHtml(context.subtitle || "")}</small>
+            </div>
+            <div class="factory-context-meta">${badges.map((badge) => `<mark class="status-badge ${isCustomer ? "status-active" : "status-prepared"}">${escapeHtml(badge)}</mark>`).join("")}</div>
+            <div class="factory-context-actions">
+              ${websiteHref ? `<a class="button secondary" href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener">Huidige website openen</a>` : ""}
+              <a class="button secondary" href="${escapeHtml(backHref)}">${isCustomer ? "Terug naar klant" : "Terug naar leads"}</a>
+              <a class="button secondary" href="admin-website-factory.html">Andere lead of klant kiezen</a>
+            </div>`;
+          elements.activeContext.hidden = false;
+        }
+
         function renderCustomerContextError(customerId, error = {}) {
           factoryContextState = error?.diagnostics?.status === 401 ? "unauthorized" : error?.diagnostics?.status === 403 ? "forbidden" : error?.diagnostics?.status === 404 ? "customer_not_found" : "context_error";
-          document.querySelector(".factory-lead-commandbar")?.setAttribute("hidden", "");
-          const section = document.createElement("section");
-          section.className = "admin-card factory-customer-context factory-customer-context-error";
-          section.innerHTML = `<div><span>Website Factory</span><strong>Klantwerkruimte kon niet worden geladen</strong><small>De gegevens van deze klant konden niet worden opgehaald.</small></div><div class="admin-action-group"><button class="button primary" type="button" data-customer-context-retry>Opnieuw proberen</button><a class="button secondary" href="admin-klanten.html">Terug naar klantenoverzicht</a><a class="button secondary" href="admin-website-factory.html">Andere lead of klant kiezen</a></div>`;
-          section.querySelector("[data-customer-context-retry]")?.addEventListener("click", () => window.location.reload());
-          document.querySelector("main")?.prepend(section);
+          elements.activeContext.className = "factory-context-banner factory-context-error admin-card";
+          elements.activeContext.innerHTML = `<div class="factory-context-main"><span class="factory-context-kicker">Website Factory</span><strong>Klantwerkruimte kon niet worden geladen</strong><small>De gegevens van deze klant konden niet worden opgehaald.</small></div><div class="factory-context-actions"><button class="button primary" type="button" data-customer-context-retry>Opnieuw proberen</button><a class="button secondary" href="admin-klanten.html">Terug naar klantenoverzicht</a><a class="button secondary" href="admin-website-factory.html">Andere lead of klant kiezen</a></div>`;
+          elements.activeContext.hidden = false;
+          elements.activeContext.querySelector("[data-customer-context-retry]")?.addEventListener("click", () => window.location.reload());
           setMessage(elements.message, factoryContextState === "unauthorized" ? "Je adminsessie is verlopen. Log opnieuw in om verder te gaan." : factoryContextState === "forbidden" ? "Je hebt geen toegang tot deze klantwerkruimte." : factoryContextState === "customer_not_found" ? "Deze klant kon niet worden gevonden." : "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw.", "error");
         }
 
@@ -24590,6 +24632,13 @@
             syncLeadSearchFromSelected();
             syncLeadCommandFromSelected();
             renderLeadPicker();
+            renderActiveContextBanner({
+              entityType: "lead",
+              title: lead.companyName || lead.company_name || lead.businessName || lead.name || "Lead",
+              subtitle: [lead.industry || lead.branch, lead.region || lead.city || lead.address].filter(Boolean).join(" · "),
+              website: lead.websiteUrl || lead.website_url || lead.website || "",
+              status: lead.status || lead.leadStatus || "",
+            });
             clearFactoryRuntimeState();
             fillFromLead(lead);
             prefillIntakeFromLead(lead);
