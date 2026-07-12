@@ -23397,7 +23397,7 @@
           const website = String(context.website || "").trim();
           const websiteHref = website ? (website.startsWith("http") ? website : `https://${website}`) : "";
           const backHref = isCustomer && context.customerId
-            ? `admin-klanten.html?customerId=${encodeURIComponent(context.customerId)}`
+            ? `admin-relatie-workspace.html?entityType=customer&id=${encodeURIComponent(context.customerId)}&module=overview`
             : "admin-sales.html";
           const badges = [
             isCustomer ? "Klant" : "Lead",
@@ -23425,7 +23425,7 @@
         function renderCustomerContextError(customerId, error = {}) {
           factoryContextState = error?.diagnostics?.status === 401 ? "unauthorized" : error?.diagnostics?.status === 403 ? "forbidden" : error?.diagnostics?.status === 404 ? "customer_not_found" : "context_error";
           elements.activeContext.className = "factory-context-banner factory-context-error admin-card";
-          elements.activeContext.innerHTML = `<div class="factory-context-main"><span class="factory-context-kicker">Website Factory</span><strong>Klantwerkruimte kon niet worden geladen</strong><small>De gegevens van deze klant konden niet worden opgehaald.</small></div><div class="factory-context-actions"><button class="button primary" type="button" data-customer-context-retry>Opnieuw proberen</button><a class="button secondary" href="admin-klanten.html">Terug naar klantenoverzicht</a><a class="button secondary" href="admin-website-factory.html">Andere lead of klant kiezen</a></div>`;
+          elements.activeContext.innerHTML = `<div class="factory-context-main"><span class="factory-context-kicker">Website Factory</span><strong>Websiteproject nog niet ingericht</strong><small>De relatie blijft geldig. Start de Factory om het eerste websitedossier aan te maken.</small></div><div class="factory-context-actions"><button class="button primary" type="button" data-customer-context-retry>Opnieuw proberen</button><a class="button secondary" href="admin-relatie-workspace.html">Terug naar werkruimte</a><a class="button secondary" href="admin-website-factory.html">Andere lead of klant kiezen</a></div>`;
           elements.activeContext.hidden = false;
           elements.activeContext.querySelector("[data-customer-context-retry]")?.addEventListener("click", () => window.location.reload());
           setMessage(elements.message, factoryContextState === "unauthorized" ? "Je adminsessie is verlopen. Log opnieuw in om verder te gaan." : factoryContextState === "forbidden" ? "Je hebt geen toegang tot deze klantwerkruimte." : factoryContextState === "customer_not_found" ? "Deze klant kon niet worden gevonden." : "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw.", "error");

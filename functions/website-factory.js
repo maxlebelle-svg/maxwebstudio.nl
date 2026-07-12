@@ -117,11 +117,12 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
   }
 
   try {
-    const [websites, projects, leads, journeys] = await Promise.all([
+    const [websites, projects, leads, journeys, approvedAssets] = await Promise.all([
       readOptionalCustomerRows(context, "websites", customerId),
       readOptionalCustomerRows(context, "projects", customerId),
       readOptionalCustomerLeads(context, customerId),
       readOptionalCustomerRows(context, "demo_journeys", customerId),
+      readOptionalApprovedAssets(context, customerId),
     ]);
     const website = selectPrimaryWebsite(websites) || websiteContextFromCustomer(customer);
     const project = selectPrimaryProject(projects, website);
@@ -155,6 +156,14 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
         demoJourney: normalizedJourney,
         buildJobs: history.jobs,
         previewVersions: history.previewVersions,
+        approvedAssets: approvedAssets.map(normalizeFactoryAsset),
+        workspace: {
+          relationshipId: customerId,
+          entityType: "customer",
+          canStartFactory: !normalizedJourney,
+          canInitializeWebsite: !normalizedWebsite,
+          approvedAssetCount: approvedAssets.length,
+        },
         mode: history.latestJob ? "existing_build" : normalizedWebsite ? "existing_website" : "new_website",
         capabilities: {
           canScanWebsite: Boolean(normalizedWebsite?.domain || normalizedWebsite?.live_url || customer.website),
@@ -186,6 +195,35 @@ async function readOptionalCustomerLeads(context, customerId) {
     logOptionalContextFailure("leads", error);
     return [];
   }
+}
+
+async function readOptionalApprovedAssets(context, customerId) {
+  try {
+    return await supabaseFetch(`${context.supabaseUrl}/rest/v1/files?select=id,customer_id,name,file_type,category,status,mime_type,size_bytes,uploaded_by_type,source_module,is_primary,metadata,created_at,updated_at&customer_id=eq.${encodeURIComponent(customerId)}&status=eq.approved&order=is_primary.desc,created_at.desc&limit=100`, {
+      method: "GET",
+      headers: restHeaders(context.serviceRoleKey),
+    });
+  } catch (error) {
+    logOptionalContextFailure("approved_assets", error);
+    return [];
+  }
+}
+
+function normalizeFactoryAsset(row = {}) {
+  return {
+    id: cleanText(row.id),
+    customerId: cleanText(row.customer_id),
+    name: cleanText(row.name),
+    type: cleanText(row.file_type),
+    category: cleanText(row.category),
+    status: cleanText(row.status),
+    mimeType: cleanText(row.mime_type),
+    sizeBytes: Number(row.size_bytes) || 0,
+    uploadedByType: cleanText(row.uploaded_by_type),
+    sourceModule: cleanText(row.source_module),
+    isPrimary: row.is_primary === true,
+    usageRightsConfirmed: row.metadata?.usageRightsConfirmed === true || row.usage_rights_confirmed === true,
+  };
 }
 
 function logOptionalContextFailure(source, error = {}) {

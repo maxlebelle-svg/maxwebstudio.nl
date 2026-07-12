@@ -70,7 +70,7 @@ test("universal selector keeps customerId and leadId routes separate", () => {
   assert.match(factory, /Lead of klant naar website/);
   assert.match(factory, /entity\.entityType === "customer"[\s\S]*\?customerId=/);
   assert.match(factory, /\?leadId=/);
-  assert.match(factory, /Klantwerkruimte kon niet worden geladen/);
+  assert.match(factory, /Websiteproject nog niet ingericht/);
   assert.doesNotMatch(factory, /factory-lead-commandbar"\)\?\.setAttribute\("hidden"/);
 });
 
@@ -93,6 +93,18 @@ test("active context hydrates the existing Factory shell instead of replacing it
   assert.doesNotMatch(factory, /renderCustomerWorkspace\(\)[\s\S]{0,80}return/);
   assert.match(styles, /\.factory-context-banner/);
   assert.doesNotMatch(styles, /\.factory-customer-context div/);
+});
+
+test("Factory workspace returns approved relationship assets and safe initialization capabilities", () => {
+  const backend = read("functions/website-factory.js");
+  const html = read("public/admin-website-factory.html");
+  assert.match(backend, /readOptionalApprovedAssets\(context, customerId\)/);
+  assert.match(backend, /approvedAssets: approvedAssets\.map\(normalizeFactoryAsset\)/);
+  assert.match(backend, /canStartFactory: !normalizedJourney/);
+  assert.match(backend, /canInitializeWebsite: !normalizedWebsite/);
+  assert.doesNotMatch(backend, /storage_path: cleanText/);
+  assert.match(html, /Websiteproject nog niet ingericht/);
+  assert.match(html, /admin-relatie-workspace\.html\?entityType=customer/);
 });
 
 test("customer, lead, general and error modes retain core Factory sections", () => {
