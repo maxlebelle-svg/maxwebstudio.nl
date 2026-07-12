@@ -14289,7 +14289,7 @@
         }
 
         function isUuid(value) {
-          return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(String(value || ""));
+          return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
         }
 
         function invoiceEmailTargetId(invoice) {
@@ -21424,7 +21424,7 @@
 
         async function apiRequest(url, method = "GET", payload = null) {
           const token = getBearer();
-          if (!token) throw new Error("Adminsessie ontbreekt. Log opnieuw in om demo klantreizen te beheren.");
+          if (!token) throw new Error("Je adminsessie is verlopen. Log opnieuw in om verder te gaan.");
           const developerMode = developerModeActive();
           const response = await fetch(url, {
             method,

@@ -17,7 +17,7 @@ const {
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -92,50 +92,72 @@ async function handler(event) {
 }
 
 async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
-  const customerId = cleanUuid(payload.customerId || payload.customer_id);
-  if (!customerId) return jsonResponse(400, { success: false, error: "Selecteer een geldige klant om de Website Factory te openen." });
-  const customer = await readCustomerById(context, customerId);
-  if (!customer) return jsonResponse(404, { success: false, error: "Deze klant kon niet worden gevonden." });
+  const rawCustomerId = cleanText(payload.customerId || payload.customer_id);
+  if (!rawCustomerId) {
+    console.warn("Website Factory context resolution rejected", { reason: "missing_customer_id" });
+    return jsonResponse(400, { success: false, code: "missing_customer_id", error: "Selecteer eerst een klant vanuit het Klantenoverzicht." });
+  }
+  const customerId = cleanUuid(rawCustomerId);
+  if (!customerId) {
+    console.warn("Website Factory context resolution rejected", { reason: "invalid_customer_id" });
+    return jsonResponse(400, { success: false, code: "invalid_customer_id", error: "Deze klant kon niet worden gevonden. Ga terug naar het Klantenoverzicht en probeer het opnieuw." });
+  }
+  let customer;
+  try {
+    customer = await readCustomerById(context, customerId);
+  } catch (error) {
+    console.error("Website Factory customer lookup failed", { reason: "customer_query_failed", status: error.status || 500, code: error.code || "" });
+    return jsonResponse(500, { success: false, code: "customer_query_failed", error: "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw." });
+  }
+  if (!customer) {
+    console.warn("Website Factory context resolution rejected", { reason: "customer_not_found" });
+    return jsonResponse(404, { success: false, code: "customer_not_found", error: "Deze klant kon niet worden gevonden. Ga terug naar het Klantenoverzicht en probeer het opnieuw." });
+  }
 
-  const [websites, projects, leads, journeys] = await Promise.all([
-    readRowsForCustomer(context, "websites", customerId),
-    readRowsForCustomer(context, "projects", customerId),
-    readLeadsForCustomer(context, customerId),
-    readRowsForCustomer(context, "demo_journeys", customerId),
-  ]);
-  const website = selectPrimaryWebsite(websites);
-  const project = selectPrimaryProject(projects, website);
-  const demoJourney = journeys[0] || null;
-  const history = demoJourney?.id
-    ? await getBuildHistory(context, { demoJourneyId: demoJourney.id })
-    : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-  const normalizedCustomer = normalizeRecord(customer);
-  const normalizedWebsite = normalizeRecord(website);
-  const normalizedProject = normalizeRecord(project);
-  const normalizedJourney = demoJourney ? mapJourney(demoJourney) : null;
-  return jsonResponse(200, {
-    success: true,
-    context: {
-      customer: normalizedCustomer,
-      lead: leads[0] ? normalizeRecord(leads[0]) : null,
-      website: normalizedWebsite,
-      websites: websites.map(normalizeRecord),
-      project: normalizedProject,
-      projects: projects.map(normalizeRecord),
-      briefing: normalizedJourney?.generatedBriefing || normalizedProject?.metadata?.briefing || null,
-      researchPackage: normalizedJourney?.previewPackage?.researchPackage || normalizedJourney?.previewPackage?.websiteIntelligencePackage?.researchPackage || normalizedProject?.metadata?.researchPackage || null,
-      demoJourney: normalizedJourney,
-      buildJobs: history.jobs,
-      previewVersions: history.previewVersions,
-      mode: history.latestJob ? "existing_build" : normalizedWebsite ? "existing_website" : "new_website",
-      capabilities: {
-        canScanWebsite: Boolean(normalizedWebsite?.domain || normalizedWebsite?.live_url || customer.website),
-        canStartBuild: true,
-        canResumeBuild: Boolean(history.latestJob),
-        canCreateWebsite: !normalizedWebsite,
+  try {
+    const [websites, projects, leads, journeys] = await Promise.all([
+      readRowsForCustomer(context, "websites", customerId),
+      readRowsForCustomer(context, "projects", customerId),
+      readLeadsForCustomer(context, customerId),
+      readRowsForCustomer(context, "demo_journeys", customerId),
+    ]);
+    const website = selectPrimaryWebsite(websites);
+    const project = selectPrimaryProject(projects, website);
+    const demoJourney = journeys[0] || null;
+    const history = demoJourney?.id
+      ? await getBuildHistory(context, { demoJourneyId: demoJourney.id })
+      : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+    const normalizedCustomer = normalizeRecord(customer);
+    const normalizedWebsite = normalizeRecord(website);
+    const normalizedProject = normalizeRecord(project);
+    const normalizedJourney = demoJourney ? mapJourney(demoJourney) : null;
+    return jsonResponse(200, {
+      success: true,
+      context: {
+        customer: normalizedCustomer,
+        lead: leads[0] ? normalizeRecord(leads[0]) : null,
+        website: normalizedWebsite,
+        websites: websites.map(normalizeRecord),
+        project: normalizedProject,
+        projects: projects.map(normalizeRecord),
+        briefing: normalizedJourney?.generatedBriefing || normalizedProject?.metadata?.briefing || null,
+        researchPackage: normalizedJourney?.previewPackage?.researchPackage || normalizedJourney?.previewPackage?.websiteIntelligencePackage?.researchPackage || normalizedProject?.metadata?.researchPackage || null,
+        demoJourney: normalizedJourney,
+        buildJobs: history.jobs,
+        previewVersions: history.previewVersions,
+        mode: history.latestJob ? "existing_build" : normalizedWebsite ? "existing_website" : "new_website",
+        capabilities: {
+          canScanWebsite: Boolean(normalizedWebsite?.domain || normalizedWebsite?.live_url || customer.website),
+          canStartBuild: true,
+          canResumeBuild: Boolean(history.latestJob),
+          canCreateWebsite: !normalizedWebsite,
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("Website Factory context resolution failed", { reason: "context_resolution_failed", status: error.status || 500, code: error.code || "" });
+    return jsonResponse(500, { success: false, code: "context_resolution_failed", error: "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw." });
+  }
 }
 
 async function readRowsForCustomer(context, table, customerId) {

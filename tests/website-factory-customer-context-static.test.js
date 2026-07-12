@@ -34,3 +34,20 @@ test("customer context keeps build ownership on the existing customer", () => {
   assert.match(factory, /journey = factoryCustomerContext\.demoJourney/);
   assert.match(backend, /buildJobs: history\.jobs/);
 });
+
+test("Fuellinq production customer UUID is accepted by every Factory context layer", () => {
+  const fuellinqId = "38410e0a-6fd6-4a29-b6fc-98b3dc66328d";
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  assert.equal(uuidPattern.test(fuellinqId), true);
+  for (const file of ["functions/website-factory.js", "functions/demo-journey.js", "functions/_project-workspace.js", "public/admin-website-factory.html"]) {
+    assert.match(read(file), /\[89ab\]\[0-9a-f\]\{3\}-\[0-9a-f\]\{12\}/, `${file} must preserve all five UUID segments`);
+  }
+});
+
+test("resolver exposes safe, distinct failure codes", () => {
+  const backend = read("functions/website-factory.js");
+  for (const code of ["missing_customer_id", "invalid_customer_id", "customer_not_found", "customer_query_failed", "context_resolution_failed"]) {
+    assert.match(backend, new RegExp(`code: "${code}"`));
+  }
+  assert.doesNotMatch(backend, /error: "[^"]*(Supabase|SQL|service role|stacktrace)/i);
+});
