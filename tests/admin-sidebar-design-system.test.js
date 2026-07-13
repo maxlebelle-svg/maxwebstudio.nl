@@ -33,7 +33,7 @@ test("sidebar module exports the full phase one component contract without auto 
   assert.match(source, /aria-disabled/);
 });
 
-test("new sidebar styles stay isolated and only the dashboard loads the pilot assets", () => {
+test("new sidebar styles stay isolated to the approved rollout pages", () => {
   const css = read("public/admin/styles/admin-sidebar-system.css");
   assert.match(css, /\.mws-admin-sidebar-v2/);
   for (const tone of ["success", "info", "purple", "warning", "danger"]) assert.match(css, new RegExp(`is-${tone}`));
@@ -41,7 +41,7 @@ test("new sidebar styles stay isolated and only the dashboard loads the pilot as
   const adminPages = fs.readdirSync(path.join(root, "public")).filter((file) => /^admin-.*\.html$/.test(file));
   adminPages.forEach((file) => {
     const html = read(`public/${file}`);
-    if (file === "admin-dashboard.html") {
+    if (["admin-dashboard.html", "admin-sales.html"].includes(file)) {
       assert.match(html, /admin-sidebar-system\.css/);
       assert.match(html, /admin\/components\/admin-sidebar\.js/);
       assert.match(html, /admin\/config\/sidebar-navigation\.js/);

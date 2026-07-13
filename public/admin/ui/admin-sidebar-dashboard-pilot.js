@@ -470,13 +470,50 @@
     }));
   }
 
+  function currentSidebarItemId(navigation = [], location = global.location || {}) {
+    const path = String(location.pathname || "").split("/").pop() || "admin-dashboard.html";
+    const hash = String(location.hash || "");
+    const items = navigation.flatMap((section) => section.items || []);
+    const exact = items.find((item) => { const [routePath, routeHash = ""] = String(item.route || "").split("#"); return routePath === path && (routeHash ? `#${routeHash}` === hash : !hash); });
+    const fallback = items.find((item) => String(item.route || "").split("#")[0] === path && !item.secondary);
+    return (exact || fallback)?.id || "";
+  }
+
+  async function logoutFromSidebar() {
+    const localLogout = document.getElementById("admin-session-logout");
+    if (localLogout) { localLogout.click(); return; }
+    try {
+      const auth = await import("/src/services/adminAuthBridgeService.js");
+      await auth.logoutAdmin();
+      global.location.assign?.("/admin-login.html");
+    } catch (error) {
+      console.error("Shared admin logout failed", { code: error?.code || "LOGOUT_FAILED" });
+    }
+  }
+
   function profileActionsFor(actor = {}) {
     return [
       { label: "Mijn profiel", disabled: true },
       { label: "Instellingen", href: "admin-instellingen.html" },
       ...(actor.role === "super_admin" ? [{ label: "Bekijk als medewerker", onSelect: openEmployeeSelector }] : []),
-      { label: "Uitloggen", onSelect: () => document.getElementById("admin-session-logout")?.click() },
+      { label: "Uitloggen", onSelect: logoutFromSidebar },
     ];
+  }
+
+  function renderPageWorkspaceContext(relationship = safeRelationship(global.ActiveRelationship)) {
+    if (document.body?.dataset.sharedAdminSidebar !== "true") return;
+    let context = document.querySelector(".mws-page-workspace-context");
+    const main = document.querySelector(".admin-crm-main");
+    if (!main) return;
+    if (!context) {
+      context = document.createElement("section"); context.className = "mws-page-workspace-context"; context.setAttribute("aria-live", "polite");
+      const anchor = main.querySelector(".admin-page-topbar, .admin-hero, .admin-section");
+      if (anchor?.insertAdjacentElement) anchor.insertAdjacentElement("afterend", context); else main.prepend(context);
+    }
+    if (!relationship) { context.textContent = "Geen actieve werkruimte · deze pagina blijft in de algemene weergave."; context.classList.remove("is-active"); return; }
+    const type = relationship.entityType === "lead" ? "Lead" : "Klant";
+    context.textContent = `Actieve werkruimte: ${relationship.companyName || "Onbekende relatie"} · ${type}`;
+    context.classList.add("is-active");
   }
 
   function refresh(context = {}) {
@@ -487,6 +524,7 @@
     if (Object.keys(context).length) latestAccessContext = context;
     context = { ...latestAccessContext, ...context };
     const navigation = pilotNavigation(centralNavigation);
+    const activeId = currentSidebarItemId(navigation);
     const session = readJson(global.localStorage, SESSION_KEY, {});
     const profiles = readJson(global.localStorage, PROFILES_KEY, []);
     const fallbackUser = resolveUser(session, profiles);
@@ -499,7 +537,7 @@
     const relationship = relationshipForSidebar(liveRelationship);
     const sidebar = components.AdminSidebar({
       navigation,
-      activeId: "dashboard",
+      activeId,
       relationship,
       user: actor,
       perspective: perspectiveState.current,
@@ -512,6 +550,7 @@
     });
     sidebar.id = "admin-sidebar";
     root.replaceChildren(sidebar);
+    renderPageWorkspaceContext(activeRelationship);
     return navigation.reduce((count, section) => count + section.items.filter((item) => !canAccessItem(item, { ...context, role })).length, 0);
   }
 
@@ -542,7 +581,7 @@
     document.addEventListener("click", (event) => { if (!event.target.closest("#active-relationship-workspace [data-relationship-switch]")) return; event.preventDefault(); event.stopImmediatePropagation(); openWorkspaceSelector(); }, true);
   }
 
-  const api = Object.freeze({ actorState, buildBadgeValues, canAccessItem, clearMetricState, clearPerspective, clearWorkspace, closeEmployeeSelector, closeWorkspaceSelector, createDebouncer, employeeSelectorState, handleEmployeeSelectorKeys, handleSelectorKeys, loadActorProfile, loadSidebarMetrics, metricState, minimalPerspective, openEmployeeSelector, openWorkspaceSelector, perspectiveState, pilotNavigation, profileActionsFor, readJson, recentResults, refresh, relationshipForSidebar, relationshipKey, rememberRelationship, resetWorkspaceMetrics, resolveUser, restorePerspective, safeRelationship, searchEmployees, searchRelationships, selectPerspective, selectRelationship, semanticTone, sessionIsValid, syncRelationshipUrl, toggleSessionPanel, validatePerspective, validateSessionState });
+  const api = Object.freeze({ actorState, buildBadgeValues, canAccessItem, clearMetricState, clearPerspective, clearWorkspace, closeEmployeeSelector, closeWorkspaceSelector, createDebouncer, currentSidebarItemId, employeeSelectorState, handleEmployeeSelectorKeys, handleSelectorKeys, loadActorProfile, loadSidebarMetrics, logoutFromSidebar, metricState, minimalPerspective, openEmployeeSelector, openWorkspaceSelector, perspectiveState, pilotNavigation, profileActionsFor, readJson, recentResults, refresh, relationshipForSidebar, relationshipKey, rememberRelationship, renderPageWorkspaceContext, resetWorkspaceMetrics, resolveUser, restorePerspective, safeRelationship, searchEmployees, searchRelationships, selectPerspective, selectRelationship, semanticTone, sessionIsValid, syncRelationshipUrl, toggleSessionPanel, validatePerspective, validateSessionState });
   global.MaxAdminSidebarPilot = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof document !== "undefined") {

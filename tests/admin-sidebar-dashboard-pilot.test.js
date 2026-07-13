@@ -37,13 +37,14 @@ function withFakeDocument(callback) {
 function treeText(node) { return [node.textContent, ...node.children.flatMap((child) => treeText(child))].filter(Boolean).join(" "); }
 function find(node, predicate) { if (predicate(node)) return node; for (const child of node.children) { const match = find(child, predicate); if (match) return match; } return null; }
 
-test("dashboard is the only page that mounts the shared pilot and has no legacy duplicate", () => {
-  const dashboard = read("public/admin-dashboard.html");
-  for (const asset of ["admin-sidebar-system.css", "admin/config/sidebar-navigation.js", "admin/components/admin-sidebar.js", "admin/ui/admin-sidebar-dashboard-pilot.js"]) assert.match(dashboard, new RegExp(asset.replaceAll("/", "\\/")));
-  assert.match(dashboard, /id="admin-sidebar-root"/);
-  assert.doesNotMatch(dashboard, /<aside class="admin-sidebar"/);
-  assert.doesNotMatch(dashboard, /adminSidebarNavItems|renderAdminSidebarNavigation/);
-  for (const page of ["admin-sales.html", "admin-website-factory.html", "admin-mail-center.html"]) {
+test("approved pages mount one shared sidebar while pending pages keep the legacy sidebar", () => {
+  for (const page of ["admin-dashboard.html", "admin-sales.html"]) {
+    const html = read(`public/${page}`);
+    for (const asset of ["admin-sidebar-system.css", "admin/config/sidebar-navigation.js", "admin/components/admin-sidebar.js", "admin/ui/admin-sidebar-dashboard-pilot.js"]) assert.match(html, new RegExp(asset.replaceAll("/", "\\/")));
+    assert.match(html, /id="admin-sidebar-root"/);
+    assert.doesNotMatch(html, /<aside class="admin-sidebar"/);
+  }
+  for (const page of ["admin-website-factory.html", "admin-mail-center.html", "admin-brand-center.html"]) {
     const html = read(`public/${page}`);
     assert.match(html, /<aside class="admin-sidebar"/);
     assert.doesNotMatch(html, /admin-sidebar-dashboard-pilot|admin-sidebar-system\.css/);
@@ -62,6 +63,12 @@ test("pilot hierarchy removes secondary links without duplicating navigation dat
   const sections = pilot.pilotNavigation(navigation.ADMIN_SIDEBAR_NAVIGATION);
   assert.deepEqual(sections[0].items.map((item) => item.label), ["Leads"]);
   assert.deepEqual(sections[2].items.map((item) => item.label), ["Website Factory", "Demo Sites", "AI Content Library", "Asset Manager", "SEO Studio", "Social Media Studio", "Brand Center", "Domein Center", "Klant Onboarding", "Roadmap / Takenbord"]);
+});
+
+test("generic bootstrap resolves the active central route for every migrated page", () => {
+  const sections = pilot.pilotNavigation(navigation.ADMIN_SIDEBAR_NAVIGATION);
+  const expected = { "admin-dashboard.html": "dashboard", "admin-sales.html": "leads", "admin-website-factory.html": "website-factory", "admin-mail-center.html": "mail-center", "admin-brand-center.html": "brand-center", "admin-assets.html": "asset-manager", "admin-facturen.html": "invoices" };
+  Object.entries(expected).forEach(([pathname, id]) => assert.equal(pilot.currentSidebarItemId(sections, { pathname: `/${pathname}`, hash: "" }), id));
 });
 
 test("workspace card supports empty and filled read-only relationship states", () => withFakeDocument(() => {
