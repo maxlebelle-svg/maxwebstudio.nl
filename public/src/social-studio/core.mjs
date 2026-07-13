@@ -3,8 +3,12 @@ export const SOCIAL_STUDIO_SCHEMA_VERSION = 2;
 export const CONTENT_STATUSES = Object.freeze([
   Object.freeze({ id: "idea", label: "Idee" }),
   Object.freeze({ id: "draft", label: "Concept" }),
-  Object.freeze({ id: "review", label: "Ter beoordeling" }),
-  Object.freeze({ id: "ready", label: "Klaar om te publiceren" }),
+  Object.freeze({ id: "review", label: "Review" }),
+  Object.freeze({ id: "approved", label: "Goedgekeurd" }),
+  Object.freeze({ id: "scheduled", label: "Gepland" }),
+  Object.freeze({ id: "published", label: "Geplaatst" }),
+  Object.freeze({ id: "cancelled", label: "Geannuleerd" }),
+  Object.freeze({ id: "archived", label: "Gearchiveerd" }),
 ]);
 
 export const SOCIAL_STUDIO_CAPABILITIES = Object.freeze({
@@ -22,6 +26,7 @@ export const SOCIAL_STUDIO_CAPABILITIES = Object.freeze({
 const statusIds = new Set(CONTENT_STATUSES.map(({ id }) => id));
 
 export function normalizeStatus(value) {
+  if (value === "ready") return "approved";
   return statusIds.has(value) ? value : "draft";
 }
 
@@ -64,6 +69,11 @@ export function normalizeContentItem(input = {}) {
       requestedAt: input.approval?.requestedAt || null,
       decidedAt: input.approval?.decidedAt || null,
       decidedBy: input.approval?.decidedBy || null,
+    },
+    publication: {
+      date: input.publication?.date || input.publishedAt || "",
+      url: input.publication?.url || input.publicUrl || "",
+      note: input.publication?.note || input.publicationNote || "",
     },
     integrations: { ...(input.integrations || {}) },
     metrics: { ...(input.metrics || {}) },

@@ -26,6 +26,7 @@ import {
   generatePlatformVariants,
   variantsForMaster,
 } from "./social-studio/platform-variants.mjs";
+import { analyzeContentQuality, contentQualityScore } from "./social-studio/content-quality.mjs";
 
 (function () {
   "use strict";
@@ -305,6 +306,10 @@ import {
     variantQuery: "",
     variantFilter: "all",
     statusFilter: "all",
+    sortBy: "updated-desc",
+    campaignFilter: "all",
+    clientFilter: "all",
+    pillarFilter: "all",
   };
 
   let autosaveTimer = null;
@@ -357,10 +362,17 @@ import {
     date: document.getElementById("social-date"),
     time: document.getElementById("social-time"),
     status: document.getElementById("social-status"),
+    publicationFields: document.getElementById("social-publication-fields"),
+    publicUrl: document.getElementById("social-public-url"),
+    publicationNote: document.getElementById("social-publication-note"),
     visualFormat: document.getElementById("social-visual-format"),
     variantSearch: document.getElementById("variant-search"),
     variantFilter: document.getElementById("variant-platform-filter"),
     statusFilter: document.getElementById("variant-status-filter"),
+    variantSort: document.getElementById("variant-sort"),
+    campaignFilter: document.getElementById("variant-campaign-filter"),
+    clientFilter: document.getElementById("variant-client-filter"),
+    pillarFilter: document.getElementById("variant-pillar-filter"),
     jsonFile: document.getElementById("social-json-file"),
     title: document.getElementById("social-title"),
     caption: document.getElementById("social-caption"),
@@ -620,6 +632,11 @@ import {
       time: elements.time.value || "09:00",
       status: elements.status.value || "draft",
       visualFormat: elements.visualFormat.value,
+      publication: {
+        date: elements.status.value === "published" ? elements.date.value : "",
+        url: elements.publicUrl.value.trim(),
+        note: elements.publicationNote.value.trim(),
+      },
     };
   }
 
@@ -677,6 +694,9 @@ import {
     elements.date.value = content.date || elements.date.value || defaultDate();
     elements.time.value = content.time || elements.time.value || "09:00";
     elements.status.value = statusLabels[content.status] ? content.status : "draft";
+    elements.publicUrl.value = content.publication?.url || "";
+    elements.publicationNote.value = content.publication?.note || "";
+    updatePublicationFields();
     if (content.visualFormat) elements.visualFormat.value = content.visualFormat;
     elements.title.value = content.title || "";
     elements.caption.value = content.caption || "";
@@ -709,6 +729,12 @@ import {
     elements.time.value = context.time || "09:00";
     elements.status.value = statusLabels[context.status] ? context.status : "draft";
     elements.visualFormat.value = context.visualFormat || "square";
+    updatePublicationFields();
+  }
+
+  function updatePublicationFields() {
+    const published = elements.status.value === "published";
+    elements.publicationFields.hidden = !published;
   }
 
   function defaultDate() {
@@ -1188,7 +1214,10 @@ import {
     const content = getCurrentContent();
     const rule = platformRules[state.platform];
     const hashtagCount = getHashtags(content.hashtags).length;
+    const qualityIssues = analyzeContentQuality(content, { scopeId: state.scopeId, brandVoice: state.brandVoice, relationshipContext: state.relationshipContext });
+    const qualityScore = contentQualityScore(qualityIssues);
     const checks = [
+      [`Kwaliteit ${qualityScore}/100`, qualityIssues.length === 0, qualityIssues.length ? `${qualityIssues.length} aandachtspunt${qualityIssues.length === 1 ? "" : "en"}; adviserend en altijd bewerkbaar.` : "Deze versie heeft geen directe aandachtspunten."],
       ["Titel aanwezig", !!content.title, "Geeft intern en in exports duidelijke context."],
       ["Caption gevuld", !!content.caption, "De hoofdtekst is nodig voordat je kunt publiceren."],
       ["CTA aanwezig", !!content.cta, "Elke post moet een heldere vervolgstap hebben."],
@@ -1197,7 +1226,7 @@ import {
       ["Link of actie", !!content.link || !!content.cta, "Nodig voor campagneposts en advertenties."],
       ["Visual format", !!content.visualFormat, `${rule.visual} werkt het best.`],
     ];
-    elements.platformChecks.replaceChildren(...checks.map(([title, done, detail]) => {
+    const checkCards = checks.map(([title, done, detail]) => {
       const item = document.createElement("article");
       item.className = `social-studio-check${done ? " is-done" : ""}`;
       const copy = document.createElement("div");
@@ -1208,7 +1237,20 @@ import {
       copy.append(strong, span);
       item.append(copy);
       return item;
-    }));
+    });
+    const issueCards = qualityIssues.map((qualityIssue) => {
+      const item = document.createElement("article");
+      item.className = `social-studio-check ${qualityIssue.severity === "safety" ? "is-safety" : "is-warning"}`;
+      const copy = document.createElement("div");
+      const strong = document.createElement("strong");
+      const span = document.createElement("span");
+      strong.textContent = qualityIssue.severity === "safety" ? "Veiligheidscontrole" : "Suggestie";
+      span.textContent = qualityIssue.message;
+      copy.append(strong, span);
+      item.append(copy);
+      return item;
+    });
+    elements.platformChecks.replaceChildren(...checkCards, ...issueCards);
   }
 
   function updateHero() {
@@ -1384,11 +1426,52 @@ import {
   }
 
   function loadVariant(variant) {
+    if (variant.scopeId && variant.scopeId !== state.scopeId) {
+      setMessage("Deze content hoort bij een andere werkruimte en is niet geladen.", "error");
+      return;
+    }
     setFormContent(variant);
     const profile = PLATFORM_VARIANT_PROFILES.find((item) => item.key === variant.variantKey);
     elements.selectedType.textContent = profile ? `${profile.label} · gekoppeld aan master` : (contentTypes.find((item) => item.id === variant.contentType)?.label || "Opgeslagen concept");
     setMessage(profile ? "Gekoppelde platformvariant geladen. Andere varianten blijven onaangeroerd." : "Variant geladen in editor.", "success");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function archiveVariant(id) {
+    let restored = false;
+    state.variants = state.variants.map((variant) => {
+      if (variant.id !== id) return variant;
+      restored = variant.status === "archived";
+      return { ...variant, status: restored ? "draft" : "archived", updatedAt: new Date().toISOString() };
+    });
+    writeJson(storageKeys.variants, state.variants);
+    renderVariants();
+    updateHero();
+    setMessage(restored ? "Content hersteld als concept." : "Content gearchiveerd en lokaal bewaard.", "success");
+  }
+
+  function reuseVariant(variant) {
+    const reused = normalizeContentItem({
+      ...variant,
+      id: `content-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      contentRole: "master",
+      masterId: null,
+      variantKey: null,
+      status: "draft",
+      revision: 1,
+      sourceRevision: variant.revision || 1,
+      title: `${variant.title || "Concept"} · hergebruik`,
+      publication: {},
+      extensions: { ...(variant.extensions || {}), reusedFrom: variant.id },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    state.variants.unshift(reused);
+    writeJson(storageKeys.variants, state.variants);
+    loadVariant(reused);
+    renderVariants();
+    updateHero();
+    setMessage("Content hergebruikt als nieuw, onafhankelijk concept.", "success");
   }
 
   function createVariantCard(variant) {
@@ -1402,7 +1485,7 @@ import {
     const status = document.createElement("span");
 
     title.textContent = variant.title || "Naamloze variant";
-    meta.textContent = `${platformLabels[variant.platform] || "Platform"} · ${variant.client || "Geen klant"} · ${formatDate(variant.date || variant.createdAt)} om ${variant.time || "09:00"} · ${variant.cta || "Geen CTA"}`;
+    meta.textContent = `${platformLabels[variant.platform] || "Platform"} · ${variant.client || "Geen klant"} · revisie ${variant.revision || 1} · ${formatDate(variant.publication?.date || variant.date || variant.createdAt)} · ${variant.cta || "Geen CTA"}`;
     caption.textContent = variant.caption || "Geen tekst opgeslagen.";
     status.className = "social-studio-status-badge";
     status.textContent = statusLabels[normalizeStatus(variant.status)];
@@ -1411,12 +1494,15 @@ import {
 
     const actions = document.createElement("div");
     actions.className = "social-studio-actions";
+    const workflowAction = actionButton(nextStatusLabel(variant), () => advanceVariantStatus(variant.id), "secondary");
+    workflowAction.disabled = ["published", "cancelled", "archived"].includes(normalizeStatus(variant.status));
     actions.append(
       actionButton("Laden", () => loadVariant(variant), "primary"),
       actionButton("Kopieer", () => copyToClipboard(buildCopyText(variant), "Variant gekopieerd."), "secondary"),
       actionButton("Dupliceer", () => duplicateVariant(variant), "secondary"),
-      actionButton(nextStatusLabel(variant), () => advanceVariantStatus(variant.id), "secondary"),
-      actionButton("Verwijderen", () => removeVariant(variant.id), "secondary"),
+      actionButton("Hergebruik", () => reuseVariant(variant), "secondary"),
+      workflowAction,
+      actionButton(variant.status === "archived" ? "Herstel als concept" : "Archiveer", () => archiveVariant(variant.id), "secondary"),
     );
 
     card.append(content, actions);
@@ -1432,18 +1518,50 @@ import {
     return button;
   }
 
+  function fillDynamicFilter(select, values, allLabel, selectedValue) {
+    const options = [["all", allLabel], ...[...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, "nl")).map((value) => [value, value])];
+    select.replaceChildren(...options.map(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      return option;
+    }));
+    select.value = options.some(([value]) => value === selectedValue) ? selectedValue : "all";
+  }
+
+  function renderLibraryFilterOptions() {
+    fillDynamicFilter(elements.campaignFilter, state.variants.map((variant) => variant.campaign), "Alle campagnes", state.campaignFilter);
+    fillDynamicFilter(elements.clientFilter, state.variants.map((variant) => variant.client), "Alle relaties", state.clientFilter);
+    fillDynamicFilter(elements.pillarFilter, state.variants.map((variant) => variant.brandVoiceSnapshot?.contentPillars?.[0] || variant.extensions?.contentPillar || ""), "Alle contentpijlers", state.pillarFilter);
+    state.campaignFilter = elements.campaignFilter.value;
+    state.clientFilter = elements.clientFilter.value;
+    state.pillarFilter = elements.pillarFilter.value;
+  }
+
   function filteredVariants() {
-    return state.variants.filter((variant) => {
+    const variants = state.variants.filter((variant) => {
       const matchesPlatform = state.variantFilter === "all" || variant.platform === state.variantFilter;
       const matchesStatus = state.statusFilter === "all" || normalizeStatus(variant.status) === state.statusFilter;
+      const matchesCampaign = state.campaignFilter === "all" || variant.campaign === state.campaignFilter;
+      const matchesClient = state.clientFilter === "all" || variant.client === state.clientFilter;
+      const pillar = variant.brandVoiceSnapshot?.contentPillars?.[0] || variant.extensions?.contentPillar || "";
+      const matchesPillar = state.pillarFilter === "all" || pillar === state.pillarFilter;
       const query = state.variantQuery.trim().toLowerCase();
       const haystack = JSON.stringify(variant).toLowerCase();
-      return matchesPlatform && matchesStatus && (!query || haystack.includes(query));
+      return matchesPlatform && matchesStatus && matchesCampaign && matchesClient && matchesPillar && (!query || haystack.includes(query));
+    });
+    const direction = state.sortBy.endsWith("asc") ? 1 : -1;
+    const field = state.sortBy.startsWith("publication") ? "publication" : "updated";
+    return variants.sort((a, b) => {
+      const left = field === "publication" ? (a.publication?.date || a.date || "") : (a.updatedAt || "");
+      const right = field === "publication" ? (b.publication?.date || b.date || "") : (b.updatedAt || "");
+      return left.localeCompare(right) * direction;
     });
   }
 
   function renderVariants() {
     renderPipeline();
+    renderLibraryFilterOptions();
     const variants = filteredVariants();
     elements.variantList.textContent = "";
 
@@ -1467,17 +1585,25 @@ import {
   }
 
   function nextStatusLabel(variant) {
-    const currentIndex = statusOrder.indexOf(normalizeStatus(variant.status));
-    const nextStatus = statusOrder[Math.min(currentIndex + 1, statusOrder.length - 1)];
-    return currentIndex === statusOrder.length - 1 ? "Status klaar" : `Naar ${statusLabels[nextStatus].toLowerCase()}`;
+    const workflow = ["idea", "draft", "review", "approved", "scheduled", "published"];
+    const currentIndex = workflow.indexOf(normalizeStatus(variant.status));
+    if (currentIndex < 0 || currentIndex === workflow.length - 1) return "Status afgerond";
+    return `Naar ${statusLabels[workflow[currentIndex + 1]].toLowerCase()}`;
   }
 
   function advanceVariantStatus(id) {
     state.variants = state.variants.map((variant) => {
       if (variant.id !== id) return variant;
-      const currentIndex = statusOrder.indexOf(normalizeStatus(variant.status));
-      const nextStatus = statusOrder[Math.min(currentIndex + 1, statusOrder.length - 1)];
-      return { ...variant, status: nextStatus, updatedAt: new Date().toISOString() };
+      const workflow = ["idea", "draft", "review", "approved", "scheduled", "published"];
+      const currentIndex = workflow.indexOf(normalizeStatus(variant.status));
+      if (currentIndex < 0 || currentIndex === workflow.length - 1) return variant;
+      const nextStatus = workflow[currentIndex + 1];
+      return {
+        ...variant,
+        status: nextStatus,
+        publication: nextStatus === "published" ? { ...(variant.publication || {}), date: variant.publication?.date || variant.date || defaultDate() } : variant.publication,
+        updatedAt: new Date().toISOString(),
+      };
     });
     writeJson(storageKeys.variants, state.variants);
     renderVariants();
@@ -1499,13 +1625,13 @@ import {
       const detail = document.createElement("small");
       label.textContent = statusLabels[status];
       count.textContent = String(counts[status]);
-      detail.textContent = status === "ready" ? "Gereed voor handmatige publicatie" : "Opgeslagen contentvarianten";
+      detail.textContent = status === "published" ? "Handmatig gemarkeerd als geplaatst" : "Opgeslagen contentvarianten";
       card.append(label, count, detail);
       return card;
     }));
 
     const scheduled = state.variants
-      .filter((variant) => variant.date)
+      .filter((variant) => normalizeStatus(variant.status) === "scheduled" && variant.date)
       .sort((a, b) => `${a.date}T${a.time || "09:00"}`.localeCompare(`${b.date}T${b.time || "09:00"}`))
       .slice(0, 5);
 
@@ -1779,7 +1905,7 @@ import {
       button.addEventListener("click", () => applyTemplate(button.dataset.template));
     });
 
-    [elements.client, elements.campaign, elements.goal, elements.date, elements.time, elements.status, elements.visualFormat, elements.title, elements.caption, elements.imagePrompt, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
+    [elements.client, elements.campaign, elements.goal, elements.date, elements.time, elements.status, elements.visualFormat, elements.publicUrl, elements.publicationNote, elements.title, elements.caption, elements.imagePrompt, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
       field.addEventListener("input", () => {
         updateAll();
         scheduleAutosave();
@@ -1789,6 +1915,7 @@ import {
         scheduleAutosave();
       });
     });
+    elements.status.addEventListener("change", updatePublicationFields);
 
     elements.variantSearch.addEventListener("input", () => {
       state.variantQuery = elements.variantSearch.value;
@@ -1804,6 +1931,22 @@ import {
       state.statusFilter = elements.statusFilter.value;
       renderVariants();
       updateHero();
+    });
+    elements.variantSort.addEventListener("change", () => {
+      state.sortBy = elements.variantSort.value;
+      renderVariants();
+    });
+    elements.campaignFilter.addEventListener("change", () => {
+      state.campaignFilter = elements.campaignFilter.value;
+      renderVariants();
+    });
+    elements.clientFilter.addEventListener("change", () => {
+      state.clientFilter = elements.clientFilter.value;
+      renderVariants();
+    });
+    elements.pillarFilter.addEventListener("change", () => {
+      state.pillarFilter = elements.pillarFilter.value;
+      renderVariants();
     });
 
     elements.saveDraft.addEventListener("click", saveDraft);

@@ -1287,11 +1287,19 @@
         font-weight: 900;
       }
 
+      #social-publication-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      .social-studio-check.is-warning { border-color: rgba(251,191,36,.24); background: rgba(120,75,8,.1); }
+      .social-studio-check.is-warning::before { content: "!"; color: #fde68a; background: rgba(245,158,11,.16); }
+      .social-studio-check.is-safety { border-color: rgba(248,113,113,.35); background: rgba(127,29,29,.13); }
+      .social-studio-check.is-safety::before { content: "×"; color: #fecaca; background: rgba(239,68,68,.18); }
+
       .social-studio-form .button:disabled {
         opacity: 0.42;
         cursor: not-allowed;
         transform: none;
       }
+
+      .social-studio-actions .button:disabled { opacity: .42; cursor: not-allowed; }
 
       .social-studio-empty {
         min-height: 150px;
@@ -1383,6 +1391,8 @@
         .social-studio-skeleton {
           grid-template-columns: 1fr;
         }
+
+        #social-publication-fields { grid-template-columns: 1fr; }
 
         .social-studio-ai-steps { display: flex; overflow-x: auto; scrollbar-width: none; }
         .social-studio-ai-step-dot { flex: 0 0 120px; }
@@ -1766,9 +1776,17 @@
                 <label for="social-status">Status<select id="social-status">
                   <option value="idea">Idee</option>
                   <option value="draft" selected>Concept</option>
-                  <option value="review">Ter beoordeling</option>
-                  <option value="ready">Klaar om te publiceren</option>
+                  <option value="review">Review</option>
+                  <option value="approved">Goedgekeurd</option>
+                  <option value="scheduled">Gepland</option>
+                  <option value="published">Geplaatst</option>
+                  <option value="cancelled">Geannuleerd</option>
+                  <option value="archived">Gearchiveerd</option>
                 </select></label>
+                <div id="social-publication-fields" hidden>
+                  <label for="social-public-url">Openbare URL<input id="social-public-url" type="url" placeholder="https://instagram.com/p/..." /></label>
+                  <label for="social-publication-note">Publicatienotitie<input id="social-publication-note" placeholder="Optionele interne notitie" /></label>
+                </div>
               </fieldset>
               <div class="social-studio-actions">
                 <button class="button primary" type="button" id="save-draft">Nu opslaan</button>
@@ -1826,6 +1844,10 @@
                 <label for="variant-search">Zoek creaties<input id="variant-search" type="search" placeholder="Zoek op hook, tekst, platform of klant" /></label>
                 <label for="variant-platform-filter">Platform<select id="variant-platform-filter"></select></label>
                 <label for="variant-status-filter">Status<select id="variant-status-filter"></select></label>
+                <label for="variant-sort">Sortering<select id="variant-sort"><option value="updated-desc">Laatst bijgewerkt</option><option value="updated-asc">Oudst bijgewerkt</option><option value="publication-asc">Publicatiedatum oplopend</option><option value="publication-desc">Publicatiedatum aflopend</option></select></label>
+                <label for="variant-campaign-filter">Campagne<select id="variant-campaign-filter"><option value="all">Alle campagnes</option></select></label>
+                <label for="variant-client-filter">Relatie<select id="variant-client-filter"><option value="all">Alle relaties</option></select></label>
+                <label for="variant-pillar-filter">Contentpijler<select id="variant-pillar-filter"><option value="all">Alle contentpijlers</option></select></label>
               </div>
               <div class="social-studio-toolbar-actions">
                 <button class="button secondary" id="load-sample-social" type="button">Voorbeeld laden</button>
