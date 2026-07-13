@@ -112,10 +112,12 @@ test("thumbnail embed is authenticated, persistent and has a visible fallback", 
 });
 
 test("secure preview approves and pays the exact published version", () => {
+  assert.match(portal, /open\.className = "button primary portal-preview-open-full"/);
   assert.match(securePreview, /class="button primary is-disabled" id="payment-link"[^>]*>Betaal aanbetaling<\/a>/);
   assert.match(securePreview, /action: "approve", previewVersionId: versionId/);
   assert.match(securePreview, /approvedPreviewVersionId !== versionId/);
   assert.match(securePreview, /action: "create_payment", previewVersionId:/);
+  assert.doesNotMatch(securePreview, /create-payment|commercial-order/);
   assert.doesNotMatch(securePreview, /action: "approve_preview"/);
   assert.match(clientVersions, /currentVersionId !== versionId/);
   assert.match(clientVersions, /readWebsiteCommercialOrder/);

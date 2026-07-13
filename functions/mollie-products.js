@@ -60,6 +60,10 @@ function getMollieApiKey() {
   return isLive ? process.env.MOLLIE_API_KEY : (process.env.MOLLIE_TEST_API_KEY || process.env.MOLLIE_API_KEY);
 }
 
+function getMollieTestApiKey() {
+  return process.env.MOLLIE_TEST_API_KEY;
+}
+
 function getBaseUrl() {
   return (process.env.BASE_URL || "https://maxwebstudio.nl").replace(/\/$/, "");
 }
@@ -70,4 +74,5 @@ module.exports = {
   getAmounts,
   getBaseUrl,
   getMollieApiKey,
+  getMollieTestApiKey,
 };

@@ -81,10 +81,15 @@ function createTables() {
 
 function installFetchMock(tables) {
   const writes = [];
+  const mollieRequests = [];
   global.fetch = async (url, options = {}) => {
     const parsed = new URL(url);
     if (parsed.pathname.endsWith("/auth/v1/user")) {
       return response(200, { id: ids.authUser, email: "klant@example.nl" });
+    }
+    if (parsed.hostname === "api.mollie.com" && parsed.pathname === "/v2/payments") {
+      mollieRequests.push({ authorization: options.headers?.Authorization || "", body: JSON.parse(options.body || "{}") });
+      return response(201, { id: "tr_test_preview", status: "open", createdAt: "2026-07-13T08:00:00Z", _links: { checkout: { href: "https://www.mollie.com/checkout/select-method/tr_test_preview" } } });
     }
     const table = parsed.pathname.split("/").pop();
     if (!tables[table]) return response(404, { message: `Unknown table ${table}` });
@@ -109,7 +114,7 @@ function installFetchMock(tables) {
 
     return response(200, applyQuery(tables[table], parsed.searchParams));
   };
-  return writes;
+  return { writes, mollieRequests };
 }
 
 function applyQuery(rows, params) {
@@ -183,18 +188,34 @@ function approvalEvent() {
   };
 }
 
+function paymentEvent() {
+  return {
+    httpMethod: "POST",
+    headers: { Authorization: "Bearer customer-token" },
+    body: JSON.stringify({ action: "create_payment", previewVersionId: ids.preview }),
+  };
+}
+
 async function run() {
   const previousEnv = {
     supabaseUrl: process.env.SUPABASE_URL,
     anonKey: process.env.SUPABASE_ANON_KEY,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    mollieMode: process.env.MOLLIE_MODE,
+    mollieApiKey: process.env.MOLLIE_API_KEY,
+    mollieTestApiKey: process.env.MOLLIE_TEST_API_KEY,
+    baseUrl: process.env.BASE_URL,
   };
   process.env.SUPABASE_URL = "https://example.supabase.co";
   process.env.SUPABASE_ANON_KEY = "anon";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
+  process.env.MOLLIE_MODE = "live";
+  process.env.MOLLIE_API_KEY = "live_production_must_not_be_used";
+  process.env.MOLLIE_TEST_API_KEY = "test_preview_payment";
+  process.env.BASE_URL = "https://maxwebstudio.nl";
 
   const tables = createTables();
-  installFetchMock(tables);
+  const fetchMock = installFetchMock(tables);
 
   const listing = await handler(getEvent());
   assert.strictEqual(listing.statusCode, 200);
@@ -247,9 +268,46 @@ async function run() {
   assert.strictEqual(tables.customer_timeline_events.filter((row) => row.event_type === "preview_approved").length, 1);
   assert.strictEqual(tables.customer_timeline_events.filter((row) => row.metadata?.notificationType === "preview_approved").length, 1);
 
+  const payment = await handler(paymentEvent());
+  assert.strictEqual(payment.statusCode, 200);
+  const paymentBody = JSON.parse(payment.body);
+  assert.strictEqual(paymentBody.testMode, true);
+  assert.strictEqual(paymentBody.reused, false);
+  assert.strictEqual(paymentBody.paymentReadiness.amountCents, 30000);
+  assert.strictEqual(paymentBody.paymentReadiness.amountInclVatCents, 36300);
+  assert.strictEqual(fetchMock.mollieRequests.length, 1);
+  assert.strictEqual(fetchMock.mollieRequests[0].authorization, "Bearer test_preview_payment", "the live key must never be used by preview test payments");
+  assert.strictEqual(fetchMock.mollieRequests[0].body.amount.value, "363.00");
+  assert.strictEqual(fetchMock.mollieRequests[0].body.metadata.environment, "test");
+  assert.strictEqual(fetchMock.mollieRequests[0].body.metadata.testPayment, true);
+  assert.strictEqual(fetchMock.mollieRequests[0].body.metadata.maintenanceCode, "care_basic");
+  assert.match(tables.customer_invoices[0].notes, /^TEST;previewDeposit:/);
+
+  const duplicatePayment = await handler(paymentEvent());
+  const duplicatePaymentBody = JSON.parse(duplicatePayment.body);
+  assert.strictEqual(duplicatePayment.statusCode, 200);
+  assert.strictEqual(duplicatePaymentBody.reused, true);
+  assert.strictEqual(fetchMock.mollieRequests.length, 1, "double submit must reuse the existing test payment");
+
+  const missingConfigTables = createTables();
+  missingConfigTables.website_preview_versions[0].approved_at = "2026-07-13T08:00:00Z";
+  missingConfigTables.website_preview_versions[0].status = "approved";
+  delete process.env.MOLLIE_TEST_API_KEY;
+  const missingConfigMock = installFetchMock(missingConfigTables);
+  const missingConfig = await handler(paymentEvent());
+  const missingConfigBody = JSON.parse(missingConfig.body);
+  assert.strictEqual(missingConfig.statusCode, 503);
+  assert.strictEqual(missingConfigBody.code, "mollie_test_config_missing");
+  assert.strictEqual(missingConfigBody.error, "Deze testbetaling kan momenteel niet worden gestart.");
+  assert.strictEqual(missingConfigMock.mollieRequests.length, 0, "missing test config must never fall back to the production key");
+
   process.env.SUPABASE_URL = previousEnv.supabaseUrl;
   process.env.SUPABASE_ANON_KEY = previousEnv.anonKey;
   process.env.SUPABASE_SERVICE_ROLE_KEY = previousEnv.serviceRoleKey;
+  process.env.MOLLIE_MODE = previousEnv.mollieMode;
+  process.env.MOLLIE_API_KEY = previousEnv.mollieApiKey;
+  process.env.MOLLIE_TEST_API_KEY = previousEnv.mollieTestApiKey;
+  process.env.BASE_URL = previousEnv.baseUrl;
 }
 
 run().catch((error) => {

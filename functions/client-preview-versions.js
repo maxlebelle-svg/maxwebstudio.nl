@@ -1,7 +1,7 @@
 const { corsHeaders } = require("./_cors");
 const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
-const { getBaseUrl, getMollieApiKey } = require("./mollie-products");
+const { getBaseUrl, getMollieTestApiKey } = require("./mollie-products");
 const { buildWebsiteCommercialOrder, maintenanceCatalog, readWebsiteCommercialOrder, selectMaintenance } = require("./_website-commercial-order");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -355,12 +355,21 @@ async function resolvePaymentReadiness(context, customer, version) {
 async function createPreviewDepositPayment(context, customer, authUser, version) {
   if (!version.approved_at) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
   const readiness = await resolvePaymentReadiness(context, customer, version);
-  if (!readiness.amountCents) return jsonResponse(409, { success: false, code: "website_package_missing", error: "website_package_missing" });
+  if (!readiness.amountCents) return jsonResponse(409, { success: false, code: "website_package_missing", error: "De betaalgegevens worden nog voorbereid." });
   if (!readiness.maintenanceSelected) return jsonResponse(409, { success: false, code: "maintenance_selection_required", error: "Kies eerst een onderhoudsoptie." });
   if (readiness.invoiceId && readiness.invoiceAmountMatches === false) return jsonResponse(409, { success: false, code: "deposit_invoice_amount_mismatch", error: "Het bestaande betaalverzoek heeft een afwijkend bedrag en moet eerst veilig worden geannuleerd." });
-  if (readiness.paid || readiness.checkoutUrl) return jsonResponse(200, { success: true, reused: true, paymentReadiness: readiness });
-  const apiKey = getMollieApiKey();
-  if (!cleanText(apiKey).startsWith("test_")) return jsonResponse(503, { success: false, code: "mollie_test_mode_required", error: "Mollie-testbetaling is niet beschikbaar." });
+  if (readiness.paid || readiness.checkoutUrl) return jsonResponse(200, { success: true, reused: true, testMode: true, paymentReadiness: readiness });
+  const apiKey = cleanText(getMollieTestApiKey());
+  if (!apiKey || !apiKey.startsWith("test_")) {
+    const code = apiKey ? "mollie_test_config_invalid" : "mollie_test_config_missing";
+    console.error("Preview test payment configuration unavailable", {
+      code,
+      expectedVariable: "MOLLIE_TEST_API_KEY",
+      testKeyConfigured: Boolean(apiKey),
+      testKeyFormatValid: apiKey.startsWith("test_"),
+    });
+    return jsonResponse(503, { success: false, code, error: "Deze testbetaling kan momenteel niet worden gestart." });
+  }
   const invoice = readiness.invoiceId ? await readSingle(context, "customer_invoices", `select=*&id=eq.${encodeURIComponent(readiness.invoiceId)}&limit=1`) : await createDepositInvoice(context, customer, version, readiness);
   const paymentResponse = await fetch("https://api.mollie.com/v2/payments", {
     method: "POST",
@@ -370,15 +379,16 @@ async function createPreviewDepositPayment(context, customer, authUser, version)
       description: `Website-aanbetaling ${customer.company || customer.name || "klant"} ${readiness.packageKey} ${version.project_id || version.id}`.slice(0, 255),
       redirectUrl: `${getBaseUrl()}/preview.html?version=${encodeURIComponent(version.id)}`,
       webhookUrl: `${getBaseUrl()}/.netlify/functions/mollie-webhook`,
-      metadata: { source: "customer_preview_deposit", invoiceId: invoice.id, customerId: customer.id, previewVersionId: version.id, websiteId: readiness.websiteId, packageKey: readiness.packageKey, depositAmountCents: readiness.amountCents, depositAmountInclVatCents: readiness.amountInclVatCents, maintenanceCode: readiness.maintenanceCode, maintenanceAmountCents: readiness.maintenanceAmountCents, maintenanceStartTrigger: readiness.maintenanceStartTrigger },
+      metadata: { source: "customer_preview_deposit", environment: "test", testPayment: true, invoiceId: invoice.id, customerId: customer.id, previewVersionId: version.id, websiteId: readiness.websiteId, packageKey: readiness.packageKey, depositAmountCents: readiness.amountCents, depositAmountInclVatCents: readiness.amountInclVatCents, maintenanceCode: readiness.maintenanceCode, maintenanceAmountCents: readiness.maintenanceAmountCents, maintenanceStartTrigger: readiness.maintenanceStartTrigger },
     }),
   });
   const payment = await paymentResponse.json().catch(() => ({}));
   const checkoutUrl = cleanText(payment?._links?.checkout?.href);
   if (!paymentResponse.ok || !payment.id || !checkoutUrl) return jsonResponse(502, { success: false, code: "mollie_payment_failed", error: "De testbetaling kon niet worden aangemaakt." });
   const rows = await patchRows(context, "customer_invoices", `id=eq.${invoice.id}`, { mollie_payment_id: payment.id, mollie_checkout_url: checkoutUrl, mollie_payment_status: cleanText(payment.status || "open"), mollie_payment_created_at: cleanText(payment.createdAt) || new Date().toISOString(), mollie_payment_expires_at: cleanText(payment.expiresAt) || null, status: "sent", updated_at: new Date().toISOString() });
+  console.info("Preview test payment created", { code: "mollie_test_payment_created", paymentMode: "test", previewVersionId: version.id, invoiceId: invoice.id });
   const updatedReadiness = { ...readiness, ready: true, status: cleanText(payment.status || "open"), checkoutUrl, invoiceId: invoice.id, paymentId: payment.id };
-  return jsonResponse(200, { success: true, reused: false, paymentReadiness: updatedReadiness, invoice: rows[0] || invoice });
+  return jsonResponse(200, { success: true, reused: false, testMode: true, paymentReadiness: updatedReadiness, invoice: rows[0] || invoice });
 }
 
 async function findDepositInvoice(context, customer, version) {
@@ -387,7 +397,7 @@ async function findDepositInvoice(context, customer, version) {
 
 async function createDepositInvoice(context, customer, version, readiness) {
   const now = new Date().toISOString();
-  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountInclVatCents / 100, status: "draft", notes: `previewDeposit:${version.id};customer:${customer.id};project:${readiness.projectId};package:${readiness.packageKey};maintenance:${readiness.maintenanceCode}`, created_at: now, updated_at: now });
+  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountInclVatCents / 100, status: "draft", notes: `TEST;previewDeposit:${version.id};customer:${customer.id};project:${readiness.projectId};package:${readiness.packageKey};maintenance:${readiness.maintenanceCode}`, created_at: now, updated_at: now });
   if (!rows[0]?.id) throw Object.assign(new Error("Aanbetalingsfactuur kon niet worden aangemaakt."), { status: 500 });
   return rows[0];
 }
