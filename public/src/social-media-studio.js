@@ -310,6 +310,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
     campaignFilter: "all",
     clientFilter: "all",
     pillarFilter: "all",
+    mobileCanvas: "editor",
   };
 
   let autosaveTimer = null;
@@ -317,6 +318,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
   const elements = {
     platformButtons: Array.from(document.querySelectorAll(".social-studio-platform[data-platform]")),
     templateButtons: Array.from(document.querySelectorAll("[data-template]")),
+    copyEditorFields: Array.from(document.querySelectorAll("[data-copy-editor-field]")),
     client: document.getElementById("social-client"),
     start: document.getElementById("social-studio-start"),
     stage: document.getElementById("social-studio-stage"),
@@ -328,6 +330,11 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
     createPlatformVariants: document.getElementById("create-platform-variants"),
     platformVariantSwitcher: document.getElementById("platform-variant-switcher"),
     masterSummary: document.getElementById("social-master-summary"),
+    greeting: document.getElementById("social-studio-greeting"),
+    dailyBrief: document.getElementById("social-daily-brief"),
+    editorGrid: document.getElementById("social-editor-grid"),
+    showEditor: document.getElementById("show-social-editor"),
+    showPreview: document.getElementById("show-social-preview"),
     autosave: document.getElementById("social-autosave"),
     aiLaunch: document.getElementById("open-ai-creator"),
     aiCreator: document.getElementById("social-ai-creator"),
@@ -462,6 +469,95 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
       button.addEventListener("click", () => openContentWorkflow(type.id));
       return button;
     }));
+  }
+
+  function greetingForNow() {
+    const hour = new Date().getHours();
+    const moment = hour < 12 ? "Goedemorgen" : hour < 18 ? "Goedemiddag" : "Goedenavond";
+    const session = readJson("mws_admin_supabase_session", {});
+    const emailName = String(session.email || "").split("@")[0].split(/[._-]/)[0].trim();
+    const generic = ["", "admin", "preview", "info", "contact"].includes(emailName.toLowerCase());
+    const name = generic ? "Max" : emailName.charAt(0).toUpperCase() + emailName.slice(1);
+    return `${moment}, ${name}.`;
+  }
+
+  function resumeVariantFromStart(variant) {
+    elements.start.hidden = true;
+    elements.stage.hidden = false;
+    elements.skeleton.hidden = true;
+    elements.aiCreator.hidden = true;
+    elements.workbench.hidden = false;
+    loadVariant(variant);
+  }
+
+  function dailyCard({ eyebrow, title, detail, action, recommended = false }) {
+    const card = action ? document.createElement("button") : document.createElement("article");
+    if (action) {
+      card.type = "button";
+      card.addEventListener("click", action);
+    }
+    card.className = `social-studio-daily-card${recommended ? " is-recommended" : ""}`;
+    const label = document.createElement("span");
+    const copy = document.createElement("div");
+    const heading = document.createElement("strong");
+    const description = document.createElement("small");
+    label.textContent = eyebrow;
+    heading.textContent = title;
+    description.textContent = detail;
+    copy.append(heading, description);
+    card.append(label, copy);
+    return card;
+  }
+
+  function renderStartDashboard() {
+    elements.greeting.textContent = greetingForNow();
+    const active = state.variants.filter((variant) => normalizeStatus(variant.status) !== "archived");
+    const recent = [...active].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))[0];
+    const planned = [...active]
+      .filter((variant) => normalizeStatus(variant.status) === "scheduled" && variant.date)
+      .sort((a, b) => `${a.date}T${a.time || "09:00"}`.localeCompare(`${b.date}T${b.time || "09:00"}`))[0];
+    const review = active.find((variant) => normalizeStatus(variant.status) === "review");
+    const approved = active.find((variant) => normalizeStatus(variant.status) === "approved");
+    const draftCount = active.filter((variant) => ["idea", "draft"].includes(normalizeStatus(variant.status))).length;
+    const readyCount = active.filter((variant) => ["approved", "scheduled"].includes(normalizeStatus(variant.status))).length;
+    const recommendation = review
+      ? { title: "Rond één review af", detail: review.title || "Open het concept en maak het besluit eenvoudig.", action: () => resumeVariantFromStart(review) }
+      : approved
+        ? { title: "Plan je goedgekeurde concept", detail: approved.title || "Geef het concept een rustig moment in je kalender.", action: () => resumeVariantFromStart(approved) }
+        : { title: "Begin met een fris idee", detail: "Gebruik je merkcontext voor een lokaal, controleerbaar startconcept.", action: openAICreator };
+    elements.dailyBrief.replaceChildren(
+      dailyCard({
+        eyebrow: "Recent concept",
+        title: recent?.title || "Je canvas wacht op je",
+        detail: recent ? `Bijgewerkt ${formatDate(recent.updatedAt)} · ga verder waar je was.` : "Kies hieronder een format om je eerste concept te maken.",
+        action: recent ? () => resumeVariantFromStart(recent) : openAICreator,
+      }),
+      dailyCard({
+        eyebrow: "Eerstvolgende planning",
+        title: planned?.title || "Nog alle ruimte",
+        detail: planned ? `${formatDate(planned.date)} om ${planned.time || "09:00"}.` : "Plan een goedgekeurd concept wanneer het moment klopt.",
+        action: planned ? () => resumeVariantFromStart(planned) : openAICreator,
+      }),
+      dailyCard({
+        eyebrow: "Contentvoorraad",
+        title: `${draftCount} in ontwikkeling · ${readyCount} klaar`,
+        detail: active.length ? `${active.length} actieve creaties, veilig lokaal bewaard.` : "Je voorraad groeit mee met ieder goed idee.",
+      }),
+      dailyCard({ eyebrow: "Aanbevolen volgende stap", ...recommendation, recommended: true }),
+    );
+  }
+
+  function setMobileCanvas(canvas) {
+    state.mobileCanvas = canvas === "preview" ? "preview" : "editor";
+    const preview = state.mobileCanvas === "preview";
+    elements.editorGrid.classList.toggle("is-preview", preview);
+    elements.showEditor.classList.toggle("is-active", !preview);
+    elements.showPreview.classList.toggle("is-active", preview);
+    elements.showEditor.setAttribute("aria-selected", String(!preview));
+    elements.showPreview.setAttribute("aria-selected", String(preview));
+    if (window.matchMedia("(max-width: 760px)").matches && !elements.workbench.hidden) {
+      window.requestAnimationFrame(() => elements.workbench.scrollIntoView({ block: "start" }));
+    }
   }
 
   function fillStatusFilter() {
@@ -742,8 +838,11 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
   }
 
   function formatDate(value) {
-    if (!value) return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date());
-    return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
+    const formatter = new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
+    if (!value) return formatter.format(new Date());
+    const raw = String(value);
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T12:00:00` : raw);
+    return Number.isNaN(date.getTime()) ? "Datum onbekend" : formatter.format(date);
   }
 
   function setMessage(text, type) {
@@ -839,7 +938,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
     setAIMessage("Lokale preview actief: er worden geen gegevens extern verstuurd.", "success");
     renderAIStepNavigation();
     elements.aiForm.elements.objective.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    elements.aiCreator.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function collectAIRequest() {
@@ -1005,6 +1104,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
     AI_OUTPUT_FIELDS.forEach((field) => {
       const card = document.createElement("article");
       card.className = "social-studio-ai-output-card";
+      card.dataset.aiField = field;
       if (field === "claimWarnings") card.classList.add("is-warning");
       const header = document.createElement("header");
       const label = document.createElement("strong");
@@ -1074,7 +1174,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
     updateAll();
     scheduleAutosave();
     elements.title.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    elements.workbench.scrollIntoView({ behavior: "smooth", block: "start" });
     setMessage("Gekozen AI-onderdelen staan in de editor; niets is automatisch gepubliceerd.", "success");
   }
 
@@ -1115,7 +1215,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
       elements.skeleton.hidden = true;
       elements.workbench.hidden = false;
       elements.title.focus({ preventScroll: true });
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      elements.workbench.scrollIntoView({ behavior: "smooth", block: "start" });
       scheduleAutosave();
     }, 320);
   }
@@ -1259,10 +1359,12 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
     if (!state.variants.length) {
       elements.heroCount.textContent = "Klaar voor iets moois";
       elements.heroDetail.textContent = "Kies een format en laat Social Studio de creatieve basis voor je klaarzetten.";
+      renderStartDashboard();
       return;
     }
     elements.heroCount.textContent = `${state.variants.length} ${state.variants.length === 1 ? "creatie" : "creaties"}`;
     elements.heroDetail.textContent = `${filteredCount} zichtbaar · ${readyCount} klaar voor publicatie. Laatst bijgewerkt: ${formatDate(new Date().toISOString().slice(0, 10))}.`;
+    renderStartDashboard();
   }
 
   function buildCopyText(content = getCurrentContent()) {
@@ -1434,7 +1536,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
     const profile = PLATFORM_VARIANT_PROFILES.find((item) => item.key === variant.variantKey);
     elements.selectedType.textContent = profile ? `${profile.label} · gekoppeld aan master` : (contentTypes.find((item) => item.id === variant.contentType)?.label || "Opgeslagen concept");
     setMessage(profile ? "Gekoppelde platformvariant geladen. Andere varianten blijven onaangeroerd." : "Variant geladen in editor.", "success");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    elements.workbench.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function archiveVariant(id) {
@@ -1870,6 +1972,16 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
   }
 
   function bindEvents() {
+    elements.showEditor.addEventListener("click", () => setMobileCanvas("editor"));
+    elements.showPreview.addEventListener("click", () => setMobileCanvas("preview"));
+    elements.copyEditorFields.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const field = elements[button.dataset.copyEditorField];
+        copyToClipboard(field?.value?.trim() || "", `${button.dataset.copyEditorField === "imagePrompt" ? "Afbeelding prompt" : "Onderdeel"} gekopieerd.`);
+      });
+    });
     elements.aiForm.addEventListener("submit", (event) => event.preventDefault());
     elements.aiLaunch.addEventListener("click", openAICreator);
     elements.aiClose.addEventListener("click", returnToStart);
@@ -1994,6 +2106,7 @@ import { analyzeContentQuality, contentQualityScore } from "./social-studio/cont
 
   function init() {
     renderContentTypes();
+    setMobileCanvas("editor");
     populateAICreatorOptions();
     fillPlatformFilter();
     fillStatusFilter();

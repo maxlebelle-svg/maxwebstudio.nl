@@ -239,6 +239,11 @@
         font-weight: 750;
       }
 
+      .social-studio-field-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+      .social-studio-copy-field { min-height: 30px; padding: 5px 9px; border: 0; border-radius: 8px; color: rgba(191,219,254,.72); background: rgba(59,130,246,.09); cursor: pointer; font-size: 10px; font-weight: 850; }
+      .social-studio-copy-field:hover,
+      .social-studio-copy-field:focus-visible { color: #fff; background: rgba(59,130,246,.2); }
+
       .social-studio-template-list button {
         min-height: 42px;
       }
@@ -597,6 +602,36 @@
         line-height: 1.65;
       }
 
+      .social-studio-greeting { margin: 0 0 4px; color: #93c5fd; font-size: 13px; font-weight: 850; letter-spacing: .02em; }
+
+      .social-studio-daily-brief {
+        display: grid;
+        grid-template-columns: repeat(4,minmax(0,1fr));
+        gap: 12px;
+      }
+
+      .social-studio-daily-card {
+        position: relative;
+        display: grid;
+        min-height: 132px;
+        gap: 12px;
+        align-content: space-between;
+        padding: 17px;
+        border: 1px solid rgba(148,163,184,.12);
+        border-radius: 14px;
+        color: var(--studio-text);
+        background: linear-gradient(155deg,rgba(255,255,255,.045),rgba(3,12,25,.26));
+        text-align: left;
+      }
+
+      button.social-studio-daily-card { cursor: pointer; transition: transform 160ms ease,border-color 160ms ease,background 160ms ease; }
+      button.social-studio-daily-card:hover,
+      button.social-studio-daily-card:focus-visible { transform: translateY(-2px); border-color: rgba(96,165,250,.42); background: rgba(24,52,91,.48); }
+      .social-studio-daily-card span { color: rgba(191,219,254,.58); font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+      .social-studio-daily-card strong { display: block; font-size: 15px; line-height: 1.35; }
+      .social-studio-daily-card small { display: block; margin-top: 5px; color: var(--studio-muted); font-size: 12px; line-height: 1.45; }
+      .social-studio-daily-card.is-recommended { border-color: rgba(69,215,240,.25); background: radial-gradient(circle at 100% 0%,rgba(69,215,240,.12),transparent 48%),rgba(13,35,61,.58); }
+
       .social-studio-content-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -698,8 +733,12 @@
       .social-studio-ai-finish { margin-top: 18px; padding: 18px; border: 1px solid var(--studio-line); border-radius: 12px; color: var(--studio-muted); background: rgba(4,14,28,.62); line-height: 1.65; }
       .social-studio-ai-assets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
-      .social-studio-ai-output { display: grid; gap: 12px; }
+      .social-studio-ai-output { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
       .social-studio-ai-output-card { display: grid; gap: 10px; padding: 15px; border: 1px solid var(--studio-line); border-radius: 12px; background: rgba(4,14,28,.58); }
+      .social-studio-ai-output-card[data-ai-field="caption"],
+      .social-studio-ai-output-card[data-ai-field="reelScript"],
+      .social-studio-ai-output-card[data-ai-field="storyStructure"],
+      .social-studio-ai-output-card[data-ai-field="carouselStructure"] { grid-column: 1 / -1; }
       .social-studio-ai-output-card header { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
       .social-studio-ai-output-card header strong { color: #fff; }
       .social-studio-ai-output-actions { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -708,6 +747,8 @@
 
       .social-studio-ai-navigation { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
       .social-studio-ai-navigation span { color: var(--studio-muted); text-align: center; font-size: 11px; font-weight: 850; }
+
+      .social-studio-mobile-canvas-tabs { display: none; }
 
       .social-studio-content-card {
         position: relative;
@@ -830,12 +871,14 @@
         gap: 22px;
       }
 
+      .social-studio-workbench { scroll-margin-top: 82px; }
+
       .social-studio-workbench > .social-studio-workbench-bar { order: 0; }
-      .social-studio-workbench > .social-studio-toolbar { order: 1; }
+      .social-studio-workbench > .social-studio-grid { order: 1; }
       .social-studio-workbench > .social-studio-variant-family { order: 2; }
-      .social-studio-workbench > .social-studio-platforms { order: 3; }
-      .social-studio-workbench > .social-studio-brand-panel { order: 4; }
-      .social-studio-workbench > .social-studio-grid { order: 5; }
+      .social-studio-workbench > .social-studio-toolbar { order: 3; }
+      .social-studio-workbench > .social-studio-platforms { order: 4; }
+      .social-studio-workbench > .social-studio-brand-panel { order: 5; }
       .social-studio-workbench > .social-studio-pipeline { order: 6; }
       .social-studio-workbench > .social-studio-templates { order: 7; }
       .social-studio-workbench > .social-studio-morework { order: 8; }
@@ -860,7 +903,7 @@
 
       .social-studio-workbench-bar {
         position: sticky;
-        top: 12px;
+        top: 82px;
         z-index: 20;
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1346,6 +1389,8 @@
         .social-studio-content-grid {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
+
+        .social-studio-daily-brief { grid-template-columns: repeat(2,minmax(0,1fr)); }
       }
 
       @media (max-width: 760px) {
@@ -1362,9 +1407,25 @@
           padding: 16px;
         }
 
+        .social-studio-workbench { scroll-margin-top: 126px; }
+        .social-studio-workbench-bar { position: static; }
+        .social-studio-workbench > .social-studio-grid { order: 1; }
+        .social-studio-workbench > .social-studio-variant-family { order: 2; }
+        .social-studio-workbench > .social-studio-toolbar { order: 3; }
+        .social-studio-workbench > .social-studio-platforms { order: 4; }
+
         .social-studio-hero {
           padding: 26px 22px;
           border-radius: 14px;
+        }
+
+        .social-studio-hero-panel {
+          display: none;
+        }
+
+        .social-studio-hero > div > p:last-child {
+          font-size: 15px;
+          line-height: 1.5;
         }
 
         .social-studio-hero h1 {
@@ -1397,9 +1458,47 @@
         .social-studio-ai-steps { display: flex; overflow-x: auto; scrollbar-width: none; }
         .social-studio-ai-step-dot { flex: 0 0 120px; }
         .social-studio-ai-step { min-height: 0; }
+        .social-studio-ai-output { grid-template-columns: 1fr; }
+        .social-studio-ai-output-card[data-ai-field] { grid-column: 1; }
         .social-studio-ai-navigation { position: sticky; bottom: 8px; z-index: 10; padding: 10px; border-radius: 12px; background: rgba(5,15,29,.92); backdrop-filter: blur(18px); }
 
         .social-studio-content-card { min-height: 145px; }
+
+        .social-studio-mobile-canvas-tabs {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 6px;
+          position: sticky;
+          top: 124px;
+          z-index: 18;
+          padding: 6px;
+          border: 1px solid var(--studio-line);
+          border-radius: 13px;
+          background: rgba(4,14,28,.9);
+          backdrop-filter: blur(18px);
+        }
+
+        .social-studio-mobile-canvas-tabs button { min-height: 44px; border: 0; border-radius: 9px; color: var(--studio-muted); background: transparent; font-weight: 850; }
+        .social-studio-mobile-canvas-tabs button.is-active { color: #fff; background: rgba(37,99,235,.28); box-shadow: inset 0 0 0 1px rgba(96,165,250,.24); }
+        .social-studio-grid:not(.is-preview) .social-studio-preview-shell { display: none; }
+        .social-studio-grid.is-preview .social-studio-form { display: none; }
+        .social-studio-grid.is-preview .social-studio-preview-shell { display: grid; }
+
+        .social-studio-form > .social-studio-actions {
+          position: sticky;
+          bottom: 8px;
+          z-index: 12;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          padding: 10px;
+          margin: 0 -8px -8px;
+          border: 1px solid var(--studio-line);
+          border-radius: 12px;
+          background: rgba(4,14,28,.92);
+          backdrop-filter: blur(18px);
+        }
+
+        .social-studio-form > .social-studio-actions .button { flex: 0 0 auto; min-height: 44px; }
 
         .social-studio-platforms {
           display: flex;
@@ -1457,6 +1556,8 @@
 
       @media (max-width: 520px) {
         .social-studio-content-grid { grid-template-columns: 1fr; }
+        .social-studio-daily-brief { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 5px; }
+        .social-studio-daily-card { flex: 0 0 82%; scroll-snap-align: start; }
         .social-studio-start { padding: 22px; }
         .social-studio-shortcuts { display: none; }
       }
@@ -1523,6 +1624,7 @@
         <section class="social-studio-workspace" aria-label="Social Studio workspace">
           <section class="social-studio-start" id="social-studio-start" aria-labelledby="social-start-heading">
             <div class="social-studio-start-copy">
+              <p class="social-studio-greeting" id="social-studio-greeting">Goedemorgen.</p>
               <p class="section-kicker">Nieuwe creatie</p>
               <h2 id="social-start-heading">Wat wil je vandaag maken?</h2>
               <p>Kies een format. Social Studio zet de juiste canvas, kanaalregels en schrijfrichting voor je klaar.</p>
@@ -1534,10 +1636,10 @@
               <span><strong>Laat AI ideeën bedenken</strong><small>Lokale preview · gebruikt je veilige merkcontext</small></span>
               <span aria-hidden="true">→</span>
             </button>
+            <section class="social-studio-daily-brief" id="social-daily-brief" aria-label="Jouw Social Studio vandaag" aria-live="polite"></section>
             <div class="social-studio-content-grid" id="social-content-type-grid" aria-label="Kies een contentformat"></div>
             <div class="social-studio-shortcuts" aria-label="Sneltoetsen">
               <span><kbd>⌘</kbd><kbd>K</kbd> Command palette</span>
-              <span><kbd>/</kbd> Zoek content</span>
               <span><kbd>⌘</kbd><kbd>S</kbd> Sla concept op</span>
             </div>
           </section>
@@ -1739,7 +1841,11 @@
             </div>
           </section>
 
-          <div class="social-studio-grid">
+          <div class="social-studio-mobile-canvas-tabs" id="social-mobile-canvas-tabs" role="tablist" aria-label="Editorweergave">
+            <button class="is-active" id="show-social-editor" type="button" role="tab" aria-selected="true">Schrijven</button>
+            <button id="show-social-preview" type="button" role="tab" aria-selected="false">Preview</button>
+          </div>
+          <div class="social-studio-grid" id="social-editor-grid">
             <form class="admin-card social-studio-form" id="social-studio-form">
               <div class="social-studio-editor-heading">
                 <div>
@@ -1748,20 +1854,20 @@
                 </div>
                 <span id="social-editor-format">Facebook · Vierkant 1:1</span>
               </div>
-              <label for="social-title">Hook<input id="social-title" name="title" autocomplete="off" placeholder="Open met één scherpe, herkenbare gedachte" /></label>
-              <label for="social-caption">Caption<textarea id="social-caption" name="caption" placeholder="Vertel het verhaal helder, menselijk en zonder ruis..."></textarea></label>
+              <label for="social-title"><span class="social-studio-field-heading"><span>Hook</span><button class="social-studio-copy-field" type="button" data-copy-editor-field="title">Kopieer</button></span><input id="social-title" name="title" aria-label="Hook" autocomplete="off" placeholder="Open met één scherpe, herkenbare gedachte" /></label>
+              <label for="social-caption"><span class="social-studio-field-heading"><span>Caption</span><button class="social-studio-copy-field" type="button" data-copy-editor-field="caption">Kopieer</button></span><textarea id="social-caption" name="caption" aria-label="Caption" placeholder="Vertel het verhaal helder, menselijk en zonder ruis..."></textarea></label>
               <div class="social-studio-field-meta">
                 <span id="caption-counter">0 tekens</span>
                 <span id="caption-guidance">Past ruim binnen het platform.</span>
               </div>
-              <label for="social-cta">Call-to-action<input id="social-cta" name="cta" autocomplete="off" placeholder="Plan een kennismaking" /></label>
+              <label for="social-cta"><span class="social-studio-field-heading"><span>Call-to-action</span><button class="social-studio-copy-field" type="button" data-copy-editor-field="cta">Kopieer</button></span><input id="social-cta" name="cta" aria-label="Call-to-action" autocomplete="off" placeholder="Plan een kennismaking" /></label>
               <label for="social-link">Link<input id="social-link" name="link" type="url" autocomplete="off" placeholder="https://maxwebstudio.nl" /></label>
-              <label for="social-hashtags">Hashtags<input id="social-hashtags" name="hashtags" autocomplete="off" placeholder="#website #marketing #lokaal" /></label>
+              <label for="social-hashtags"><span class="social-studio-field-heading"><span>Hashtags</span><button class="social-studio-copy-field" type="button" data-copy-editor-field="hashtags">Kopieer</button></span><input id="social-hashtags" name="hashtags" aria-label="Hashtags" autocomplete="off" placeholder="#website #marketing #lokaal" /></label>
               <div class="social-studio-field-meta">
                 <span id="hashtag-counter">0 hashtags</span>
                 <span id="platform-rule">Platformcheck actief.</span>
               </div>
-              <label for="social-image-prompt">AI-afbeelding prompt<textarea id="social-image-prompt" name="imagePrompt" class="social-studio-prompt" placeholder="Beschrijf compositie, licht, sfeer, kleuren en onderwerp. De prompt wordt alleen bewaard; er wordt nog niets gegenereerd."></textarea></label>
+              <label for="social-image-prompt"><span class="social-studio-field-heading"><span>AI-afbeelding prompt</span><button class="social-studio-copy-field" type="button" data-copy-editor-field="imagePrompt">Kopieer</button></span><textarea id="social-image-prompt" name="imagePrompt" class="social-studio-prompt" aria-label="AI-afbeelding prompt" placeholder="Beschrijf compositie, licht, sfeer, kleuren en onderwerp. De prompt wordt alleen bewaard; er wordt nog niets gegenereerd."></textarea></label>
               <label for="social-tone">Tone of voice<select id="social-tone" name="tone">
                 <option>Professioneel</option>
                 <option>Enthousiast</option>
@@ -1891,7 +1997,7 @@
         </div>
       </form>
     </dialog>
-    <script type="module" src="src/social-media-studio.js?v=20260713-social-studio-mvp"></script>
+    <script type="module" src="src/social-media-studio.js?v=20260714-intelligent-ux"></script>
     <script src="admin/ui/global-command-palette.js?v=20260712-live-context-fix" defer></script>
   </body>
 </html>
