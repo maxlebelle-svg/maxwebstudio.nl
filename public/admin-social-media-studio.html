@@ -518,6 +518,537 @@
         background: rgba(15, 23, 42, 0.42);
       }
 
+      .social-studio-shell {
+        --studio-surface: rgba(8, 19, 36, 0.82);
+        --studio-surface-raised: rgba(15, 29, 51, 0.88);
+        --studio-line: rgba(148, 163, 184, 0.14);
+        --studio-line-active: rgba(96, 165, 250, 0.5);
+        --studio-text: #f7fbff;
+        --studio-muted: rgba(211, 225, 242, 0.66);
+        --studio-blue: #4f8cff;
+        --studio-cyan: #45d7f0;
+      }
+
+      .social-studio-shell [hidden] {
+        display: none !important;
+      }
+
+      .social-studio-hero {
+        overflow: hidden;
+        padding: clamp(28px, 4vw, 54px);
+        border: 1px solid rgba(96, 165, 250, 0.18);
+        background:
+          radial-gradient(circle at 80% 5%, rgba(69, 215, 240, 0.12), transparent 28%),
+          radial-gradient(circle at 12% 100%, rgba(79, 140, 255, 0.16), transparent 34%),
+          linear-gradient(145deg, rgba(9, 22, 42, 0.96), rgba(4, 13, 27, 0.96));
+        box-shadow: 0 36px 90px rgba(0, 8, 22, 0.28);
+      }
+
+      .social-studio-hero h1 {
+        max-width: 720px;
+        margin: 8px 0 12px;
+        font-size: clamp(40px, 5vw, 68px);
+        line-height: 0.98;
+        letter-spacing: -0.045em;
+      }
+
+      .social-studio-hero > div > p:last-child {
+        max-width: 660px;
+        color: var(--studio-muted);
+        font-size: clamp(16px, 1.5vw, 19px);
+        line-height: 1.65;
+      }
+
+      .social-studio-hero-panel {
+        align-content: end;
+        min-height: 210px;
+        border-radius: 16px;
+        backdrop-filter: blur(20px);
+      }
+
+      .social-studio-start {
+        display: grid;
+        gap: 30px;
+        padding: clamp(26px, 4vw, 48px);
+        border: 1px solid var(--studio-line);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 50% -20%, rgba(79, 140, 255, 0.14), transparent 42%),
+          linear-gradient(180deg, rgba(9, 22, 41, 0.92), rgba(5, 15, 29, 0.9));
+        box-shadow: 0 30px 80px rgba(0, 8, 22, 0.24);
+      }
+
+      .social-studio-start-copy {
+        max-width: 760px;
+      }
+
+      .social-studio-start-copy h2 {
+        margin: 8px 0 12px;
+        color: var(--studio-text);
+        font-size: clamp(30px, 4vw, 48px);
+        line-height: 1.05;
+        letter-spacing: -0.035em;
+      }
+
+      .social-studio-start-copy > p:last-child {
+        margin: 0;
+        color: var(--studio-muted);
+        font-size: 16px;
+        line-height: 1.65;
+      }
+
+      .social-studio-content-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .social-studio-content-card {
+        position: relative;
+        display: grid;
+        gap: 18px;
+        min-height: 174px;
+        padding: 20px;
+        overflow: hidden;
+        border: 1px solid var(--studio-line);
+        border-radius: 14px;
+        color: var(--studio-text);
+        background:
+          linear-gradient(155deg, rgba(255, 255, 255, 0.055), transparent 48%),
+          rgba(12, 26, 47, 0.78);
+        cursor: pointer;
+        text-align: left;
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+      }
+
+      .social-studio-content-card::after {
+        content: "→";
+        position: absolute;
+        right: 18px;
+        bottom: 18px;
+        color: rgba(191, 219, 254, 0.72);
+        font-size: 18px;
+        transform: translateX(-5px);
+        opacity: 0;
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+
+      .social-studio-content-card:hover,
+      .social-studio-content-card:focus-visible {
+        border-color: var(--studio-line-active);
+        background:
+          radial-gradient(circle at 0% 0%, rgba(69, 215, 240, 0.12), transparent 45%),
+          linear-gradient(145deg, rgba(28, 62, 109, 0.74), rgba(11, 27, 50, 0.9));
+        box-shadow: 0 22px 56px rgba(0, 9, 26, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        transform: translateY(-4px);
+      }
+
+      .social-studio-content-card:hover::after,
+      .social-studio-content-card:focus-visible::after {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .social-studio-content-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid rgba(125, 211, 252, 0.22);
+        border-radius: 12px;
+        color: #dbeafe;
+        background: linear-gradient(145deg, rgba(79, 140, 255, 0.24), rgba(69, 215, 240, 0.1));
+      }
+
+      .social-studio-content-icon svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .social-studio-content-card strong {
+        display: block;
+        font-size: 15px;
+        line-height: 1.25;
+      }
+
+      .social-studio-content-card small {
+        display: block;
+        max-width: 20ch;
+        margin-top: 5px;
+        color: var(--studio-muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      @media (min-width: 1181px) {
+        .social-studio-content-card:nth-last-child(-n + 2) {
+          grid-column: span 2;
+          min-height: 150px;
+        }
+      }
+
+      .social-studio-shortcuts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        align-items: center;
+        padding-top: 4px;
+        color: rgba(211, 225, 242, 0.5);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      kbd {
+        display: inline-grid;
+        place-items: center;
+        min-width: 22px;
+        min-height: 22px;
+        padding: 0 5px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 6px;
+        color: rgba(226, 236, 248, 0.7);
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+        font: inherit;
+      }
+
+      .social-studio-stage,
+      .social-studio-workbench {
+        display: grid;
+        gap: 22px;
+      }
+
+      .social-studio-workbench > .social-studio-workbench-bar { order: 0; }
+      .social-studio-workbench > .social-studio-toolbar { order: 1; }
+      .social-studio-workbench > .social-studio-platforms { order: 2; }
+      .social-studio-workbench > .social-studio-grid { order: 3; }
+      .social-studio-workbench > .social-studio-pipeline { order: 4; }
+      .social-studio-workbench > .social-studio-templates { order: 5; }
+      .social-studio-workbench > .social-studio-morework { order: 6; }
+      .social-studio-workbench > .social-studio-variants { order: 7; }
+
+      .social-studio-workbench-bar {
+        position: sticky;
+        top: 12px;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 12px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 14px;
+        background: rgba(5, 15, 29, 0.82);
+        box-shadow: 0 18px 48px rgba(0, 8, 22, 0.24);
+        backdrop-filter: blur(24px) saturate(1.2);
+      }
+
+      .social-studio-back {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--studio-line);
+        border-radius: 11px;
+        color: var(--studio-text);
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        font-size: 20px;
+        transition: background 160ms ease, transform 160ms ease;
+      }
+
+      .social-studio-back:hover { background: rgba(79, 140, 255, 0.16); transform: translateX(-2px); }
+
+      .social-studio-workbench-label {
+        display: block;
+        color: rgba(211, 225, 242, 0.48);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .social-studio-workbench-bar strong {
+        color: var(--studio-text);
+        font-size: 14px;
+      }
+
+      .social-studio-autosave {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        color: var(--studio-muted);
+      }
+
+      .social-studio-autosave > span {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #34d399;
+        box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.1);
+      }
+
+      .social-studio-autosave.is-saving > span {
+        background: #60a5fa;
+        animation: social-studio-pulse 1s ease-in-out infinite;
+      }
+
+      .social-studio-autosave strong { font-size: 11px; }
+
+      .social-studio-skeleton {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 18px;
+        min-height: 520px;
+        padding: 24px;
+        border: 1px solid var(--studio-line);
+        border-radius: 16px;
+        background: var(--studio-surface);
+      }
+
+      .social-studio-skeleton span {
+        border-radius: 12px;
+        background: linear-gradient(100deg, rgba(255,255,255,0.035) 20%, rgba(255,255,255,0.09) 38%, rgba(255,255,255,0.035) 58%);
+        background-size: 220% 100%;
+        animation: social-studio-shimmer 1.4s linear infinite;
+      }
+
+      .social-studio-skeleton span:first-child { grid-row: span 3; }
+
+      .social-studio-toolbar,
+      .social-studio-form,
+      .social-studio-preview-shell,
+      .social-studio-pipeline,
+      .social-studio-templates,
+      .social-studio-variants {
+        border-color: var(--studio-line);
+        border-radius: 16px;
+        background: linear-gradient(160deg, rgba(16, 32, 56, 0.86), rgba(7, 18, 34, 0.86));
+        box-shadow: 0 22px 60px rgba(0, 8, 22, 0.18);
+      }
+
+      .social-studio-toolbar {
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        padding: 18px 20px;
+      }
+
+      .social-studio-context-heading {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 9px;
+        align-items: baseline;
+      }
+
+      .social-studio-context-heading span {
+        color: var(--studio-cyan);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .social-studio-context-heading strong {
+        color: var(--studio-text);
+        font-size: 14px;
+      }
+
+      .social-studio-toolbar input,
+      .social-studio-toolbar select,
+      .social-studio-form input,
+      .social-studio-form select,
+      .social-studio-form textarea {
+        min-height: 46px;
+        border-color: rgba(148, 163, 184, 0.16);
+        border-radius: 10px;
+        background: rgba(3, 12, 25, 0.62);
+        transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
+
+      .social-studio-toolbar input:focus,
+      .social-studio-toolbar select:focus,
+      .social-studio-form input:focus,
+      .social-studio-form select:focus,
+      .social-studio-form textarea:focus {
+        outline: none;
+        border-color: rgba(96, 165, 250, 0.58);
+        background: rgba(5, 17, 34, 0.9);
+        box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.1);
+      }
+
+      .social-studio-platforms {
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 10px;
+      }
+
+      .social-studio-platform { border-radius: 13px; }
+
+      .social-studio-editor-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: end;
+        padding-bottom: 6px;
+      }
+
+      .social-studio-editor-heading h2 { margin: 5px 0 0; color: var(--studio-text); font-size: 24px; }
+      .social-studio-editor-heading > span { color: var(--studio-muted); font-size: 12px; font-weight: 800; }
+
+      .social-studio-form textarea { min-height: 230px; line-height: 1.7; }
+      .social-studio-form textarea.social-studio-prompt { min-height: 112px; }
+
+      @media (min-width: 1181px) {
+        .social-studio-preview-shell {
+          position: sticky;
+          top: 88px;
+        }
+      }
+
+      .social-studio-form label[for="social-title"],
+      .social-studio-form label[for="social-caption"] {
+        gap: 10px;
+        padding: 4px 0 10px;
+      }
+
+      .social-studio-form label[for="social-title"] input,
+      .social-studio-form label[for="social-caption"] textarea {
+        padding: 16px 0;
+        border-width: 0 0 1px;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .social-studio-form label[for="social-title"] input {
+        min-height: 64px;
+        color: #ffffff;
+        font-size: clamp(21px, 2vw, 28px);
+        font-weight: 850;
+        line-height: 1.22;
+        letter-spacing: -0.025em;
+      }
+
+      .social-studio-form label[for="social-caption"] textarea {
+        min-height: 280px;
+        color: rgba(242, 247, 255, 0.9);
+        font-size: 16px;
+        font-weight: 520;
+        line-height: 1.8;
+      }
+
+      .social-studio-form label[for="social-title"] input:focus,
+      .social-studio-form label[for="social-caption"] textarea:focus {
+        border-color: rgba(96, 165, 250, 0.66);
+        background: linear-gradient(180deg, transparent, rgba(79, 140, 255, 0.035));
+        box-shadow: 0 8px 24px -18px rgba(79, 140, 255, 0.9);
+      }
+
+      .social-studio-library-tools {
+        border: 1px solid var(--studio-line);
+        border-radius: 12px;
+        background: rgba(3, 12, 25, 0.34);
+      }
+
+      .social-studio-library-tools summary {
+        padding: 14px 16px;
+        color: var(--studio-muted);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .social-studio-library-tools[open] summary {
+        border-bottom: 1px solid var(--studio-line);
+        color: var(--studio-text);
+      }
+
+      .social-studio-library-tools-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1fr;
+        gap: 12px;
+        padding: 16px 16px 0;
+      }
+
+      .social-studio-library-tools label {
+        display: grid;
+        gap: 7px;
+        color: var(--studio-muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .social-studio-library-tools input,
+      .social-studio-library-tools select {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--studio-line);
+        border-radius: 9px;
+        color: var(--studio-text);
+        background: rgba(3, 12, 25, 0.68);
+      }
+
+      .social-studio-library-tools .social-studio-toolbar-actions {
+        padding: 12px 16px 16px;
+      }
+
+      .social-studio-planning {
+        display: grid;
+        grid-template-columns: 1fr 0.7fr 1.2fr;
+        gap: 12px;
+        margin: 2px 0 0;
+        padding: 16px;
+        border: 1px solid var(--studio-line);
+        border-radius: 12px;
+        background: rgba(3, 12, 25, 0.36);
+      }
+
+      .social-studio-planning legend {
+        padding: 0 8px;
+        color: var(--studio-muted);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .social-studio-form .button:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .social-studio-empty {
+        min-height: 150px;
+        display: grid;
+        place-items: center;
+        padding: 32px;
+        border-radius: 12px;
+        text-align: center;
+        line-height: 1.65;
+      }
+
+      @keyframes social-studio-shimmer {
+        to { background-position-x: -220%; }
+      }
+
+      @keyframes social-studio-pulse {
+        50% { opacity: 0.45; transform: scale(0.82); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .social-studio-shell *,
+        .social-studio-shell *::before,
+        .social-studio-shell *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
       @media (max-width: 1180px) {
         .social-studio-hero,
         .social-studio-toolbar,
@@ -526,9 +1057,89 @@
         .social-studio-grid {
           grid-template-columns: 1fr;
         }
+
+        .social-studio-toolbar {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .social-studio-content-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
       }
 
       @media (max-width: 760px) {
+        .social-studio-page .admin-crm-shell {
+          display: block;
+        }
+
+        .social-studio-page .admin-sidebar {
+          display: none !important;
+        }
+
+        .social-studio-page .social-studio-shell {
+          width: 100%;
+          padding: 16px;
+        }
+
+        .social-studio-hero {
+          padding: 26px 22px;
+          border-radius: 14px;
+        }
+
+        .social-studio-hero h1 {
+          font-size: 42px;
+        }
+
+        .social-studio-hero-panel {
+          min-height: 0;
+          padding: 16px;
+        }
+
+        .social-studio-hero-panel strong {
+          font-size: 28px;
+        }
+
+        .social-studio-content-grid,
+        .social-studio-toolbar,
+        .social-studio-library-tools-grid,
+        .social-studio-planning,
+        .social-studio-skeleton {
+          grid-template-columns: 1fr;
+        }
+
+        .social-studio-content-card { min-height: 145px; }
+
+        .social-studio-platforms {
+          display: flex;
+          gap: 10px;
+          overflow-x: auto;
+          padding: 2px 2px 10px;
+          scroll-snap-type: x proximity;
+          scrollbar-width: none;
+        }
+
+        .social-studio-platforms::-webkit-scrollbar { display: none; }
+
+        .social-studio-platform {
+          flex: 0 0 168px;
+          min-height: 92px;
+          scroll-snap-align: start;
+        }
+
+        .social-studio-workbench-bar {
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .social-studio-autosave {
+          grid-column: 1 / -1;
+          padding-left: 54px;
+        }
+
+        .social-studio-editor-heading {
+          display: grid;
+          align-items: start;
+        }
+
         .social-studio-toolbar,
         .social-studio-form,
         .social-studio-preview-shell,
@@ -545,10 +1156,16 @@
           display: grid;
         }
       }
+
+      @media (max-width: 520px) {
+        .social-studio-content-grid { grid-template-columns: 1fr; }
+        .social-studio-start { padding: 22px; }
+        .social-studio-shortcuts { display: none; }
+      }
     </style>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
-  <body class="admin-body">
+  <body class="admin-body social-studio-page">
     <main class="admin-crm-shell">
       <aside class="admin-sidebar" aria-label="Admin modules">
         <a class="brand" href="admin-dashboard.html">
@@ -594,19 +1211,55 @@
       <div class="admin-crm-main workflow-module-shell social-studio-shell">
         <header class="admin-section admin-hero social-studio-hero">
           <div>
-            <p class="section-kicker">Production</p>
+            <p class="section-kicker">Max Webstudio · Production</p>
             <h1>Social Studio</h1>
-            <p>Maak, plan en beoordeel social content voor klanten vanuit één workflow.</p>
+            <p>Van eerste idee tot een merkwaardig sterk concept — rustig, snel en op één plek.</p>
           </div>
           <aside class="social-studio-hero-panel" aria-label="Social Studio status">
-            <span class="workflow-module-label">Lokale studio - geen publicatie API</span>
+            <span class="workflow-module-label">MVP · veilige lokale studio</span>
             <strong id="social-hero-count">0 varianten</strong>
             <p id="social-hero-detail">Concepten, varianten en exports blijven lokaal bewaard in deze browser.</p>
           </aside>
         </header>
 
         <section class="social-studio-workspace" aria-label="Social Studio workspace">
-          <section class="admin-card social-studio-toolbar" aria-label="Campagnecontext">
+          <section class="social-studio-start" id="social-studio-start" aria-labelledby="social-start-heading">
+            <div class="social-studio-start-copy">
+              <p class="section-kicker">Nieuwe creatie</p>
+              <h2 id="social-start-heading">Wat wil je vandaag maken?</h2>
+              <p>Kies een format. Social Studio zet de juiste canvas, kanaalregels en schrijfrichting voor je klaar.</p>
+            </div>
+            <div class="social-studio-content-grid" id="social-content-type-grid" aria-label="Kies een contentformat"></div>
+            <div class="social-studio-shortcuts" aria-label="Sneltoetsen">
+              <span><kbd>⌘</kbd><kbd>K</kbd> Command palette</span>
+              <span><kbd>/</kbd> Zoek content</span>
+              <span><kbd>⌘</kbd><kbd>S</kbd> Sla concept op</span>
+            </div>
+          </section>
+
+          <section class="social-studio-stage" id="social-studio-stage" hidden aria-label="Contenteditor">
+            <div class="social-studio-skeleton" id="social-studio-skeleton" hidden aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="social-studio-workbench" id="social-studio-workbench" hidden>
+              <div class="social-studio-workbench-bar">
+                <button class="social-studio-back" id="social-studio-back" type="button" aria-label="Terug naar contentkeuze">←</button>
+                <div>
+                  <span class="social-studio-workbench-label">Je werkt aan</span>
+                  <strong id="social-selected-type">Nieuw concept</strong>
+                </div>
+                <div class="social-studio-autosave" id="social-autosave" role="status" aria-live="polite">
+                  <span aria-hidden="true"></span>
+                  <strong>Alles opgeslagen</strong>
+                  <kbd>⌘S</kbd>
+                </div>
+              </div>
+
+          <section class="admin-card social-studio-toolbar" aria-label="Projectcontext">
+            <div class="social-studio-context-heading">
+              <span>Context</span>
+              <strong>Voor wie maak je dit?</strong>
+            </div>
             <label for="social-client">Klantnaam<input id="social-client" autocomplete="organization" placeholder="Klantnaam placeholder" /></label>
             <label for="social-campaign">Campagne<input id="social-campaign" autocomplete="off" placeholder="Bijv. zomeractie, nieuwe website, reviewcampagne" /></label>
             <label for="social-goal">Doel<select id="social-goal">
@@ -616,30 +1269,12 @@
               <option>Reviews en vertrouwen</option>
               <option>Vacature / personeel</option>
             </select></label>
-            <label for="social-date">Publicatiedatum<input id="social-date" type="date" /></label>
-            <label for="social-time">Publicatietijd<input id="social-time" type="time" value="09:00" /></label>
-            <label for="social-status">Workflowstatus<select id="social-status">
-              <option value="idea">Idee</option>
-              <option value="draft" selected>Concept</option>
-              <option value="review">Ter beoordeling</option>
-              <option value="ready">Klaar om te publiceren</option>
-            </select></label>
             <label for="social-visual-format">Visual format<select id="social-visual-format">
               <option value="square">Vierkant 1:1</option>
               <option value="portrait">Staand 4:5</option>
               <option value="landscape">Liggend 1.91:1</option>
               <option value="story">Story 9:16</option>
             </select></label>
-            <label for="variant-search">Zoek varianten<input id="variant-search" type="search" placeholder="Zoek op titel, tekst, platform of klant" /></label>
-            <label for="variant-platform-filter">Variantfilter<select id="variant-platform-filter"></select></label>
-            <label for="variant-status-filter">Statusfilter<select id="variant-status-filter"></select></label>
-            <div class="social-studio-toolbar-actions">
-              <button class="button secondary" id="load-sample-social" type="button">Voorbeeld laden</button>
-              <button class="button secondary" id="import-social-json" type="button">Import JSON</button>
-              <button class="button secondary" id="export-social-json" type="button">Export JSON</button>
-              <button class="button secondary" id="clear-social-storage" type="button">Alles wissen</button>
-            </div>
-            <input id="social-json-file" type="file" accept="application/json,.json" hidden />
             <p class="admin-form-message social-studio-message" id="social-studio-message" role="status" aria-live="polite"></p>
           </section>
 
@@ -713,8 +1348,15 @@
 
           <div class="social-studio-grid">
             <form class="admin-card social-studio-form" id="social-studio-form">
-              <label for="social-title">Titel/onderwerp<input id="social-title" name="title" autocomplete="off" placeholder="Bijv. Zomeractie voor nieuwe klanten" /></label>
-              <label for="social-caption">Caption/tekst<textarea id="social-caption" name="caption" placeholder="Schrijf hier de posttekst..."></textarea></label>
+              <div class="social-studio-editor-heading">
+                <div>
+                  <p class="section-kicker">Editor</p>
+                  <h2>Schrijf met focus</h2>
+                </div>
+                <span id="social-editor-format">Facebook · Vierkant 1:1</span>
+              </div>
+              <label for="social-title">Hook<input id="social-title" name="title" autocomplete="off" placeholder="Open met één scherpe, herkenbare gedachte" /></label>
+              <label for="social-caption">Caption<textarea id="social-caption" name="caption" placeholder="Vertel het verhaal helder, menselijk en zonder ruis..."></textarea></label>
               <div class="social-studio-field-meta">
                 <span id="caption-counter">0 tekens</span>
                 <span id="caption-guidance">Past ruim binnen het platform.</span>
@@ -726,6 +1368,7 @@
                 <span id="hashtag-counter">0 hashtags</span>
                 <span id="platform-rule">Platformcheck actief.</span>
               </div>
+              <label for="social-image-prompt">AI-afbeelding prompt<textarea id="social-image-prompt" name="imagePrompt" class="social-studio-prompt" placeholder="Beschrijf compositie, licht, sfeer, kleuren en onderwerp. De prompt wordt alleen bewaard; er wordt nog niets gegenereerd."></textarea></label>
               <label for="social-tone">Tone of voice<select id="social-tone" name="tone">
                 <option>Professioneel</option>
                 <option>Enthousiast</option>
@@ -733,13 +1376,24 @@
                 <option>Direct verkoopgericht</option>
                 <option>Vriendelijk lokaal</option>
               </select></label>
+              <fieldset class="social-studio-planning">
+                <legend>Planning &amp; status</legend>
+                <label for="social-date">Publicatiedatum<input id="social-date" type="date" /></label>
+                <label for="social-time">Tijd<input id="social-time" type="time" value="09:00" /></label>
+                <label for="social-status">Status<select id="social-status">
+                  <option value="idea">Idee</option>
+                  <option value="draft" selected>Concept</option>
+                  <option value="review">Ter beoordeling</option>
+                  <option value="ready">Klaar om te publiceren</option>
+                </select></label>
+              </fieldset>
               <div class="social-studio-actions">
-                <button class="button primary" type="button" id="save-draft">Concept opslaan</button>
+                <button class="button primary" type="button" id="save-draft">Nu opslaan</button>
                 <button class="button secondary" type="button" id="save-variant">Variant opslaan</button>
                 <button class="button secondary" type="button" id="copy-text">Kopieer tekst</button>
                 <button class="button secondary" type="button" id="reset-editor">Reset editor</button>
-                <button class="button secondary" type="button" id="generate-social-content">AI concept later</button>
-                <button class="button secondary" type="button" id="publish-social-post">Publiceren</button>
+                <button class="button secondary" type="button" id="generate-social-content" disabled aria-disabled="true">AI binnenkort</button>
+                <button class="button secondary" type="button" id="publish-social-post" disabled aria-disabled="true">Publiceren binnenkort</button>
               </div>
             </form>
 
@@ -783,11 +1437,28 @@
                 <h2 id="variants-heading">Opgeslagen varianten</h2>
               </div>
             </div>
+            <details class="social-studio-library-tools">
+              <summary>Bibliotheek, filters &amp; export</summary>
+              <div class="social-studio-library-tools-grid">
+                <label for="variant-search">Zoek creaties<input id="variant-search" type="search" placeholder="Zoek op hook, tekst, platform of klant" /></label>
+                <label for="variant-platform-filter">Platform<select id="variant-platform-filter"></select></label>
+                <label for="variant-status-filter">Status<select id="variant-status-filter"></select></label>
+              </div>
+              <div class="social-studio-toolbar-actions">
+                <button class="button secondary" id="load-sample-social" type="button">Voorbeeld laden</button>
+                <button class="button secondary" id="import-social-json" type="button">Import JSON</button>
+                <button class="button secondary" id="export-social-json" type="button">Export JSON</button>
+                <button class="button secondary" id="clear-social-storage" type="button">Alles wissen</button>
+              </div>
+              <input id="social-json-file" type="file" accept="application/json,.json" hidden />
+            </details>
             <div class="social-studio-variant-toolbar">
               <button class="button secondary" id="copy-all-variants" type="button">Alle teksten kopiëren</button>
               <button class="button secondary" id="download-selected-platform" type="button">Platform export</button>
             </div>
             <div class="social-studio-variant-list" id="variant-list" aria-live="polite"></div>
+          </section>
+            </div>
           </section>
         </section>
       </div>

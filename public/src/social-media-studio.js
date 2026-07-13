@@ -25,6 +25,8 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     linkedin: "LinkedIn",
     google: "Google Bedrijfspost",
     ad: "Advertentie",
+    blog: "Blog",
+    email: "E-mailcampagne",
   };
 
   const statusLabels = Object.fromEntries(CONTENT_STATUSES.map(({ id, label }) => [id, label]));
@@ -37,6 +39,8 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     linkedin: { max: 3000, ideal: 420, hashtagMin: 1, hashtagMax: 5, visual: "Liggend of vierkant" },
     google: { max: 1500, ideal: 300, hashtagMin: 0, hashtagMax: 3, visual: "Liggend of vierkant" },
     ad: { max: 500, ideal: 140, hashtagMin: 0, hashtagMax: 2, visual: "Campagnevisual" },
+    blog: { max: 12000, ideal: 900, hashtagMin: 0, hashtagMax: 3, visual: "Uitgelichte afbeelding" },
+    email: { max: 10000, ideal: 500, hashtagMin: 0, hashtagMax: 0, visual: "Header of productbeeld" },
   };
 
   const platformFallbacks = {
@@ -70,6 +74,52 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
       cta: "Vraag offerte aan",
       hashtags: "#advertentie #campagne",
     },
+    blog: {
+      title: "Eén helder inzicht voor ondernemers",
+      caption: "Werk het onderwerp uit met een sterke opening, praktische voorbeelden en een concrete conclusie.",
+      cta: "Lees verder",
+      hashtags: "",
+    },
+    email: {
+      title: "Een onderwerpregel die nieuwsgierig maakt",
+      caption: "Open persoonlijk, maak de waarde snel duidelijk en eindig met één heldere vervolgstap.",
+      cta: "Bekijk de update",
+      hashtags: "",
+    },
+  };
+
+  const contentTypes = [
+    ["instagram-post", "Instagram Post", "Een sterk beeld met een scherpe caption", "image", "instagram", "square"],
+    ["instagram-reel", "Instagram Reel", "Hook, scènes en caption voor korte video", "video", "instagram", "portrait"],
+    ["instagram-story", "Instagram Story", "Kort, direct en ontworpen voor actie", "story", "instagram", "story"],
+    ["linkedin-post", "LinkedIn Post", "Expertise met een menselijke invalshoek", "briefcase", "linkedin", "landscape"],
+    ["facebook-post", "Facebook Post", "Lokale update, verhaal of aanbieding", "message", "facebook", "landscape"],
+    ["carousel", "Carousel", "Eén idee verdeeld over heldere slides", "layers", "instagram", "square"],
+    ["behind-scenes", "Behind the Scenes", "Laat proces, mensen en vakmanschap zien", "eye", "instagram", "portrait"],
+    ["client-case", "Klantcase", "Van uitdaging naar zichtbaar resultaat", "case", "linkedin", "landscape"],
+    ["before-after", "Website Before / After", "Maak de transformatie direct voelbaar", "compare", "instagram", "square"],
+    ["website-tip", "Website Tip", "Praktisch inzicht dat meteen waarde geeft", "bulb", "linkedin", "square"],
+    ["ai-news", "AI Nieuws", "Duiding zonder hype of vakjargon", "sparkles", "linkedin", "landscape"],
+    ["blog", "Blog", "Verdieping met structuur en zoekintentie", "document", "blog", "landscape"],
+    ["advertisement", "Advertentie", "Eén boodschap, één doelgroep, één actie", "target", "ad", "landscape"],
+    ["email-campaign", "E-mailcampagne", "Persoonlijk, relevant en conversiegericht", "mail", "email", "landscape"],
+  ].map(([id, label, description, icon, platform, visualFormat]) => ({ id, label, description, icon, platform, visualFormat }));
+
+  const contentTypeSeeds = {
+    "instagram-post": ["Stop met posten om zichtbaar te zijn", "De beste content begint niet bij het algoritme, maar bij één herkenbaar probleem van je klant.", "Bewaar deze post", "#content #ondernemen #zichtbaarheid"],
+    "instagram-reel": ["Dit kost je website elke week aanvragen", "Open met het probleem, laat in drie korte scènes de oplossing zien en eindig met het resultaat.", "Bekijk de volledige aanpak", "#reels #webdesign #groei"],
+    "instagram-story": ["Snelle vraag voor ondernemers", "Maak de keuze eenvoudig en stuur in maximaal drie frames naar één actie.", "Stuur ons een bericht", "#story #ondernemen"],
+    "linkedin-post": ["Een professionele website is geen eindproduct", "De echte waarde ontstaat wanneer strategie, inhoud en opvolging als één systeem samenwerken.", "Hoe kijk jij hiernaar?", "#webstrategie #ondernemen #groei"],
+    "facebook-post": ["Een mooie nieuwe stap voor onze klant", "Vertel wat er is veranderd, waarom dat belangrijk is en wat klanten er nu van merken.", "Bekijk het resultaat", "#lokaal #ondernemen #website"],
+    carousel: ["7 signalen dat je website toe is aan vernieuwing", "Bouw elke slide rond één helder inzicht en eindig met een concrete samenvatting.", "Sla de carousel op", "#carousel #websitetips #marketing"],
+    "behind-scenes": ["Wat je niet ziet achter een sterke website", "Neem de lezer mee in een echt moment uit het proces en leg uit waarom dit detail verschil maakt.", "Kijk mee achter de schermen", "#behindthescenes #vakmanschap #webdesign"],
+    "client-case": ["Van losse uitstraling naar één sterk merkverhaal", "Schets de startsituatie, de gekozen aanpak en het concrete resultaat voor de klant.", "Bekijk de klantcase", "#klantcase #resultaat #webdesign"],
+    "before-after": ["Dezelfde onderneming. Een compleet andere eerste indruk.", "Vergelijk structuur, uitstraling en conversie vóór en na de nieuwe website.", "Bekijk de transformatie", "#beforeafter #website #branding"],
+    "website-tip": ["Je belangrijkste knop is waarschijnlijk te vaag", "Leg één praktisch verbeterpunt uit dat een ondernemer vandaag nog kan toepassen.", "Controleer je eigen website", "#websitetip #conversie #ondernemen"],
+    "ai-news": ["AI verandert niet wat goed ondernemerschap is", "Duid één actuele ontwikkeling, maak de impact concreet en scheid kans van hype.", "Volg voor nuchtere AI-updates", "#ai #innovatie #ondernemen"],
+    blog: ["Waarom een snelle website alleen niet genoeg is", "Bouw het artikel op rond zoekintentie, een herkenbare uitdaging en praktische vervolgstappen.", "Plan een kennismaking", ""],
+    advertisement: ["Meer aanvragen uit je website", "Benoem het gewenste resultaat, verlaag de drempel en stuur naar één duidelijke actie.", "Vraag een vrijblijvende scan aan", ""],
+    "email-campaign": ["Een kleine verbetering met groot effect", "Open persoonlijk, deel één waardevol inzicht en maak de vervolgstap moeiteloos.", "Bekijk wat er mogelijk is", ""],
   };
 
   const templateContent = {
@@ -192,18 +242,47 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     story: "Story 9:16",
   };
 
+  const contentIcons = {
+    image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/>',
+    video: '<rect x="3" y="5" width="14" height="14" rx="3"/><path d="m17 10 4-2v8l-4-2z"/><path d="m9 9 4 3-4 3z"/>',
+    story: '<rect x="6" y="2" width="12" height="20" rx="4"/><path d="M9 6h6M10 18h4"/>',
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/>',
+    message: '<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8M8 13h5"/>',
+    layers: '<path d="m12 2 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
+    eye: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"/><circle cx="12" cy="12" r="3"/>',
+    case: '<path d="M4 19h16V7l-4-4H4z"/><path d="M16 3v5h4M8 12h8M8 16h5"/>',
+    compare: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 4v16M8 9l-3 3 3 3M16 9l3 3-3 3"/>',
+    bulb: '<path d="M9 18h6M10 22h4M8.5 15.5A7 7 0 1 1 15.5 15.5L15 18H9z"/>',
+    sparkles: '<path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2zM19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7zM5 13l.7 2.3L8 16l-2.3.7L5 19l-.7-2.3L2 16l2.3-.7z"/>',
+    document: '<path d="M5 2h10l4 4v16H5z"/><path d="M15 2v5h4M8 12h8M8 16h8"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/>',
+  };
+
   const state = {
     platform: "facebook",
+    contentType: "social-post",
     variants: [],
     variantQuery: "",
     variantFilter: "all",
     statusFilter: "all",
   };
 
+  let autosaveTimer = null;
+
   const elements = {
     platformButtons: Array.from(document.querySelectorAll(".social-studio-platform[data-platform]")),
     templateButtons: Array.from(document.querySelectorAll("[data-template]")),
     client: document.getElementById("social-client"),
+    start: document.getElementById("social-studio-start"),
+    stage: document.getElementById("social-studio-stage"),
+    skeleton: document.getElementById("social-studio-skeleton"),
+    workbench: document.getElementById("social-studio-workbench"),
+    contentTypeGrid: document.getElementById("social-content-type-grid"),
+    backButton: document.getElementById("social-studio-back"),
+    selectedType: document.getElementById("social-selected-type"),
+    autosave: document.getElementById("social-autosave"),
+    editorFormat: document.getElementById("social-editor-format"),
     campaign: document.getElementById("social-campaign"),
     goal: document.getElementById("social-goal"),
     date: document.getElementById("social-date"),
@@ -216,6 +295,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     jsonFile: document.getElementById("social-json-file"),
     title: document.getElementById("social-title"),
     caption: document.getElementById("social-caption"),
+    imagePrompt: document.getElementById("social-image-prompt"),
     cta: document.getElementById("social-cta"),
     link: document.getElementById("social-link"),
     hashtags: document.getElementById("social-hashtags"),
@@ -280,6 +360,29 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     });
   }
 
+  function renderContentTypes() {
+    elements.contentTypeGrid.replaceChildren(...contentTypes.map((type) => {
+      const button = document.createElement("button");
+      button.className = "social-studio-content-card";
+      button.type = "button";
+      button.dataset.contentType = type.id;
+      const icon = document.createElement("span");
+      icon.className = "social-studio-content-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.innerHTML = `<svg viewBox="0 0 24 24">${contentIcons[type.icon] || contentIcons.document}</svg>`;
+
+      const copy = document.createElement("span");
+      const title = document.createElement("strong");
+      const description = document.createElement("small");
+      title.textContent = type.label;
+      description.textContent = type.description;
+      copy.append(title, description);
+      button.append(icon, copy);
+      button.addEventListener("click", () => openContentWorkflow(type.id));
+      return button;
+    }));
+  }
+
   function fillStatusFilter() {
     elements.statusFilter.replaceChildren();
     [["all", "Alle statussen"], ...Object.entries(statusLabels)].forEach(([value, label]) => {
@@ -304,9 +407,11 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
 
   function getCurrentContent() {
     return {
+      contentType: state.contentType,
       platform: state.platform,
       title: elements.title.value.trim(),
       caption: elements.caption.value.trim(),
+      imagePrompt: elements.imagePrompt.value.trim(),
       cta: elements.cta.value.trim(),
       link: elements.link.value.trim(),
       hashtags: elements.hashtags.value.trim(),
@@ -316,6 +421,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
   }
 
   function setFormContent(content) {
+    state.contentType = content.contentType || state.contentType;
     state.platform = content.platform && platformLabels[content.platform] ? content.platform : state.platform;
     elements.client.value = content.client || elements.client.value || "";
     elements.campaign.value = content.campaign || elements.campaign.value || "";
@@ -326,6 +432,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     if (content.visualFormat) elements.visualFormat.value = content.visualFormat;
     elements.title.value = content.title || "";
     elements.caption.value = content.caption || "";
+    elements.imagePrompt.value = content.imagePrompt || "";
     elements.cta.value = content.cta || "";
     elements.link.value = content.link || "";
     elements.hashtags.value = content.hashtags || "";
@@ -360,6 +467,76 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
   function setMessage(text, type) {
     elements.message.textContent = text;
     elements.message.className = `admin-form-message social-studio-message ${type || ""}`.trim();
+  }
+
+  function openContentWorkflow(typeId) {
+    const type = contentTypes.find((item) => item.id === typeId);
+    if (!type) return;
+    const [title, caption, cta, hashtags] = contentTypeSeeds[type.id] || contentTypeSeeds["instagram-post"];
+    state.contentType = type.id;
+    state.platform = type.platform;
+    elements.selectedType.textContent = type.label;
+    elements.start.hidden = true;
+    elements.stage.hidden = false;
+    elements.skeleton.hidden = false;
+    elements.workbench.hidden = true;
+
+    setFormContent({
+      ...getContext(),
+      contentType: type.id,
+      platform: type.platform,
+      visualFormat: type.visualFormat,
+      title,
+      caption,
+      cta,
+      hashtags,
+      imagePrompt: `Premium ${type.label.toLowerCase()} voor een Nederlands bedrijf, helder natuurlijk licht, diep marineblauw met subtiele cyan-accenten, moderne compositie, authentiek en zonder stockfoto-uitstraling`,
+      link: elements.link.value,
+      tone: elements.tone.value || "Professioneel",
+    });
+
+    window.setTimeout(() => {
+      elements.skeleton.hidden = true;
+      elements.workbench.hidden = false;
+      elements.title.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      scheduleAutosave();
+    }, 320);
+  }
+
+  function returnToStart() {
+    window.clearTimeout(autosaveTimer);
+    elements.stage.hidden = true;
+    elements.workbench.hidden = true;
+    elements.skeleton.hidden = true;
+    elements.start.hidden = false;
+    elements.start.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function setAutosaveState(label, saving = false) {
+    const text = elements.autosave.querySelector("strong");
+    text.textContent = label;
+    elements.autosave.classList.toggle("is-saving", saving);
+  }
+
+  function persistDraft({ announce = false } = {}) {
+    const saved = writeJson(storageKeys.draft, {
+      ...getCurrentContent(),
+      updatedAt: new Date().toISOString(),
+    });
+    const timestamp = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+    setAutosaveState(saved ? `Opgeslagen om ${timestamp}` : "Opslaan mislukt", false);
+    if (announce) {
+      setMessage(saved ? "Concept lokaal opgeslagen." : "Concept kon niet lokaal worden opgeslagen.", saved ? "success" : "error");
+    }
+    updateHero();
+    return saved;
+  }
+
+  function scheduleAutosave() {
+    window.clearTimeout(autosaveTimer);
+    setAutosaveState("Opslaan...", true);
+    autosaveTimer = window.setTimeout(() => persistDraft(), 650);
   }
 
   function updatePlatformButtons() {
@@ -399,6 +576,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     elements.previewLink.textContent = cleanDisplayLink(link);
     elements.previewHashtags.textContent = content.hashtags || fallback.hashtags;
     elements.previewTone.textContent = content.tone || "Professioneel";
+    elements.editorFormat.textContent = `${label} · ${visualFormatLabels[content.visualFormat] || "Visual"}`;
   }
 
   function updateCounters() {
@@ -444,8 +622,13 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
 
   function updateHero() {
     const filteredCount = filteredVariants().length;
-    elements.heroCount.textContent = `${state.variants.length} ${state.variants.length === 1 ? "variant" : "varianten"}`;
     const readyCount = state.variants.filter((variant) => normalizeStatus(variant.status) === "ready").length;
+    if (!state.variants.length) {
+      elements.heroCount.textContent = "Klaar voor iets moois";
+      elements.heroDetail.textContent = "Kies een format en laat Social Studio de creatieve basis voor je klaarzetten.";
+      return;
+    }
+    elements.heroCount.textContent = `${state.variants.length} ${state.variants.length === 1 ? "creatie" : "creaties"}`;
     elements.heroDetail.textContent = `${filteredCount} zichtbaar · ${readyCount} klaar voor publicatie. Laatst bijgewerkt: ${formatDate(new Date().toISOString().slice(0, 10))}.`;
   }
 
@@ -466,12 +649,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
   }
 
   function saveDraft() {
-    const saved = writeJson(storageKeys.draft, {
-      ...getCurrentContent(),
-      updatedAt: new Date().toISOString(),
-    });
-    setMessage(saved ? "Concept lokaal opgeslagen." : "Concept kon niet lokaal worden opgeslagen.", saved ? "success" : "error");
-    updateHero();
+    persistDraft({ announce: true });
   }
 
   function saveVariant() {
@@ -479,9 +657,11 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     const fallback = platformFallbacks[state.platform];
     const variant = normalizeContentItem({
       id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      contentType: content.contentType,
       platform: content.platform,
       title: content.title || fallback.title,
       caption: content.caption || fallback.caption,
+      imagePrompt: content.imagePrompt,
       cta: content.cta || fallback.cta,
       link: content.link,
       hashtags: content.hashtags || fallback.hashtags,
@@ -900,9 +1080,15 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
       button.addEventListener("click", () => applyTemplate(button.dataset.template));
     });
 
-    [elements.client, elements.campaign, elements.goal, elements.date, elements.time, elements.status, elements.visualFormat, elements.title, elements.caption, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
-      field.addEventListener("input", updateAll);
-      field.addEventListener("change", updateAll);
+    [elements.client, elements.campaign, elements.goal, elements.date, elements.time, elements.status, elements.visualFormat, elements.title, elements.caption, elements.imagePrompt, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
+      field.addEventListener("input", () => {
+        updateAll();
+        scheduleAutosave();
+      });
+      field.addEventListener("change", () => {
+        updateAll();
+        scheduleAutosave();
+      });
     });
 
     elements.variantSearch.addEventListener("input", () => {
@@ -940,9 +1126,24 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     if (elements.copyMoreWorkOffer) {
       elements.copyMoreWorkOffer.addEventListener("click", () => copyToClipboard(buildMoreWorkOfferText(), "Meerwerk aanbod gekopieerd."));
     }
+
+    elements.backButton.addEventListener("click", returnToStart);
+    document.addEventListener("keydown", (event) => {
+      const target = event.target;
+      const isEditing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        persistDraft({ announce: true });
+      }
+      if (!isEditing && event.key === "/" && !elements.workbench.hidden) {
+        event.preventDefault();
+        elements.variantSearch.focus();
+      }
+    });
   }
 
   function init() {
+    renderContentTypes();
     fillPlatformFilter();
     fillStatusFilter();
     renderMoreWorkOffers();

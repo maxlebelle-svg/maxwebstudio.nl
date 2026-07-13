@@ -11,11 +11,15 @@ const legacyVariant = normalizeContentItem({
   id: "legacy-1",
   platform: "instagram",
   title: "Bestaand concept",
+  contentType: "client-case",
+  imagePrompt: "Warm daglicht en een rustige compositie",
   status: "unknown-status",
 });
 
 assert.equal(legacyVariant.schemaVersion, SOCIAL_STUDIO_SCHEMA_VERSION);
 assert.equal(legacyVariant.entityType, "social-content");
+assert.equal(legacyVariant.contentType, "client-case");
+assert.equal(legacyVariant.imagePrompt, "Warm daglicht en een rustige compositie");
 assert.equal(legacyVariant.status, "draft");
 assert.equal(legacyVariant.timezone, "Europe/Amsterdam");
 assert.deepEqual(legacyVariant.integrations, {});

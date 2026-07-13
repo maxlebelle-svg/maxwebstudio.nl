@@ -16,6 +16,11 @@ assert(html.includes("<h1>Social Studio</h1>"), "Module should expose the Social
   "variant-status-filter",
   "social-pipeline-grid",
   "social-schedule-list",
+  "social-studio-start",
+  "social-content-type-grid",
+  "social-studio-stage",
+  "social-autosave",
+  "social-image-prompt",
 ].forEach((id) => {
   assert(html.includes(`id="${id}"`), `Social Studio should expose #${id}`);
 });
@@ -36,5 +41,28 @@ assert(script.includes("repository.loadVariants"), "Stored variants should load 
 assert(script.includes(".map(normalizeContentItem)"), "Imported variants should pass through the versioned content model");
 assert(script.includes("Publiceren wordt later gekoppeld."), "MVP must not imply that external publishing is active");
 assert(html.includes('type="module" src="src/social-media-studio.js'), "Social Studio should load through the module entrypoint");
+assert(html.includes("Wat wil je vandaag maken?"), "Social Studio should open with an inspiring format chooser");
+assert(script.includes("function openContentWorkflow(typeId)"), "A format choice should open its focused workflow");
+assert(script.includes("function scheduleAutosave()"), "The editor should provide debounced autosave feedback");
+assert(script.includes('event.key.toLowerCase() === "s"'), "The editor should support the save keyboard shortcut");
+
+for (const format of [
+  "Instagram Post",
+  "Instagram Reel",
+  "Instagram Story",
+  "LinkedIn Post",
+  "Facebook Post",
+  "Carousel",
+  "Behind the Scenes",
+  "Klantcase",
+  "Website Before / After",
+  "Website Tip",
+  "AI Nieuws",
+  "Blog",
+  "Advertentie",
+  "E-mailcampagne",
+]) {
+  assert(script.includes(`"${format}"`), `Format chooser should include ${format}`);
+}
 
 console.log("social studio MVP static tests passed");
