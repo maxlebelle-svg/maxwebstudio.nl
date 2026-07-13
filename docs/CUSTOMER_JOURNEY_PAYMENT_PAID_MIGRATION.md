@@ -81,4 +81,12 @@ CTA's blijven beperkt tot bestaande maxwebstudio.nl-klantportaalroutes, waaronde
 
 De read-only adminweergave toont veilige providercategorie, test/live, paymentfingerprint, order-/invoicereference, paymenttype/state, invoicestate, commerciële completionstate, paid/remaining component, next-step, acties, progress, reminder-count, outbox/execution/providerstatus, templateversie, attempts en foutcategorie. Recipient, providerpayload, API-keys en bedrag worden niet geselecteerd.
 
-De additieve migratie `20260713210000_enable_payment_paid_test_outbox.sql` breidt uitsluitend de begrensde testworkerclaim uit met `email.payment_paid`. Zij behoudt vaste `search_path`, service-role-only execution, lease recovery en batchlimiet. Deze Fase 9-migratie is niet extern toegepast. Er is geen scheduler, backfill, allowlistwaarde, testinstance of echte testmail aangemaakt.
+De additieve migratie `20260713210000_enable_payment_paid_test_outbox.sql` breidt uitsluitend de begrensde testworkerclaim uit met `email.payment_paid`. Zij behoudt vaste `search_path`, service-role-only execution, lease recovery en batchlimiet.
+
+## Productieactivatie van Fase 9
+
+Op 13 juli 2026 is uitsluitend migratie `20260713210000` toegepast op productieproject `maxwebstudio` (`yxxahurphdbblkuxoeje`). De lokale bron en de geïsoleerde uitvoerkopie waren byte-identiek met SHA-256 `03a679d015365ddc4172c58eff819e67997ca5fe8e097c89ecf9413046665a83`. De voorafgaande dry-run noemde exact deze ene migratie en de definitieve remote history bevat dezelfde versie.
+
+De transactionele catalogusasserties bevestigden `SECURITY DEFINER`, vaste `search_path = public, pg_temp`, geen execute voor `public`, `anon` of `authenticated`, en wel execute voor `service_role`. De migratie raakte geen RLS-policy, tabelconstraint of index. De bestaande journey-indexen bleven aanwezig. Journey-events, outboxitems en executions bleven vóór en na elk één; journey-instances bleven nul.
+
+Er is geen feature flag geactiveerd, geen allowlistwaarde, klant, journey-instance, outboxitem of execution aangemaakt, geen worker of scheduler gestart en geen providercall of mail uitgevoerd. Na de succesvolle databasecommit kon alleen de optionele lokale pg-delta/schema-exportcache niet worden bijgewerkt doordat Docker Desktop uitstond; dit veranderde de remote migratie of databasecontrole niet.
