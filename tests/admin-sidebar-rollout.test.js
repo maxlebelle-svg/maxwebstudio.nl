@@ -6,7 +6,7 @@ const { spawnSync } = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, "public", file), "utf8");
-const SHARED_PAGES = ["admin-sales.html", "admin-website-factory.html", "admin-mail-center.html", "admin-brand-center.html"];
+const SHARED_PAGES = ["admin-sales.html", "admin-website-factory.html", "admin-mail-center.html", "admin-brand-center.html", "admin-assets.html", "admin-facturen.html"];
 const LEGACY_PAGES = ["admin-seo-studio.html", "admin-social-media-studio.html", "admin-domain-center.html"];
 
 test("approved rollout pages use one central sidebar and no legacy navigation", () => {
@@ -39,6 +39,10 @@ test("migrated pages retain their page business contracts", () => {
   for (const marker of ["id=\"mail-filters\"", "id=\"mail-table-body\"", "id=\"mail-slide-panel\"", "admin-route-guard.js"]) assert.match(mail, new RegExp(marker));
   const brand = read("admin-brand-center.html");
   for (const marker of ["id=\"brand-profile-form\"", "id=\"logo-form\"", "id=\"export-brand-package\"", "admin-route-guard.js"]) assert.match(brand, new RegExp(marker));
+  const assets = read("admin-assets.html");
+  for (const marker of ["id=\"central-asset-library\"", "id=\"asset-grid\"", "id=\"asset-upload-form\"", "admin-route-guard.js"]) assert.match(assets, new RegExp(marker));
+  const invoices = read("admin-facturen.html");
+  for (const marker of ["id=\"invoice-list\"", "id=\"subscription-list\"", "id=\"new-invoice\"", "id=\"admin-session-logout\"", "admin-route-guard.js"]) assert.match(invoices, new RegExp(marker));
 });
 
 test("inline scripts on migrated pages pass syntax checks", () => {
