@@ -25,6 +25,18 @@ test("central Supabase session is the source for login, refresh and new tabs", (
   assert.match(provider, /window\.addEventListener\("storage", listener\)/);
 });
 
+test("the explicit Max session wins over a stale official browser session", () => {
+  const validSession = provider.match(/async function getValidSession\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const storedSessionRead = validSession.indexOf("readStoredSession({ allowExpired: true })");
+  const officialSessionRead = validSession.indexOf("getOfficialAuthClient()");
+
+  assert.ok(storedSessionRead >= 0, "getValidSession must read the explicit Max session");
+  assert.ok(officialSessionRead >= 0, "getValidSession must retain the official client fallback");
+  assert.ok(storedSessionRead < officialSessionRead, "the explicit Max session must be checked first");
+  assert.match(validSession, /if \(session\?\.access_token\)/);
+  assert.match(validSession, /if \(refreshedSession\?\.access_token\) return refreshedSession/);
+});
+
 test("legacy admin sessions are derived only after a server-confirmed active role", () => {
   assert.match(bridge, /fetch\("\/api\/account-profile"/);
   assert.match(bridge, /status !== "active"/);

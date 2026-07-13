@@ -257,16 +257,20 @@ async function refreshStoredSession(session) {
 }
 
 async function getValidSession() {
+  const session = readStoredSession({ allowExpired: true });
+  if (session?.access_token) {
+    const expiresAt = Number(session.expires_at || 0) * 1000;
+    if (!expiresAt || expiresAt > Date.now() + 60000) return session;
+    const refreshedSession = await refreshStoredSession(session);
+    if (refreshedSession?.access_token) return refreshedSession;
+  }
+
   const officialAuth = await getOfficialAuthClient();
   if (officialAuth?.getSession) {
     const { data, error } = await officialAuth.getSession();
     if (!error && data?.session?.access_token) return storeSession(data.session);
   }
-  const session = readStoredSession({ allowExpired: true });
-  if (!session?.access_token) return null;
-  const expiresAt = Number(session.expires_at || 0) * 1000;
-  if (!expiresAt || expiresAt > Date.now() + 60000) return session;
-  return refreshStoredSession(session);
+  return null;
 }
 
 function storeSession(session = null) {
