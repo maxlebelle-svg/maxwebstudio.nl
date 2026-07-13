@@ -39,6 +39,7 @@ exports.handler = async (event) => {
 
 async function searchEntity(context, entityType, query, limit) {
   const table = entityType === "lead" ? "leads" : "customers";
+  if (normalizeRole(context.admin?.role) === "sales_partner") return searchScopedEntity(context, entityType, query, limit);
   const fields = entityType === "lead" ? ["company_name", "company", "name", "contact_name", "email"] : ["company", "name", "email"];
   const scope = ownershipFilter(context.admin, entityType);
   const attempts = await Promise.allSettled(fields.map(async (field) => {
@@ -59,6 +60,42 @@ async function searchEntity(context, entityType, query, limit) {
   return [...new Map(fulfilled.flatMap((attempt) => attempt.value).filter((row) => row?.id).map((row) => [row.id, row])).values()]
     .filter((row) => !isUnavailable(row) && canAccess(context.admin, entityType, row))
     .map((row) => mapResult(entityType, row));
+}
+
+async function searchScopedEntity(context, entityType, query, limit) {
+  const table = entityType === "lead" ? "leads" : "customers";
+  const attempts = await Promise.allSettled(ownershipVariants(context.admin, entityType).map(async ({ field, value }) => {
+    const params = new URLSearchParams({ select: "*", limit: String(Math.min(Math.max(limit * 5, 50), 100)) });
+    params.set(field, `eq.${value}`);
+    const response = await fetch(`${context.url}/rest/v1/${table}?${params.toString()}`, { headers: restHeaders(context.key) });
+    const rows = await response.json().catch(() => []);
+    if (!response.ok) throw Object.assign(new Error("Scoped relationship query failed."), { status: response.status >= 500 ? 503 : 400, code: "QUERY_FAILED" });
+    return Array.isArray(rows) ? rows : [];
+  }));
+  const fulfilled = attempts.filter((attempt) => attempt.status === "fulfilled");
+  if (!fulfilled.length) throw Object.assign(new Error("Scoped relationship search failed."), { status: 503, code: "QUERY_FAILED", phase: `search_${table}_scope` });
+  return [...new Map(fulfilled.flatMap((attempt) => attempt.value).filter((row) => row?.id).map((row) => [row.id, row])).values()]
+    .filter((row) => matchesQuery(row, query) && !isUnavailable(row) && canAccess(context.admin, entityType, row))
+    .slice(0, limit)
+    .map((row) => mapResult(entityType, row));
+}
+
+function ownershipVariants(admin = {}, entityType = "lead") {
+  const id = clean(admin.id);
+  const profileId = clean(admin.profileId);
+  const variants = [];
+  const add = (field, value) => { if (value) variants.push({ field, value }); };
+  if (entityType === "lead") { add("assigned_user_id", id); add("owner_id", id); add("assigned_to", id); }
+  add("owner_auth_user_id", id); add("owner_profile_id", profileId);
+  add("metadata->>assignedUserId", id); add("metadata->>assigned_user_id", id);
+  add("metadata->>ownerAuthUserId", id); add("metadata->>owner_auth_user_id", id);
+  add("metadata->>ownerProfileId", profileId); add("metadata->>owner_profile_id", profileId);
+  return variants;
+}
+
+function matchesQuery(row = {}, query = "") {
+  const needle = clean(query).toLowerCase();
+  return [row.company_name, row.company, row.name, row.contact_name, row.email].some((value) => clean(value).toLowerCase().includes(needle));
 }
 
 function ownershipFilter(admin = {}, entityType = "lead") {
@@ -84,9 +121,7 @@ function canAccess(admin = {}, entityType, row = {}) {
   if (role !== "sales_partner") return false;
   const meta = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
   const owners = [
-    entityType === "lead" && row.assigned_user_id,
-    entityType === "lead" && row.owner_auth_user_id,
-    entityType === "lead" && row.owner_profile_id,
+    row.assigned_user_id, row.owner_auth_user_id, row.owner_profile_id, row.owner_id, row.assigned_to,
     meta.assignedUserId, meta.assigned_user_id, meta.ownerAuthUserId, meta.owner_auth_user_id, meta.ownerProfileId, meta.owner_profile_id,
   ].map(clean).filter(Boolean);
   return owners.includes(clean(admin.id)) || owners.includes(clean(admin.profileId));
@@ -94,9 +129,14 @@ function canAccess(admin = {}, entityType, row = {}) {
 
 function mapResult(entityType, row = {}) {
   const meta = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  const relationshipId = clean(row.id);
   return {
     entityType,
-    id: clean(row.id),
+    relationshipType: entityType,
+    relationshipId,
+    id: relationshipId,
+    leadId: entityType === "lead" ? relationshipId : null,
+    customerId: entityType === "customer" ? relationshipId : null,
     companyName: clean(row.company_name || row.company || row.name) || (entityType === "lead" ? "Onbekende lead" : "Onbekende klant"),
     contactName: clean(row.contact_name || (entityType === "customer" ? row.name : "")),
     email: clean(row.email),
@@ -118,4 +158,4 @@ function clean(value) { return String(value || "").trim(); }
 function queryParams(event) { if (event.rawQuery) return new URLSearchParams(event.rawQuery); const params = new URLSearchParams(); Object.entries(event.queryStringParameters || {}).forEach(([key, value]) => { if (value != null) params.set(key, value); }); return params; }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(body) }; }
 
-exports._test = { canAccess, exactMatch, isUnavailable, mapResult, ownershipFilter, searchEntity };
+exports._test = { canAccess, exactMatch, isUnavailable, mapResult, matchesQuery, ownershipFilter, ownershipVariants, searchEntity, searchScopedEntity };

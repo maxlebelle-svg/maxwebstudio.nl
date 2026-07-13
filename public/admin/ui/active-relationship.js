@@ -23,15 +23,22 @@
   }
 
   function normalize(input = {}) {
-    const entityType = clean(input.entityType || input.relationshipType).toLowerCase();
+    const explicitEntityType = clean(input.entityType).toLowerCase();
+    const explicitRelationshipType = clean(input.relationshipType).toLowerCase();
+    if (explicitEntityType && explicitRelationshipType && explicitEntityType !== explicitRelationshipType) return null;
+    const entityType = explicitRelationshipType || explicitEntityType;
     const relationshipId = clean(input.relationshipId);
     const leadId = clean(input.leadId || (entityType === "lead" ? relationshipId : ""));
     const customerId = clean(input.customerId || (entityType === "customer" ? relationshipId : ""));
     if (!ENTITY_TYPES.has(entityType)) return null;
     if (entityType === "lead" && (!UUID.test(leadId) || customerId)) return null;
     if (entityType === "customer" && (!UUID.test(customerId) || leadId)) return null;
+    const canonicalId = entityType === "lead" ? leadId : customerId;
+    if (relationshipId && relationshipId !== canonicalId) return null;
     return Object.freeze({
       entityType,
+      relationshipType: entityType,
+      relationshipId: canonicalId,
       leadId: entityType === "lead" ? leadId : null,
       customerId: entityType === "customer" ? customerId : null,
       profileId: clean(input.profileId) || null,
@@ -90,7 +97,7 @@
   }
 
   function contextError(code = "UNKNOWN", fallback = "") {
-    const messages = { INVALID_ID: "Deze relatie heeft geen geldige centrale koppeling.", INVALID_ENTITY_TYPE: "Dit zoekresultaat kan niet als relatie worden geopend.", NOT_FOUND: "Deze relatie bestaat niet meer of is nog niet centraal opgeslagen.", FORBIDDEN: "Je hebt geen toegang tot deze relatie.", ARCHIVED: "Deze relatie is gearchiveerd en kan niet worden geopend.", CONTEXT_MISMATCH: "De relatiegegevens komen niet met elkaar overeen.", STALE_DEPLOYMENT: "De relatiecontext is bijgewerkt. Vernieuw de pagina en probeer opnieuw." };
+    const messages = { INVALID_ID: "Deze relatie heeft geen geldige centrale koppeling.", INVALID_ENTITY_TYPE: "Dit zoekresultaat kan niet als relatie worden geopend.", NOT_FOUND: "Deze relatie bestaat niet meer of is nog niet centraal opgeslagen.", FORBIDDEN: "Je hebt geen toegang tot deze relatie.", ARCHIVED: "Deze relatie is gearchiveerd en kan niet worden geopend.", CONTEXT_MISMATCH: "De relatiegegevens komen niet met elkaar overeen.", STALE_DEPLOYMENT: "De relatiecontext is bijgewerkt. Vernieuw de pagina en probeer opnieuw.", RELATIONSHIP_SOURCE_QUERY_FAILED: "De relatiebron kon niet veilig worden gecontroleerd. Probeer het later opnieuw.", SERVICE_UNAVAILABLE: "Relatiecontrole is tijdelijk niet beschikbaar." };
     const error = new Error(messages[code] || fallback || "Deze relatie kon niet worden geopend.");
     error.code = code;
     error.userMessage = error.message;
@@ -105,7 +112,7 @@
     const response = await fetch("/api/admin-relationship-context", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}`, "X-Relationship-Contract": "2" },
-      body: JSON.stringify({ contractVersion: 2, entityType: candidate.entityType, leadId: candidate.leadId, customerId: candidate.customerId }),
+      body: JSON.stringify({ contractVersion: 2, entityType: candidate.entityType, relationshipType: candidate.relationshipType, relationshipId: candidate.relationshipId, leadId: candidate.leadId, customerId: candidate.customerId }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.success || !data.relationship) throw contextError(data.code || (response.status === 403 ? "FORBIDDEN" : response.status === 404 ? "NOT_FOUND" : "UNKNOWN"), data.error);

@@ -28,7 +28,7 @@ test("refresh restores only after server validation and emits the central event"
   assert.equal(harness.api.getActiveRelationship().companyName, "Validated Lead");
   assert.equal(changes.at(-1).relationship.leadId, LEAD_ID);
   assert.equal(harness.requests.length, 1);
-  assert.deepEqual(JSON.parse(harness.requests[0].body), { contractVersion: 2, entityType: "lead", leadId: LEAD_ID, customerId: null });
+  assert.deepEqual(JSON.parse(harness.requests[0].body), { contractVersion: 2, entityType: "lead", relationshipType: "lead", relationshipId: LEAD_ID, leadId: LEAD_ID, customerId: null });
 });
 
 test("lead selection, customer switch and clear keep storage, URL and events synchronized", async () => {

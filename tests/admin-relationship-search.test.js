@@ -15,6 +15,8 @@ test("super_admin receives bounded minimal lead and customer results", async () 
   const body = JSON.parse(result.body);
   assert.equal(result.statusCode, 200);
   assert.deepEqual(body.results.map((row) => row.entityType).sort(), ["customer", "lead", "lead"]);
+  assert(body.results.every((row) => row.relationshipType === row.entityType && row.relationshipId === row.id));
+  assert(body.results.every((row) => row.entityType === "lead" ? row.leadId === row.relationshipId && row.customerId === null : row.customerId === row.relationshipId && row.leadId === null));
   assert(body.results.every((row) => !Object.hasOwn(row, "phone") && !Object.hasOwn(row, "metadata")));
   assert(body.results.length <= 20);
   assert(urls.filter((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers")).every((url) => new URL(url).searchParams.get("limit") === "20"));
@@ -27,8 +29,17 @@ test("sales_partner search is server-scoped and post-filters foreign relationshi
   assert.deepEqual(body.results.map((row) => row.id), ["33333333-3333-4333-8333-333333333333"]);
   const databaseUrls = urls.filter((url) => url.includes("/rest/v1/leads"));
   assert(databaseUrls.length > 0);
-  assert(databaseUrls.every((url) => decodeURIComponent(new URL(url).searchParams.get("or") || "").includes(ACTOR)));
+  assert(databaseUrls.every((url) => { const search = decodeURIComponent(new URL(url).search); return search.includes(ACTOR) || search.includes(PROFILE); }));
+  assert(databaseUrls.every((url) => new URL(url).searchParams.get("select") === "*"));
 }));
+
+test("sales_partner search tolerates missing optional ownership columns while remaining server-scoped", async () => withBackend("sales_partner", async ({ urls }) => {
+  const result = await handler(event({ q: "acme", type: "lead" }));
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  assert.deepEqual(body.results.map((row) => row.relationshipId), ["33333333-3333-4333-8333-333333333333"]);
+  assert(urls.some((url) => decodeURIComponent(url).includes("metadata->>assignedUserId")));
+}, { schemaVariantScope: true }));
 
 test("empty search returns no relationship dataset", async () => withBackend("admin", async ({ urls }) => {
   const result = await handler(event({ q: "" }));
@@ -61,10 +72,13 @@ async function withBackend(role, callback, options = {}) {
     if (String(url).includes("/rest/v1/profiles")) return response(200, [{ id: PROFILE, role, status: "active" }]);
     if (options.failSearch) return response(503, { code: "UPSTREAM" });
     if (String(url).includes("/rest/v1/customers")) return response(200, [{ id: "44444444-4444-4444-8444-444444444444", company: "Acme Customer", name: "Ada", email: "ada@example.test", status: "active", metadata: role === "sales_partner" ? { ownerProfileId: PROFILE } : {} }]);
-    if (String(url).includes("/rest/v1/leads")) return response(200, [
-      { id: "33333333-3333-4333-8333-333333333333", company_name: "Acme Lead", contact_name: "Lena", email: "lena@example.test", lead_status: "qualified", assigned_user_id: ACTOR },
+    if (String(url).includes("/rest/v1/leads")) {
+      if (options.schemaVariantScope && !decodeURIComponent(String(url)).includes("metadata->>")) return response(400, { code: "42703" });
+      return response(200, [
+      { id: "33333333-3333-4333-8333-333333333333", company_name: "Acme Lead", contact_name: "Lena", email: "lena@example.test", lead_status: "qualified", assigned_user_id: options.schemaVariantScope ? undefined : ACTOR, metadata: options.schemaVariantScope ? { assignedUserId: ACTOR } : {} },
       { id: "55555555-5555-4555-8555-555555555555", company_name: "Foreign Lead", assigned_user_id: "other" },
-    ]);
+      ]);
+    }
     return response(404, {});
   };
   try { return await callback(state); }

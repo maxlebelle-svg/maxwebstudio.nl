@@ -267,10 +267,12 @@
       const empty = document.createElement("p"); empty.className = "mws-workspace-no-results"; empty.textContent = options.emptyMessage || "Geen relaties gevonden."; list.append(empty); return;
     }
     results.forEach((result) => {
+      const relationshipType = result.relationshipType || result.entityType;
+      const relationshipId = result.relationshipId || result.id || (relationshipType === "lead" ? result.leadId : result.customerId);
       const option = document.createElement("button"); option.type = "button"; option.className = "mws-workspace-result"; option.setAttribute("role", "option");
-      option.dataset.entityType = result.entityType; option.dataset.relationshipId = result.id || (result.entityType === "lead" ? result.leadId : result.customerId);
+      option.dataset.entityType = relationshipType; option.dataset.relationshipId = relationshipId;
       const title = document.createElement("strong"); title.textContent = result.companyName || "Onbekende relatie";
-      const meta = document.createElement("span"); meta.textContent = [result.entityType === "lead" ? "Lead" : "Klant", result.contactName, result.email, result.status, result.assignedUserName ? `Eigenaar: ${result.assignedUserName}` : ""].filter(Boolean).join(" · ");
+      const meta = document.createElement("span"); meta.textContent = [relationshipType === "lead" ? "Lead" : "Klant", result.contactName, result.email, result.status, result.assignedUserName ? `Eigenaar: ${result.assignedUserName}` : ""].filter(Boolean).join(" · ");
       option.append(title, meta); option.addEventListener("click", () => selectRelationship(result)); list.append(option);
     });
   }
@@ -357,11 +359,12 @@
   }
 
   async function selectRelationship(result) {
-    const id = result?.id || (result?.entityType === "lead" ? result?.leadId : result?.customerId);
-    if (!id || !["lead", "customer"].includes(result?.entityType)) return;
+    const relationshipType = result?.relationshipType || result?.entityType;
+    const relationshipId = result?.relationshipId || result?.id || (relationshipType === "lead" ? result?.leadId : result?.customerId);
+    if (!relationshipId || !["lead", "customer"].includes(relationshipType)) return;
     setSelectorStatus("Relatie veilig valideren…", "loading");
     try {
-      const relationship = await global.ActiveRelationship?.setActiveRelationship?.({ entityType: result.entityType, leadId: result.entityType === "lead" ? id : null, customerId: result.entityType === "customer" ? id : null }, { source: "dashboard-sidebar" });
+      const relationship = await global.ActiveRelationship?.setActiveRelationship?.({ entityType: relationshipType, relationshipType, relationshipId, leadId: relationshipType === "lead" ? relationshipId : null, customerId: relationshipType === "customer" ? relationshipId : null }, { source: "dashboard-sidebar" });
       if (!relationship) throw new Error("De relatie kon niet worden geselecteerd.");
       rememberRelationship(relationship); syncRelationshipUrl(relationship); closeWorkspaceSelector(); refresh();
     } catch (error) { setSelectorStatus(error.userMessage || error.message || "De relatie kon niet worden geselecteerd.", "error"); }
