@@ -14,13 +14,14 @@
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
     <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
     <script src="admin/ui/shared-helpers.js"></script>
+    <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
-  <body class="admin-body">
+  <body class="admin-body" data-shared-admin-sidebar="true">
     <main class="admin-crm-shell">
       <div id="admin-sidebar-root" aria-live="polite"></div>
       <section id="admin-sidebar-session-panel" class="mws-sidebar-session-panel" aria-label="Sessiebeheer" hidden>

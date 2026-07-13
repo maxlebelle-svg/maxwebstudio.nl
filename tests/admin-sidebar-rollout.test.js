@@ -6,10 +6,10 @@ const { spawnSync } = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, "public", file), "utf8");
-const SHARED_PAGES = ["admin-sales.html", "admin-website-factory.html", "admin-mail-center.html", "admin-brand-center.html", "admin-assets.html", "admin-facturen.html"];
-const LEGACY_PAGES = ["admin-seo-studio.html", "admin-social-media-studio.html", "admin-domain-center.html"];
+const { ACTIVE_ROUTE_IDS, NORMAL_ADMIN_PAGES, PUBLIC_ADMIN_PAGES, STANDALONE_ADMIN_PAGES } = require("./helpers/admin-page-inventory.js");
+const SHARED_PAGES = Object.keys(NORMAL_ADMIN_PAGES);
 
-test("approved rollout pages use one central sidebar and no legacy navigation", () => {
+test("every normal admin page uses one central sidebar and no legacy navigation", () => {
   for (const page of SHARED_PAGES) {
     const html = read(page);
     assert.match(html, /id="admin-sidebar-root"/);
@@ -22,27 +22,41 @@ test("approved rollout pages use one central sidebar and no legacy navigation", 
   }
 });
 
-test("unmigrated pages retain their legacy sidebar", () => {
-  for (const page of LEGACY_PAGES) {
+test("every admin page has exactly one intentional classification", () => {
+  const actual = fs.readdirSync(path.join(root, "public")).filter((file) => /^admin-.*\.html$/.test(file)).sort();
+  const classified = [...SHARED_PAGES, ...STANDALONE_ADMIN_PAGES, ...PUBLIC_ADMIN_PAGES].sort();
+  assert.deepEqual(classified, actual);
+  assert.equal(new Set(classified).size, classified.length);
+  for (const page of STANDALONE_ADMIN_PAGES) {
     const html = read(page);
-    assert.match(html, /<aside class="admin-sidebar"/);
+    assert.match(html, /data-admin-sidebar-exception="standalone"/);
     assert.doesNotMatch(html, /id="admin-sidebar-root"/);
+    assert.doesNotMatch(html, /<aside class="admin-sidebar"/);
   }
 });
 
-test("migrated pages retain their page business contracts", () => {
-  const sales = read("admin-sales.html");
-  for (const marker of ["id=\"leadfinder-focus-search\"", "id=\"lead-customer-modal\"", "id=\"sales-owner-view\"", "admin-route-guard.js", "global-command-palette.js"]) assert.match(sales, new RegExp(marker));
-  const factory = read("admin-website-factory.html");
-  for (const marker of ["id=\"factory-guided-shell\"", "id=\"factory-lead-command-search\"", "id=\"factory-guided-preview-slot\"", "admin-route-guard.js", "global-command-palette.js"]) assert.match(factory, new RegExp(marker));
-  const mail = read("admin-mail-center.html");
-  for (const marker of ["id=\"mail-filters\"", "id=\"mail-table-body\"", "id=\"mail-slide-panel\"", "admin-route-guard.js"]) assert.match(mail, new RegExp(marker));
-  const brand = read("admin-brand-center.html");
-  for (const marker of ["id=\"brand-profile-form\"", "id=\"logo-form\"", "id=\"export-brand-package\"", "admin-route-guard.js"]) assert.match(brand, new RegExp(marker));
-  const assets = read("admin-assets.html");
-  for (const marker of ["id=\"central-asset-library\"", "id=\"asset-grid\"", "id=\"asset-upload-form\"", "admin-route-guard.js"]) assert.match(assets, new RegExp(marker));
-  const invoices = read("admin-facturen.html");
-  for (const marker of ["id=\"invoice-list\"", "id=\"subscription-list\"", "id=\"new-invoice\"", "id=\"admin-session-logout\"", "admin-route-guard.js"]) assert.match(invoices, new RegExp(marker));
+test("migrated pages retain their page-specific business contracts", () => {
+  for (const [page, markers] of Object.entries(NORMAL_ADMIN_PAGES)) {
+    const html = read(page);
+    markers.forEach((marker) => assert.match(html, new RegExp(`id=["']${marker}["']`), `${page} lost #${marker}`));
+    assert.match(html, /admin-route-guard\.js/, `${page} lost its route guard`);
+  }
+});
+
+test("every normal page has an active route in the central configuration", () => {
+  assert.deepEqual(Object.keys(ACTIVE_ROUTE_IDS).sort(), SHARED_PAGES.slice().sort());
+  const routes = require("../public/admin/config/sidebar-navigation.js").ADMIN_SIDEBAR_NAVIGATION.flatMap((section) => section.items);
+  for (const [page, activeId] of Object.entries(ACTIVE_ROUTE_IDS)) {
+    assert(routes.some((item) => item.id === activeId && item.route.split("#")[0] === page), `${page} lacks central route ${activeId}`);
+  }
+});
+
+test("relationship banner cannot render alongside the shared or standalone layouts", () => {
+  SHARED_PAGES.forEach((page) => assert.match(read(page), /data-shared-admin-sidebar="true"/));
+  STANDALONE_ADMIN_PAGES.forEach((page) => assert.match(read(page), /data-admin-sidebar-exception="standalone"/));
+  const relationshipSource = fs.readFileSync(path.join(root, "public/admin/ui/active-relationship.js"), "utf8");
+  assert.match(relationshipSource, /dataset\.sharedAdminSidebar === "true"/);
+  assert.match(relationshipSource, /dataset\.adminSidebarException === "standalone"/);
 });
 
 test("inline scripts on migrated pages pass syntax checks", () => {

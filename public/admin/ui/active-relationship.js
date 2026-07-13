@@ -164,7 +164,7 @@
 
   function render() {
     if (!document.body) return;
-    if (document.body.dataset.sharedAdminSidebar === "true") { document.getElementById("active-relationship-workspace")?.remove(); return; }
+    if (document.body.dataset.sharedAdminSidebar === "true" || document.body.dataset.adminSidebarException === "standalone") { document.getElementById("active-relationship-workspace")?.remove(); return; }
     const bar = ensureBar();
     const relationship = active;
     if (!relationship) {

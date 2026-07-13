@@ -11,6 +11,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260713-journey-progress" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
+    <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
+    <script src="admin/config/sidebar-navigation.js" defer></script>
+    <script src="admin/components/admin-sidebar.js" defer></script>
+    <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
     <script src="admin/ui/shared-helpers.js"></script>
     <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
     <style>
@@ -77,27 +82,9 @@
       }
     </style>
   </head>
-  <body class="admin-body">
+  <body class="admin-body" data-shared-admin-sidebar="true">
     <main class="admin-crm-shell">
-      <aside class="admin-sidebar" aria-label="Admin modules">
-        <a class="brand" href="admin-dashboard.html">
-          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
-          <span>Max CRM</span>
-        </a>
-        <nav class="admin-sidebar-nav">
-          <span class="admin-nav-group">Main</span>
-          <a href="admin-dashboard.html">Dashboard</a>
-          <a href="admin-notification-center.html">Notification Center</a>
-          <a class="is-active" href="admin-journeys.html">Journey &amp; Mail Automation</a>
-          <a href="admin-max-automations.html">⚡ Max Automations</a>
-          <a href="admin-max-brain.html">Max Brain</a>
-          <span class="admin-nav-group">Sales</span><a href="admin-sales.html">Leads</a>
-          <span class="admin-nav-group">Production</span><a href="admin-website-factory.html">Website Factory</a><a href="admin-demo-sites.html">Demo Sites</a><a href="admin-onboarding.html">Klant Onboarding</a><a href="admin-roadmap.html">Roadmap / Takenbord</a>
-          <span class="admin-nav-group">Customers</span><a href="admin-klanten.html">Klanten</a><a href="admin-websites.html">Websites</a><a href="admin-projecten.html">Projecten</a>
-          <span class="admin-nav-group">Administration</span><a href="admin-offertes.html">Offertes</a><a href="admin-facturen.html">Facturen</a><a href="admin-email-studio.html">E-mail Studio</a><a href="admin-mail-center.html">Mail Center</a>
-          <span class="admin-nav-group">System</span><a href="admin-platform-health.html">Platform Health</a><a href="admin-instellingen.html">Instellingen</a>
-        </nav>
-      </aside>
+      <div id="admin-sidebar-root" aria-live="polite"></div>
 
       <div class="admin-crm-main journey-shell">
         <header class="admin-section admin-hero journey-hero">

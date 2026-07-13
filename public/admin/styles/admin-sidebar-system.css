@@ -1,4 +1,4 @@
-/* Phase 1 foundation. Intentionally not loaded by existing admin pages. */
+/* Shared admin sidebar foundation used by every normal admin module. */
 .mws-admin-sidebar-v2 {
   --mws-sidebar-bg: #061522;
   --mws-sidebar-surface: rgba(13, 35, 55, 0.78);
@@ -31,6 +31,7 @@
 }
 
 .mws-admin-sidebar-v2 *, .mws-admin-sidebar-v2 *::before, .mws-admin-sidebar-v2 *::after { box-sizing: border-box; }
+.admin-body .admin-crm-shell { grid-template-columns: 288px minmax(0, 1fr); }
 .admin-body #admin-sidebar-root { min-width: 0; }
 .mws-sidebar-brand { display: flex; align-items: center; gap: 10px; min-height: 44px; color: inherit; font-weight: 850; text-decoration: none; }
 .mws-sidebar-brand-mark { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 11px; background: linear-gradient(135deg, #155eef, #19c2ff); box-shadow: 0 10px 28px rgba(21, 94, 239, 0.3); }
@@ -91,6 +92,7 @@
 .mws-sidebar-session-header span { color: rgba(226, 236, 248, .6); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .mws-sidebar-session-header button { width: 36px; height: 36px; border: 1px solid rgba(171, 196, 224, .2); border-radius: 10px; color: inherit; background: rgba(255,255,255,.04); font: inherit; font-size: 22px; cursor: pointer; }
 .mws-sidebar-session-panel .admin-card { margin-bottom: 12px; }
+@media (max-width: 1180px) { .admin-body[data-shared-admin-sidebar="true"] .admin-page-search { flex: 0 0 auto; } }
 @media (max-width: 820px) { .admin-body .admin-crm-shell { grid-template-columns: 1fr; }.mws-admin-sidebar-v2 { position: static; width: 100%; height: auto; max-height: none; }.mws-sidebar-content { max-height: 54vh; }.mws-workspace-selector { top: 16px; right: 16px; bottom: 16px; left: 16px; width: auto; max-height: none; } }
 @media (max-width: 820px) { .mws-perspective-banner { margin: 12px 16px 0; }.mws-employee-selector { top: 16px; right: 16px; max-height: calc(100vh - 32px); } }
 @media (max-width: 820px) { .mws-page-workspace-context { margin: 10px 16px 0; } }

@@ -469,7 +469,7 @@
   function pilotNavigation(navigation = []) {
     return navigation.map((section) => Object.freeze({
       ...section,
-      items: Object.freeze(section.items.filter((item) => !item.secondary)),
+      items: Object.freeze([...section.items]),
     }));
   }
 

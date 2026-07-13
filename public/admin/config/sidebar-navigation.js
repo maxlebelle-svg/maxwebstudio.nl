@@ -63,6 +63,7 @@
       label: "Production",
       items: Object.freeze([
         item("website-factory", "Website Factory", "admin-website-factory.html", "wand", { badge: "websiteFactory", statusTone: "success", workspaceRequired: true, permission: permission("websites", "update", roleGroups.production) }),
+        item("website-qa", "Website QA Scanner", "admin-website-qa-scanner.html", "scan-search", { permission: permission("websites", "view", roleGroups.production), secondary: true }),
         item("demo-sites", "Demo Sites", "admin-demo-sites.html", "monitor", { badge: "demoSites", statusTone: "info", workspaceRequired: true, permission: permission("demo", "view") }),
         item("ai-content-library", "AI Content Library", "admin-ai-content-library.html", "file-text", { badge: "contentItems", statusTone: "purple", workspaceRequired: true, permission: permission("developerTools", "view", roleGroups.technical) }),
         item("asset-manager", "Asset Manager", "admin-assets.html", "folder", { badge: "assets", statusTone: "info", workspaceRequired: true, permission: permission("files", "view", roleGroups.production) }),
@@ -80,6 +81,7 @@
       id: "commerce",
       label: "Commerce",
       items: Object.freeze([
+        item("new-assignment", "Nieuwe Opdracht", "admin-nieuwe-opdracht.html", "circle-plus", { permission: permission("quotes", "update", roleGroups.sales), secondary: true }),
         item("quotes", "Offertes", "admin-offertes.html", "file-signature", { badge: "openQuotes", statusTone: "warning", workspaceRequired: true, permission: permission("quotes", "view", roleGroups.sales) }),
         item("invoices", "Facturen", "admin-facturen.html", "receipt", { badge: "openInvoices", statusTone: "warning", workspaceRequired: true, permission: permission("invoices", "view", Object.freeze(["super_admin", "admin", "sales_manager"])) }),
         item("subscriptions", "Abonnementen", "admin-facturen.html#onderhoud", "repeat", { badge: "subscriptionStatus", statusTone: "success", workspaceRequired: true, permission: permission("subscriptions", "view", roleGroups.management) }),
@@ -93,7 +95,7 @@
         item("mail-center", "Mail Center", "admin-mail-center.html", "mail", { badge: "mailCount", statusTone: "info", workspaceRequired: true, permission: permission("leads", "view", roleGroups.sales) }),
         item("email-studio", "E-mail Studio", "admin-email-studio.html", "pen-line", { permission: permission("leads", "view", roleGroups.sales) }),
         item("journeys", "Journey & Mail Automation", "admin-journeys.html", "workflow", { permission: permission("dashboard", "view") }),
-        item("timeline", "Timeline", "admin-notification-center.html", "history", { badge: "timelineEvents", statusTone: "neutral", workspaceRequired: true, permission: permission("dashboard", "view") }),
+        item("timeline", "Timeline", "admin-notification-center.html#timeline", "history", { badge: "timelineEvents", statusTone: "neutral", workspaceRequired: true, permission: permission("dashboard", "view") }),
       ]),
     }),
     Object.freeze({

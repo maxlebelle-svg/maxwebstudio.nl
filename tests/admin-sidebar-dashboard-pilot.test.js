@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const navigation = require("../public/admin/config/sidebar-navigation.js");
 const pilot = require("../public/admin/ui/admin-sidebar-dashboard-pilot.js");
+const { ACTIVE_ROUTE_IDS, NORMAL_ADMIN_PAGES, PUBLIC_ADMIN_PAGES, STANDALONE_ADMIN_PAGES } = require("./helpers/admin-page-inventory.js");
 const PROFILE = "22222222-2222-4222-8222-222222222222";
 
 class FakeClassList {
@@ -37,17 +38,18 @@ function withFakeDocument(callback) {
 function treeText(node) { return [node.textContent, ...node.children.flatMap((child) => treeText(child))].filter(Boolean).join(" "); }
 function find(node, predicate) { if (predicate(node)) return node; for (const child of node.children) { const match = find(child, predicate); if (match) return match; } return null; }
 
-test("approved pages mount one shared sidebar while pending pages keep the legacy sidebar", () => {
-  for (const page of ["admin-dashboard.html", "admin-sales.html", "admin-website-factory.html", "admin-mail-center.html", "admin-brand-center.html", "admin-assets.html", "admin-facturen.html"]) {
+test("all normal admin pages mount one shared sidebar while explicit exceptions remain standalone", () => {
+  for (const page of Object.keys(NORMAL_ADMIN_PAGES)) {
     const html = read(`public/${page}`);
     for (const asset of ["admin-sidebar-system.css", "admin/config/sidebar-navigation.js", "admin/components/admin-sidebar.js", "admin/ui/admin-sidebar-dashboard-pilot.js"]) assert.match(html, new RegExp(asset.replaceAll("/", "\\/")));
     assert.match(html, /id="admin-sidebar-root"/);
+    assert.match(html, /data-shared-admin-sidebar="true"/);
     assert.doesNotMatch(html, /<aside class="admin-sidebar"/);
   }
-  for (const page of ["admin-seo-studio.html", "admin-social-media-studio.html", "admin-domain-center.html"]) {
+  for (const page of [...STANDALONE_ADMIN_PAGES, ...PUBLIC_ADMIN_PAGES]) {
     const html = read(`public/${page}`);
-    assert.match(html, /<aside class="admin-sidebar"/);
     assert.doesNotMatch(html, /admin-sidebar-dashboard-pilot|admin-sidebar-system\.css/);
+    assert.doesNotMatch(html, /id="admin-sidebar-root"/);
   }
 });
 
@@ -59,16 +61,18 @@ test("every central navigation route resolves to an existing admin page", () => 
   });
 });
 
-test("pilot hierarchy removes secondary links without duplicating navigation data", () => {
+test("shared hierarchy retains every central navigation destination without duplicating navigation data", () => {
   const sections = pilot.pilotNavigation(navigation.ADMIN_SIDEBAR_NAVIGATION);
-  assert.deepEqual(sections[0].items.map((item) => item.label), ["Leads"]);
-  assert.deepEqual(sections[2].items.map((item) => item.label), ["Website Factory", "Demo Sites", "AI Content Library", "Asset Manager", "SEO Studio", "Social Media Studio", "Brand Center", "Domein Center", "Klant Onboarding", "Roadmap / Takenbord"]);
+  assert.deepEqual(sections[0].items.map((item) => item.label), ["Leads", "Agenda", "Lead Generator"]);
+  assert.deepEqual(sections[2].items.map((item) => item.label), ["Website Factory", "Website QA Scanner", "Demo Sites", "AI Content Library", "Asset Manager", "SEO Studio", "Social Media Studio", "Brand Center", "Domein Center", "Klant Onboarding", "Roadmap / Takenbord", "Websites", "Projecten"]);
+  assert.equal(sections.flatMap((section) => section.items).length, navigation.ADMIN_SIDEBAR_NAVIGATION.flatMap((section) => section.items).length);
 });
 
 test("generic bootstrap resolves the active central route for every migrated page", () => {
   const sections = pilot.pilotNavigation(navigation.ADMIN_SIDEBAR_NAVIGATION);
-  const expected = { "admin-dashboard.html": "dashboard", "admin-sales.html": "leads", "admin-website-factory.html": "website-factory", "admin-mail-center.html": "mail-center", "admin-brand-center.html": "brand-center", "admin-assets.html": "asset-manager", "admin-facturen.html": "invoices" };
-  Object.entries(expected).forEach(([pathname, id]) => assert.equal(pilot.currentSidebarItemId(sections, { pathname: `/${pathname}`, hash: "" }), id));
+  Object.entries(ACTIVE_ROUTE_IDS).forEach(([pathname, id]) => assert.equal(pilot.currentSidebarItemId(sections, { pathname: `/${pathname}`, hash: "" }), id));
+  assert.equal(pilot.currentSidebarItemId(sections, { pathname: "/admin-facturen.html", hash: "#onderhoud" }), "subscriptions");
+  assert.equal(pilot.currentSidebarItemId(sections, { pathname: "/admin-notification-center.html", hash: "#timeline" }), "timeline");
 });
 
 test("workspace card supports empty and filled read-only relationship states", () => withFakeDocument(() => {
