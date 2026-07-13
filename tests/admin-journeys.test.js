@@ -20,7 +20,7 @@ function response(body, status = 200) {
 }
 
 function emptyData() {
-  return { journeyDefinitions: [], journeyInstances: [], journeyEvents: [], customers: [], projects: [], invoices: [], leads: [], demoJourneys: [] };
+  return { journeyDefinitions: [], journeyInstances: [], journeyEvents: [], customers: [], projects: [], invoices: [], leads: [], demoJourneys: [], automationOutbox: [], automationExecutions: [] };
 }
 
 function snapshot(data = {}, overrides = {}) {
@@ -101,7 +101,7 @@ test("test-only flags reject production and allow explicit test context", async 
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, environment: "production" })).skipped, true);
   assert.equal(calls, 0);
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, environment: "test" })).skipped, false);
-  assert.equal(calls, 8);
+  assert.equal(calls, 10);
 });
 
 test("allowlist mode needs an explicit matching scope", async () => {
@@ -116,7 +116,7 @@ test("allowlist mode needs an explicit matching scope", async () => {
   const repository = createAdminJourneyReadRepository({ env, fetchImpl: async () => { calls += 1; return response([]); }, logger: { info() {} } });
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, scopeKey: "different" })).skipped, true);
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, scopeKey: "admin-journeys" })).skipped, false);
-  assert.equal(calls, 8);
+  assert.equal(calls, 10);
 });
 
 test("missing journey tables produce a controlled legacy fallback snapshot", async () => {
@@ -197,6 +197,9 @@ test("admin UI is authenticated, read-only, responsive, and feature-disabled awa
   assert.match(html, /\/\.netlify\/functions\/admin-journeys/);
   assert.match(html, /Journey &amp; Mail Automation/);
   assert.match(html, /Mailautomation: nog niet geactiveerd/);
+  assert.match(html, /Journey mail outbox/);
+  assert.match(html, /Opslag nog niet actief|Automationopslag/);
+  assert.match(html, /Veilige testmodus · read-only/);
   assert.match(html, /Legacy read-only fallback/);
   assert.match(html, /@media \(max-width: 720px\)/);
   assert.match(html, /admin-sidebar-nav \{ display: flex;[\s\S]*overflow-x: auto/);

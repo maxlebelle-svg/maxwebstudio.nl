@@ -3,17 +3,20 @@ const { getJourneyDefinition, getJourneyDefinitionForType } = require("./definit
 const { createJourneyLogger } = require("./logger");
 const { calculateJourneyProgress } = require("./progress");
 const { resolveLegacyJourney } = require("./legacyFallback");
+const { resolveJourneyFeatureFlag } = require("./featureFlags");
+const { FEATURE_FLAGS } = require("./types");
 
 function createAdminJourneyReadService(options = {}) {
   const repository = options.repository || createAdminJourneyReadRepository(options);
   const log = options.log || createJourneyLogger({ logger: options.logger, component: "journey_admin_service" });
   const now = typeof options.now === "function" ? options.now : () => Date.now();
+  const env = options.env || process.env;
   return {
-    getOverview: (filters = {}, context = {}) => getOverview({ filters, context, repository, log, now }),
+    getOverview: (filters = {}, context = {}) => getOverview({ filters, context, repository, log, now, env }),
   };
 }
 
-async function getOverview({ filters, context, repository, log, now }) {
+async function getOverview({ filters, context, repository, log, now, env }) {
   const startedAt = now();
   const snapshot = await repository.readSnapshot(filters, context);
   if (snapshot.skipped) {
@@ -28,6 +31,7 @@ async function getOverview({ filters, context, repository, log, now }) {
       recentEvents: [],
       pagination: pagination(filters, 0),
       warnings: snapshot.warnings || [],
+      mailAutomation: emptyMailAutomation(false, "Uitgeschakeld"),
     };
   }
 
@@ -100,7 +104,7 @@ async function getOverview({ filters, context, repository, log, now }) {
     recentEvents,
     pagination: { page: page.page, limit: page.limit, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / page.limit)) },
     warnings: snapshot.warnings || [],
-    mailAutomation: { active: false, label: "Nog niet geactiveerd" },
+    mailAutomation: mailAutomation(data.automationOutbox, data.automationExecutions, snapshot.mailStorageAvailable, resolveJourneyFeatureFlag(FEATURE_FLAGS.JOURNEY_EMAIL_AUTOMATION_ENABLED, context, env)),
   };
   log.info("admin_overview", { operation: "admin_overview", result: "success", source: result.source, durationMs: now() - startedAt, recordCount: journeys.length });
   return result;
@@ -191,6 +195,42 @@ function emptyMetrics() {
   return { activeJourneys: 0, perPhase: {}, customerActionRequired: 0, internalActionRequired: 0, blocked: 0, stale: 0, legacyWithoutJourney: 0, unavailable: 0 };
 }
 
+function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = false, gate = { enabled: true, mode: "test_only" }) {
+  if (!storageAvailable) return emptyMailAutomation(false, "Opslag nog niet actief");
+  const executions = new Map((executionRows || []).map((row) => [text(row.outbox_id), row]));
+  const counts = { pending: 0, processing: 0, sent: 0, completed: 0, failed: 0, cancelled: 0, deadLetter: 0 };
+  const items = (outboxRows || [])
+    .filter((row) => row.environment === "test" && row.effect_type === "email.journey_test")
+    .map((row) => {
+      const execution = executions.get(text(row.id)) || {};
+      const status = text(row.status).toLowerCase();
+      if (status === "dead_letter") counts.deadLetter += 1;
+      else if (Object.hasOwn(counts, status)) counts[status] += 1;
+      return {
+        id: text(row.id),
+        status,
+        attempts: Math.max(0, integer(row.attempt_count, 0)),
+        templateKey: text(execution.template_key),
+        templateVersion: integer(execution.template_version, 0) || null,
+        scheduledAt: validTimestamp(row.next_attempt_at),
+        processedAt: validTimestamp(row.processed_at),
+        errorCategory: text(row.last_error_code || execution.last_error_code),
+        provider: text(execution.provider),
+        providerStatus: text(execution.delivery_status || execution.status),
+        hasProviderMessageId: Boolean(execution.provider_message_id),
+        testMode: true,
+      };
+    })
+    .sort((a, b) => timestampMs(b.processedAt || b.scheduledAt) - timestampMs(a.processedAt || a.scheduledAt))
+    .slice(0, 100);
+  const label = gate.enabled && ["test_only", "allowlist"].includes(gate.mode) ? "Veilige testmodus · read-only" : "Uitgeschakeld · read-only";
+  return { active: false, testMode: true, storageAvailable: true, label, counts, items };
+}
+
+function emptyMailAutomation(storageAvailable, label) {
+  return { active: false, testMode: true, storageAvailable, label, counts: { pending: 0, processing: 0, sent: 0, completed: 0, failed: 0, cancelled: 0, deadLetter: 0 }, items: [] };
+}
+
 function indexInvoices(invoices) {
   const index = new Map();
   for (const invoice of invoices) {
@@ -271,4 +311,4 @@ function text(value) {
   return String(value || "").trim();
 }
 
-module.exports = { createAdminJourneyReadService, _private: { filterItems, mapDemoStatus, pagination, sanitizeEvents } };
+module.exports = { createAdminJourneyReadService, _private: { filterItems, mailAutomation, mapDemoStatus, pagination, sanitizeEvents } };

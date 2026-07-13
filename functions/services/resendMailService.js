@@ -2,10 +2,12 @@ const { getCompanySettings } = require("../company-settings");
 const { createEmailLog, updateEmailLog } = require("./mailLogService");
 const { createActivityEvent } = require("./timelineService");
 
-async function sendTrackedEmail(input = {}) {
+async function sendTrackedEmail(input = {}, dependencies = {}) {
+  const env = dependencies.env || process.env;
+  const fetchImpl = dependencies.fetchImpl || global.fetch;
   const companySettings = getCompanySettings();
-  const provider = process.env.EMAIL_PROVIDER || "resend";
-  const from = input.from || process.env.FROM_EMAIL || companySettings.primaryEmail;
+  const provider = env.EMAIL_PROVIDER || "resend";
+  const from = input.from || env.FROM_EMAIL || companySettings.primaryEmail;
   const payload = {
     ...input,
     from,
@@ -27,7 +29,7 @@ async function sendTrackedEmail(input = {}) {
     return { sent: false, warning, logId: log?.id || "" };
   }
 
-  if (!process.env.RESEND_API_KEY) {
+  if (!env.RESEND_API_KEY) {
     const warning = "Email skipped: RESEND_API_KEY missing";
     await safeUpdateLog(log?.id, {
       status: "failed",
@@ -40,11 +42,14 @@ async function sendTrackedEmail(input = {}) {
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const idempotencyKey = normalizeIdempotencyKey(input.idempotencyKey);
+    const timeoutMs = boundedTimeout(input.timeoutMs);
+    const response = await fetchWithTimeout(fetchImpl, "https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
         "Content-Type": "application/json",
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
       },
       body: JSON.stringify({
         from,
@@ -56,7 +61,7 @@ async function sendTrackedEmail(input = {}) {
         text: input.text,
         attachments: input.attachments || [],
       }),
-    });
+    }, timeoutMs);
 
     const data = await response.json().catch(() => ({}));
 
@@ -73,6 +78,10 @@ async function sendTrackedEmail(input = {}) {
         sent: false,
         warning: "Email failed: Resend rejected the message",
         logId: log?.id || "",
+        statusCode: response.status,
+        errorCode: cleanText(data.name) || `resend_${response.status}`,
+        retryable: response.status === 429 || response.status >= 500 || cleanText(data.name) === "concurrent_idempotent_requests",
+        ambiguous: false,
       };
     }
 
@@ -86,21 +95,45 @@ async function sendTrackedEmail(input = {}) {
       await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", providerMessageId: cleanText(data.id) }));
     }
 
-    return { sent: true, id: cleanText(data.id), logId: log?.id || "" };
+    return { sent: true, id: cleanText(data.id), logId: log?.id || "", statusCode: response.status, providerResult: "accepted" };
   } catch (error) {
-    console.error("Email failed", { message: error.message });
+    const timedOut = error?.name === "AbortError" || error?.code === "PROVIDER_TIMEOUT";
+    const errorCode = timedOut ? "provider_timeout" : "provider_request_error";
+    console.error("Email failed", { code: errorCode });
     await safeUpdateLog(log?.id, {
       status: "failed",
-      errorCode: "provider_request_error",
-      errorMessage: safeProviderError(error.message),
+      errorCode,
+      errorMessage: errorCode,
     });
     if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning: error.message, failed: true }));
     return {
       sent: false,
       warning: "Email failed: provider request error",
       logId: log?.id || "",
+      errorCode,
+      retryable: true,
+      ambiguous: true,
     };
   }
+}
+
+async function fetchWithTimeout(fetchImpl, url, options, timeoutMs) {
+  if (typeof fetchImpl !== "function") throw Object.assign(new Error("Mailprovider is niet beschikbaar."), { code: "provider_request_error" });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try { return await fetchImpl(url, { ...options, signal: controller.signal }); }
+  catch (error) { if (error?.name === "AbortError") error.code = "PROVIDER_TIMEOUT"; throw error; }
+  finally { clearTimeout(timer); }
+}
+
+function normalizeIdempotencyKey(value) {
+  const key = cleanText(value);
+  return key && key.length <= 256 && /^[A-Za-z0-9._:/-]+$/.test(key) ? key : "";
+}
+
+function boundedTimeout(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(500, Math.min(10000, Math.floor(number))) : 8000;
 }
 
 async function safeCreateLog(input) {
@@ -175,4 +208,5 @@ function cleanText(value) {
 
 module.exports = {
   sendTrackedEmail,
+  _private: { boundedTimeout, fetchWithTimeout, normalizeIdempotencyKey },
 };

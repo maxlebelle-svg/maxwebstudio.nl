@@ -90,7 +90,7 @@ create table if not exists public.automation_outbox (
   payload jsonb not null default '{}'::jsonb
     check (jsonb_typeof(payload) = 'object'),
   status text not null default 'pending'
-    check (status in ('pending', 'processing', 'completed', 'failed', 'cancelled', 'dead_letter')),
+    check (status in ('pending', 'processing', 'sent', 'completed', 'failed', 'cancelled', 'dead_letter')),
   attempt_count integer not null default 0 check (attempt_count >= 0),
   next_attempt_at timestamptz not null default now(),
   lease_owner text,
@@ -118,7 +118,7 @@ create table if not exists public.automation_executions (
   provider text,
   provider_message_id text,
   status text not null default 'pending'
-    check (status in ('pending', 'processing', 'completed', 'failed', 'cancelled', 'dead_letter')),
+    check (status in ('pending', 'processing', 'sent', 'completed', 'failed', 'cancelled', 'dead_letter')),
   delivery_status text not null default 'not_sent'
     check (delivery_status in ('not_sent', 'queued', 'sent', 'delivered', 'delayed', 'bounced', 'complained', 'failed')),
   engagement_status text not null default 'unknown'
@@ -180,6 +180,9 @@ create index if not exists journey_events_instance_idx
 create index if not exists automation_outbox_dispatch_idx
   on public.automation_outbox (status, next_attempt_at, created_at)
   where status in ('pending', 'failed');
+create index if not exists automation_outbox_stale_lease_idx
+  on public.automation_outbox (lease_expires_at, created_at)
+  where status = 'processing';
 create index if not exists automation_executions_outbox_idx
   on public.automation_executions (outbox_id, created_at desc);
 create index if not exists automation_executions_provider_message_idx
@@ -355,5 +358,57 @@ revoke all on function public.record_journey_event_and_enqueue(
 grant execute on function public.record_journey_event_and_enqueue(
   text, text, text, text, uuid, uuid, jsonb, text, timestamptz, text, text, jsonb, timestamptz
 ) to service_role;
+
+-- Atomically claims due test-only mail work. SKIP LOCKED prevents two concurrent
+-- serverless workers from claiming the same row; expired leases recover safely.
+create or replace function public.claim_automation_outbox(
+  p_worker_id text,
+  p_batch_size integer default 5,
+  p_lease_seconds integer default 90,
+  p_environment text default 'test'
+)
+returns setof public.automation_outbox
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if p_environment <> 'test' then
+    raise exception 'claim_environment_not_allowed' using errcode = '22023';
+  end if;
+  if p_worker_id is null or p_worker_id !~ '^[A-Za-z0-9][A-Za-z0-9._:-]{2,80}$' then
+    raise exception 'invalid_worker_id' using errcode = '22023';
+  end if;
+
+  return query
+  with claimable as (
+    select item.id
+    from public.automation_outbox item
+    where item.environment = 'test'
+      and item.effect_type = 'email.journey_test'
+      and (
+        (item.status in ('pending', 'failed') and item.next_attempt_at <= now())
+        or (item.status = 'processing' and item.lease_expires_at < now())
+      )
+    order by item.next_attempt_at asc, item.created_at asc
+    for update skip locked
+    limit greatest(1, least(coalesce(p_batch_size, 5), 20))
+  )
+  update public.automation_outbox item
+  set status = 'processing',
+      attempt_count = item.attempt_count + 1,
+      lease_owner = p_worker_id,
+      lease_expires_at = now() + make_interval(secs => greatest(15, least(coalesce(p_lease_seconds, 90), 300))),
+      updated_at = now()
+  from claimable
+  where item.id = claimable.id
+  returning item.*;
+end
+$$;
+
+revoke all on function public.claim_automation_outbox(text, integer, integer, text)
+  from public, anon, authenticated;
+grant execute on function public.claim_automation_outbox(text, integer, integer, text)
+  to service_role;
 
 commit;

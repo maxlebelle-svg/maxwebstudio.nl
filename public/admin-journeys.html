@@ -56,6 +56,11 @@
       .journey-step-list, .journey-event-list { display: grid; gap: 8px; }
       .journey-step, .journey-event { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid rgba(148,163,184,.1); border-radius: 8px; }
       .journey-step-index { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #bfdbfe; background: rgba(37,99,235,.17); font-size: 11px; font-weight: 900; }
+      .mail-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+      .mail-metric { display: grid; gap: 5px; padding: 13px; border: 1px solid rgba(96,165,250,.14); border-radius: 8px; background: rgba(8,29,48,.6); }
+      .mail-metric span { color: rgba(226,236,248,.58); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+      .mail-metric strong { color: #f8fbff; font-size: 22px; }
+      .mail-table { min-width: 760px; }
       @media (max-width: 1180px) { .journey-metrics { grid-template-columns: repeat(3, 1fr); } .journey-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       @media (max-width: 720px) {
         .admin-body .admin-sidebar { position: relative; top: auto; width: 100%; height: auto; min-height: 0; max-height: none; padding: 16px; }
@@ -68,6 +73,7 @@
         .journey-metrics { grid-template-columns: repeat(2, 1fr); }
         .journey-toolbar { grid-template-columns: 1fr; }
         .journey-footer { align-items: stretch; }
+        .mail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
     </style>
   </head>
@@ -128,6 +134,22 @@
           <div class="journey-empty" id="journey-empty" hidden>Er is binnen deze veilige selectie nog geen journeyinformatie beschikbaar.</div>
           <footer class="journey-footer"><span class="journey-muted" id="journey-summary">0 resultaten</span><div class="journey-pagination"><button class="button secondary" id="journey-prev" type="button">Vorige</button><button class="button secondary" id="journey-next" type="button">Volgende</button></div></footer>
         </section>
+
+        <section class="admin-card journey-list" aria-labelledby="mail-list-heading">
+          <div class="admin-section-heading"><div><p class="section-kicker">Veilige testmodus · read-only</p><h2 id="mail-list-heading">Journey mail outbox</h2></div><span class="journey-badge" id="mail-mode-label">Uitgeschakeld</span></div>
+          <div class="mail-metrics" aria-label="Testmailstatistieken">
+            <article class="mail-metric"><span>Pending</span><strong id="mail-pending">0</strong></article>
+            <article class="mail-metric"><span>Processing</span><strong id="mail-processing">0</strong></article>
+            <article class="mail-metric"><span>Sent / completed</span><strong id="mail-completed">0</strong></article>
+            <article class="mail-metric"><span>Failed</span><strong id="mail-failed">0</strong></article>
+            <article class="mail-metric"><span>Dead-letter</span><strong id="mail-dead-letter">0</strong></article>
+          </div>
+          <p class="journey-muted" id="mail-storage-state">Automationopslag controleren…</p>
+          <div class="journey-table-wrap">
+            <table class="journey-table mail-table"><thead><tr><th>Template</th><th>Status</th><th>Poging</th><th>Gepland</th><th>Foutcategorie</th><th>Provider</th></tr></thead><tbody id="mail-table-body"></tbody></table>
+          </div>
+          <div class="journey-empty" id="mail-empty">Nog geen synthetische testmailitems beschikbaar.</div>
+        </section>
       </div>
     </main>
 
@@ -146,7 +168,7 @@
       const elements = {
         form: byId("journey-filters"), search: byId("journey-search"), source: byId("journey-source"), phase: byId("journey-phase"), action: byId("journey-action"), limit: byId("journey-limit"),
         table: byId("journey-table-body"), empty: byId("journey-empty"), message: byId("journey-message"), summary: byId("journey-summary"), prev: byId("journey-prev"), next: byId("journey-next"), refresh: byId("journey-refresh"),
-        notice: byId("journey-notice"), noticeCopy: byId("journey-notice-copy"), state: byId("journey-state"), mailState: byId("mail-state"), overlay: byId("journey-overlay"), panel: byId("journey-panel"), close: byId("journey-close"), detail: byId("journey-detail"), detailTitle: byId("journey-detail-title"), detailSource: byId("journey-detail-source"),
+        notice: byId("journey-notice"), noticeCopy: byId("journey-notice-copy"), state: byId("journey-state"), mailState: byId("mail-state"), mailMode: byId("mail-mode-label"), mailStorage: byId("mail-storage-state"), mailTable: byId("mail-table-body"), mailEmpty: byId("mail-empty"), overlay: byId("journey-overlay"), panel: byId("journey-panel"), close: byId("journey-close"), detail: byId("journey-detail"), detailTitle: byId("journey-detail-title"), detailSource: byId("journey-detail-source"),
       };
 
       async function accessToken() {
@@ -185,6 +207,7 @@
         byId("metric-stale").textContent = metrics.stale || 0;
         byId("metric-legacy").textContent = metrics.legacyWithoutJourney || 0;
         elements.mailState.textContent = `Mailautomation: ${data.mailAutomation?.label || "nog niet geactiveerd"}`;
+        renderMailAutomation(data.mailAutomation || {});
         if (data.disabled) {
           elements.state.textContent = "Journey-inzage uitgeschakeld";
           showNotice("De journey- en adminflags staan uit. Er worden geen journeydata geladen en er zijn geen automatische acties actief.");
@@ -198,6 +221,20 @@
         }
         elements.message.textContent = "";
         renderRows();
+      }
+
+      function renderMailAutomation(mail) {
+        const counts = mail.counts || {};
+        byId("mail-pending").textContent = counts.pending || 0;
+        byId("mail-processing").textContent = counts.processing || 0;
+        byId("mail-completed").textContent = (counts.sent || 0) + (counts.completed || 0);
+        byId("mail-failed").textContent = counts.failed || 0;
+        byId("mail-dead-letter").textContent = counts.deadLetter || 0;
+        elements.mailMode.textContent = mail.label || "Uitgeschakeld";
+        elements.mailStorage.textContent = mail.storageAvailable ? "Alleen synthetische testitems; geen klantgegevens of verzendknoppen." : "Automationopslag is nog niet actief. Er wordt niets verzonden of lokaal opgeslagen.";
+        const items = Array.isArray(mail.items) ? mail.items : [];
+        elements.mailTable.innerHTML = items.map((item) => `<tr><td>${escapeHtml(item.templateKey ? `${item.templateKey}.v${item.templateVersion || "?"}` : "—")}</td><td><span class="journey-badge">${escapeHtml(item.status || "—")}</span></td><td>${Number(item.attempts) || 0}</td><td>${escapeHtml(formatDate(item.scheduledAt))}</td><td>${escapeHtml(item.errorCategory || "—")}</td><td>${escapeHtml(item.providerStatus || item.provider || "—")}</td></tr>`).join("");
+        elements.mailEmpty.hidden = items.length > 0;
       }
 
       function renderRows() {

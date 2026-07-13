@@ -11,7 +11,7 @@ const ENVIRONMENTS = Object.freeze(["production", "test", "demo"]);
 
 const JOURNEY_DEFINITION_STATUSES = Object.freeze(["draft", "published", "retired"]);
 const JOURNEY_INSTANCE_STATUSES = Object.freeze(["active", "paused", "completed", "cancelled", "needs_review"]);
-const PROCESSING_STATUSES = Object.freeze(["pending", "processing", "completed", "failed", "cancelled", "dead_letter"]);
+const PROCESSING_STATUSES = Object.freeze(["pending", "processing", "sent", "completed", "failed", "cancelled", "dead_letter"]);
 const EXECUTION_DELIVERY_STATUSES = Object.freeze(["not_sent", "queued", "sent", "delivered", "delayed", "bounced", "complained", "failed"]);
 const EXECUTION_ENGAGEMENT_STATUSES = Object.freeze(["unknown", "opened", "clicked", "unsubscribed"]);
 
