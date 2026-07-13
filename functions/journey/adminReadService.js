@@ -200,7 +200,7 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
   const executions = new Map((executionRows || []).map((row) => [text(row.outbox_id), row]));
   const counts = { pending: 0, processing: 0, sent: 0, completed: 0, failed: 0, cancelled: 0, deadLetter: 0 };
   const journeyItems = (outboxRows || [])
-    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready", "email.feedback_received", "email.preview_approved"].includes(row.effect_type))
+    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready", "email.feedback_received", "email.preview_approved", "email.payment_paid"].includes(row.effect_type))
     .map((row) => {
       const execution = executions.get(text(row.id)) || {};
       const status = text(row.status).toLowerCase();
@@ -213,6 +213,16 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
         previewVersionReference: row.entity_type === "preview" ? text(row.entity_id) : "",
         feedbackReference: text(row.feedback_reference),
         approvalReference: text(row.approval_reference),
+        paymentReference: text(row.payment_reference),
+        orderReference: text(row.order_reference),
+        invoiceReference: text(row.invoice_reference),
+        providerCategory: text(row.provider_category),
+        paymentEnvironment: text(row.payment_environment),
+        paymentType: text(row.payment_type),
+        commercialCompletionState: text(row.commercial_completion_state),
+        paidComponent: text(row.paid_component),
+        remainingComponent: text(row.remaining_component),
+        reminderCancelledCount: Math.max(0, integer(row.reminder_cancelled_count, 0)),
         ownershipReason: text(row.ownership_reason),
         journeyType: text(row.journey_type),
         nextStepType: text(row.next_step_type),

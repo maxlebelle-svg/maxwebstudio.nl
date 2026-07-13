@@ -3,6 +3,9 @@ const crypto = require("crypto");
 const { sendEmail } = require("./email");
 const { getCompanySettings } = require("./company-settings");
 const { createTimelineEvent } = require("./services/timelineService");
+const { createPaymentPaidService } = require("./journey/paymentPaid/service");
+const { resolvePaymentPaidContext } = require("./journey/paymentPaid/contextResolver");
+const paymentPaidService = createPaymentPaidService();
 
 const knownStatuses = new Set([
   "paid",
@@ -60,18 +63,14 @@ exports.handler = async (event) => {
     console.log("Mollie payment status", {
       paymentId: payment.id,
       status: safeStatus,
-      websitePackage: payment.metadata?.websitePackage,
-      websitePackageName: payment.metadata?.websitePackageName,
-      carePackage: payment.metadata?.carePackage,
-      carePackageName: payment.metadata?.carePackageName,
-      customerEmail: payment.metadata?.customerEmail,
-      depositAmountInclVat: payment.metadata?.depositAmountInclVat,
+      source: cleanText(payment.metadata?.source).slice(0, 60),
+      environment: cleanText(payment.mode || payment.metadata?.environment).slice(0, 12),
     });
 
     if (status === "paid") {
       console.log("Max Webstudio payment received", {
         paymentId: payment.id,
-        metadata: payment.metadata || {},
+        source: cleanText(payment.metadata?.source).slice(0, 60),
       });
     }
 
@@ -184,9 +183,11 @@ async function updateInvoicePaymentIfPresent(payment) {
   };
 
   await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, patch);
+  const updatedInvoice = { ...invoice, ...patch };
   await safeCreateTimeline(paymentTimelineEvent(invoice, payment, mappedStatus));
+  let commercialResult = null;
   if (payment.status === "paid") {
-    await finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment);
+    commercialResult = await finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment);
   }
   console.log("Invoice payment status updated", {
     paymentId: payment.id,
@@ -196,8 +197,32 @@ async function updateInvoicePaymentIfPresent(payment) {
   });
 
   if (payment.status === "paid" && !invoice.paid_email_sent_at) {
-    await sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice);
+    await dispatchPaidConfirmation(supabaseUrl, serviceRoleKey, updatedInvoice, payment, commercialResult);
   }
+}
+
+async function dispatchPaidConfirmation(supabaseUrl, serviceRoleKey, invoice, payment, commercialResult) {
+  try {
+    const invoiceContext = parseInvoiceContext(invoice.notes);
+    const profile = await fetchInvoiceProfile(supabaseUrl, serviceRoleKey, invoice.profile_id);
+    const customer = commercialResult?.customer || await resolveInvoiceCustomer(supabaseUrl, serviceRoleKey, invoice, invoiceContext);
+    const paymentContext = resolvePaymentPaidContext({ provider: "mollie", providerVerified: true, customerId: customer?.id, payment, invoice, invoiceContext });
+    const result = await paymentPaidService.dispatch({ customerId: customer?.id || "", invoiceId: invoice.id, paidAt: payment.paidAt || invoice.paid_at, recipient: profile?.email || "", firstName: profile?.name || profile?.company || "", invoiceLabel: invoice.invoice_number || invoice.title || "uw betaling", paymentContext, legacySend: async () => sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) });
+    console.log("Payment confirmation ownership resolved", { code: "PAYMENT_CONFIRMATION_OWNER", owner: result.owner, reason: result.reason, durable: result.durable === true, duplicate: result.duplicate === true, paymentEnvironment: paymentContext.environment, paymentType: paymentContext.paymentType });
+    return result;
+  } catch (error) {
+    console.error("Payment confirmation ownership failed", { code: "PAYMENT_CONFIRMATION_OWNERSHIP_FAILED", category: cleanText(error?.code || error?.name || "unknown").slice(0, 80) });
+    return { owner: "none", reason: "ownership_ambiguous_no_legacy", durable: false };
+  }
+}
+
+async function resolveInvoiceCustomer(supabaseUrl, serviceRoleKey, invoice, context) {
+  if (invoice.profile_id) {
+    const byProfile = await fetchRecord(supabaseUrl, serviceRoleKey, "customers", "id,profile_id,auth_user_id,name,company,email", `profile_id=eq.${encodeURIComponent(invoice.profile_id)}`);
+    if (byProfile?.id) return byProfile;
+  }
+  if (context.customerId) return fetchRecord(supabaseUrl, serviceRoleKey, "customers", "id,profile_id,auth_user_id,name,company,email", `id=eq.${encodeURIComponent(context.customerId)}`);
+  return null;
 }
 
 async function updateSubscriptionPaymentIfPresent(payment, mollieApiKey) {
@@ -584,7 +609,7 @@ async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
 
 async function fetchInvoiceByPaymentIdWithFields(supabaseUrl, serviceRoleKey, paymentId, fields) {
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/customer_invoices?select=${fields}&mollie_payment_id=eq.${encodeURIComponent(paymentId)}&limit=1`,
+    `${supabaseUrl}/rest/v1/customer_invoices?select=${fields}&mollie_payment_id=eq.${encodeURIComponent(paymentId)}&limit=2`,
     {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
@@ -602,6 +627,10 @@ async function fetchInvoiceByPaymentIdWithFields(supabaseUrl, serviceRoleKey, pa
     return null;
   }
 
+  if (Array.isArray(data) && data.length > 1) {
+    console.error("Mollie webhook invoice lookup ambiguous", { paymentId, matchCount: data.length });
+    return null;
+  }
   return Array.isArray(data) ? data[0] : data;
 }
 
