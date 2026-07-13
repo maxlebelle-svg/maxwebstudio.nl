@@ -21,10 +21,9 @@ assert(html.includes("<h1>Social Studio</h1>"), "Module should expose the Social
 });
 
 [
-  'idea: "Idee"',
-  'draft: "Concept"',
-  'review: "Ter beoordeling"',
-  'ready: "Klaar om te publiceren"',
+  "CONTENT_STATUSES",
+  "LocalSocialStudioRepository",
+  "createWorkspaceEnvelope",
   "function renderPipeline()",
   "function advanceVariantStatus(id)",
   "function normalizeStatus(status)",
@@ -33,11 +32,9 @@ assert(html.includes("<h1>Social Studio</h1>"), "Module should expose the Social
   assert(script.includes(marker), `Social Studio workflow should include ${marker}`);
 });
 
-assert(script.includes('time: variant.time || "09:00"'), "Legacy variants should receive a safe default publication time");
-assert(script.includes("status: normalizeStatus(variant.status)"), "Legacy variants should receive a normalized workflow status");
+assert(script.includes("repository.loadVariants"), "Stored variants should load through the repository boundary");
+assert(script.includes(".map(normalizeContentItem)"), "Imported variants should pass through the versioned content model");
 assert(script.includes("Publiceren wordt later gekoppeld."), "MVP must not imply that external publishing is active");
-assert(script.includes("Nog niet gekoppeld aan publicatie-API's."), "Exports must describe the local-only publishing boundary");
-
-new Function(script);
+assert(html.includes('type="module" src="src/social-media-studio.js'), "Social Studio should load through the module entrypoint");
 
 console.log("social studio MVP static tests passed");

@@ -1,3 +1,11 @@
+import {
+  CONTENT_STATUSES,
+  createWorkspaceEnvelope,
+  normalizeContentItem,
+  normalizeStatus as normalizeContentStatus,
+} from "./social-studio/core.mjs";
+import { LocalSocialStudioRepository } from "./social-studio/local-repository.mjs";
+
 (function () {
   "use strict";
 
@@ -9,6 +17,8 @@
     legacyVariants: "mws_social_media_studio_variants",
   };
 
+  const repository = new LocalSocialStudioRepository(window.localStorage, storageKeys);
+
   const platformLabels = {
     facebook: "Facebook",
     instagram: "Instagram",
@@ -17,12 +27,7 @@
     ad: "Advertentie",
   };
 
-  const statusLabels = {
-    idea: "Idee",
-    draft: "Concept",
-    review: "Ter beoordeling",
-    ready: "Klaar om te publiceren",
-  };
+  const statusLabels = Object.fromEntries(CONTENT_STATUSES.map(({ id, label }) => [id, label]));
 
   const statusOrder = Object.keys(statusLabels);
 
@@ -257,24 +262,11 @@
   };
 
   function readJson(key, fallback) {
-    try {
-      const rawValue = localStorage.getItem(key);
-      if (!rawValue) return fallback;
-      return JSON.parse(rawValue);
-    } catch (error) {
-      console.warn("Social Media Studio opslag kon niet worden gelezen.", error);
-      return fallback;
-    }
+    return repository.read(key, fallback);
   }
 
   function writeJson(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-      return true;
-    } catch (error) {
-      console.warn("Social Media Studio opslag kon niet worden bijgewerkt.", error);
-      return false;
-    }
+    return repository.write(key, value);
   }
 
   function fillPlatformFilter() {
@@ -485,7 +477,7 @@
   function saveVariant() {
     const content = getCurrentContent();
     const fallback = platformFallbacks[state.platform];
-    const variant = {
+    const variant = normalizeContentItem({
       id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       platform: content.platform,
       title: content.title || fallback.title,
@@ -503,7 +495,7 @@
       visualFormat: content.visualFormat,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
+    });
 
     state.variants = [variant, ...state.variants].slice(0, 100);
     const saved = writeJson(storageKeys.variants, state.variants);
@@ -518,7 +510,7 @@
 
   function resetEditor() {
     setFormContent({ platform: state.platform, tone: "Professioneel", date: elements.date.value, visualFormat: elements.visualFormat.value });
-    localStorage.removeItem(storageKeys.draft);
+    repository.remove(storageKeys.draft);
     setMessage("Editor gereset.", "success");
   }
 
@@ -531,13 +523,13 @@
   }
 
   function duplicateVariant(variant) {
-    const copy = {
+    const copy = normalizeContentItem({
       ...variant,
       id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       title: `${variant.title || "Variant"} copy`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
+    });
     state.variants.unshift(copy);
     writeJson(storageKeys.variants, state.variants);
     renderVariants();
@@ -623,7 +615,7 @@
   }
 
   function normalizeStatus(status) {
-    return statusLabels[status] ? status : "draft";
+    return normalizeContentStatus(status);
   }
 
   function nextStatusLabel(variant) {
@@ -774,13 +766,11 @@
   }
 
   function exportPayload(variants = state.variants) {
-    return {
+    return createWorkspaceEnvelope({
       context: getContext(),
       currentDraft: getCurrentContent(),
       variants,
-      exportedAt: new Date().toISOString(),
-      note: "Lokale Social Studio export. Nog niet gekoppeld aan publicatie-API's.",
-    };
+    });
   }
 
   function exportJson(variants = state.variants, filename = "maxwebstudio-social-media-studio.json") {
@@ -808,7 +798,7 @@
         if (Array.isArray(parsed.variants)) {
           state.variants = parsed.variants
             .filter((variant) => variant && variant.platform)
-            .map((variant) => ({ ...variant, status: normalizeStatus(variant.status), time: variant.time || "09:00" }));
+            .map(normalizeContentItem);
           writeJson(storageKeys.variants, state.variants);
         }
         renderVariants();
@@ -837,9 +827,7 @@
     const confirmed = window.confirm("Weet je zeker dat je alle Social Media Studio concepten en varianten wilt wissen?");
     if (!confirmed) return;
     state.variants = [];
-    localStorage.removeItem(storageKeys.draft);
-    localStorage.removeItem(storageKeys.variants);
-    localStorage.removeItem(storageKeys.context);
+    repository.clearWorkspace();
     renderVariants();
     updateHero();
     setMessage("Lokale Social Media Studio opslag gewist.", "success");
@@ -959,8 +947,7 @@
     fillStatusFilter();
     renderMoreWorkOffers();
     const legacyVariants = readJson(storageKeys.legacyVariants, []);
-    state.variants = readJson(storageKeys.variants, Array.isArray(legacyVariants) ? legacyVariants : [])
-      .map((variant) => ({ ...variant, status: normalizeStatus(variant.status), time: variant.time || "09:00" }));
+    state.variants = repository.loadVariants(Array.isArray(legacyVariants) ? legacyVariants : []);
     const context = readJson(storageKeys.context, {});
     setContext({ ...context, date: context.date || defaultDate() });
     const draft = readJson(storageKeys.draft, readJson(storageKeys.legacyDraft, null));
