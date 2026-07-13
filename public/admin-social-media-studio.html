@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Social Media Studio | Max CRM</title>
+    <title>Social Studio | Max CRM</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -50,6 +50,62 @@
       .social-studio-workspace {
         display: grid;
         gap: 22px;
+      }
+
+      .social-studio-pipeline {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .social-studio-pipeline-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .social-studio-pipeline-card {
+        display: grid;
+        gap: 6px;
+        min-height: 104px;
+        padding: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.62);
+      }
+
+      .social-studio-pipeline-card span,
+      .social-studio-pipeline-card small {
+        color: rgba(226, 236, 248, 0.62);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .social-studio-pipeline-card strong {
+        color: #f8fbff;
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .social-studio-schedule {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .social-studio-schedule li {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 11px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.72);
+        background: rgba(15, 23, 42, 0.48);
+        font-size: 12px;
+        font-weight: 750;
       }
 
       .social-studio-toolbar,
@@ -441,6 +497,19 @@
         line-height: 1.35;
       }
 
+      .social-studio-status-badge {
+        display: inline-flex;
+        width: fit-content;
+        margin-top: 7px;
+        padding: 4px 8px;
+        border: 1px solid rgba(96, 165, 250, 0.26);
+        border-radius: 999px;
+        color: #bfdbfe;
+        background: rgba(37, 99, 235, 0.12);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
       .social-studio-empty {
         padding: 18px;
         border: 1px dashed rgba(148, 163, 184, 0.24);
@@ -453,6 +522,7 @@
         .social-studio-hero,
         .social-studio-toolbar,
         .social-studio-platforms,
+        .social-studio-pipeline-grid,
         .social-studio-grid {
           grid-template-columns: 1fr;
         }
@@ -502,7 +572,7 @@
           <a href="admin-ai-content-library.html">AI Content Library</a>
           <a href="admin-assets.html">Asset Manager</a>
           <a href="admin-seo-studio.html">SEO Studio</a>
-          <a class="is-active" href="admin-social-media-studio.html">Social Media Studio</a>
+          <a class="is-active" href="admin-social-media-studio.html">Social Studio</a>
           <a href="admin-brand-center.html">Brand Center</a>
           <a href="admin-domain-center.html">Domein Center</a>
           <a href="admin-onboarding.html">Klant Onboarding</a>
@@ -525,17 +595,17 @@
         <header class="admin-section admin-hero social-studio-hero">
           <div>
             <p class="section-kicker">Production</p>
-            <h1>Social Media Studio</h1>
-            <p>Maak posts, captions en advertenties voor klanten vanuit één editor.</p>
+            <h1>Social Studio</h1>
+            <p>Maak, plan en beoordeel social content voor klanten vanuit één workflow.</p>
           </div>
-          <aside class="social-studio-hero-panel" aria-label="Social Media Studio status">
+          <aside class="social-studio-hero-panel" aria-label="Social Studio status">
             <span class="workflow-module-label">Lokale studio - geen publicatie API</span>
             <strong id="social-hero-count">0 varianten</strong>
             <p id="social-hero-detail">Concepten, varianten en exports blijven lokaal bewaard in deze browser.</p>
           </aside>
         </header>
 
-        <section class="social-studio-workspace" aria-label="Social Media Studio workspace">
+        <section class="social-studio-workspace" aria-label="Social Studio workspace">
           <section class="admin-card social-studio-toolbar" aria-label="Campagnecontext">
             <label for="social-client">Klantnaam<input id="social-client" autocomplete="organization" placeholder="Klantnaam placeholder" /></label>
             <label for="social-campaign">Campagne<input id="social-campaign" autocomplete="off" placeholder="Bijv. zomeractie, nieuwe website, reviewcampagne" /></label>
@@ -547,6 +617,13 @@
               <option>Vacature / personeel</option>
             </select></label>
             <label for="social-date">Publicatiedatum<input id="social-date" type="date" /></label>
+            <label for="social-time">Publicatietijd<input id="social-time" type="time" value="09:00" /></label>
+            <label for="social-status">Workflowstatus<select id="social-status">
+              <option value="idea">Idee</option>
+              <option value="draft" selected>Concept</option>
+              <option value="review">Ter beoordeling</option>
+              <option value="ready">Klaar om te publiceren</option>
+            </select></label>
             <label for="social-visual-format">Visual format<select id="social-visual-format">
               <option value="square">Vierkant 1:1</option>
               <option value="portrait">Staand 4:5</option>
@@ -555,6 +632,7 @@
             </select></label>
             <label for="variant-search">Zoek varianten<input id="variant-search" type="search" placeholder="Zoek op titel, tekst, platform of klant" /></label>
             <label for="variant-platform-filter">Variantfilter<select id="variant-platform-filter"></select></label>
+            <label for="variant-status-filter">Statusfilter<select id="variant-status-filter"></select></label>
             <div class="social-studio-toolbar-actions">
               <button class="button secondary" id="load-sample-social" type="button">Voorbeeld laden</button>
               <button class="button secondary" id="import-social-json" type="button">Import JSON</button>
@@ -563,6 +641,20 @@
             </div>
             <input id="social-json-file" type="file" accept="application/json,.json" hidden />
             <p class="admin-form-message social-studio-message" id="social-studio-message" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="admin-card social-studio-pipeline" aria-labelledby="social-pipeline-heading">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Contentworkflow</p>
+                <h2 id="social-pipeline-heading">Van idee naar publicatie</h2>
+              </div>
+            </div>
+            <div class="social-studio-pipeline-grid" id="social-pipeline-grid"></div>
+            <div>
+              <p class="section-kicker">Eerstvolgende planning</p>
+              <ul class="social-studio-schedule" id="social-schedule-list"></ul>
+            </div>
           </section>
 
           <div class="social-studio-platforms" role="tablist" aria-label="Platform kiezen">
