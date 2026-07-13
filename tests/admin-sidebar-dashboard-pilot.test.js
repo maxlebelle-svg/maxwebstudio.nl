@@ -38,13 +38,13 @@ function treeText(node) { return [node.textContent, ...node.children.flatMap((ch
 function find(node, predicate) { if (predicate(node)) return node; for (const child of node.children) { const match = find(child, predicate); if (match) return match; } return null; }
 
 test("approved pages mount one shared sidebar while pending pages keep the legacy sidebar", () => {
-  for (const page of ["admin-dashboard.html", "admin-sales.html", "admin-website-factory.html"]) {
+  for (const page of ["admin-dashboard.html", "admin-sales.html", "admin-website-factory.html", "admin-mail-center.html", "admin-brand-center.html"]) {
     const html = read(`public/${page}`);
     for (const asset of ["admin-sidebar-system.css", "admin/config/sidebar-navigation.js", "admin/components/admin-sidebar.js", "admin/ui/admin-sidebar-dashboard-pilot.js"]) assert.match(html, new RegExp(asset.replaceAll("/", "\\/")));
     assert.match(html, /id="admin-sidebar-root"/);
     assert.doesNotMatch(html, /<aside class="admin-sidebar"/);
   }
-  for (const page of ["admin-mail-center.html", "admin-brand-center.html"]) {
+  for (const page of ["admin-assets.html", "admin-facturen.html"]) {
     const html = read(`public/${page}`);
     assert.match(html, /<aside class="admin-sidebar"/);
     assert.doesNotMatch(html, /admin-sidebar-dashboard-pilot|admin-sidebar-system\.css/);
