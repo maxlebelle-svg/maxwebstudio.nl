@@ -110,7 +110,7 @@ test("progress service needs both progress UI and engine flags", async () => {
   const repository = {
     getJourneyInstanceByKey: async () => {
       reads += 1;
-      return { available: true, skipped: false, row: { journey_type: "website.delivery", progress_percent: 40, status: "active" } };
+      return { available: true, skipped: false, row: { journey_type: "website.direct_checkout", status: "active" } };
     },
   };
   const progressOff = createJourneyService({
@@ -134,28 +134,29 @@ test("progress service returns a bounded non-personal view when enabled", async 
         available: true,
         skipped: false,
         row: {
-          journey_type: "website.delivery",
-          current_phase: "build",
-          current_step: "content",
-          progress_percent: 140,
+          id: EVENT_ID,
+          journey_type: "website.direct_checkout",
+          definition_version: 1,
+          current_phase: "onboarding",
+          current_step: "onboarding_information",
           status: "active",
           customer_id: "must-not-be-returned",
-          metadata: { email: "must-not-be-returned@example.test" },
+          updated_at: "2026-07-13T12:00:00.000Z",
+          metadata: {
+            email: "must-not-be-returned@example.test",
+            stepStates: { order_received: "completed", payment_confirmed: "completed", onboarding_information: "ready" },
+          },
         },
       }),
     },
   });
   const result = await service.getJourneyProgress("journey:123", { environment: "test" });
-  assert.deepEqual(result.progress, {
-    journeyType: "website.delivery",
-    currentPhase: "build",
-    currentStep: "content",
-    progressPercent: 100,
-    status: "active",
-    nextStepAt: null,
-    startedAt: null,
-    completedAt: null,
-  });
+  assert.equal(result.progress.journeyType, "website.direct_checkout");
+  assert.equal(result.progress.currentPhase, "onboarding");
+  assert.equal(result.progress.currentStep.key, "onboarding_information");
+  assert.equal(result.progress.percentage, 25);
+  assert.equal(result.progress.customerActionRequired, true);
+  assert.equal("customerId" in result.progress, false);
 });
 
 test("test-only repository access is blocked in production and enabled in tests", async () => {

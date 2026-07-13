@@ -39,6 +39,8 @@ function normalizeFeatureFlagMode(value) {
 }
 
 function isTestContext(context = {}, env = process.env) {
+  const explicitEnvironment = String(context.environment || "").trim().toLowerCase();
+  if (["production", "prod"].includes(explicitEnvironment)) return false;
   if (context.isTest === true || context.testOnly === true) return true;
   const values = [
     context.environment,

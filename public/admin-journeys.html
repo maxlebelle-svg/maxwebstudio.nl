@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Journey &amp; Mail Automation | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260713-journey-progress" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
+    <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
+    <style>
+      .journey-shell { display: grid; gap: 16px; min-width: 0; }
+      .journey-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; padding: 24px; }
+      .journey-readonly { display: grid; gap: 6px; min-width: 250px; padding: 15px; border: 1px solid rgba(96,165,250,.22); border-radius: 9px; background: rgba(8,29,48,.82); }
+      .journey-readonly strong { color: #f8fbff; }
+      .journey-readonly span, .journey-muted { color: rgba(226,236,248,.64); font-size: 12px; font-weight: 750; line-height: 1.5; }
+      .journey-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+      .journey-metric { display: grid; gap: 7px; min-height: 110px; padding: 16px; border: 1px solid rgba(148,163,184,.15); border-radius: 9px; background: linear-gradient(180deg, rgba(13,35,55,.68), rgba(5,18,31,.9)); }
+      .journey-metric span { color: rgba(226,236,248,.58); font-size: 11px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+      .journey-metric strong { color: #f8fbff; font-size: 28px; line-height: 1; }
+      .journey-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) repeat(4, minmax(130px, .5fr)) auto; gap: 12px; align-items: end; padding: 15px; }
+      .journey-field { display: grid; gap: 7px; color: rgba(226,236,248,.72); font-size: 12px; font-weight: 850; }
+      .journey-field input, .journey-field select { width: 100%; min-height: 40px; border: 1px solid rgba(148,163,184,.2); border-radius: 8px; color: #f8fbff; background: rgba(15,23,42,.78); }
+      .journey-notice { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 16px; border: 1px solid rgba(245,158,11,.22); border-radius: 9px; color: #fde68a; background: rgba(120,53,15,.14); }
+      .journey-notice[hidden] { display: none; }
+      .journey-list { display: grid; gap: 14px; padding: 20px; min-width: 0; }
+      .journey-table-wrap { width: 100%; overflow-x: auto; }
+      .journey-table { width: 100%; min-width: 1050px; border-collapse: collapse; }
+      .journey-table th, .journey-table td { padding: 13px 11px; border-bottom: 1px solid rgba(148,163,184,.12); text-align: left; vertical-align: middle; }
+      .journey-table th { color: rgba(226,236,248,.52); font-size: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
+      .journey-table td { color: rgba(239,246,255,.83); font-size: 13px; font-weight: 720; }
+      .journey-row { cursor: pointer; transition: background 160ms ease; }
+      .journey-row:hover, .journey-row:focus-within { background: rgba(37,99,235,.1); }
+      .journey-customer { display: grid; gap: 4px; }
+      .journey-customer strong { color: #f8fbff; }
+      .journey-progress { display: grid; grid-template-columns: minmax(90px, 1fr) auto; gap: 9px; align-items: center; }
+      .journey-progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(148,163,184,.17); }
+      .journey-progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #38bdf8); }
+      .journey-badge { display: inline-flex; align-items: center; min-height: 27px; padding: 4px 9px; border-radius: 999px; color: #dbeafe; background: rgba(37,99,235,.16); font-size: 11px; font-weight: 850; }
+      .journey-badge.estimate { color: #fde68a; background: rgba(245,158,11,.14); }
+      .journey-badge.blocked { color: #fecaca; background: rgba(239,68,68,.14); }
+      .journey-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; }
+      .journey-pagination { display: flex; gap: 8px; }
+      .journey-empty { padding: 34px 18px; text-align: center; color: rgba(226,236,248,.65); }
+      .journey-overlay { position: fixed; inset: 0; z-index: 80; background: rgba(2,8,23,.66); backdrop-filter: blur(3px); }
+      .journey-panel { position: fixed; z-index: 81; top: 0; right: 0; width: min(620px, 94vw); height: 100vh; overflow-y: auto; padding: 24px; border-left: 1px solid rgba(148,163,184,.18); background: #071421; box-shadow: -28px 0 80px rgba(0,0,0,.45); }
+      .journey-panel[hidden], .journey-overlay[hidden] { display: none; }
+      .journey-panel-header { display: flex; justify-content: space-between; gap: 14px; align-items: start; }
+      .journey-panel-grid { display: grid; gap: 14px; margin-top: 20px; }
+      .journey-detail-card { display: grid; gap: 12px; padding: 16px; border: 1px solid rgba(148,163,184,.14); border-radius: 9px; background: rgba(15,23,42,.58); }
+      .journey-step-list, .journey-event-list { display: grid; gap: 8px; }
+      .journey-step, .journey-event { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid rgba(148,163,184,.1); border-radius: 8px; }
+      .journey-step-index { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #bfdbfe; background: rgba(37,99,235,.17); font-size: 11px; font-weight: 900; }
+      @media (max-width: 1180px) { .journey-metrics { grid-template-columns: repeat(3, 1fr); } .journey-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 720px) {
+        .admin-body .admin-sidebar { position: relative; top: auto; width: 100%; height: auto; min-height: 0; max-height: none; padding: 16px; }
+        .admin-body .admin-sidebar-nav { display: flex; gap: 8px; width: 100%; overflow-x: auto; padding: 2px 0 8px; scroll-snap-type: x proximity; }
+        .admin-body .admin-sidebar-nav .admin-nav-group { display: none; }
+        .admin-body .admin-sidebar-nav a { flex: 0 0 auto; min-width: max-content; padding: 10px 13px; scroll-snap-align: start; }
+        .admin-body .admin-sidebar-nav a.is-active { order: -1; }
+        .journey-hero { grid-template-columns: 1fr; }
+        .journey-readonly { min-width: 0; }
+        .journey-metrics { grid-template-columns: repeat(2, 1fr); }
+        .journey-toolbar { grid-template-columns: 1fr; }
+        .journey-footer { align-items: stretch; }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-notification-center.html">Notification Center</a>
+          <a class="is-active" href="admin-journeys.html">Journey &amp; Mail Automation</a>
+          <a href="admin-max-automations.html">⚡ Max Automations</a>
+          <a href="admin-max-brain.html">Max Brain</a>
+          <span class="admin-nav-group">Sales</span><a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span><a href="admin-website-factory.html">Website Factory</a><a href="admin-demo-sites.html">Demo Sites</a><a href="admin-onboarding.html">Klant Onboarding</a><a href="admin-roadmap.html">Roadmap / Takenbord</a>
+          <span class="admin-nav-group">Customers</span><a href="admin-klanten.html">Klanten</a><a href="admin-websites.html">Websites</a><a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span><a href="admin-offertes.html">Offertes</a><a href="admin-facturen.html">Facturen</a><a href="admin-email-studio.html">E-mail Studio</a><a href="admin-mail-center.html">Mail Center</a>
+          <span class="admin-nav-group">System</span><a href="admin-platform-health.html">Platform Health</a><a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main journey-shell">
+        <header class="admin-section admin-hero journey-hero">
+          <div><p class="section-kicker">Read-only control center</p><h1>Journey &amp; Mail Automation</h1><p>Één server-side overzicht van klantvoortgang. Journeydata is alleen inzichtelijk; mailautomation en statusmutaties zijn niet geactiveerd.</p></div>
+          <aside class="journey-readonly"><strong id="journey-state">Veilige status controleren</strong><span>Read-only · geen mails · geen automatische backfill</span><span id="mail-state">Mailautomation: nog niet geactiveerd</span></aside>
+        </header>
+
+        <section class="journey-metrics" aria-label="Journey statistieken">
+          <article class="journey-metric"><span>Actieve journeys</span><strong id="metric-active">0</strong><small class="journey-muted">Echte instances</small></article>
+          <article class="journey-metric"><span>Klantactie</span><strong id="metric-customer">0</strong><small class="journey-muted">Actie vereist</small></article>
+          <article class="journey-metric"><span>Interne actie</span><strong id="metric-internal">0</strong><small class="journey-muted">Teamactie vereist</small></article>
+          <article class="journey-metric"><span>Geblokkeerd</span><strong id="metric-blocked">0</strong><small class="journey-muted">Vraagt aandacht</small></article>
+          <article class="journey-metric"><span>Niet recent</span><strong id="metric-stale">0</strong><small class="journey-muted">Ouder dan 14 dagen</small></article>
+          <article class="journey-metric"><span>Legacy</span><strong id="metric-legacy">0</strong><small class="journey-muted">Indicatieve status</small></article>
+        </section>
+
+        <form class="admin-card journey-toolbar" id="journey-filters">
+          <label class="journey-field">Zoeken<input id="journey-search" type="search" placeholder="Zoek klantreferentie, product of stap" /></label>
+          <label class="journey-field">Bron<select id="journey-source"><option value="">Alle bronnen</option><option value="journey">Journey</option><option value="legacy_estimate">Legacy-inschatting</option></select></label>
+          <label class="journey-field">Fase<input id="journey-phase" placeholder="Bijv. production" /></label>
+          <label class="journey-field">Actie<select id="journey-action"><option value="">Alle</option><option value="customer">Klantactie</option><option value="internal">Interne actie</option><option value="blocked">Geblokkeerd</option></select></label>
+          <label class="journey-field">Per pagina<select id="journey-limit"><option>10</option><option selected>25</option><option>50</option><option>100</option></select></label>
+          <button class="button primary" type="submit">Filter</button>
+        </form>
+
+        <div class="journey-notice" id="journey-notice" hidden><strong aria-hidden="true">i</strong><span id="journey-notice-copy"></span></div>
+
+        <section class="admin-card journey-list" aria-labelledby="journey-list-heading">
+          <div class="admin-section-heading"><div><p class="section-kicker">Journey-overzicht</p><h2 id="journey-list-heading">Klanten en prospects</h2></div><button class="button secondary" id="journey-refresh" type="button">Verversen</button></div>
+          <p class="admin-form-message" id="journey-message" role="status" aria-live="polite"></p>
+          <div class="journey-table-wrap">
+            <table class="journey-table"><thead><tr><th>Klantreferentie</th><th>Bron</th><th>Product</th><th>Fase</th><th>Huidige stap</th><th>Voortgang</th><th>Actie</th><th>Bijgewerkt</th></tr></thead><tbody id="journey-table-body"></tbody></table>
+          </div>
+          <div class="journey-empty" id="journey-empty" hidden>Er is binnen deze veilige selectie nog geen journeyinformatie beschikbaar.</div>
+          <footer class="journey-footer"><span class="journey-muted" id="journey-summary">0 resultaten</span><div class="journey-pagination"><button class="button secondary" id="journey-prev" type="button">Vorige</button><button class="button secondary" id="journey-next" type="button">Volgende</button></div></footer>
+        </section>
+      </div>
+    </main>
+
+    <div class="journey-overlay" id="journey-overlay" hidden></div>
+    <aside class="journey-panel" id="journey-panel" role="dialog" aria-modal="true" aria-labelledby="journey-detail-title" hidden>
+      <header class="journey-panel-header"><div><p class="section-kicker">Read-only journey</p><h2 id="journey-detail-title">Journeydetail</h2><p class="journey-muted" id="journey-detail-source"></p></div><button class="button secondary" id="journey-close" type="button" aria-label="Sluiten">×</button></header>
+      <div class="journey-panel-grid" id="journey-detail"></div>
+    </aside>
+
+    <script src="admin/ui/global-command-palette.js?v=20260712-live-context-fix" defer></script>
+    <script type="module">
+      const endpoint = "/.netlify/functions/admin-journeys";
+      const escapeHtml = window.MaxSharedUI?.escapeHtml || ((value) => String(value || "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character])));
+      const state = { journeys: [], page: 1, pagination: {}, selected: null };
+      const byId = (id) => document.getElementById(id);
+      const elements = {
+        form: byId("journey-filters"), search: byId("journey-search"), source: byId("journey-source"), phase: byId("journey-phase"), action: byId("journey-action"), limit: byId("journey-limit"),
+        table: byId("journey-table-body"), empty: byId("journey-empty"), message: byId("journey-message"), summary: byId("journey-summary"), prev: byId("journey-prev"), next: byId("journey-next"), refresh: byId("journey-refresh"),
+        notice: byId("journey-notice"), noticeCopy: byId("journey-notice-copy"), state: byId("journey-state"), mailState: byId("mail-state"), overlay: byId("journey-overlay"), panel: byId("journey-panel"), close: byId("journey-close"), detail: byId("journey-detail"), detailTitle: byId("journey-detail-title"), detailSource: byId("journey-detail-source"),
+      };
+
+      async function accessToken() {
+        const { getAdminAccessToken } = await import("./src/services/adminAuthBridgeService.js");
+        return getAdminAccessToken();
+      }
+
+      async function load() {
+        setLoading(true);
+        try {
+          const token = await accessToken();
+          const params = new URLSearchParams({ page: String(state.page), limit: elements.limit.value });
+          if (elements.source.value) params.set("source", elements.source.value);
+          if (elements.phase.value.trim()) params.set("phase", elements.phase.value.trim());
+          if (elements.action.value) params.set("action", elements.action.value);
+          const response = await fetch(`${endpoint}?${params}`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) throw new Error(data.error || "Journey-overzicht kon niet worden geladen.");
+          state.journeys = Array.isArray(data.journeys) ? data.journeys : [];
+          state.pagination = data.pagination || {};
+          render(data);
+        } catch (error) {
+          elements.message.textContent = error.message || "Journey-overzicht kon niet worden geladen.";
+          elements.state.textContent = "Overzicht niet beschikbaar";
+          state.journeys = [];
+          renderRows();
+        } finally { setLoading(false); }
+      }
+
+      function render(data) {
+        const metrics = data.metrics || {};
+        byId("metric-active").textContent = metrics.activeJourneys || 0;
+        byId("metric-customer").textContent = metrics.customerActionRequired || 0;
+        byId("metric-internal").textContent = metrics.internalActionRequired || 0;
+        byId("metric-blocked").textContent = metrics.blocked || 0;
+        byId("metric-stale").textContent = metrics.stale || 0;
+        byId("metric-legacy").textContent = metrics.legacyWithoutJourney || 0;
+        elements.mailState.textContent = `Mailautomation: ${data.mailAutomation?.label || "nog niet geactiveerd"}`;
+        if (data.disabled) {
+          elements.state.textContent = "Journey-inzage uitgeschakeld";
+          showNotice("De journey- en adminflags staan uit. Er worden geen journeydata geladen en er zijn geen automatische acties actief.");
+        } else if (!data.journeyTablesAvailable) {
+          elements.state.textContent = "Legacy read-only fallback";
+          showNotice("De journeytabellen zijn nog niet uitgerold. Getoonde legacyvoortgang is indicatief en wordt niet opgeslagen.");
+        } else {
+          elements.state.textContent = "Journey-inzage actief · read-only";
+          const estimates = state.journeys.filter((item) => item.source === "legacy_estimate").length;
+          estimates ? showNotice(`${estimates} resultaat/resultaten zijn een indicatieve legacy-inschatting en geen definitieve journey.`) : hideNotice();
+        }
+        elements.message.textContent = "";
+        renderRows();
+      }
+
+      function renderRows() {
+        const search = elements.search.value.trim().toLowerCase();
+        const rows = state.journeys.filter((item) => !search || [item.customerReference, item.productCode, item.currentPhase, item.currentStep?.label, item.nextStep?.label].some((value) => String(value || "").toLowerCase().includes(search)));
+        elements.table.innerHTML = rows.map((item, index) => rowTemplate(item, index)).join("");
+        elements.empty.hidden = rows.length > 0;
+        elements.summary.textContent = `${state.pagination.total || rows.length} resultaten · pagina ${state.pagination.page || state.page} van ${state.pagination.totalPages || 1}`;
+        elements.prev.disabled = (state.pagination.page || state.page) <= 1;
+        elements.next.disabled = (state.pagination.page || state.page) >= (state.pagination.totalPages || 1);
+        elements.table.querySelectorAll("[data-journey-index]").forEach((row) => row.addEventListener("click", () => openDetail(rows[Number(row.dataset.journeyIndex)])));
+      }
+
+      function rowTemplate(item, index) {
+        const percentage = Math.max(0, Math.min(100, Number(item.percentage) || 0));
+        const source = item.source === "journey" ? "Journey" : item.source === "legacy_estimate" ? "Indicatief" : "Onbekend";
+        const action = item.blocked ? "Geblokkeerd" : item.customerActionRequired ? "Klant" : item.internalActionRequired ? "Intern" : "Geen";
+        return `<tr class="journey-row" tabindex="0" data-journey-index="${index}"><td><div class="journey-customer"><strong>${escapeHtml(item.customerReference)}</strong><small class="journey-muted">${escapeHtml(item.journeyType || "Nog niet gemigreerd")}</small></div></td><td><span class="journey-badge ${item.source === "legacy_estimate" ? "estimate" : ""}">${escapeHtml(source)}</span></td><td>${escapeHtml(item.productCode || "—")}</td><td>${escapeHtml(item.currentPhase || "—")}</td><td>${escapeHtml(item.currentStep?.label || "—")}</td><td><div class="journey-progress"><div class="journey-progress-track"><span style="width:${percentage}%"></span></div><strong>${percentage}%</strong></div></td><td><span class="journey-badge ${item.blocked ? "blocked" : ""}">${escapeHtml(action)}</span></td><td>${escapeHtml(formatDate(item.lastUpdatedAt))}</td></tr>`;
+      }
+
+      function openDetail(item) {
+        if (!item) return;
+        state.selected = item;
+        elements.detailTitle.textContent = item.customerReference || "Journeydetail";
+        elements.detailSource.textContent = item.source === "journey" ? "Definitieve journeydata" : "Indicatieve legacy-inschatting · niet opgeslagen";
+        const steps = [...(item.completedSteps || []), ...(item.remainingSteps || [])].sort((a, b) => Number(a.order) - Number(b.order));
+        const events = item.events || [];
+        elements.detail.innerHTML = `<section class="journey-detail-card"><div class="journey-progress"><div class="journey-progress-track"><span style="width:${Number(item.percentage) || 0}%"></span></div><strong>${Number(item.percentage) || 0}%</strong></div><div><span class="journey-muted">Huidige fase</span><strong>${escapeHtml(item.currentPhase || "Onbekend")}</strong></div><div><span class="journey-muted">Volgende stap</span><strong>${escapeHtml(item.nextStep?.label || "Nog niet bepaald")}</strong></div>${item.blocker ? `<div><span class="journey-muted">Blokkade</span><strong>${escapeHtml(item.blocker.label)}</strong></div>` : ""}</section><section class="journey-detail-card"><div><p class="section-kicker">Stappen</p><h3>Voortgang en mijlpalen</h3></div><div class="journey-step-list">${steps.length ? steps.map((step) => `<div class="journey-step"><span class="journey-step-index">${Number(step.order) || "·"}</span><div><strong>${escapeHtml(step.label)}</strong><small class="journey-muted">${escapeHtml(step.phaseKey)}${step.optional ? " · optioneel" : ""}</small></div><span class="journey-badge">${escapeHtml(step.status)}</span></div>`).join("") : `<p class="journey-muted">Voor legacy-inschattingen is nog geen definitieve stappenlijst beschikbaar.</p>`}</div></section><section class="journey-detail-card"><div><p class="section-kicker">Timeline</p><h3>Journey-events</h3></div><div class="journey-event-list">${events.length ? events.map((event) => `<div class="journey-event"><span class="journey-step-index">•</span><div><strong>${escapeHtml(event.eventType)}</strong><small class="journey-muted">${escapeHtml(event.entityType)} · ${escapeHtml(event.entityId)}</small></div><small class="journey-muted">${escapeHtml(formatDate(event.occurredAt))}</small></div>`).join("") : `<p class="journey-muted">Nog geen journey-events beschikbaar.</p>`}</div></section>`;
+        elements.overlay.hidden = false; elements.panel.hidden = false;
+      }
+
+      function closeDetail() { elements.overlay.hidden = true; elements.panel.hidden = true; state.selected = null; }
+      function setLoading(loading) { elements.refresh.disabled = loading; elements.message.textContent = loading ? "Journey-overzicht laden…" : elements.message.textContent; }
+      function showNotice(copy) { elements.noticeCopy.textContent = copy; elements.notice.hidden = false; }
+      function hideNotice() { elements.notice.hidden = true; }
+      function formatDate(value) { const date = new Date(value || 0); return !value || Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(date); }
+
+      elements.form.addEventListener("submit", (event) => { event.preventDefault(); state.page = 1; load(); });
+      elements.search.addEventListener("input", renderRows);
+      elements.refresh.addEventListener("click", load);
+      elements.prev.addEventListener("click", () => { state.page = Math.max(1, state.page - 1); load(); });
+      elements.next.addEventListener("click", () => { state.page += 1; load(); });
+      elements.close.addEventListener("click", closeDetail); elements.overlay.addEventListener("click", closeDetail);
+      document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeDetail(); });
+      load();
+    </script>
+  </body>
+</html>

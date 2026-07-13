@@ -11,10 +11,16 @@ const SAFE_CONTEXT_FIELDS = new Set([
   "eventType",
   "featureFlag",
   "mode",
+  "operation",
   "provider",
   "reason",
+  "recordCount",
+  "result",
+  "source",
   "status",
   "statusCode",
+  "durationMs",
+  "errorCategory",
 ]);
 
 function createJourneyLogger(options = {}) {

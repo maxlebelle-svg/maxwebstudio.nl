@@ -1,6 +1,9 @@
 -- Phase 2: additive customer journey automation foundations.
 -- This migration creates storage and an atomic event/outbox entrypoint only.
 -- It does not schedule workers, send email, or change existing mail flows.
+-- Validation record: docs/CUSTOMER_JOURNEY_MIGRATION_025_VALIDATION.md
+
+begin;
 
 create extension if not exists pgcrypto;
 
@@ -352,3 +355,5 @@ revoke all on function public.record_journey_event_and_enqueue(
 grant execute on function public.record_journey_event_and_enqueue(
   text, text, text, text, uuid, uuid, jsonb, text, timestamptz, text, text, jsonb, timestamptz
 ) to service_role;
+
+commit;

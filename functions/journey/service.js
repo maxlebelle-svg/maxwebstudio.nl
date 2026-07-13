@@ -1,6 +1,7 @@
 const { resolveJourneyFeatureFlag } = require("./featureFlags");
 const { createJourneyRepository } = require("./repository");
 const { FEATURE_FLAGS } = require("./types");
+const { calculateJourneyProgress } = require("./progress");
 
 function createJourneyService(options = {}) {
   const env = options.env || process.env;
@@ -25,23 +26,12 @@ async function getJourneyProgress({ instanceKey, context, env, repository }) {
 
   const result = await repository.getJourneyInstanceByKey(instanceKey, context);
   if (!result?.row) return { available: Boolean(result?.available), skipped: Boolean(result?.skipped), reason: result?.reason || "journey_not_found", progress: null };
+  const progress = calculateJourneyProgress({ instance: result.row });
+  if (!progress.available) return { available: false, skipped: true, reason: progress.reason, progress: null };
   return {
     available: true,
     skipped: false,
-    progress: publicProgress(result.row),
-  };
-}
-
-function publicProgress(row) {
-  return {
-    journeyType: text(row.journey_type),
-    currentPhase: text(row.current_phase),
-    currentStep: text(row.current_step),
-    progressPercent: percent(row.progress_percent),
-    status: text(row.status),
-    nextStepAt: text(row.next_step_at) || null,
-    startedAt: text(row.started_at) || null,
-    completedAt: text(row.completed_at) || null,
+    progress,
   };
 }
 
@@ -49,13 +39,4 @@ function noProgress(reason, mode) {
   return { available: false, skipped: true, reason, mode, progress: null };
 }
 
-function percent(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number))) : 0;
-}
-
-function text(value) {
-  return String(value || "").trim();
-}
-
-module.exports = { createJourneyService, _private: { publicProgress } };
+module.exports = { createJourneyService };
