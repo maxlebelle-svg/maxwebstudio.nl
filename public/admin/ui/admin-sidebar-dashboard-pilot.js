@@ -4,6 +4,7 @@
   const SESSION_KEY = "mws_admin_supabase_session";
   const PROFILES_KEY = "maxwebstudioProfiles";
   const RECENTS_KEY = "mwsAdminRelationshipRecents";
+  const PERSPECTIVE_KEY = "mwsAdminPerspectiveMode";
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const ROLE_LABELS = Object.freeze({
     super_admin: "Super Admin", admin: "Admin", sales_manager: "Sales Manager",
@@ -11,6 +12,9 @@
     support: "Support", customer: "Klant", demo_user: "Demo Gebruiker",
   });
   const selectorState = { open: false, type: "all", query: "", request: null, restoreFocus: null, debouncedSearch: null };
+  const employeeSelectorState = { open: false, query: "", results: [], loading: false, error: "", request: null, requestId: 0, restoreFocus: null, debouncedSearch: null };
+  const actorState = { profile: null, loading: false, request: null };
+  const perspectiveState = { current: null, request: null, requestId: 0 };
   const metricState = { general: null, workspace: null, loadingGeneral: true, loadingWorkspace: false, workspaceKey: "", request: null, requestId: 0, cache: new Map() };
   const WORKSPACE_BADGES = Object.freeze(["websiteFactory", "demoSites", "assets", "brandStatus", "domains", "openTasks", "openQuotes", "openInvoices", "subscriptionStatus", "mailCount", "timelineEvents"]);
   const METRIC_TO_BADGE = Object.freeze({ assets: "assets", demoSites: "demoSites", openTasks: "openTasks", timelineEvents: "timelineEvents", mailCount: "mailCount", openQuotes: "openQuotes", openInvoices: "openInvoices", overdueInvoices: "openInvoices", subscriptions: "subscriptionStatus", activeSubscriptions: "subscriptionStatus", website: "domains", project: "websiteFactory", journey: "websiteFactory", brandAssets: "brandStatus", websiteFactory: "websiteFactory", previewVersions: "websiteFactory" });
@@ -66,6 +70,63 @@
   function adminToken() {
     const session = readJson(global.localStorage, SESSION_KEY, {});
     return session.accessToken || session.access_token || "";
+  }
+
+  function sessionIsValid(session = readJson(global.localStorage, SESSION_KEY, {})) {
+    if (!adminToken()) return false;
+    const rawExpiry = session.expiresAt || session.expires_at || session.expires || 0;
+    if (!rawExpiry) return true;
+    const numeric = Number(rawExpiry);
+    const expiresAt = Number.isFinite(numeric) ? (numeric < 100000000000 ? numeric * 1000 : numeric) : Date.parse(rawExpiry);
+    return Number.isFinite(expiresAt) && expiresAt > Date.now();
+  }
+
+  function clearPerspective(options = {}) {
+    const previous = perspectiveState.current; perspectiveState.requestId += 1; perspectiveState.request?.abort(); perspectiveState.request = null; perspectiveState.current = null;
+    try { global.sessionStorage?.removeItem(PERSPECTIVE_KEY); } catch {}
+    renderPerspectiveBanner(); closeEmployeeSelector();
+    if (previous && ["localhost", "127.0.0.1"].includes(global.location?.hostname)) console.info("Admin perspective stopped", { actorProfileId: actorState.profile?.id, viewedProfileId: previous.viewedProfileId });
+    if (!options.silent) { refresh(); loadSidebarMetrics(safeRelationship(global.ActiveRelationship), { force: true, perspectiveOnly: true }); }
+  }
+
+  function minimalPerspective(employee = {}) {
+    if (!UUID.test(String(employee.id || "")) || employee.status !== "active") return null;
+    return { viewedProfileId: employee.id, viewedAuthUserId: employee.authUserId || null, name: String(employee.name || "").slice(0, 120), role: String(employee.role || "").slice(0, 40), avatarUrl: employee.avatarUrl || null, selectedAt: new Date().toISOString() };
+  }
+
+  async function loadActorProfile() {
+    if (!sessionIsValid()) { actorState.profile = null; clearPerspective({ silent: true }); return null; }
+    actorState.request?.abort(); const controller = new AbortController(); actorState.request = controller; actorState.loading = true;
+    try {
+      const response = await global.fetch("/api/account-profile", { headers: { Accept: "application/json", Authorization: `Bearer ${adminToken()}` }, cache: "no-store", signal: controller.signal });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success || data.profile?.status !== "active") throw new Error(data.error || "Profiel kon niet worden geladen.");
+      actorState.profile = data.profile;
+      if (data.profile.role !== "super_admin") clearPerspective({ silent: true });
+      return data.profile;
+    } catch (error) { if (error.name !== "AbortError") { actorState.profile = null; clearPerspective({ silent: true }); } return null; }
+    finally { if (actorState.request === controller) { actorState.request = null; actorState.loading = false; refresh(); } }
+  }
+
+  async function validatePerspective(viewedProfileId) {
+    if (actorState.profile?.role !== "super_admin" || !sessionIsValid() || !UUID.test(String(viewedProfileId || ""))) return null;
+    perspectiveState.request?.abort(); const controller = new AbortController(); perspectiveState.request = controller; perspectiveState.requestId += 1; const requestId = perspectiveState.requestId;
+    try {
+      const response = await global.fetch(`/api/admin-employee-search?id=${encodeURIComponent(viewedProfileId)}`, { headers: { Accept: "application/json", Authorization: `Bearer ${adminToken()}` }, cache: "no-store", signal: controller.signal });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success || !data.employee || requestId !== perspectiveState.requestId) return null;
+      return minimalPerspective(data.employee);
+    } catch { return null; }
+    finally { if (perspectiveState.request === controller) perspectiveState.request = null; }
+  }
+
+  async function restorePerspective() {
+    const stored = readJson(global.sessionStorage, PERSPECTIVE_KEY, null);
+    if (!stored?.viewedProfileId) return null;
+    const validated = await validatePerspective(stored.viewedProfileId);
+    if (!validated) { clearPerspective({ silent: true }); return null; }
+    perspectiveState.current = validated; try { global.sessionStorage?.setItem(PERSPECTIVE_KEY, JSON.stringify(validated)); } catch {}
+    renderPerspectiveBanner(); refresh(); return validated;
   }
 
   function relationshipKey(relationship) {
@@ -137,17 +198,20 @@
     metricState.request?.abort(); metricState.request = null;
     if (!token) { metricState.loadingGeneral = false; metricState.loadingWorkspace = false; metricState.general = null; metricState.workspace = null; refresh(); return; }
 
-    const cached = key ? metricState.cache.get(key) : null;
+    const cacheKey = `${key}|${perspectiveState.current?.viewedProfileId || "actor"}`;
+    const cached = key ? metricState.cache.get(cacheKey) : null;
     if (!options.force && cached && Date.now() - cached.storedAt < 30000) {
       metricState.workspace = cached.workspace; metricState.loadingWorkspace = false; refresh(); return;
     }
-    metricState.loadingGeneral = !metricState.general;
-    metricState.loadingWorkspace = Boolean(key);
-    metricState.workspace = null;
+    metricState.loadingGeneral = true;
+    metricState.loadingWorkspace = options.perspectiveOnly ? false : Boolean(key);
+    metricState.general = null;
+    if (!options.perspectiveOnly) metricState.workspace = null;
     refresh();
     const controller = new AbortController(); metricState.request = controller;
     const params = new URLSearchParams();
     if (key) { const [entityType, id] = key.split(":"); params.set("entityType", entityType); params.set("id", id); }
+    if (perspectiveState.current?.viewedProfileId) params.set("viewedProfileId", perspectiveState.current.viewedProfileId);
     try {
       const response = await global.fetch(`/api/admin-sidebar-metrics${params.size ? `?${params}` : ""}`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` }, cache: "no-store", signal: controller.signal });
       const data = await response.json().catch(() => ({}));
@@ -155,11 +219,11 @@
       if (requestId !== metricState.requestId || key !== metricState.workspaceKey) return;
       metricState.general = data.general || null;
       metricState.workspace = key ? data.workspace || null : null;
-      if (key && data.workspace) metricState.cache.set(key, { workspace: data.workspace, storedAt: Date.now() });
+      if (key && data.workspace) metricState.cache.set(cacheKey, { workspace: data.workspace, storedAt: Date.now() });
     } catch (error) {
       if (error.name === "AbortError" || requestId !== metricState.requestId) return;
       if (!metricState.general) metricState.general = { openLeads: null, errors: [{ metric: "openLeads", code: "ENDPOINT_FAILED" }] };
-      metricState.workspace = null;
+      if (!options.perspectiveOnly) metricState.workspace = null;
     } finally {
       if (requestId === metricState.requestId) { metricState.loadingGeneral = false; metricState.loadingWorkspace = false; metricState.request = null; refresh(); }
     }
@@ -308,6 +372,79 @@
     finally { syncRelationshipUrl(null); closeWorkspaceSelector(); refresh(); }
   }
 
+  function roleLabel(role) { return ROLE_LABELS[role] || String(role || "").replaceAll("_", " ") || "Rol onbekend"; }
+
+  function renderPerspectiveBanner() {
+    document.querySelector(".mws-perspective-banner")?.remove();
+    const perspective = perspectiveState.current;
+    if (!perspective) return;
+    const banner = document.createElement("section"); banner.className = "mws-perspective-banner"; banner.setAttribute("role", "status");
+    const copy = document.createElement("div");
+    const title = document.createElement("strong"); title.textContent = `Je bekijkt het dashboard vanuit het perspectief van ${perspective.name}`;
+    const detail = document.createElement("span"); detail.textContent = `${roleLabel(perspective.role)} · Echte gebruiker: ${actorState.profile?.name || "jezelf"}`; copy.append(title, detail);
+    const stop = document.createElement("button"); stop.type = "button"; stop.textContent = "Terug naar mijn dashboard"; stop.addEventListener("click", () => clearPerspective());
+    banner.append(copy, stop);
+    const topbar = document.querySelector(".admin-page-topbar");
+    if (topbar?.insertAdjacentElement) topbar.insertAdjacentElement("afterend", banner); else document.querySelector(".admin-crm-main")?.prepend?.(banner);
+  }
+
+  function closeEmployeeSelector() {
+    employeeSelectorState.debouncedSearch?.cancel(); employeeSelectorState.request?.abort(); employeeSelectorState.request = null; employeeSelectorState.open = false;
+    document.querySelector(".mws-employee-selector")?.remove();
+    const focusTarget = employeeSelectorState.restoreFocus?.isConnected ? employeeSelectorState.restoreFocus : document.querySelector(".mws-user-profile-trigger");
+    employeeSelectorState.restoreFocus = null; focusTarget?.focus?.();
+  }
+
+  function handleEmployeeSelectorKeys(event) {
+    if (event.key === "Escape") { event.preventDefault(); closeEmployeeSelector(); return; }
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    const options = [...document.querySelectorAll(".mws-employee-result")]; if (!options.length) return;
+    event.preventDefault(); const current = options.indexOf(document.activeElement); const next = event.key === "ArrowDown" ? (current + 1) % options.length : (current <= 0 ? options.length - 1 : current - 1); options[next].focus();
+  }
+
+  function renderEmployeeSelector({ focusSearch = false } = {}) {
+    const existing = document.querySelector(".mws-employee-selector");
+    const searchHadFocus = Boolean(existing?.contains(document.activeElement) && document.activeElement?.dataset?.employeeSearch);
+    const selector = global.MaxAdminSidebar?.EmployeeSelector?.({
+      results: employeeSelectorState.results.map((employee) => ({ ...employee, roleLabel: roleLabel(employee.role) })), loading: employeeSelectorState.loading,
+      query: employeeSelectorState.query, error: employeeSelectorState.error, current: perspectiveState.current,
+      onSearch: (value) => { employeeSelectorState.query = value; employeeSelectorState.debouncedSearch(); }, onSelect: selectPerspective, onStop: () => clearPerspective(), onClose: closeEmployeeSelector,
+    });
+    if (!selector) return; selector.addEventListener("keydown", handleEmployeeSelectorKeys);
+    if (existing) existing.replaceWith(selector); else document.body.append(selector);
+    if (focusSearch || searchHadFocus) selector.querySelector?.("[data-employee-search]")?.focus();
+  }
+
+  async function searchEmployees() {
+    if (actorState.profile?.role !== "super_admin") { closeEmployeeSelector(); return; }
+    const query = employeeSelectorState.query.trim();
+    if (query && query.length < 2) { employeeSelectorState.results = []; employeeSelectorState.loading = false; employeeSelectorState.error = ""; renderEmployeeSelector(); return; }
+    employeeSelectorState.request?.abort(); const controller = new AbortController(); employeeSelectorState.request = controller; employeeSelectorState.requestId += 1; const requestId = employeeSelectorState.requestId;
+    employeeSelectorState.loading = true; employeeSelectorState.error = ""; renderEmployeeSelector();
+    try {
+      const params = new URLSearchParams({ limit: "20" }); if (query) params.set("q", query);
+      const response = await global.fetch(`/api/admin-employee-search?${params}`, { headers: { Accept: "application/json", Authorization: `Bearer ${adminToken()}` }, cache: "no-store", signal: controller.signal });
+      const data = await response.json().catch(() => ({})); if (!response.ok || !data.success) throw new Error(data.error || "Medewerkers konden niet worden geladen.");
+      if (requestId !== employeeSelectorState.requestId) return; employeeSelectorState.results = Array.isArray(data.results) ? data.results.slice(0, 20) : [];
+    } catch (error) { if (error.name === "AbortError" || requestId !== employeeSelectorState.requestId) return; employeeSelectorState.results = []; employeeSelectorState.error = error.message || "Medewerkers konden niet worden geladen."; }
+    finally { if (requestId === employeeSelectorState.requestId) { employeeSelectorState.loading = false; employeeSelectorState.request = null; renderEmployeeSelector(); } }
+  }
+
+  function openEmployeeSelector() {
+    if (actorState.profile?.role !== "super_admin") return;
+    employeeSelectorState.open = true; employeeSelectorState.query = ""; employeeSelectorState.results = []; employeeSelectorState.error = ""; employeeSelectorState.restoreFocus = document.activeElement;
+    employeeSelectorState.debouncedSearch ||= createDebouncer(searchEmployees, 280); renderEmployeeSelector({ focusSearch: true }); searchEmployees();
+  }
+
+  async function selectPerspective(employee) {
+    metricState.requestId += 1; metricState.request?.abort(); metricState.request = null; metricState.general = null; metricState.loadingGeneral = true; refresh();
+    const validated = await validatePerspective(employee?.id); if (!validated) { employeeSelectorState.error = "Deze medewerker is niet meer beschikbaar."; metricState.loadingGeneral = false; renderEmployeeSelector(); loadSidebarMetrics(safeRelationship(global.ActiveRelationship), { force: true, perspectiveOnly: true }); return false; }
+    perspectiveState.current = validated; try { global.sessionStorage?.setItem(PERSPECTIVE_KEY, JSON.stringify(validated)); } catch {}
+    closeEmployeeSelector(); renderPerspectiveBanner(); refresh(); await loadSidebarMetrics(safeRelationship(global.ActiveRelationship), { force: true, perspectiveOnly: true });
+    if (["localhost", "127.0.0.1"].includes(global.location?.hostname)) console.info("Admin perspective enabled", { actorProfileId: actorState.profile?.id, viewedProfileId: validated.viewedProfileId });
+    return true;
+  }
+
   function toggleSessionPanel(force) {
     const panel = document.getElementById("admin-sidebar-session-panel");
     if (!panel) return;
@@ -333,6 +470,15 @@
     }));
   }
 
+  function profileActionsFor(actor = {}) {
+    return [
+      { label: "Mijn profiel", disabled: true },
+      { label: "Instellingen", href: "admin-instellingen.html" },
+      ...(actor.role === "super_admin" ? [{ label: "Bekijk als medewerker", onSelect: openEmployeeSelector }] : []),
+      { label: "Uitloggen", onSelect: () => document.getElementById("admin-session-logout")?.click() },
+    ];
+  }
+
   function refresh(context = {}) {
     const root = document.getElementById("admin-sidebar-root");
     const components = global.MaxAdminSidebar;
@@ -343,7 +489,9 @@
     const navigation = pilotNavigation(centralNavigation);
     const session = readJson(global.localStorage, SESSION_KEY, {});
     const profiles = readJson(global.localStorage, PROFILES_KEY, []);
-    const role = context.role || session.role || session.user?.role || "";
+    const fallbackUser = resolveUser(session, profiles);
+    const actor = actorState.profile ? { ...fallbackUser, ...actorState.profile, roleLabel: roleLabel(actorState.profile.role) } : fallbackUser;
+    const role = actor.role || context.role || session.role || session.user?.role || "";
     const activeRelationship = safeRelationship(global.ActiveRelationship);
     const liveRelationship = metricState.workspace?.relationship && metricState.workspaceKey === relationshipKey(activeRelationship)
       ? { ...activeRelationship, ...metricState.workspace.relationship }
@@ -353,37 +501,48 @@
       navigation,
       activeId: "dashboard",
       relationship,
-      user: resolveUser({ ...session, role }, profiles),
+      user: actor,
+      perspective: perspectiveState.current,
       badgeValues: buildBadgeValues(),
       canAccess: (item) => canAccessItem(item, { ...context, role }),
       onSwitchWorkspace: openWorkspaceSelector,
       onSelectWorkspace: openWorkspaceSelector,
       onClearWorkspace: clearWorkspace,
-      profileActions: [
-        { label: "Sessiebeheer", onSelect: () => toggleSessionPanel(true) },
-        { label: "Uitloggen", onSelect: () => document.getElementById("admin-session-logout")?.click() },
-      ],
+      profileActions: profileActionsFor(actorState.profile || {}),
     });
     sidebar.id = "admin-sidebar";
     root.replaceChildren(sidebar);
     return navigation.reduce((count, section) => count + section.items.filter((item) => !canAccessItem(item, { ...context, role })).length, 0);
   }
 
+  function validateSessionState() {
+    if (sessionIsValid()) return true;
+    actorState.profile = null; clearPerspective({ silent: true }); clearMetricState(); return false;
+  }
+
+  async function initializeProfileAndMetrics() {
+    const profile = await loadActorProfile();
+    if (profile?.role === "super_admin") await restorePerspective();
+    renderPerspectiveBanner(); refresh(); await loadSidebarMetrics();
+  }
+
   function mount() {
     refresh();
-    loadSidebarMetrics();
+    initializeProfileAndMetrics();
     document.querySelector("[data-sidebar-session-close]")?.addEventListener("click", () => toggleSessionPanel(false));
     global.addEventListener("maxwebstudio:relationship-change", () => resetWorkspaceMetrics());
     global.addEventListener("maxwebstudio:relationship-ready", () => resetWorkspaceMetrics());
-    global.addEventListener("storage", (event) => { if (event.key === SESSION_KEY) loadSidebarMetrics(); else if (event.key === PROFILES_KEY) refresh(); });
-    global.addEventListener("maxwebstudio:admin-logout", () => { try { global.sessionStorage?.removeItem(RECENTS_KEY); } catch {} clearMetricState(); closeWorkspaceSelector(); });
+    global.addEventListener("storage", (event) => { if (event.key === SESSION_KEY) { clearPerspective({ silent: true }); initializeProfileAndMetrics(); } else if (event.key === PROFILES_KEY) refresh(); });
+    global.addEventListener("focus", validateSessionState);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") validateSessionState(); });
+    global.addEventListener("maxwebstudio:admin-logout", () => { try { global.sessionStorage?.removeItem(RECENTS_KEY); } catch {} actorState.profile = null; clearPerspective({ silent: true }); clearMetricState(); closeWorkspaceSelector(); });
     const closeSelectorOutside = (event) => { const selector = document.querySelector(".mws-workspace-selector"); if (selectorState.open && selector && !selector.contains(event.target) && !event.target.closest(".mws-workspace-card,#active-relationship-workspace [data-relationship-switch]")) closeWorkspaceSelector(); };
     document.addEventListener("pointerdown", closeSelectorOutside, true);
     document.addEventListener("click", closeSelectorOutside, true);
     document.addEventListener("click", (event) => { if (!event.target.closest("#active-relationship-workspace [data-relationship-switch]")) return; event.preventDefault(); event.stopImmediatePropagation(); openWorkspaceSelector(); }, true);
   }
 
-  const api = Object.freeze({ buildBadgeValues, canAccessItem, clearMetricState, clearWorkspace, closeWorkspaceSelector, createDebouncer, handleSelectorKeys, loadSidebarMetrics, metricState, openWorkspaceSelector, pilotNavigation, readJson, recentResults, refresh, relationshipForSidebar, relationshipKey, rememberRelationship, resetWorkspaceMetrics, resolveUser, safeRelationship, searchRelationships, selectRelationship, semanticTone, syncRelationshipUrl, toggleSessionPanel });
+  const api = Object.freeze({ actorState, buildBadgeValues, canAccessItem, clearMetricState, clearPerspective, clearWorkspace, closeEmployeeSelector, closeWorkspaceSelector, createDebouncer, employeeSelectorState, handleEmployeeSelectorKeys, handleSelectorKeys, loadActorProfile, loadSidebarMetrics, metricState, minimalPerspective, openEmployeeSelector, openWorkspaceSelector, perspectiveState, pilotNavigation, profileActionsFor, readJson, recentResults, refresh, relationshipForSidebar, relationshipKey, rememberRelationship, resetWorkspaceMetrics, resolveUser, restorePerspective, safeRelationship, searchEmployees, searchRelationships, selectPerspective, selectRelationship, semanticTone, sessionIsValid, syncRelationshipUrl, toggleSessionPanel, validatePerspective, validateSessionState });
   global.MaxAdminSidebarPilot = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof document !== "undefined") {

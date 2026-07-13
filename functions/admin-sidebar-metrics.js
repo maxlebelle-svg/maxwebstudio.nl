@@ -3,6 +3,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const CONTRACT_VERSION = 1;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ALLOWED_ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "sales", "developer"];
+const INTERNAL_ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "designer", "developer", "support"];
 const OPEN_LEAD_STATUSES = ["new", "nieuw", "lead", "reviewing", "assigned", "call_scheduled", "contact_attempted", "contacted", "follow_up", "appointment_scheduled", "interesting", "qualified", "demo_requested", "demo_building", "demo_ready", "demo_sent", "proposal_sent", "negotiation"];
 const OPEN_LEGACY_LEAD_STATUSES = ["new", "nieuw", "lead", "assigned", "contacted", "follow_up", "opvolgen", "interesting", "interesse", "qualified", "proposal_sent", "negotiation"];
 const OPEN_TASK_STATUSES = ["new", "open", "in_progress", "waiting_customer"];
@@ -22,8 +23,10 @@ exports.handler = async (event) => {
     const params = queryParams(event);
     const entityType = clean(params.get("entityType") || params.get("type")).toLowerCase();
     const relationshipId = clean(params.get("id"));
-    const general = await loadGeneralMetrics(context, auth.admin || {});
-    if (!entityType && !relationshipId) return success({ general, workspace: null });
+    const viewedProfileId = clean(params.get("viewedProfileId"));
+    const perspective = await resolvePerspective(context, auth.admin || {}, viewedProfileId);
+    const general = await loadGeneralMetrics(context, auth.admin || {}, perspective.employee);
+    if (!entityType && !relationshipId) return success({ general, workspace: null, perspective: perspective.meta });
     if (!["lead", "customer"].includes(entityType) || !UUID.test(relationshipId)) return failure(400, "INVALID_RELATIONSHIP", "Kies een geldige lead of klant.");
 
     const resolved = await resolveRelationship(context, entityType, relationshipId);
@@ -32,16 +35,16 @@ exports.handler = async (event) => {
     if (!canAccess(auth.admin || {}, resolved.relationship, resolved.lead)) return failure(403, "FORBIDDEN", "Je hebt geen toegang tot deze relatie.");
 
     const workspace = await loadWorkspaceMetrics(context, resolved);
-    return success({ general, workspace });
+    return success({ general, workspace, perspective: perspective.meta });
   } catch (error) {
     console.error("Admin sidebar metrics failed", { code: error.code || "INTERNAL_ERROR", message: error.message });
     return failure(error.status || 500, error.code || "INTERNAL_ERROR", error.status ? error.message : "Sidebarinformatie kon niet veilig worden geladen.");
   }
 };
 
-async function loadGeneralMetrics(context, admin) {
+async function loadGeneralMetrics(context, admin, viewedEmployee = null) {
   if (!["super_admin", "admin", "sales_manager", "sales_partner", "sales"].includes(normalizeRole(admin.role))) return { openLeads: null, definition: "Niet beschikbaar voor deze rol" };
-  const ownership = ownershipFilter(admin);
+  const ownership = viewedEmployee ? ownershipFilterForIdentity(viewedEmployee.authUserId, viewedEmployee.id) : ownershipFilter(admin);
   try {
     const [modern, legacy] = await Promise.all([
       exactCount(context, "leads", [`lead_status=in.(${OPEN_LEAD_STATUSES.join(",")})`, ownership].filter(Boolean)),
@@ -52,6 +55,24 @@ async function loadGeneralMetrics(context, admin) {
   } catch (error) {
     return { openLeads: null, definition: "Open leads binnen jouw toegestane scope", errors: [metricError("openLeads", error)] };
   }
+}
+
+async function resolvePerspective(context, admin, viewedProfileId) {
+  const actorProfileId = clean(admin.profileId) || null;
+  const inactive = { employee: null, meta: { actorProfileId, viewedProfileId: null, perspectiveActive: false } };
+  if (!viewedProfileId) return inactive;
+  if (normalizeRole(admin.role) !== "super_admin") throw coded("SUPER_ADMIN_REQUIRED", 403, "Alleen een super admin kan een medewerkerperspectief gebruiken.");
+  if (!UUID.test(viewedProfileId)) throw coded("INVALID_PROFILE_ID", 400, "Kies een geldige medewerker.");
+  const select = "id,auth_user_id,name,role,status,email,serviceAccount:metadata->>serviceAccount,service_account:metadata->>service_account";
+  const employee = await one(context, "profiles", select, [`id=eq.${viewedProfileId}`, "status=eq.active"]);
+  const role = normalizeRole(employee?.role);
+  const email = clean(employee?.email).toLowerCase();
+  const serviceAccount = employee?.serviceAccount === true || ["true", "1", "yes"].includes(clean(employee?.serviceAccount || employee?.service_account).toLowerCase());
+  if (!employee || !UUID.test(clean(employee.id)) || !UUID.test(clean(employee.auth_user_id)) || !INTERNAL_ROLES.includes(role) || serviceAccount || /^(service|system|automation|noreply|no-reply|bot)[+@._-]/.test(email)) {
+    throw coded("EMPLOYEE_NOT_FOUND", 404, "Deze medewerker is niet beschikbaar.");
+  }
+  const normalized = { id: clean(employee.id), authUserId: clean(employee.auth_user_id), name: clean(employee.name), role };
+  return { employee: normalized, meta: { actorProfileId, viewedProfileId: normalized.id, perspectiveActive: true } };
 }
 
 async function loadWorkspaceMetrics(context, resolved) {
@@ -197,6 +218,16 @@ function ownershipFilter(admin) {
   return clauses.length ? `or=(${clauses.join(",")})` : "id=eq.__none__";
 }
 
+function ownershipFilterForIdentity(authUserId, profileId) {
+  const clauses = [];
+  const add = (field, value) => { if (UUID.test(clean(value))) clauses.push(`${field}.eq.${clean(value)}`); };
+  add("assigned_user_id", authUserId); add("owner_auth_user_id", authUserId); add("owner_profile_id", profileId);
+  add("metadata->>assignedUserId", authUserId); add("metadata->>assigned_user_id", authUserId);
+  add("metadata->>ownerAuthUserId", authUserId); add("metadata->>owner_auth_user_id", authUserId);
+  add("metadata->>ownerProfileId", profileId); add("metadata->>owner_profile_id", profileId);
+  return clauses.length ? `or=(${clauses.join(",")})` : "id=eq.__none__";
+}
+
 async function exactCount(context, table, filters = []) {
   if (!filters) return null;
   const url = restUrl(context, table, "id", filters, "", 1);
@@ -238,4 +269,4 @@ function success(payload) { return json(200, { success: true, contractVersion: C
 function failure(statusCode, code, error) { return json(statusCode, { success: false, contractVersion: CONTRACT_VERSION, code, error }); }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "private, no-store" }, body: JSON.stringify(body) }; }
 
-exports._test = { canAccess, deriveBrandStatus, deriveCommerceStatus, deriveDomainStatus, deriveWebsiteFactoryStatus, mapRelationship, ownershipFilter, relationFilter };
+exports._test = { canAccess, deriveBrandStatus, deriveCommerceStatus, deriveDomainStatus, deriveWebsiteFactoryStatus, mapRelationship, ownershipFilter, ownershipFilterForIdentity, relationFilter, resolvePerspective };

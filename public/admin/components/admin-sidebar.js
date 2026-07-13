@@ -53,15 +53,22 @@
     return badge;
   }
 
-  function Avatar({ name = "", imageUrl = "", size = "medium" } = {}) {
-    const fallback = element("span", `mws-sidebar-avatar is-${size}`, initials(name));
+  function Avatar({ name = "", imageUrl = "", size = "medium", seed = "" } = {}) {
+    const fallback = element("span", `mws-sidebar-avatar is-${size} is-tone-${avatarTone(seed || name)}`, initials(name));
     fallback.setAttribute("aria-label", name || "Gebruiker");
+    imageUrl = safeImageUrl(imageUrl);
     if (!imageUrl) return fallback;
     const image = element("img", `mws-sidebar-avatar is-${size}`);
     image.alt = name || "Gebruiker";
     image.src = imageUrl;
     image.addEventListener("error", () => image.replaceWith(fallback), { once: true });
     return image;
+  }
+
+  function safeImageUrl(value = "") { const url = String(value || "").trim(); if (url.startsWith("/assets/") || url.startsWith("/images/")) return url; try { const parsed = new URL(url); return parsed.protocol === "https:" ? parsed.toString() : ""; } catch { return ""; } }
+
+  function avatarTone(value = "") {
+    return [...String(value)].reduce((total, character) => (total + character.charCodeAt(0)) % 6, 0);
   }
 
   function SidebarItem({ item, active = false, badgeValue, disabled = false, workspaceMuted = false } = {}) {
@@ -163,36 +170,62 @@
     return skeleton;
   }
 
-  function UserProfileMenu({ user = {}, actions = [] } = {}) {
+  function EmployeeSelector({ results = [], loading = false, query = "", error = "", current = null, onSearch, onSelect, onStop, onClose } = {}) {
+    const selector = element("section", "mws-employee-selector");
+    selector.setAttribute("role", "dialog"); selector.setAttribute("aria-modal", "true"); selector.setAttribute("aria-label", "Medewerkerperspectief kiezen"); selector.tabIndex = -1;
+    const header = element("header", "mws-workspace-selector-header");
+    const title = element("div"); title.append(element("span", "mws-workspace-kicker", "Perspectief"), element("strong", "", "Bekijk als medewerker"));
+    const close = element("button", "mws-workspace-selector-close", "×"); close.type = "button"; close.setAttribute("aria-label", "Medewerkerselector sluiten");
+    if (typeof onClose === "function") close.addEventListener("click", onClose); header.append(title, close);
+    const explanation = element("p", "mws-employee-selector-explanation", "Alleen de veilige dashboardweergave verandert. Je blijft ingelogd als jezelf.");
+    const input = element("input", "mws-workspace-search"); input.type = "search"; input.value = query; input.placeholder = "Zoek medewerker op naam"; input.dataset.employeeSearch = "true"; input.setAttribute("aria-label", input.placeholder);
+    if (typeof onSearch === "function") input.addEventListener("input", (event) => onSearch(event.target.value));
+    const status = element("div", `mws-workspace-selector-status${error ? " is-error" : ""}`, error || (loading ? "Medewerkers laden…" : `${results.length} ${results.length === 1 ? "medewerker" : "medewerkers"}`)); status.setAttribute("role", "status"); status.dataset.employeeStatus = "true";
+    const list = element("div", "mws-workspace-results"); list.setAttribute("role", "listbox"); list.dataset.employeeResults = "true";
+    if (loading) list.append(LoadingSkeleton({ rows: 4, label: "Medewerkers laden" }));
+    else results.forEach((employee) => { const option = element("button", "mws-employee-result"); option.type = "button"; option.setAttribute("role", "option"); option.dataset.employeeId = employee.id; option.append(Avatar({ name: employee.name, imageUrl: employee.avatarUrl, size: "small", seed: employee.id })); const copy = element("span", "mws-employee-result-copy"); copy.append(element("strong", "", employee.name), element("small", "", [employee.roleLabel || employee.role, employee.team, "Actief"].filter(Boolean).join(" · "))); option.append(copy); if (typeof onSelect === "function") option.addEventListener("click", () => onSelect(employee)); list.append(option); });
+    if (!loading && !results.length) list.append(element("p", "mws-workspace-no-results", query.trim().length < 2 ? "Typ minimaal twee tekens om te zoeken." : "Geen actieve medewerker gevonden."));
+    selector.append(header, explanation, input, status, list);
+    if (current) { const stop = element("button", "mws-perspective-stop", "Terug naar mijn dashboard"); stop.type = "button"; if (typeof onStop === "function") stop.addEventListener("click", onStop); selector.append(stop); }
+    selector.append(element("small", "mws-workspace-selector-hint", "Gebruik ↑ en ↓ om te navigeren · Esc sluit"));
+    return selector;
+  }
+
+  function UserProfileMenu({ user = {}, actions = [], perspective = null } = {}) {
     const wrapper = element("div", "mws-user-profile");
     const trigger = element("button", "mws-user-profile-trigger");
     trigger.type = "button";
     trigger.setAttribute("aria-expanded", "false");
-    trigger.append(Avatar({ name: user.name || user.email, imageUrl: user.avatarUrl }), profileCopy(user));
+    trigger.append(Avatar({ name: user.name || user.email, imageUrl: user.avatarUrl, seed: user.id || user.authUserId }), profileCopy(user, perspective));
     const menu = element("div", "mws-user-profile-menu");
     menu.hidden = true;
     menu.setAttribute("role", "menu");
-    actions.forEach((action) => { const button = element("button", "mws-user-profile-action", action.label); button.type = "button"; button.setAttribute("role", "menuitem"); if (action.disabled) button.disabled = true; if (typeof action.onSelect === "function") button.addEventListener("click", action.onSelect); menu.append(button); });
-    trigger.addEventListener("click", () => { const open = menu.hidden; menu.hidden = !open; trigger.setAttribute("aria-expanded", String(open)); });
+    actions.forEach((action) => { const button = element(action.href && !action.disabled ? "a" : "button", "mws-user-profile-action", action.label); if (button.tagName === "BUTTON") button.type = "button"; if (action.href && !action.disabled) button.href = action.href; button.setAttribute("role", "menuitem"); if (action.disabled) { button.disabled = true; button.setAttribute("aria-disabled", "true"); } if (typeof action.onSelect === "function") button.addEventListener("click", (event) => { menu.hidden = true; trigger.setAttribute("aria-expanded", "false"); action.onSelect(event); }); menu.append(button); });
+    const menuItems = () => [...menu.children].filter((item) => !item.disabled);
+    const setOpen = (open, focus = false) => { menu.hidden = !open; trigger.setAttribute("aria-expanded", String(open)); if (open && focus) menuItems()[0]?.focus(); };
+    trigger.addEventListener("click", () => setOpen(menu.hidden));
+    trigger.addEventListener("keydown", (event) => { if (["ArrowDown", "Enter", " "].includes(event.key) && menu.hidden) { event.preventDefault(); setOpen(true, true); } });
+    menu.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); setOpen(false); trigger.focus(); return; } if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return; const items = menuItems(); if (!items.length) return; event.preventDefault(); const current = items.indexOf(document.activeElement); const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : event.key === "ArrowDown" ? (current + 1) % items.length : (current <= 0 ? items.length - 1 : current - 1); items[next].focus(); });
+    wrapper.addEventListener("focusout", (event) => { if (!wrapper.contains(event.relatedTarget)) setOpen(false); });
     wrapper.append(trigger, menu);
     return wrapper;
   }
 
-  function profileCopy(user) { const copy = element("span", "mws-user-profile-copy"); copy.append(element("strong", "", user.name || user.email || "Onbekende gebruiker"), element("small", "", user.roleLabel || user.role || "Rol onbekend")); return copy; }
-  function initials(name = "") { const parts = String(name || "").trim().split(/\s+/).filter(Boolean); return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}` : parts[0]?.slice(0, 2) || "—").toUpperCase(); }
+  function profileCopy(user, perspective) { const copy = element("span", "mws-user-profile-copy"); copy.append(element("strong", "", user.name || user.email || "Onbekende gebruiker"), element("small", "", user.roleLabel || user.role || "Rol onbekend")); if (perspective?.name) copy.append(element("small", "mws-user-profile-perspective", `Bekijkt als: ${perspective.name}`)); return copy; }
+  function initials(name = "") { const parts = String(name || "").trim().split(/\s+/).filter(Boolean); const surnamePrefixes = ["de", "den", "der", "van", "von", "le", "la"]; const surname = parts.length > 2 && surnamePrefixes.includes(parts[1].toLowerCase()) ? parts[1] : parts.at(-1); return (parts.length > 1 ? `${parts[0][0]}${surname[0]}` : parts[0]?.slice(0, 2) || "—").toUpperCase(); }
 
-  function AdminSidebar({ navigation, activeId = "", relationship = null, user = {}, badgeValues = {}, canAccess = () => true, onSwitchWorkspace, onSelectWorkspace, onClearWorkspace, profileActions = [] } = {}) {
+  function AdminSidebar({ navigation, activeId = "", relationship = null, user = {}, perspective = null, badgeValues = {}, canAccess = () => true, onSwitchWorkspace, onSelectWorkspace, onClearWorkspace, profileActions = [] } = {}) {
     const config = navigation || global.MaxAdminSidebarNavigation?.ADMIN_SIDEBAR_NAVIGATION || [];
     const sidebar = element("aside", "mws-admin-sidebar-v2");
     sidebar.setAttribute("aria-label", "Admin navigatie");
     const brand = element("a", "mws-sidebar-brand"); brand.href = "admin-dashboard.html"; brand.append(element("span", "mws-sidebar-brand-mark", "M"), element("span", "", "Max Webstudio")); sidebar.append(brand);
     const content = element("div", "mws-sidebar-content");
     config.forEach((section) => { if (section.type === "workspace") content.append(WorkspaceCard({ relationship, onSwitch: onSwitchWorkspace, onSelect: onSelectWorkspace, onClear: onClearWorkspace })); else content.append(SidebarSection({ section, activeId, badgeValues, relationship, canAccess })); });
-    sidebar.append(content, UserProfileMenu({ user, actions: profileActions }));
+    sidebar.append(content, UserProfileMenu({ user, perspective, actions: profileActions }));
     return sidebar;
   }
 
-  const api = Object.freeze({ AdminSidebar, Avatar, EmptyWorkspaceState, LoadingSkeleton, MetricBadge, SidebarItem, SidebarSection, StatusBadge, UserProfileMenu, WorkspaceCard, WorkspaceSelector, icon, initials });
+  const api = Object.freeze({ AdminSidebar, Avatar, EmptyWorkspaceState, EmployeeSelector, LoadingSkeleton, MetricBadge, SidebarItem, SidebarSection, StatusBadge, UserProfileMenu, WorkspaceCard, WorkspaceSelector, avatarTone, icon, initials, safeImageUrl });
   global.MaxAdminSidebar = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);

@@ -7,6 +7,8 @@ const PROFILE = "22222222-2222-4222-8222-222222222222";
 const LEAD = "33333333-3333-4333-8333-333333333333";
 const CUSTOMER = "44444444-4444-4444-8444-444444444444";
 const JOURNEY = "55555555-5555-4555-8555-555555555555";
+const VIEWED_PROFILE = "66666666-6666-4666-8666-666666666666";
+const VIEWED_AUTH = "77777777-7777-4777-8777-777777777777";
 
 test("sidebar metrics requires a verified bearer and active allowed profile", async () => {
   const result = await handler(event({}, ""));
@@ -58,6 +60,24 @@ test("sales_partner general and workspace queries are server-scoped and foreign 
   assert.equal(denied.statusCode, 403);
 }));
 
+test("super admin perspective filters only general metrics and keeps actor/viewed identities explicit", async () => withBackend("super_admin", async (state) => {
+  const result = await handler(event({ entityType: "customer", id: CUSTOMER, viewedProfileId: VIEWED_PROFILE }));
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  assert.deepEqual(body.perspective, { actorProfileId: PROFILE, viewedProfileId: VIEWED_PROFILE, perspectiveActive: true });
+  const leadCount = state.urls.find((url) => url.includes("/rest/v1/leads") && url.includes("lead_status=in"));
+  assert.match(decodeURIComponent(new URL(leadCount).searchParams.get("or") || ""), new RegExp(VIEWED_AUTH));
+  const workspaceUrl = state.urls.find((url) => url.includes("/rest/v1/files") && url.includes(CUSTOMER));
+  assert(workspaceUrl);
+  assert.doesNotMatch(workspaceUrl, new RegExp(VIEWED_PROFILE));
+}));
+
+test("non-super-admin cannot inject a viewed profile into metric requests", async () => withBackend("admin", async () => {
+  const result = await handler(event({ viewedProfileId: VIEWED_PROFILE }));
+  assert.equal(result.statusCode, 403);
+  assert.equal(JSON.parse(result.body).code, "SUPER_ADMIN_REQUIRED");
+}));
+
 test("one failed metric is isolated and never converted to a fake zero", async () => withBackend("admin", async () => {
   const result = await handler(event({ entityType: "customer", id: CUSTOMER }));
   const body = JSON.parse(result.body);
@@ -105,7 +125,8 @@ async function withBackend(role, callback, options = {}) {
   global.fetch = async (url) => {
     const stringUrl = String(url); state.urls.push(stringUrl);
     if (stringUrl.includes("/auth/v1/user")) return response(200, { id: ACTOR, email: "partner@example.test" });
-    if (stringUrl.includes("/rest/v1/profiles")) return response(200, [{ id: PROFILE, role, status: "active" }]);
+    if (stringUrl.includes("/rest/v1/profiles") && stringUrl.includes("auth_user_id=eq.")) return response(200, [{ id: PROFILE, role, status: "active" }]);
+    if (stringUrl.includes("/rest/v1/profiles")) return response(200, [{ id: VIEWED_PROFILE, auth_user_id: VIEWED_AUTH, name: "Lisanne", email: "lisanne@example.test", role: "sales_partner", status: "active" }]);
     const parsed = new URL(stringUrl); const table = parsed.pathname.split("/").at(-1);
     if (options.failTable === table) return response(503, { code: "UPSTREAM" });
     if (isCountRequest(parsed)) return countResponse(countFor(table, parsed));

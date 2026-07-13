@@ -120,7 +120,16 @@ function normalizeProfile(row = {}) {
     status: cleanText(row.status || "active").toLowerCase(),
     customerId: cleanText(row.customer_id || row.metadata?.customerId),
     lastLoginAt: cleanText(row.last_login_at),
+    avatarUrl: safeAvatarUrl(row.metadata?.avatarUrl || row.metadata?.avatar_url || row.metadata?.photoUrl || row.metadata?.photo_url),
   };
+}
+
+function safeAvatarUrl(value) {
+  const url = cleanText(value);
+  if (!url) return null;
+  if (url.startsWith("/assets/") || url.startsWith("/images/")) return url;
+  try { const parsed = new URL(url); return parsed.protocol === "https:" ? parsed.toString() : null; }
+  catch { return null; }
 }
 
 function cleanText(value) {

@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const navigation = require("../public/admin/config/sidebar-navigation.js");
 const pilot = require("../public/admin/ui/admin-sidebar-dashboard-pilot.js");
+const PROFILE = "22222222-2222-4222-8222-222222222222";
 
 class FakeClassList {
   constructor(owner) { this.owner = owner; }
@@ -18,11 +19,13 @@ class FakeClassList {
 
 class FakeElement {
   constructor(tag) { this.tagName = tag.toUpperCase(); this.children = []; this.attributes = {}; this.dataset = {}; this.className = ""; this.textContent = ""; this.hidden = false; this.classList = new FakeClassList(this); this.listeners = {}; }
-  append(...children) { this.children.push(...children); }
+  append(...children) { children.forEach((child) => { if (child && typeof child === "object") child.parentNode = this; }); this.children.push(...children); }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   getAttribute(name) { return this.attributes[name]; }
   addEventListener(name, callback) { this.listeners[name] = callback; }
   replaceWith(node) { this.replacement = node; }
+  contains(node) { for (let current = node; current; current = current.parentNode) if (current === this) return true; return false; }
+  focus() { global.document.activeElement = this; }
 }
 
 function withFakeDocument(callback) {
@@ -93,7 +96,34 @@ test("dashboard is active, workspace links remain clickable, and avatar initials
   assert.equal(dashboard.getAttribute("aria-current"), "page");
   assert.equal(factory.getAttribute("aria-disabled"), undefined);
   assert.equal(factory.classList.contains("is-workspace-muted"), true);
-  assert.equal(avatar.textContent, "MB");
+  assert.equal(avatar.textContent, "ML");
+}));
+
+test("profile menu keeps the real actor visible, shows perspective and supports keyboard close", () => withFakeDocument(() => {
+  delete require.cache[require.resolve("../public/admin/components/admin-sidebar.js")];
+  const components = require("../public/admin/components/admin-sidebar.js");
+  const menu = components.UserProfileMenu({ user: { id: PROFILE, name: "Max Le Belle", roleLabel: "Super Admin" }, perspective: { name: "Lisanne Post" }, actions: [{ label: "Mijn profiel", disabled: true }, { label: "Instellingen", href: "admin-instellingen.html" }, { label: "Bekijk als medewerker" }, { label: "Uitloggen" }] });
+  assert.match(treeText(menu), /Max Le Belle Super Admin Bekijkt als: Lisanne Post/);
+  const trigger = find(menu, (node) => node.classList.contains("mws-user-profile-trigger"));
+  const dropdown = find(menu, (node) => node.classList.contains("mws-user-profile-menu"));
+  trigger.listeners.click(); assert.equal(dropdown.hidden, false);
+  let prevented = false; dropdown.listeners.keydown({ key: "Escape", preventDefault() { prevented = true; } });
+  assert.equal(prevented, true); assert.equal(dropdown.hidden, true); assert.equal(global.document.activeElement, trigger);
+}));
+
+test("view-as action is visible only for the server-confirmed super admin role", () => {
+  assert(pilot.profileActionsFor({ role: "super_admin" }).some((action) => action.label === "Bekijk als medewerker"));
+  assert.equal(pilot.profileActionsFor({ role: "admin" }).some((action) => action.label === "Bekijk als medewerker"), false);
+  assert.equal(pilot.profileActionsFor({ role: "sales_partner" }).some((action) => action.label === "Bekijk als medewerker"), false);
+});
+
+test("avatar image errors fall back to deterministic ML initials", () => withFakeDocument(() => {
+  delete require.cache[require.resolve("../public/admin/components/admin-sidebar.js")];
+  const components = require("../public/admin/components/admin-sidebar.js");
+  const avatar = components.Avatar({ name: "Max Le Belle", imageUrl: "https://cdn.example.test/missing.jpg", seed: PROFILE });
+  avatar.listeners.error();
+  assert.equal(avatar.replacement.textContent, "ML");
+  assert.match(avatar.replacement.className, /is-tone-[0-5]/);
 }));
 
 test("malformed profile and workspace sources degrade without crashing", () => {
@@ -122,6 +152,59 @@ test("recent relationships use a bounded non-sensitive session cache", () => {
     assert.match(stored, /Acme/); assert.doesNotMatch(stored, /private@example|\+31/);
     assert.equal(JSON.parse(stored).length, 1);
   } finally { global.sessionStorage = previous; }
+});
+
+test("perspective storage is minimal and clearing removes it without touching the auth session", () => {
+  const previous = { sessionStorage: global.sessionStorage, localStorage: global.localStorage, document: global.document };
+  const values = new Map([["mwsAdminPerspectiveMode", "stored"]]);
+  global.sessionStorage = { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  global.localStorage = { getItem: (key) => key === "mws_admin_supabase_session" ? JSON.stringify({ accessToken: "real-max-token" }) : null };
+  global.document = { querySelector: () => null, getElementById: () => null };
+  try {
+    const minimal = pilot.minimalPerspective({ id: "55555555-5555-4555-8555-555555555555", authUserId: "66666666-6666-4666-8666-666666666666", name: "Lisanne", role: "sales_partner", status: "active", email: "private@example.test", phone: "0612345678", token: "secret" });
+    assert.doesNotMatch(JSON.stringify(minimal), /private@example|0612345678|secret/);
+    pilot.perspectiveState.current = minimal; pilot.clearPerspective({ silent: true });
+    assert.equal(values.has("mwsAdminPerspectiveMode"), false);
+    assert.equal(JSON.parse(global.localStorage.getItem("mws_admin_supabase_session")).accessToken, "real-max-token");
+  } finally { Object.assign(global, previous); }
+});
+
+test("expired sessions clear perspective state", () => {
+  const previous = { localStorage: global.localStorage, sessionStorage: global.sessionStorage, document: global.document };
+  const values = new Map([["mwsAdminPerspectiveMode", JSON.stringify({ viewedProfileId: "55555555-5555-4555-8555-555555555555" })]]);
+  global.localStorage = { getItem: (key) => key === "mws_admin_supabase_session" ? JSON.stringify({ accessToken: "token", expiresAt: Date.now() - 1000 }) : null };
+  global.sessionStorage = { getItem: (key) => values.get(key) || null, removeItem: (key) => values.delete(key) };
+  global.document = { querySelector: () => null, getElementById: () => null };
+  try { pilot.perspectiveState.current = { viewedProfileId: "55555555-5555-4555-8555-555555555555" }; assert.equal(pilot.validateSessionState(), false); assert.equal(values.has("mwsAdminPerspectiveMode"), false); }
+  finally { Object.assign(global, previous); }
+});
+
+test("perspective validation keeps the real bearer and ignores a delayed older selection", async () => {
+  const previous = { localStorage: global.localStorage, fetch: global.fetch };
+  const pending = []; const headers = [];
+  global.localStorage = { getItem: (key) => key === "mws_admin_supabase_session" ? JSON.stringify({ accessToken: "real-max-token", expiresAt: Date.now() + 60000 }) : null };
+  global.fetch = (url, options) => new Promise((resolve) => { headers.push(options.headers.Authorization); pending.push({ url: String(url), resolve }); });
+  pilot.actorState.profile = { id: PROFILE, role: "super_admin", status: "active" };
+  try {
+    const first = pilot.validatePerspective("55555555-5555-4555-8555-555555555555");
+    const second = pilot.validatePerspective("66666666-6666-4666-8666-666666666666");
+    pending[1].resolve(jsonFetch({ success: true, employee: { id: "66666666-6666-4666-8666-666666666666", authUserId: "77777777-7777-4777-8777-777777777777", name: "Tweede", role: "developer", status: "active" } }));
+    const latest = await second;
+    pending[0].resolve(jsonFetch({ success: true, employee: { id: "55555555-5555-4555-8555-555555555555", authUserId: "88888888-8888-4888-8888-888888888888", name: "Eerste", role: "sales_partner", status: "active" } }));
+    assert.equal((await first), null); assert.equal(latest.name, "Tweede"); assert.deepEqual(headers, ["Bearer real-max-token", "Bearer real-max-token"]);
+  } finally { pilot.actorState.profile = null; Object.assign(global, previous); }
+});
+
+test("invalid restored perspective is removed after server validation", async () => {
+  const previous = { localStorage: global.localStorage, sessionStorage: global.sessionStorage, fetch: global.fetch, document: global.document };
+  const values = new Map([["mwsAdminPerspectiveMode", JSON.stringify({ viewedProfileId: "55555555-5555-4555-8555-555555555555" })]]);
+  global.localStorage = { getItem: (key) => key === "mws_admin_supabase_session" ? JSON.stringify({ accessToken: "real-token", expiresAt: Date.now() + 60000 }) : null };
+  global.sessionStorage = { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  global.fetch = async () => jsonFetch({ success: false, code: "EMPLOYEE_NOT_FOUND" }, 404);
+  global.document = { querySelector: () => null, getElementById: () => null };
+  pilot.actorState.profile = { id: PROFILE, role: "super_admin", status: "active" };
+  try { assert.equal(await pilot.restorePerspective(), null); assert.equal(values.has("mwsAdminPerspectiveMode"), false); }
+  finally { pilot.actorState.profile = null; Object.assign(global, previous); }
 });
 
 test("lead and customer selection, URL sync, clear and selector errors remain isolated", async () => {
