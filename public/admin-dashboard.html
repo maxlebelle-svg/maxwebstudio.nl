@@ -12,68 +12,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
     <script src="admin/ui/shared-helpers.js"></script>
+    <script src="admin/config/sidebar-navigation.js" defer></script>
+    <script src="admin/components/admin-sidebar.js" defer></script>
+    <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
   <body class="admin-body">
     <main class="admin-crm-shell">
-      <aside class="admin-sidebar" aria-label="Admin modules">
-        <a class="brand" href="admin-dashboard.html">
-          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
-            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
-            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
-            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
-          </svg>
-          <span>Max CRM</span>
-        </a>
-        <nav class="admin-sidebar-nav">
-          <span class="admin-nav-group">Main</span>
-          <a href="admin-dashboard.html">Dashboard</a>
-          <a href="admin-notification-center.html">Notification Center</a>
-          <a href="admin-journeys.html">Journey &amp; Mail Automation</a>
-          <a href="admin-max-automations.html">⚡ Max Automations</a>
-          <a href="admin-max-brain.html">Max Brain</a>
-          <span class="admin-nav-group">Sales</span>
-          <a href="admin-sales.html">Leads</a>
-          <span class="admin-nav-group">Production</span>
-          <a href="admin-website-factory.html">Website Factory</a>
-          <a href="admin-demo-sites.html">Demo Sites</a>
-          <a href="admin-ai-content-library.html">AI Content Library</a>
-          <a href="admin-assets.html">Asset Manager</a>
-          <a href="admin-seo-studio.html">SEO Studio</a>
-          <a href="admin-social-media-studio.html">Social Media Studio</a>
-          <a href="admin-brand-center.html">Brand Center</a>
-          <a href="admin-domain-center.html">Domein Center</a>
-          <a href="admin-onboarding.html">Klant Onboarding</a>
-          <a href="admin-roadmap.html">Roadmap / Takenbord</a>
-          <span class="admin-nav-group">Customers</span>
-          <a href="admin-klanten.html">Klanten</a>
-          <a class="admin-sales-secondary" href="admin-websites.html">Websites</a>
-          <a href="admin-projecten.html">Projecten</a>
-          <span class="admin-nav-group">Administration</span>
-          <a href="admin-offertes.html">Offertes</a>
-          <a href="admin-facturen.html">Facturen</a>
-          <a href="admin-email-studio.html">E-mail Studio</a>
-          <a href="admin-mail-center.html">Mail Center</a>
-          <span class="admin-nav-group">System</span>
-          <a href="admin-platform-health.html">Platform Health</a>
-          <a class="admin-sales-secondary" href="admin-instellingen.html">Instellingen</a>
-        </nav>
-        <div class="admin-topbar-actions" aria-label="Admin snelmenu">
-          <label class="admin-topbar-search" for="admin-global-search">
-            <span class="sr-only">Zoeken</span>
-            <input id="admin-global-search" type="search" placeholder="Zoeken..." />
-          </label>
-          <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
-          <div class="admin-topbar-user" aria-label="Ingelogde admin">
-            <span class="admin-topbar-avatar">M</span>
-            <span>
-              <strong>max@maxwebstudio.nl</strong>
-              <small>Super Admin</small>
-            </span>
-          </div>
-        </div>
+      <div id="admin-sidebar-root" aria-live="polite"></div>
+      <section id="admin-sidebar-session-panel" class="mws-sidebar-session-panel" aria-label="Sessiebeheer" hidden>
+        <header class="mws-sidebar-session-header">
+          <div><span>Profiel</span><strong>Sessiebeheer</strong></div>
+          <button type="button" data-sidebar-session-close aria-label="Sessiebeheer sluiten">×</button>
+        </header>
         <article class="admin-card admin-token-card admin-developer-only">
           <div>
             <strong>Auth voorbereiding</strong>
@@ -135,7 +89,7 @@
             <button class="button secondary" id="admin-token-load" type="button">Gebruik token</button>
           </div>
         </article>
-      </aside>
+      </section>
 
       <div class="admin-crm-main">
         <header class="admin-page-topbar" aria-label="Admin snel zoeken">
@@ -2714,41 +2668,6 @@
         const accessModeReset = document.getElementById("access-mode-reset");
         const adminAccessControlText = document.getElementById("admin-access-control-text");
         const adminPageSearch = document.getElementById("admin-page-search");
-        const adminSidebarNav = document.querySelector(".admin-sidebar-nav");
-        const adminSidebarNavItems = [
-          { type: "group", label: "Main" },
-          { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard", alwaysVisible: true },
-          { href: "admin-max-automations.html", page: "max-automations", accessId: "max-automations", label: "⚡ Max Automations", alwaysVisible: true },
-          { href: "admin-max-brain.html", page: "max-brain", accessId: "max-brain", label: "Max Brain", alwaysVisible: true },
-          { type: "group", label: "Sales" },
-          { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Leads", alwaysVisible: true },
-          { type: "group", label: "Production" },
-          { href: "admin-website-factory.html", page: "website-factory", accessId: "leadfinder", label: "Website Factory", alwaysVisible: true },
-          { href: "admin-demo-sites.html", page: "demo-sites", accessId: "leadfinder", label: "Demo Sites", alwaysVisible: true },
-          { href: "admin-ai-content-library.html", page: "ai-content-library", accessId: "ai-content-library", label: "AI Content Library", alwaysVisible: true },
-          { href: "admin-assets.html", page: "asset-manager", accessId: "asset-manager", label: "Asset Manager", alwaysVisible: true },
-          { href: "admin-seo-studio.html", page: "seo-studio", accessId: "seo-studio", label: "SEO Studio", alwaysVisible: true },
-          { href: "admin-social-media-studio.html", page: "social-media-studio", accessId: "social-media-studio", label: "Social Media Studio", alwaysVisible: true },
-          { href: "admin-brand-center.html", page: "brand-center", accessId: "brand-center", label: "Brand Center", alwaysVisible: true },
-          { href: "admin-domain-center.html", page: "domain-center", accessId: "domain-center", label: "Domein Center", alwaysVisible: true },
-          { href: "admin-onboarding.html", page: "onboarding", accessId: "onboarding", label: "Klant Onboarding", alwaysVisible: true },
-          { href: "admin-roadmap.html", page: "roadmap", accessId: "roadmap", label: "Roadmap / Takenbord", alwaysVisible: true },
-          { type: "group", label: "Customers" },
-          { href: "admin-klanten.html", page: "klanten", accessId: "klanten", label: "Klanten", alwaysVisible: true },
-          { href: "admin-websites.html", page: "websites", accessId: "websites", label: "Websites", className: "admin-sales-secondary", alwaysVisible: true },
-          { href: "admin-projecten.html", page: "projecten", accessId: "projecten", label: "Projecten", alwaysVisible: true },
-          { type: "group", label: "Administration" },
-          { href: "admin-offertes.html", page: "offertes", accessId: "offertes", label: "Offertes", alwaysVisible: true },
-          { href: "admin-facturen.html", page: "facturen", accessId: "facturen", label: "Facturen", alwaysVisible: true },
-          { href: "admin-email-studio.html", page: "email-studio", accessId: "email-studio", label: "E-mail Studio", alwaysVisible: true },
-          { type: "group", label: "System" },
-          { href: "admin-platform-health.html", page: "platform-health", accessId: "platform-health", label: "Platform Health", alwaysVisible: true },
-          { href: "admin-instellingen.html", page: "instellingen", accessId: "instellingen", label: "Instellingen", className: "admin-sales-secondary", alwaysVisible: true },
-          { href: "#onderhoud", accessId: "onderhoud", label: "Abonnementen", className: "admin-developer-only" },
-          { href: "admin-instellingen.html#demo-omgeving", accessId: "demo-omgeving", label: "Developer Mode", className: "admin-developer-only" },
-        ];
-        let adminNavLinks = [];
-        renderAdminSidebarNavigation();
         const adminLoadButton = document.getElementById("admin-load");
         const adminAccessMessage = document.getElementById("admin-access-message");
         const totalCustomersMetric = document.getElementById("metric-total-customers");
@@ -6128,15 +6047,12 @@
             const modules = await loadDeveloperModules();
             const context = modules.routeGuardService.getAccessContext();
             const decision = modules.routeGuardService.requireAuth({ pageName: "admin-dashboard", mode: context.mode, allowDemo: true });
-            const visibleItems = modules.authService.getVisibleNavigationItems().map((item) => item.id);
             if (accessControlMode.value !== context.mode) accessControlMode.value = context.mode;
             adminAccessControlText.textContent = `${context.mode.toUpperCase()} mode - rol: ${context.role || "geen sessie"} - ${decision.allowed ? "admin voorbereid" : decision.reason}`;
-            const filteredNavigationCount = renderAdminSidebarNavigation({
-              source: "applyAccessControl",
+            const filteredNavigationCount = window.MaxAdminSidebarPilot?.refresh({
               role: context.role,
-              status: decision.allowed ? "allowed" : "blocked",
-              visibleItemIds: visibleItems,
-            });
+              canAccess: (item) => modules.authService.hasPermission(item.permission.resource, item.permission.action),
+            }) || 0;
             const developerAllowed = modules.routeGuardService.canShowDeveloperTools();
             const migrationAllowed = modules.routeGuardService.canShowMigrationTools();
             const settingsAllowed = modules.authService.hasPermission("settings", "view");
@@ -9259,60 +9175,6 @@
           } else {
             setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
           }
-        }
-
-        function renderAdminSidebarNavigation(options = {}) {
-          if (!adminSidebarNav) return;
-          const currentPage = window.maxwebstudioAdminPage?.page || "dashboard";
-          const adminRolesWithFullNavigation = new Set(["super_admin", "admin"]);
-          const keepAlwaysVisible = adminRolesWithFullNavigation.has(String(options.role || state.adminSession?.role || "").toLowerCase());
-          const visibleItemIds = Array.isArray(options.visibleItemIds)
-            ? new Set(options.visibleItemIds)
-            : currentPage === "sales"
-              ? new Set(["dashboard", "leadfinder", "klanten", "offertes", "facturen"])
-              : null;
-          const visibleItems = visibleItemIds
-            ? adminSidebarNavItems.filter((item) => item.type === "group" || item.alwaysVisible || item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
-            : adminSidebarNavItems;
-          adminSidebarNav.innerHTML = visibleItems.map((item) => {
-            if (item.type === "group") return `<span class="admin-nav-group">${item.label}</span>`;
-            return `
-              <a href="${item.href}" class="${[item.className || "", item.page === currentPage ? "is-active" : ""].filter(Boolean).join(" ")}" data-admin-nav="${item.page || item.href.replace("#", "")}">${item.label}</a>
-            `;
-          }).join("");
-          adminNavLinks = [...adminSidebarNav.querySelectorAll("a")];
-          const filteredCount = adminSidebarNavItems.length - visibleItems.length;
-          if (isDeveloperModeEnabled()) {
-            console.info("Admin sidebar rendered", {
-              source: options.source || "initial",
-              role: options.role || state.adminSession?.role || "",
-              status: options.status || (state.adminSessionRestoreComplete ? "restored" : "loading"),
-              page: currentPage,
-              visibleItems: visibleItems.map((item) => item.page || item.accessId || item.href),
-              filteredCount,
-            });
-          }
-          return filteredCount;
-        }
-
-        function ensureAdminSidebarNavigation() {
-          const factoryLink = adminSidebarNav?.querySelector('a[href="admin-website-factory.html"]');
-          const linkCount = adminSidebarNav?.querySelectorAll("a").length || 0;
-          if (linkCount === 0 || (!factoryLink && !state.adminSessionRestoreComplete)) {
-            renderAdminSidebarNavigation({ source: "ensureAdminSidebarNavigation" });
-          }
-        }
-
-        function syncSalesViewState(id = window.maxwebstudioAdminPage?.page || "dashboard") {
-          document.body.classList.toggle("is-sales-view", id === "sales");
-        }
-
-        function syncActiveNav(id = window.maxwebstudioAdminPage?.page || "dashboard") {
-          ensureAdminSidebarNavigation();
-          adminNavLinks.forEach((link) => {
-            link.classList.toggle("is-active", link.dataset.adminNav === id);
-          });
-          syncSalesViewState(id);
         }
 
         function readStoredCustomers() {
@@ -18988,21 +18850,6 @@
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });
-        adminNavLinks.forEach((link) => {
-          link.addEventListener("click", () => syncActiveNav(link.getAttribute("href").slice(1)));
-        });
-        window.addEventListener("hashchange", () => syncActiveNav());
-        syncSalesViewState();
-        if ("IntersectionObserver" in window) {
-          const observedSections = adminNavLinks
-            .map((link) => document.getElementById(link.getAttribute("href").slice(1)))
-            .filter(Boolean);
-          const navObserver = new IntersectionObserver((entries) => {
-            const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-            if (visible?.target?.id) syncActiveNav(visible.target.id);
-          }, { rootMargin: "-12% 0px -48% 0px", threshold: [0.02, 0.12, 0.3] });
-          observedSections.forEach((section) => navObserver.observe(section));
-        }
         requestStatusSave.addEventListener("click", saveRequestStatus);
         detailOpenWebsite.addEventListener("click", (event) => {
           if (event.currentTarget.getAttribute("aria-disabled") === "true") {
@@ -19033,7 +18880,6 @@
         renderAiWizardUi();
         renderCeoDashboard();
         window.setInterval(updateCeoClock, 30000);
-        syncActiveNav();
         await restoreAdminSession();
         await applyAccessControl();
         const bootPage = currentAdminPage();

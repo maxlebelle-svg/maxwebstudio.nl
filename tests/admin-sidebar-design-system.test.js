@@ -33,7 +33,7 @@ test("sidebar module exports the full phase one component contract without auto 
   assert.match(source, /aria-disabled/);
 });
 
-test("new sidebar styles are isolated and existing admin pages do not load phase one assets", () => {
+test("new sidebar styles stay isolated and only the dashboard loads the pilot assets", () => {
   const css = read("public/admin/styles/admin-sidebar-system.css");
   assert.match(css, /\.mws-admin-sidebar-v2/);
   for (const tone of ["success", "info", "purple", "warning", "danger"]) assert.match(css, new RegExp(`is-${tone}`));
@@ -41,6 +41,12 @@ test("new sidebar styles are isolated and existing admin pages do not load phase
   const adminPages = fs.readdirSync(path.join(root, "public")).filter((file) => /^admin-.*\.html$/.test(file));
   adminPages.forEach((file) => {
     const html = read(`public/${file}`);
-    assert.doesNotMatch(html, /admin-sidebar-system\.css|admin\/components\/admin-sidebar\.js|admin\/config\/sidebar-navigation\.js/, `${file} should not load the phase one foundation yet`);
+    if (file === "admin-dashboard.html") {
+      assert.match(html, /admin-sidebar-system\.css/);
+      assert.match(html, /admin\/components\/admin-sidebar\.js/);
+      assert.match(html, /admin\/config\/sidebar-navigation\.js/);
+      return;
+    }
+    assert.doesNotMatch(html, /admin-sidebar-system\.css|admin\/components\/admin-sidebar\.js|admin\/config\/sidebar-navigation\.js/, `${file} should keep the legacy sidebar`);
   });
 });

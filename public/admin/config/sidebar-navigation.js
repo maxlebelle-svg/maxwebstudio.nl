@@ -92,6 +92,7 @@
         item("customers", "Klanten", "admin-klanten.html", "building", { permission: permission("customers", "view") }),
         item("mail-center", "Mail Center", "admin-mail-center.html", "mail", { badge: "mailCount", statusTone: "info", permission: permission("leads", "view", roleGroups.sales) }),
         item("email-studio", "E-mail Studio", "admin-email-studio.html", "pen-line", { permission: permission("leads", "view", roleGroups.sales) }),
+        item("journeys", "Journey & Mail Automation", "admin-journeys.html", "workflow", { permission: permission("dashboard", "view") }),
         item("timeline", "Timeline", "admin-notification-center.html", "history", { badge: "timelineEvents", statusTone: "neutral", permission: permission("dashboard", "view") }),
       ]),
     }),

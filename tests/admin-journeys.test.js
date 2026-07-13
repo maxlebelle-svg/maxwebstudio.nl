@@ -191,7 +191,7 @@ test("legacy customers are estimated without any repository write method", async
 test("admin UI is authenticated, read-only, responsive, and feature-disabled aware", () => {
   const root = path.resolve(__dirname, "..");
   const html = fs.readFileSync(path.join(root, "public/admin-journeys.html"), "utf8");
-  const dashboard = fs.readFileSync(path.join(root, "public/admin-dashboard.html"), "utf8");
+  const sidebarNavigation = require("../public/admin/config/sidebar-navigation.js").ADMIN_SIDEBAR_NAVIGATION;
   assert.match(html, /src="src\/admin-route-guard\.js/);
   assert.match(html, /getAdminAccessToken/);
   assert.match(html, /\/\.netlify\/functions\/admin-journeys/);
@@ -204,7 +204,7 @@ test("admin UI is authenticated, read-only, responsive, and feature-disabled awa
   assert.match(html, /@media \(max-width: 720px\)/);
   assert.match(html, /admin-sidebar-nav \{ display: flex;[\s\S]*overflow-x: auto/);
   assert.doesNotMatch(html, /opnieuw verzenden|pauzeren|hervatten|stap handmatig|mail annuleren/i);
-  assert.match(dashboard, /href="admin-journeys\.html">Journey &amp; Mail Automation/);
+  assert(sidebarNavigation.flatMap((section) => section.items).some((item) => item.route === "admin-journeys.html" && item.label === "Journey & Mail Automation"));
 });
 
 test("migration validation records live activation and recovery constraints", () => {

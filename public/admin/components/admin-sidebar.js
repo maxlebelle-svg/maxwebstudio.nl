@@ -62,13 +62,14 @@
     return image;
   }
 
-  function SidebarItem({ item, active = false, badgeValue, disabled = false } = {}) {
+  function SidebarItem({ item, active = false, badgeValue, disabled = false, workspaceMuted = false } = {}) {
     const link = element("a", "mws-sidebar-item");
     link.href = item.route;
     link.dataset.sidebarItem = item.id;
     link.dataset.workspaceRequired = String(Boolean(item.workspaceRequired));
     if (active) { link.classList.add("is-active"); link.setAttribute("aria-current", "page"); }
     if (disabled) { link.classList.add("is-disabled"); link.setAttribute("aria-disabled", "true"); link.tabIndex = -1; }
+    if (workspaceMuted) link.classList.add("is-workspace-muted");
     link.append(icon(item.icon), element("span", "mws-sidebar-item-label", item.label));
     if (item.badge) link.append(MetricBadge({ value: badgeValue, tone: item.statusTone, label: `${item.label}: ${badgeValue}` }));
     return link;
@@ -80,7 +81,7 @@
     const heading = element("h2", "mws-sidebar-section-label", section.label);
     const list = element("nav", "mws-sidebar-section-items");
     list.setAttribute("aria-label", section.label);
-    section.items.filter(canAccess).forEach((entry) => list.append(SidebarItem({ item: entry, active: entry.id === activeId, badgeValue: badgeValues[entry.badge], disabled: entry.workspaceRequired && !relationship })));
+    section.items.filter(canAccess).forEach((entry) => list.append(SidebarItem({ item: entry, active: entry.id === activeId, badgeValue: badgeValues[entry.badge], workspaceMuted: entry.workspaceRequired && !relationship })));
     wrapper.append(heading, list);
     return wrapper;
   }
