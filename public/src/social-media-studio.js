@@ -20,6 +20,12 @@ import {
 import { AI_OUTPUT_FIELDS, CONTENT_OBJECTIVES } from "./social-studio/ai-contracts.mjs";
 import { buildSocialStudioAIRequest, summarizeAIRequestContext } from "./social-studio/ai-prompt-builder.mjs";
 import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.mjs";
+import {
+  PLATFORM_VARIANT_PROFILES,
+  createMasterConcept,
+  generatePlatformVariants,
+  variantsForMaster,
+} from "./social-studio/platform-variants.mjs";
 
 (function () {
   "use strict";
@@ -28,6 +34,7 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     draft: "mws_social_media_studio_draft_v2",
     variants: "mws_social_media_studio_variants_v2",
     context: "mws_social_media_studio_context_v2",
+    masters: "mws_social_media_studio_masters_v2",
     legacyDraft: "mws_social_media_studio_draft",
     legacyVariants: "mws_social_media_studio_variants",
   };
@@ -290,6 +297,10 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     aiOutput: null,
     aiVariation: 0,
     aiAcceptedFields: new Set(),
+    masters: [],
+    activeMasterId: null,
+    editingVariantId: null,
+    variantDetails: {},
     variants: [],
     variantQuery: "",
     variantFilter: "all",
@@ -309,6 +320,9 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     contentTypeGrid: document.getElementById("social-content-type-grid"),
     backButton: document.getElementById("social-studio-back"),
     selectedType: document.getElementById("social-selected-type"),
+    createPlatformVariants: document.getElementById("create-platform-variants"),
+    platformVariantSwitcher: document.getElementById("platform-variant-switcher"),
+    masterSummary: document.getElementById("social-master-summary"),
     autosave: document.getElementById("social-autosave"),
     aiLaunch: document.getElementById("open-ai-creator"),
     aiCreator: document.getElementById("social-ai-creator"),
@@ -617,6 +631,8 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
       title: elements.title.value.trim(),
       caption: elements.caption.value.trim(),
       imagePrompt: elements.imagePrompt.value.trim(),
+      visualDirection: state.variantDetails.visualDirection || state.aiOutput?.visualDirection || "",
+      altText: state.variantDetails.altText || state.aiOutput?.altText || "",
       cta: elements.cta.value.trim(),
       link: elements.link.value.trim(),
       hashtags: elements.hashtags.value.trim(),
@@ -633,16 +649,17 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
         source: state.relationshipContext.source,
         brand: state.relationshipContext.brand,
       } : null,
-      extensions: state.aiOutput ? {
-        aiDraft: {
+      extensions: {
+        ...(state.variantDetails.extensions || {}),
+        ...(state.aiOutput ? { aiDraft: {
           requestId: state.aiOutput.requestId,
           outputId: state.aiOutput.outputId,
           generator: state.aiOutput.generator,
           mode: state.aiOutput.mode,
           acceptedFields: [...state.aiAcceptedFields],
           output: { ...state.aiOutput },
-        },
-      } : {},
+        } } : {}),
+      },
       ...getContext(),
     };
   }
@@ -651,6 +668,9 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     if (content.scopeId === state.scopeId) state.scopeId = content.scopeId;
     state.contentType = content.contentType || state.contentType;
     state.platform = content.platform && platformLabels[content.platform] ? content.platform : state.platform;
+    state.editingVariantId = content.contentRole === "platform-variant" ? content.id : null;
+    state.activeMasterId = content.masterId || state.activeMasterId;
+    state.variantDetails = { visualDirection: content.visualDirection || "", altText: content.altText || "", extensions: { ...(content.extensions || {}) } };
     elements.client.value = content.client || elements.client.value || "";
     elements.campaign.value = content.campaign || elements.campaign.value || "";
     if (content.goal) elements.goal.value = content.goal;
@@ -664,8 +684,16 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     elements.cta.value = content.cta || "";
     elements.link.value = content.link || "";
     elements.hashtags.value = content.hashtags || "";
-    elements.tone.value = content.tone || "Professioneel";
+    const tone = content.tone || "Professioneel";
+    if (![...elements.tone.options].some((option) => option.value === tone)) {
+      const option = document.createElement("option");
+      option.value = tone;
+      option.textContent = tone;
+      elements.tone.append(option);
+    }
+    elements.tone.value = tone;
     updatePlatformButtons();
+    renderPlatformVariantSwitcher();
     updateAll();
   }
 
@@ -1006,6 +1034,9 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     const requestPlatform = state.aiRequest.platform;
     state.contentType = type.id;
     state.platform = platformLabels[requestPlatform] ? requestPlatform : type.platform;
+    state.activeMasterId = null;
+    state.editingVariantId = null;
+    state.variantDetails = {};
     elements.selectedType.textContent = `${type.label} · lokaal AI-concept`;
     elements.campaign.value = state.aiRequest.campaign || elements.campaign.value;
     elements.tone.value = state.aiRequest.toneOfVoice[0] || elements.tone.value;
@@ -1027,6 +1058,9 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     state.aiRequest = null;
     state.aiOutput = null;
     state.aiAcceptedFields.clear();
+    state.activeMasterId = null;
+    state.editingVariantId = null;
+    state.variantDetails = {};
     const [title, caption, cta, hashtags] = contentTypeSeeds[type.id] || contentTypeSeeds["instagram-post"];
     state.contentType = type.id;
     state.platform = type.platform;
@@ -1209,17 +1243,77 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     persistDraft({ announce: true });
   }
 
+  function renderPlatformVariantSwitcher() {
+    const linked = state.activeMasterId ? variantsForMaster(state.variants, state.activeMasterId) : [];
+    elements.platformVariantSwitcher.replaceChildren();
+    if (!linked.length) {
+      const empty = document.createElement("span");
+      empty.className = "social-studio-workbench-label";
+      empty.textContent = "Nog geen gekoppelde varianten";
+      elements.platformVariantSwitcher.append(empty);
+      elements.masterSummary.textContent = "Maak eerst een sterke basis. Iedere platformversie blijft daarna zelfstandig bewerkbaar.";
+      return;
+    }
+    const master = state.masters.find((item) => item.id === state.activeMasterId);
+    elements.masterSummary.textContent = `${master?.title || "Master concept"} · bronrevisie ${master?.revision || 1} · ${linked.length} zelfstandig bewerkbare varianten.`;
+    PLATFORM_VARIANT_PROFILES.forEach((profile) => {
+      const variant = linked.find((item) => item.variantKey === profile.key);
+      if (!variant) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button secondary";
+      button.classList.toggle("is-active", state.editingVariantId === variant.id);
+      button.textContent = profile.label;
+      button.setAttribute("aria-pressed", String(state.editingVariantId === variant.id));
+      button.addEventListener("click", () => loadVariant(variant));
+      elements.platformVariantSwitcher.append(button);
+    });
+  }
+
+  function createPlatformVariantFamily() {
+    const content = getCurrentContent();
+    const fallback = platformFallbacks[state.platform];
+    const master = createMasterConcept({
+      ...content,
+      id: `master-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: content.title || fallback.title,
+      caption: content.caption || fallback.caption,
+      cta: content.cta || fallback.cta,
+      hashtags: content.hashtags || fallback.hashtags,
+      extensions: { ...(content.extensions || {}), sourceContentType: content.contentType },
+    });
+    const linked = generatePlatformVariants(master);
+    state.masters = [master, ...state.masters].slice(0, 50);
+    state.variants = [...linked, ...state.variants].slice(0, 150);
+    state.activeMasterId = master.id;
+    state.editingVariantId = linked[0].id;
+    const mastersSaved = writeJson(storageKeys.masters, state.masters);
+    const variantsSaved = writeJson(storageKeys.variants, state.variants);
+    setFormContent(linked[0]);
+    renderVariants();
+    updateHero();
+    setMessage(mastersSaved && variantsSaved
+      ? "Master concept bewaard en zeven gekoppelde platformvarianten gemaakt."
+      : "De platformvarianten konden niet volledig lokaal worden bewaard.", mastersSaved && variantsSaved ? "success" : "error");
+  }
+
   function saveVariant() {
     const content = getCurrentContent();
     const fallback = platformFallbacks[state.platform];
+    const editing = state.editingVariantId ? state.variants.find((item) => item.id === state.editingVariantId) : null;
     const variant = normalizeContentItem({
-      id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      ...(editing || {}),
+      ...content,
+      id: editing?.id || `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      revision: editing ? editing.revision + 1 : 1,
       scopeId: content.scopeId,
       contentType: content.contentType,
       platform: content.platform,
       title: content.title || fallback.title,
       caption: content.caption || fallback.caption,
       imagePrompt: content.imagePrompt,
+      visualDirection: content.visualDirection,
+      altText: content.altText,
       cta: content.cta || fallback.cta,
       link: content.link,
       hashtags: content.hashtags || fallback.hashtags,
@@ -1233,15 +1327,19 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
       visualFormat: content.visualFormat,
       brandVoiceSnapshot: content.brandVoiceSnapshot,
       relationshipContextSnapshot: content.relationshipContextSnapshot,
-      createdAt: new Date().toISOString(),
+      extensions: content.extensions,
+      createdAt: editing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
 
-    state.variants = [variant, ...state.variants].slice(0, 100);
+    state.variants = editing
+      ? state.variants.map((item) => item.id === editing.id ? variant : item)
+      : [variant, ...state.variants].slice(0, 150);
     const saved = writeJson(storageKeys.variants, state.variants);
     renderVariants();
+    renderPlatformVariantSwitcher();
     updateHero();
-    setMessage(saved ? "Variant opgeslagen." : "Variant kon niet lokaal worden opgeslagen.", saved ? "success" : "error");
+    setMessage(saved ? (editing ? `Platformvariant opgeslagen als revisie ${variant.revision}.` : "Variant opgeslagen.") : "Variant kon niet lokaal worden opgeslagen.", saved ? "success" : "error");
   }
 
   async function copyText() {
@@ -1249,6 +1347,9 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
   }
 
   function resetEditor() {
+    state.editingVariantId = null;
+    state.activeMasterId = null;
+    state.variantDetails = {};
     setFormContent({ platform: state.platform, tone: "Professioneel", date: elements.date.value, visualFormat: elements.visualFormat.value });
     repository.remove(storageKeys.draft);
     setMessage("Editor gereset.", "success");
@@ -1258,6 +1359,8 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     state.variants = state.variants.filter((variant) => variant.id !== id);
     writeJson(storageKeys.variants, state.variants);
     renderVariants();
+    if (state.editingVariantId === id) state.editingVariantId = null;
+    renderPlatformVariantSwitcher();
     updateHero();
     setMessage("Variant verwijderd.", "success");
   }
@@ -1266,6 +1369,9 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     const copy = normalizeContentItem({
       ...variant,
       id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      contentRole: "master",
+      masterId: null,
+      variantKey: null,
       title: `${variant.title || "Variant"} copy`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1279,7 +1385,9 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
 
   function loadVariant(variant) {
     setFormContent(variant);
-    setMessage("Variant geladen in editor.", "success");
+    const profile = PLATFORM_VARIANT_PROFILES.find((item) => item.key === variant.variantKey);
+    elements.selectedType.textContent = profile ? `${profile.label} · gekoppeld aan master` : (contentTypes.find((item) => item.id === variant.contentType)?.label || "Opgeslagen concept");
+    setMessage(profile ? "Gekoppelde platformvariant geladen. Andere varianten blijven onaangeroerd." : "Variant geladen in editor.", "success");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1509,6 +1617,7 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     return createWorkspaceEnvelope({
       context: getContext(),
       currentDraft: getCurrentContent(),
+      masters: state.masters,
       variants,
     });
   }
@@ -1535,6 +1644,10 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
         const parsed = JSON.parse(String(reader.result || "{}"));
         if (parsed.context) setContext(parsed.context);
         if (parsed.currentDraft) setFormContent(parsed.currentDraft);
+        if (Array.isArray(parsed.masters)) {
+          state.masters = parsed.masters.map(normalizeContentItem);
+          writeJson(storageKeys.masters, state.masters);
+        }
         if (Array.isArray(parsed.variants)) {
           state.variants = parsed.variants
             .filter((variant) => variant && variant.platform)
@@ -1542,6 +1655,7 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
           writeJson(storageKeys.variants, state.variants);
         }
         renderVariants();
+        renderPlatformVariantSwitcher();
         updateHero();
         setMessage("JSON import geladen.", "success");
       } catch (error) {
@@ -1567,7 +1681,11 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     const confirmed = window.confirm("Weet je zeker dat je alle Social Media Studio concepten en varianten wilt wissen?");
     if (!confirmed) return;
     state.variants = [];
+    state.masters = [];
+    state.activeMasterId = null;
+    state.editingVariantId = null;
     repository.clearWorkspace();
+    renderPlatformVariantSwitcher();
     renderVariants();
     updateHero();
     setMessage("Lokale Social Media Studio opslag gewist.", "success");
@@ -1690,6 +1808,7 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
 
     elements.saveDraft.addEventListener("click", saveDraft);
     elements.saveVariant.addEventListener("click", saveVariant);
+    elements.createPlatformVariants.addEventListener("click", createPlatformVariantFamily);
     elements.copyText.addEventListener("click", copyText);
     elements.resetEditor.addEventListener("click", resetEditor);
     elements.generateButton.addEventListener("click", generateSocialContent);
@@ -1738,6 +1857,8 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     renderMoreWorkOffers();
     const legacyVariants = readJson(storageKeys.legacyVariants, []);
     state.variants = repository.loadVariants(Array.isArray(legacyVariants) ? legacyVariants : []);
+    const storedMasters = readJson(storageKeys.masters, []);
+    state.masters = Array.isArray(storedMasters) ? storedMasters.map(normalizeContentItem) : [];
     const context = readJson(storageKeys.context, {});
     setContext({ ...context, date: context.date || defaultDate() });
     const draft = readJson(storageKeys.draft, readJson(storageKeys.legacyDraft, null));
@@ -1750,6 +1871,7 @@ import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.
     window.ActiveRelationship?.subscribeToRelationshipChanges?.((relationship) => refreshBrandContext(relationship));
     refreshBrandContext();
     renderVariants();
+    renderPlatformVariantSwitcher();
     updateHero();
   }
 

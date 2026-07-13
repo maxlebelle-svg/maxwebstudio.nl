@@ -82,6 +82,9 @@ export function normalizeBrandVoice(input = {}, options = {}) {
 }
 
 export function mergeBrandVoiceSources({ scopeId, centralRelationship = {}, centralBranding = {}, localExtensions = {} } = {}) {
+  centralRelationship = centralRelationship || {};
+  centralBranding = centralBranding || {};
+  localExtensions = localExtensions || {};
   const internal = scopeId === "internal:max-webstudio";
   const fallback = internal ? MAX_WEBSTUDIO_BRAND_VOICE : normalizeBrandVoice({ scopeId }, { fallback: { scopeId } });
   const central = {

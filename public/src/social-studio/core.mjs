@@ -1,4 +1,4 @@
-export const SOCIAL_STUDIO_SCHEMA_VERSION = 1;
+export const SOCIAL_STUDIO_SCHEMA_VERSION = 2;
 
 export const CONTENT_STATUSES = Object.freeze([
   Object.freeze({ id: "idea", label: "Idee" }),
@@ -27,10 +27,17 @@ export function normalizeStatus(value) {
 
 export function normalizeContentItem(input = {}) {
   const now = new Date().toISOString();
+  const id = input.id || `content-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const contentRole = input.contentRole === "platform-variant" ? "platform-variant" : "master";
   return {
     schemaVersion: SOCIAL_STUDIO_SCHEMA_VERSION,
     entityType: "social-content",
-    id: input.id || `content-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    id,
+    contentRole,
+    masterId: input.masterId || (contentRole === "master" ? id : null),
+    variantKey: input.variantKey || null,
+    revision: Math.max(1, Number(input.revision) || 1),
+    sourceRevision: Math.max(1, Number(input.sourceRevision) || 1),
     scopeId: input.scopeId || "internal:max-webstudio",
     contentType: input.contentType || "social-post",
     platform: input.platform || "facebook",
@@ -38,6 +45,8 @@ export function normalizeContentItem(input = {}) {
     title: input.title || "",
     caption: input.caption || "",
     imagePrompt: input.imagePrompt || "",
+    visualDirection: input.visualDirection || "",
+    altText: input.altText || "",
     cta: input.cta || "",
     link: input.link || "",
     hashtags: input.hashtags || "",
@@ -66,13 +75,14 @@ export function normalizeContentItem(input = {}) {
   };
 }
 
-export function createWorkspaceEnvelope({ context = {}, currentDraft = {}, variants = [] } = {}) {
+export function createWorkspaceEnvelope({ context = {}, currentDraft = {}, masters = [], variants = [] } = {}) {
   return {
     schemaVersion: SOCIAL_STUDIO_SCHEMA_VERSION,
     module: "social-studio",
     capabilities: SOCIAL_STUDIO_CAPABILITIES,
     context: { ...context },
     currentDraft: normalizeContentItem(currentDraft),
+    masters: masters.map(normalizeContentItem),
     variants: variants.map(normalizeContentItem),
     exportedAt: new Date().toISOString(),
     note: "Lokale Social Studio export. Nog niet gekoppeld aan publicatie-API's.",

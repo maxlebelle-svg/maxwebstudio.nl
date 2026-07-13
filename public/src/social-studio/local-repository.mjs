@@ -40,6 +40,6 @@ export class LocalSocialStudioRepository {
   }
 
   clearWorkspace() {
-    [this.keys.draft, this.keys.variants, this.keys.context].forEach((key) => this.storage.removeItem(key));
+    [this.keys.draft, this.keys.variants, this.keys.context, this.keys.masters].filter(Boolean).forEach((key) => this.storage.removeItem(key));
   }
 }
