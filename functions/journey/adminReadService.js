@@ -200,7 +200,7 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
   const executions = new Map((executionRows || []).map((row) => [text(row.outbox_id), row]));
   const counts = { pending: 0, processing: 0, sent: 0, completed: 0, failed: 0, cancelled: 0, deadLetter: 0 };
   const journeyItems = (outboxRows || [])
-    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready"].includes(row.effect_type))
+    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready", "email.feedback_received"].includes(row.effect_type))
     .map((row) => {
       const execution = executions.get(text(row.id)) || {};
       const status = text(row.status).toLowerCase();
@@ -211,6 +211,10 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
         owner: "journey",
         eventType: text(row.event_type),
         previewVersionReference: row.entity_type === "preview" ? text(row.entity_id) : "",
+        feedbackReference: text(row.feedback_reference),
+        ownershipReason: text(row.ownership_reason),
+        progressBefore: integer(row.progress_before, -1) >= 0 ? integer(row.progress_before, 0) : null,
+        progressAfter: integer(row.progress_after, -1) >= 0 ? integer(row.progress_after, 0) : null,
         status,
         attempts: Math.max(0, integer(row.attempt_count, 0)),
         templateKey: text(execution.template_key),

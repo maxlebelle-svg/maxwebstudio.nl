@@ -3,8 +3,10 @@ const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
 const { getBaseUrl, getMollieTestApiKey } = require("./mollie-products");
 const { buildWebsiteCommercialOrder, maintenanceCatalog, readWebsiteCommercialOrder, selectMaintenance } = require("./_website-commercial-order");
+const { createFeedbackReceivedService } = require("./journey/feedbackReceived/service");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const feedbackReceivedService = createFeedbackReceivedService();
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -90,6 +92,7 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
   const existing = currentItems.find((item) => cleanText(item.idempotencyKey) === idempotencyKey);
   if (existing) {
     const sideEffects = await ensureFeedbackSideEffects(context, customer, authUser, version, existing);
+    const mailOwnership = await dispatchFeedbackConfirmation(customer, authUser, version, existing, currentItems.length, sideEffects);
     return jsonResponse(200, {
       success: true,
       duplicate: true,
@@ -100,6 +103,7 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
       previewVersion: sanitizeClientVersion(version),
       feedback: sanitizeFeedbackItem(existing),
       sideEffects,
+      mailOwnership,
     });
   }
 
@@ -125,6 +129,7 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
   });
   const updated = rows[0] || { ...version, feedback_items: nextItems, status: "feedback_received" };
   const sideEffects = await ensureFeedbackSideEffects(context, customer, authUser, updated, feedback);
+  const mailOwnership = await dispatchFeedbackConfirmation(customer, authUser, updated, feedback, nextItems.length, sideEffects);
   return jsonResponse(200, {
     success: true,
     feedbackExists: true,
@@ -134,7 +139,33 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
     previewVersion: sanitizeClientVersion(updated),
     feedback: sanitizeFeedbackItem(feedback),
     sideEffects,
+    mailOwnership,
   });
+}
+
+async function dispatchFeedbackConfirmation(customer, authUser, version, feedback, feedbackPointCount, sideEffects) {
+  try {
+    const result = await feedbackReceivedService.dispatch({
+      customerId: customer.id,
+      previewVersionId: version.id,
+      feedbackId: feedback.id,
+      recipient: customer.email || authUser.email || "",
+      firstName: firstName(customer.name || authUser.email || ""),
+      projectLabel: cleanText(version.title || customer.company || customer.company_name || "uw website"),
+      previewVersionLabel: `Preview V${version.version || 1}`,
+      category: feedback.category,
+      page: feedback.page,
+      section: feedback.section,
+      feedbackPointCount,
+      submittedAt: feedback.createdAt || feedback.created_at,
+      sideEffects,
+      legacySend: async () => null,
+    });
+    return { owner: result.owner, reason: result.reason, durable: result.durable === true, duplicate: result.duplicate === true, feedbackReference: result.feedbackReference || "", progressUpdated: result.progress?.updated === true, progressReason: result.progress?.reason || "" };
+  } catch (error) {
+    console.error("Preview feedback confirmation skipped", { code: "FEEDBACK_CONFIRMATION_FAILED", category: String(error?.code || error?.name || "unknown").slice(0, 80) });
+    return { owner: "legacy", reason: "feedback_confirmation_failed", durable: false, duplicate: false, feedbackReference: "", progressUpdated: false, progressReason: "" };
+  }
 }
 
 async function ensureFeedbackSideEffects(context, customer, authUser, version, feedback) {

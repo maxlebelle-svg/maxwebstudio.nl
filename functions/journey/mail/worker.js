@@ -57,7 +57,7 @@ async function processItem({ item, context, env, repository, mailSender, log, no
       html: rendered.html,
       text: rendered.text,
       templateKey: `${rendered.templateKey}.v${rendered.templateVersion}`,
-      templateName: command.templateKey === "journey.preview_ready" ? "Journey preview ready v1" : "Journey test status update",
+      templateName: command.templateKey === "journey.preview_ready" ? "Journey preview ready v1" : command.templateKey === "journey.feedback_received" ? "Journey feedback received v1" : "Journey test status update",
       triggeredBy: "journey_mail_worker_test",
       suppressTimelineEvent: true,
       idempotencyKey: providerIdempotencyKey(command.outboxIdempotencyKey),
