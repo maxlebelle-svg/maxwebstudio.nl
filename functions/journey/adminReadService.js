@@ -111,6 +111,7 @@ async function getOverview({ filters, context, repository, log, now, env }) {
 }
 
 function journeyItem({ progress, instance, customer, project, events, now }) {
+  const postLaunchCheck = sanitizePostLaunchCheck(instance.metadata?.postLaunchCheck);
   return {
     customerId: text(instance.customer_id),
     customerReference: customerReference(customer, instance.customer_id),
@@ -120,7 +121,16 @@ function journeyItem({ progress, instance, customer, project, events, now }) {
     isEstimate: false,
     stale: isStale(progress.lastUpdatedAt, now()),
     ...progress,
+    postLaunchCheck,
     events: sanitizeEvents(events),
+  };
+}
+
+function sanitizePostLaunchCheck(value = {}) {
+  if (!value || typeof value !== "object") return null;
+  const eligibility = value.reviewEligibility && typeof value.reviewEligibility === "object" ? value.reviewEligibility : {};
+  return {
+    liveAt: validTimestamp(value.liveAt), checkedAt: validTimestamp(value.checkedAt || value.lastCheckedAt), checkVersion: text(value.checkVersion), hostnameFingerprint: text(value.hostnameFingerprint).slice(0, 32), overallResult: text(value.overallResult), liveUrlState: text(value.liveUrlState), httpsState: text(value.httpsState), dnsState: text(value.dnsState), sslState: text(value.sslState), responseState: text(value.responseState), redirectState: text(value.redirectState), basicContentState: text(value.basicContentState), portalLinkageState: text(value.portalLinkageState), maintenanceState: text(value.maintenanceState), internalActionRequired: value.internalActionRequired === true, retryEligible: value.retryEligible === true, reasonCodes: Array.isArray(value.reasonCodes) ? value.reasonCodes.map(text).filter(Boolean).slice(0, 10) : [], progressBefore: integer(value.progressBefore, 0), progressAfter: integer(value.progressAfter, 0), reviewEligibility: { state: text(eligibility.state || "not_eligible"), eligible: eligibility.eligible === true, earliestEligibleAt: validTimestamp(eligibility.earliestEligibleAt), reasonCode: text(eligibility.reasonCode) }, reviewMailStatus: "not_scheduled"
   };
 }
 
