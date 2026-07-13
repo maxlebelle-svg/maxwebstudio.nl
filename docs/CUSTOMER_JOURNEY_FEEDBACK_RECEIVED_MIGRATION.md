@@ -98,7 +98,21 @@ De additieve migratie `20260713190000_enable_feedback_received_test_outbox.sql` 
 - `SECURITY DEFINER` met vaste `search_path`;
 - alleen uitvoerbaar door `service_role`.
 
-Er zijn geen tabellen, kolommen, policies of gegevens verwijderd. De migratie is in deze ontwikkelstap niet automatisch op een externe database toegepast.
+Er zijn geen tabellen, kolommen, policies of gegevens verwijderd.
+
+### Externe activatiestatus
+
+Op 13 juli 2026 is de migratie na een afzonderlijke read-only preflight en expliciete gebruikersbevestiging toegepast op productieproject `maxwebstudio`, projectref `yxxahurphdbblkuxoeje`.
+
+- `20260713190000_enable_feedback_received_test_outbox.sql` — geslaagd;
+- `20260713190100_enable_feedback_received_test_outbox_idempotency_verification.sql` — byte-identieke tweede uitvoering geslaagd;
+- SHA-256 van beide bestanden: `00a79f90c8b2327433dcc9bc285c423e8144bd3bf5d0ae92d841b71b7a41187e`;
+- beide transacties hebben de ingebouwde `SECURITY DEFINER`-, vaste `search_path`-, anon/authenticated-denial- en service-role-grantasserties doorlopen;
+- remote migration history bevat beide versies;
+- journey-events, outboxitems en executions bleven op hun bestaande aantallen; journey-instances bleven nul;
+- er is geen allowlist, testklant, instance, journey, provideractie of mail aangemaakt.
+
+De CLI-waarschuwing na succesvolle uitvoering betrof alleen het niet kunnen cachen van de optionele lokale pg-delta-catalogus omdat Docker niet actief was. Dit vond plaats na de databasecommits en was geen migratie- of schemafout.
 
 De bestaande read-only adminweergave toont voor dit effect eventtype, veilige feedbackfingerprint, previewversion-reference, owner en reden, progress vóór/na, outbox- en executionstatus, providerstatus, pogingen, foutcategorie, templateversie en testmodus. Volledige feedback, recipient en providerpayload worden niet geselecteerd of gerenderd.
 

@@ -200,7 +200,7 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
   const executions = new Map((executionRows || []).map((row) => [text(row.outbox_id), row]));
   const counts = { pending: 0, processing: 0, sent: 0, completed: 0, failed: 0, cancelled: 0, deadLetter: 0 };
   const journeyItems = (outboxRows || [])
-    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready", "email.feedback_received"].includes(row.effect_type))
+    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready", "email.feedback_received", "email.preview_approved"].includes(row.effect_type))
     .map((row) => {
       const execution = executions.get(text(row.id)) || {};
       const status = text(row.status).toLowerCase();
@@ -212,7 +212,14 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
         eventType: text(row.event_type),
         previewVersionReference: row.entity_type === "preview" ? text(row.entity_id) : "",
         feedbackReference: text(row.feedback_reference),
+        approvalReference: text(row.approval_reference),
         ownershipReason: text(row.ownership_reason),
+        journeyType: text(row.journey_type),
+        nextStepType: text(row.next_step_type),
+        paymentState: text(row.payment_state),
+        invoiceState: text(row.invoice_state),
+        customerActionRequired: row.customer_action_required === true || text(row.customer_action_required) === "true",
+        internalActionRequired: row.internal_action_required === true || text(row.internal_action_required) === "true",
         progressBefore: integer(row.progress_before, -1) >= 0 ? integer(row.progress_before, 0) : null,
         progressAfter: integer(row.progress_after, -1) >= 0 ? integer(row.progress_after, 0) : null,
         status,

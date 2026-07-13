@@ -4,9 +4,12 @@ const { createTimelineEvent } = require("./services/timelineService");
 const { getBaseUrl, getMollieTestApiKey } = require("./mollie-products");
 const { buildWebsiteCommercialOrder, maintenanceCatalog, readWebsiteCommercialOrder, selectMaintenance } = require("./_website-commercial-order");
 const { createFeedbackReceivedService } = require("./journey/feedbackReceived/service");
+const { createPreviewApprovedService } = require("./journey/previewApproved/service");
+const { resolveApprovalNextStep } = require("./journey/previewApproved/nextStepResolver");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const feedbackReceivedService = createFeedbackReceivedService();
+const previewApprovedService = createPreviewApprovedService();
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -275,22 +278,21 @@ function feedbackSideEffectKey(type, version, feedback) {
 
 async function approvePreviewVersion(context, customer, authUser, version, payload) {
   if (version.allow_approval === false) return jsonResponse(403, { success: false, error: "Goedkeuring is voor deze previewversie gesloten." });
-  if (version.approved_at) return jsonResponse(200, { success: true, duplicate: true, approvedPreviewVersionId: version.id, previewVersion: sanitizeClientVersion(version, version.id), paymentReadiness: await resolvePaymentReadiness(context, customer, version) });
-  const now = new Date().toISOString();
-  const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, {
-    approved_at: now,
-    approved_by_auth_user_id: authUser.id,
-    status: "approved",
-    approval_metadata: {
-      approvedByEmail: authUser.email || "",
-      approvedByCustomerId: customer.id,
-      note: cleanText(payload.note || payload.feedback).slice(0, 1000),
-      approvedAt: now,
-    },
-    updated_at: now,
-  });
-  const updated = rows[0] || { ...version, approved_at: now, approved_by_auth_user_id: authUser.id, status: "approved" };
-  await safeTimeline({
+  const duplicate = Boolean(version.approved_at);
+  let updated = version;
+  if (!duplicate) {
+    const now = new Date().toISOString();
+    const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, { approved_at: now, approved_by_auth_user_id: authUser.id, status: "approved", approval_metadata: { approvedByEmail: authUser.email || "", approvedByCustomerId: customer.id, note: cleanText(payload.note || payload.feedback).slice(0, 1000), approvedAt: now }, updated_at: now });
+    updated = rows[0] || { ...version, approved_at: now, approved_by_auth_user_id: authUser.id, status: "approved" };
+  }
+  const sideEffects = await ensureApprovalSideEffects(customer, authUser, updated);
+  const resolution = await resolveApprovalFinancialContext(context, customer, updated);
+  const mailOwnership = await dispatchApprovalConfirmation(customer, authUser, updated, resolution, sideEffects);
+  return jsonResponse(200, { success: true, duplicate, approvedPreviewVersionId: version.id, previewVersion: sanitizeClientVersion(updated, version.id), paymentReadiness: await resolvePaymentReadiness(context, customer, updated), approvalNextStep: publicApprovalNextStep(resolution), approvalSideEffects: sideEffects, mailOwnership });
+}
+
+async function ensureApprovalSideEffects(customer, authUser, version) {
+  const timeline = await safeTimeline({
     customerId: customer.id,
     eventType: "preview_approved",
     title: "Website-preview goedgekeurd",
@@ -303,11 +305,11 @@ async function approvePreviewVersion(context, customer, authUser, version, paylo
     severity: "success",
     metadata: { dedupeKey: `preview_approved:${version.id}`, previewVersionId: version.id, websiteId: version.website_id || "" },
   });
-  await safeTimeline({
+  const notification = await safeTimeline({
     customerId: customer.id,
     eventType: "customer_notification",
     title: "Ontwerp goedgekeurd",
-    description: `De klant heeft preview V${version.version || 1} goedgekeurd. De betaalstap kan worden gestart.`,
+    description: `De klant heeft preview V${version.version || 1} goedgekeurd. De commerciële vervolgstap moet veilig worden gecontroleerd.`,
     module: "notifications",
     referenceType: "website_preview_version",
     referenceId: version.id,
@@ -318,8 +320,31 @@ async function approvePreviewVersion(context, customer, authUser, version, paylo
     isGlobal: true,
     visibleToCustomer: false,
   });
-  return jsonResponse(200, { success: true, approvedPreviewVersionId: version.id, previewVersion: sanitizeClientVersion(updated, version.id), paymentReadiness: await resolvePaymentReadiness(context, customer, updated) });
+  return { timelineReady: isTimelineReady(timeline), timelineEventId: cleanText(timeline?.event?.id || timeline?.id), notificationReady: isTimelineReady(notification), notificationEventId: cleanText(notification?.event?.id || notification?.id) };
 }
+
+async function resolveApprovalFinancialContext(context, customer, version) {
+  try {
+    const project = await resolveCommercialProject(context, customer, version);
+    const website = version.website_id ? await readSingle(context, "websites", `select=id,customer_id,status&customer_id=eq.${encodeURIComponent(customer.id)}&id=eq.${encodeURIComponent(version.website_id)}&limit=1`).catch(() => null) : null;
+    const invoices = customer.auth_user_id ? await readRows(context, "customer_invoices", `select=id,status,paid_at,notes,mollie_payment_id,mollie_checkout_url,mollie_payment_status&customer_auth_user_id=eq.${encodeURIComponent(customer.auth_user_id)}&order=created_at.desc&limit=25`).catch(() => []) : [];
+    return resolveApprovalNextStep({ customerId: customer.id, previewVersionId: version.id, project, website, invoices });
+  } catch {
+    return resolveApprovalNextStep({ customerId: customer.id, previewVersionId: version.id });
+  }
+}
+
+async function dispatchApprovalConfirmation(customer, authUser, version, resolution, sideEffects) {
+  try {
+    const result = await previewApprovedService.dispatch({ customerId: customer.id, previewVersionId: version.id, approvalReference: `${version.approved_at}:${version.approved_by_auth_user_id || authUser.id}`, approvedAt: version.approved_at, recipient: customer.email || authUser.email || "", firstName: firstName(customer.name || authUser.email || ""), projectLabel: cleanText(version.title || customer.company || customer.company_name || "uw website"), previewVersionLabel: `Preview V${version.version || 1}`, resolution, sideEffects, legacySend: async () => null });
+    return { owner: result.owner, reason: result.reason, durable: result.durable === true, duplicate: result.duplicate === true, approvalReference: result.approvalReference || "", progressUpdated: result.progress?.updated === true, progressReason: result.progress?.reason || "" };
+  } catch (error) {
+    console.error("Preview approval confirmation skipped", { code: "APPROVAL_CONFIRMATION_FAILED", category: String(error?.code || error?.name || "unknown").slice(0, 80) });
+    return { owner: "legacy", reason: "approval_confirmation_failed", durable: false, duplicate: false, approvalReference: "", progressUpdated: false, progressReason: "" };
+  }
+}
+
+function publicApprovalNextStep(value = {}) { return { journeyType: cleanText(value.journeyType), orderSource: cleanText(value.orderSource), paymentState: cleanText(value.paymentState), invoiceState: cleanText(value.invoiceState), amountState: cleanText(value.amountState), nextStepType: cleanText(value.nextStepType), customerActionRequired: value.customerActionRequired === true, internalActionRequired: value.internalActionRequired === true, reasonCode: cleanText(value.reasonCode), confidence: cleanText(value.confidence) }; }
 
 async function resolvePaymentReadiness(context, customer, version) {
   let project = await resolveCommercialProject(context, customer, version);
