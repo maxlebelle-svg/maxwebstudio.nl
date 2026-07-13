@@ -1,11 +1,11 @@
 # Migration 025 — veiligheidsvalidatie
 
 Datum: 13 juli 2026
-Status: **uitsluitend statisch gevalideerd; niet uitgevoerd tegen lokaal, test of productie-Supabase**
+Status: **op 13 juli 2026 veilig geactiveerd op productieproject `maxwebstudio` na volledige read-only preflight**
 
 ## Besluit
 
-`supabase/migration-drafts/025_customer_journey_automation_foundations.sql` blijft een migration draft. De huidige opdracht geeft geen afzonderlijke autorisatie voor een live schemawijziging en bevat geen aantoonbare databaseback-up of getest herstelpad. Daarom is geen Supabase-project benaderd en is geen schema of data gewijzigd.
+De gevalideerde draft is byte-identiek gepromoveerd naar `supabase/migrations/20260713173000_customer_journey_automation_foundations.sql` en additief uitgevoerd op projectref `yxxahurphdbblkuxoeje`. Projectidentificatie, back-up, objectpreflight, dry-run, live RLS/grants en het herstelpad staan in `docs/CUSTOMER_JOURNEY_STORAGE_ACTIVATION_PREFLIGHT.md`.
 
 De Fase 3-code behandelt alle journeytabellen als optioneel. Een ontbrekende tabel levert een gecontroleerde legacy- of disabled state op en veroorzaakt geen mutatie of crash.
 
@@ -25,29 +25,24 @@ Gecontroleerd tegen de bestaande schemafiles, migration drafts en uitgevoerde mi
 - foreign keys raken alleen nieuwe journeytabellen en gebruiken geen cascade naar bestaande klant-, project-, betaal- of maildata;
 - de migration is transactioneel omsloten met `begin` en `commit`.
 
-## Bekende aandachtspunten vóór latere uitvoering
+## Uitgevoerde live controles
 
-Een toekomstige uitvoerder moet vóór deployment read-only bewijzen:
-
-1. dat `SUPABASE_URL` en project-ID bij het bedoelde Max Webstudio-project horen;
-2. dat de zes tabellen en `record_journey_event_and_enqueue` nog niet onder een andere definitie bestaan;
-3. dat de rollen `service_role`, `authenticated` en `anon` aanwezig zijn;
-4. dat `pgcrypto` mag worden geactiveerd;
-5. dat er een actuele schema-export en databaseback-up beschikbaar zijn;
-6. dat de migration eerst tweemaal succesvol in een representatieve testdatabase draait;
-7. dat RLS- en granttests vanuit anon, authenticated en service-rolecontext slagen.
-
-`create table if not exists` reconcilieert bewust geen afwijkende, gedeeltelijk bestaande tabel. Wanneer een gelijknamige tabel al bestaat, moet de deployment stoppen voor handmatige vergelijking.
+- productieproject, ref en live publieke configuratie kwamen overeen;
+- fysieke backup `1102601588` was vóór uitvoering `COMPLETED`;
+- alle zes tabellen, beide RPC's en 025-indexnamen ontbraken vooraf;
+- eerste migrationuitvoering slaagde;
+- byte-identieke tweede uitvoering slaagde;
+- ingebouwde catalogusasserties bewezen RLS, service-role-policies, anon/authenticated-denial, service-role-grants, security-definer en vaste `search_path`;
+- postflight-types en indexstatistieken bevatten alle nieuwe objecten;
+- synthetische duplicate-, claim-, lease-recovery- en executiontest slaagde zonder providercall.
 
 ## Herstelprocedure
 
-Omdat de migration niet is uitgevoerd, is nu geen rollback nodig.
-
-Bij een toekomstige deployment is het herstelpad:
+Het huidige herstelpad is:
 
 1. stop journeyflags en eventuele toekomstige workers;
 2. bewaar logs en een schema-/databack-up van de zes nieuwe tabellen;
-3. herstel de database vanuit de vooraf gemaakte back-up als de transactie zelf niet volledig terugrolt;
+3. herstel alleen bij aantoonbare bredere schade vanuit de vooraf bevestigde fysieke back-up;
 4. verwijder nieuwe objecten alleen na expliciete database-ownergoedkeuring en alleen wanneer bewezen is dat zij geen productiegegevens bevatten;
 5. controleer daarna bestaande checkout-, Mollie-, preview-, factuur-, timeline-, portal- en mailflows opnieuw.
 

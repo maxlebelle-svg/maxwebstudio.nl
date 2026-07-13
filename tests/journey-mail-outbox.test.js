@@ -225,7 +225,7 @@ test("draft migration contains atomic test-only claim, stale recovery, RLS and n
   assert.match(sql, /claim_automation_outbox/);
   assert.match(sql, /for update skip locked/);
   assert.match(sql, /lease_expires_at < now\(\)/);
-  assert.match(sql, /effect_type = 'email\.journey_test'/);
+  assert.match(sql, /effect_type in \('email\.journey_test', 'email\.preview_ready'\)/);
   assert.match(sql, /p_environment <> 'test'/);
   assert.match(sql, /revoke all on function public\.claim_automation_outbox/);
   assert.match(sql, /to service_role/);
