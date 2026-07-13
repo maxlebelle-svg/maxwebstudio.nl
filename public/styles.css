@@ -10481,6 +10481,10 @@ h3 {
   display: none;
 }
 
+.preview-checkout .maintenance-chooser {
+  container-type: inline-size;
+}
+
 .preview-checkout .maintenance-chooser fieldset {
   min-width: 0;
   margin: 4px 0 0;
@@ -10497,16 +10501,29 @@ h3 {
 
 .preview-checkout .maintenance-grid {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
+@container (min-width: 960px) {
+  .preview-checkout .maintenance-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 479px) {
+  .preview-checkout .maintenance-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .preview-checkout .maintenance-option {
-  position: relative;
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-content: start;
   width: 100%;
+  min-width: 0;
   border: 1px solid rgba(111, 169, 225, 0.2);
   border-radius: 9px;
   padding: 13px;
@@ -10514,6 +10531,14 @@ h3 {
   background: rgba(6, 22, 37, 0.82);
   text-align: left;
   cursor: pointer;
+}
+
+.preview-checkout .maintenance-option-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
 }
 
 .preview-checkout .maintenance-option:hover,
@@ -10540,25 +10565,40 @@ h3 {
   border: 5px solid var(--preview-blue);
 }
 
-.preview-checkout .maintenance-option-copy,
+.preview-checkout .maintenance-option-title,
 .preview-checkout .maintenance-option-price {
   display: grid;
   gap: 3px;
+  min-width: 0;
 }
 
-.preview-checkout .maintenance-option-copy small,
+.preview-checkout .maintenance-option-title strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.preview-checkout .maintenance-option-description,
 .preview-checkout .maintenance-option-price small {
   color: var(--preview-muted);
   font-size: 11px;
   line-height: 1.35;
 }
 
+.preview-checkout .maintenance-option-description {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
 .preview-checkout .maintenance-option-price {
+  flex-shrink: 0;
   text-align: right;
+  white-space: nowrap;
 }
 
 .preview-checkout .maintenance-option em {
-  grid-column: 2;
   justify-self: start;
   border-radius: 999px;
   padding: 3px 7px;
@@ -10652,12 +10692,13 @@ h3 {
     gap: 10px;
   }
 
-  .preview-checkout .maintenance-option {
-    grid-template-columns: 20px minmax(0, 1fr);
+  .preview-checkout .maintenance-option-header {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .preview-checkout .maintenance-option-price {
     grid-column: 2;
+    justify-self: start;
     text-align: left;
   }
 

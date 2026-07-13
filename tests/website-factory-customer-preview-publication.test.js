@@ -177,6 +177,20 @@ test("premium preview checkout keeps commercial values dynamic and accessible", 
   assert.match(styles, /overflow: hidden/);
 });
 
+test("maintenance option cards reserve independent title, price and description zones", () => {
+  assert.match(securePreview, /class="maintenance-option-header"/);
+  assert.match(securePreview, /class="maintenance-option-title"/);
+  assert.match(securePreview, /class="maintenance-option-price"/);
+  assert.match(securePreview, /class="maintenance-option-description"/);
+  assert.match(styles, /\.preview-checkout \.maintenance-option-header\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\) auto/);
+  assert.match(styles, /\.preview-checkout \.maintenance-option-price\s*\{[\s\S]*white-space: nowrap/);
+  assert.match(styles, /\.preview-checkout \.maintenance-option-description\s*\{[\s\S]*overflow-wrap: anywhere/);
+  assert.match(styles, /\.preview-checkout \.maintenance-chooser\s*\{[\s\S]*container-type: inline-size/);
+  assert.match(styles, /@container \(min-width: 960px\)[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@container \(max-width: 479px\)[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
+  assert.doesNotMatch(styles, /\.preview-checkout \.maintenance-option-price\s*\{[^}]*position:\s*absolute/s);
+});
+
 test("portal thumbnail and full link expose the same version id", () => {
   assert.match(portal, /iframe\.dataset\.previewVersionId = previewVersion\.id/);
   assert.match(portal, /open\.dataset\.previewVersionId = previewVersion\.id/);

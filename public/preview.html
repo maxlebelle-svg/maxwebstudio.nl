@@ -273,10 +273,12 @@
         function renderMaintenanceChooser(options = [], selectedCode = "") {
           maintenanceGrid.innerHTML = options.map((option) => `
             <button class="maintenance-option${option.code === selectedCode ? " is-selected" : ""}" type="button" role="radio" aria-checked="${option.code === selectedCode}" data-maintenance-code="${escapeText(option.code)}">
-              <span class="maintenance-option-check" aria-hidden="true"></span>
-              <span class="maintenance-option-copy"><strong>${escapeText(option.name)}</strong><small>${escapeText(option.description)}</small></span>
-              <span class="maintenance-option-price"><b>${euro(option.amountCents)}${option.code === "none" ? "" : " / mnd"}</b><small>${option.code === "none" ? "" : "excl. btw"}</small></span>
-              ${option.recommended ? "<em>Aanbevolen</em>" : ""}
+              <span class="maintenance-option-header">
+                <span class="maintenance-option-check" aria-hidden="true"></span>
+                <span class="maintenance-option-title"><strong>${escapeText(option.name)}</strong>${option.recommended ? "<em>Aanbevolen</em>" : ""}</span>
+                <span class="maintenance-option-price"><b>${euro(option.amountCents)}${option.code === "none" ? "" : " / mnd"}</b><small>${option.code === "none" ? "" : "excl. btw"}</small></span>
+              </span>
+              <small class="maintenance-option-description">${escapeText(option.description)}</small>
             </button>`).join("");
         }
 
