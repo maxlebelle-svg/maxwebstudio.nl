@@ -76,4 +76,20 @@ Bij onzekerheid wordt zonder primaire CTA gerenderd. De mail bevat geen bedrag, 
 
 De read-only Journey & Mail Automation-weergave toont veilige approvalfingerprint, previewreference, owner/reason, journeytype, next-step, payment-/invoicestate, klant-/interne actie, progress, outbox/execution/providerstatus, templateversie, attempts, foutcategorie en testmodus. Zij selecteert geen recipient, financiële payload of klantdetails.
 
-De additieve migratie `20260713200000_enable_preview_approved_test_outbox.sql` breidt alleen de begrensde testworkerclaim uit met `email.preview_approved`, behoudt vaste `search_path`, service-role-only execution, lease recovery en batchlimiet. Deze Fase 8-migratie is niet automatisch extern toegepast. Er is geen scheduler, backfill, allowlistwaarde, testinstance of echte testmail aangemaakt.
+De additieve migratie `20260713200000_enable_preview_approved_test_outbox.sql` breidt alleen de begrensde testworkerclaim uit met `email.preview_approved`, behoudt vaste `search_path`, service-role-only execution, lease recovery en batchlimiet. Er is geen scheduler, backfill, allowlistwaarde, testinstance of echte testmail aangemaakt.
+
+### Externe activatiestatus
+
+Op 13 juli 2026 is deze migratie na een afzonderlijke read-only preflight en expliciete toestemming toegepast op productieproject `maxwebstudio`, projectref `yxxahurphdbblkuxoeje`.
+
+- `20260713200000_enable_preview_approved_test_outbox.sql` — geslaagd;
+- `20260713200100_enable_preview_approved_test_outbox_idempotency_verification.sql` — byte-identieke tweede uitvoering geslaagd;
+- SHA-256 van beide bestanden: `e6773d72987f25595b5597c1ed9dce265540a27cbb1b6275ce3085bdc84f0118`;
+- beide transacties doorliepen de ingebouwde `SECURITY DEFINER`-, vaste `search_path`-, anon/authenticated-denial- en service-role-grantasserties;
+- remote migration history bevat beide versies;
+- journey-events, outboxitems en executions bleven elk op één; journey-instances bleven nul;
+- relevante unieke, dispatch- en stale-lease-indexes bleven intact;
+- RLS, tabellen, kolommen, constraints en applicatiedata zijn niet gewijzigd;
+- er is geen klant, allowlist, testinstance, outboxitem, execution, provideractie of mail aangemaakt.
+
+De waarschuwing na de succesvolle databasecommits betrof uitsluitend het lokaal cachen van de optionele pg-delta-catalogus terwijl Docker niet actief was. Dit was geen migratie-, schema- of databasefout.
