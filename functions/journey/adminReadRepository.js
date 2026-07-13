@@ -11,8 +11,9 @@ const TABLE_SELECTS = Object.freeze({
   invoices: ["customer_invoices", "id,profile_id,customer_auth_user_id,status,mollie_payment_status,paid_at,notes,created_at,updated_at"],
   leads: ["leads", "id,company_name,status,source,converted_customer_id,environment,metadata,created_at,updated_at"],
   demoJourneys: ["demo_journeys", "id,lead_id,customer_id,business_name,demo_status,preview_generated_at,environment,created_at,updated_at"],
-  automationOutbox: ["automation_outbox", "id,event_key,event_type,effect_type,status,attempt_count,next_attempt_at,processed_at,last_error_code,environment,created_at,updated_at"],
+  automationOutbox: ["automation_outbox", "id,event_key,event_type,entity_type,entity_id,effect_type,status,attempt_count,next_attempt_at,processed_at,last_error_code,environment,created_at,updated_at"],
   automationExecutions: ["automation_executions", "id,outbox_id,automation_key,template_key,template_version,provider,status,delivery_status,attempt_count,provider_message_id,last_error_code,environment,created_at,updated_at"],
+  emailLogs: ["email_logs", "id,status,template_key,customer_id,project_id,error_code,metadata,created_at,updated_at"],
 });
 
 function createAdminJourneyReadRepository(options = {}) {

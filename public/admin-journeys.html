@@ -146,9 +146,9 @@
           </div>
           <p class="journey-muted" id="mail-storage-state">Automationopslag controleren…</p>
           <div class="journey-table-wrap">
-            <table class="journey-table mail-table"><thead><tr><th>Template</th><th>Status</th><th>Poging</th><th>Gepland</th><th>Foutcategorie</th><th>Provider</th></tr></thead><tbody id="mail-table-body"></tbody></table>
+            <table class="journey-table mail-table"><thead><tr><th>Owner / event</th><th>Previewreferentie</th><th>Template</th><th>Outbox</th><th>Execution</th><th>Poging</th><th>Datum/tijd</th><th>Foutcategorie</th><th>Provider</th></tr></thead><tbody id="mail-table-body"></tbody></table>
           </div>
-          <div class="journey-empty" id="mail-empty">Nog geen synthetische testmailitems beschikbaar.</div>
+          <div class="journey-empty" id="mail-empty">Nog geen expliciet toegestane journey-testitems beschikbaar.</div>
         </section>
       </div>
     </main>
@@ -231,9 +231,9 @@
         byId("mail-failed").textContent = counts.failed || 0;
         byId("mail-dead-letter").textContent = counts.deadLetter || 0;
         elements.mailMode.textContent = mail.label || "Uitgeschakeld";
-        elements.mailStorage.textContent = mail.storageAvailable ? "Alleen synthetische testitems; geen klantgegevens of verzendknoppen." : "Automationopslag is nog niet actief. Er wordt niets verzonden of lokaal opgeslagen.";
+        elements.mailStorage.textContent = mail.storageAvailable ? "Alleen expliciet toegestane testitems; geen ontvangeradressen of verzendknoppen." : "Automationopslag is nog niet actief. Er wordt niets verzonden of lokaal opgeslagen.";
         const items = Array.isArray(mail.items) ? mail.items : [];
-        elements.mailTable.innerHTML = items.map((item) => `<tr><td>${escapeHtml(item.templateKey ? `${item.templateKey}.v${item.templateVersion || "?"}` : "—")}</td><td><span class="journey-badge">${escapeHtml(item.status || "—")}</span></td><td>${Number(item.attempts) || 0}</td><td>${escapeHtml(formatDate(item.scheduledAt))}</td><td>${escapeHtml(item.errorCategory || "—")}</td><td>${escapeHtml(item.providerStatus || item.provider || "—")}</td></tr>`).join("");
+        elements.mailTable.innerHTML = items.map((item) => `<tr><td><strong>${escapeHtml(item.owner || "—")}</strong><br><small>${escapeHtml(item.eventType || "—")} · test</small></td><td><code>${escapeHtml(item.previewVersionReference || "—")}</code></td><td>${escapeHtml(item.templateKey ? `${item.templateKey}.v${item.templateVersion || "?"}` : "—")}</td><td><span class="journey-badge">${escapeHtml(item.status || "—")}</span></td><td>${escapeHtml(item.executionStatus || "—")}</td><td>${Number(item.attempts) || 0}</td><td>${escapeHtml(formatDate(item.processedAt || item.scheduledAt))}</td><td>${escapeHtml(item.errorCategory || "—")}</td><td>${escapeHtml(item.providerStatus || item.provider || "—")}</td></tr>`).join("");
         elements.mailEmpty.hidden = items.length > 0;
       }
 

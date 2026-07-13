@@ -20,7 +20,7 @@ function response(body, status = 200) {
 }
 
 function emptyData() {
-  return { journeyDefinitions: [], journeyInstances: [], journeyEvents: [], customers: [], projects: [], invoices: [], leads: [], demoJourneys: [], automationOutbox: [], automationExecutions: [] };
+  return { journeyDefinitions: [], journeyInstances: [], journeyEvents: [], customers: [], projects: [], invoices: [], leads: [], demoJourneys: [], automationOutbox: [], automationExecutions: [], emailLogs: [] };
 }
 
 function snapshot(data = {}, overrides = {}) {
@@ -101,7 +101,7 @@ test("test-only flags reject production and allow explicit test context", async 
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, environment: "production" })).skipped, true);
   assert.equal(calls, 0);
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, environment: "test" })).skipped, false);
-  assert.equal(calls, 10);
+  assert.equal(calls, 11);
 });
 
 test("allowlist mode needs an explicit matching scope", async () => {
@@ -116,7 +116,7 @@ test("allowlist mode needs an explicit matching scope", async () => {
   const repository = createAdminJourneyReadRepository({ env, fetchImpl: async () => { calls += 1; return response([]); }, logger: { info() {} } });
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, scopeKey: "different" })).skipped, true);
   assert.equal((await repository.readSnapshot({}, { adminAuthorized: true, scopeKey: "admin-journeys" })).skipped, false);
-  assert.equal(calls, 10);
+  assert.equal(calls, 11);
 });
 
 test("missing journey tables produce a controlled legacy fallback snapshot", async () => {
@@ -207,12 +207,12 @@ test("admin UI is authenticated, read-only, responsive, and feature-disabled awa
   assert.match(dashboard, /href="admin-journeys\.html">Journey &amp; Mail Automation/);
 });
 
-test("migration validation records static-only execution and recovery constraints", () => {
+test("migration validation records live activation and recovery constraints", () => {
   const root = path.resolve(__dirname, "..");
   const report = fs.readFileSync(path.join(root, "docs/CUSTOMER_JOURNEY_MIGRATION_025_VALIDATION.md"), "utf8");
   const sql = fs.readFileSync(path.join(root, "supabase/migration-drafts/025_customer_journey_automation_foundations.sql"), "utf8").toLowerCase();
-  assert.match(report, /uitsluitend statisch gevalideerd/);
-  assert.match(report, /niet uitgevoerd tegen lokaal, test of productie-supabase/i);
+  assert.match(report, /veilig geactiveerd op productieproject/);
+  assert.match(report, /byte-identieke tweede uitvoering slaagde/i);
   assert.match(report, /herstelprocedure/i);
   assert.match(sql, /\bbegin;/);
   assert.match(sql, /commit;\s*$/);

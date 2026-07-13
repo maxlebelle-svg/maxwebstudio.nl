@@ -104,7 +104,7 @@ async function getOverview({ filters, context, repository, log, now, env }) {
     recentEvents,
     pagination: { page: page.page, limit: page.limit, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / page.limit)) },
     warnings: snapshot.warnings || [],
-    mailAutomation: mailAutomation(data.automationOutbox, data.automationExecutions, snapshot.mailStorageAvailable, resolveJourneyFeatureFlag(FEATURE_FLAGS.JOURNEY_EMAIL_AUTOMATION_ENABLED, context, env)),
+    mailAutomation: mailAutomation(data.automationOutbox, data.automationExecutions, snapshot.mailStorageAvailable, resolveJourneyFeatureFlag(FEATURE_FLAGS.JOURNEY_EMAIL_AUTOMATION_ENABLED, context, env), data.emailLogs),
   };
   log.info("admin_overview", { operation: "admin_overview", result: "success", source: result.source, durationMs: now() - startedAt, recordCount: journeys.length });
   return result;
@@ -195,12 +195,12 @@ function emptyMetrics() {
   return { activeJourneys: 0, perPhase: {}, customerActionRequired: 0, internalActionRequired: 0, blocked: 0, stale: 0, legacyWithoutJourney: 0, unavailable: 0 };
 }
 
-function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = false, gate = { enabled: true, mode: "test_only" }) {
+function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = false, gate = { enabled: true, mode: "test_only" }, emailLogRows = []) {
   if (!storageAvailable) return emptyMailAutomation(false, "Opslag nog niet actief");
   const executions = new Map((executionRows || []).map((row) => [text(row.outbox_id), row]));
   const counts = { pending: 0, processing: 0, sent: 0, completed: 0, failed: 0, cancelled: 0, deadLetter: 0 };
-  const items = (outboxRows || [])
-    .filter((row) => row.environment === "test" && row.effect_type === "email.journey_test")
+  const journeyItems = (outboxRows || [])
+    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready"].includes(row.effect_type))
     .map((row) => {
       const execution = executions.get(text(row.id)) || {};
       const status = text(row.status).toLowerCase();
@@ -208,6 +208,9 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
       else if (Object.hasOwn(counts, status)) counts[status] += 1;
       return {
         id: text(row.id),
+        owner: "journey",
+        eventType: text(row.event_type),
+        previewVersionReference: row.entity_type === "preview" ? text(row.entity_id) : "",
         status,
         attempts: Math.max(0, integer(row.attempt_count, 0)),
         templateKey: text(execution.template_key),
@@ -216,13 +219,18 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
         processedAt: validTimestamp(row.processed_at),
         errorCategory: text(row.last_error_code || execution.last_error_code),
         provider: text(execution.provider),
+        executionStatus: text(execution.status),
         providerStatus: text(execution.delivery_status || execution.status),
         hasProviderMessageId: Boolean(execution.provider_message_id),
         testMode: true,
       };
     })
-    .sort((a, b) => timestampMs(b.processedAt || b.scheduledAt) - timestampMs(a.processedAt || a.scheduledAt))
-    .slice(0, 100);
+    .sort((a, b) => timestampMs(b.processedAt || b.scheduledAt) - timestampMs(a.processedAt || a.scheduledAt));
+  const legacyItems = (emailLogRows || []).filter((row) => row.template_key === "preview_ready" && row.metadata?.ownership === "legacy").map((row) => ({
+    id: text(row.id), owner: "legacy", eventType: "preview.ready", previewVersionReference: text(row.metadata?.previewVersionReference), status: text(row.status).toLowerCase(), executionStatus: text(row.status).toLowerCase(), attempts: 1, templateKey: "preview_ready", templateVersion: 1, scheduledAt: validTimestamp(row.created_at), processedAt: validTimestamp(row.updated_at), errorCategory: text(row.error_code), provider: "resend", providerStatus: text(row.status).toLowerCase(), hasProviderMessageId: false, testMode: false,
+  }));
+  legacyItems.forEach((item) => { if (Object.hasOwn(counts, item.status)) counts[item.status] += 1; });
+  const items = [...journeyItems, ...legacyItems].sort((a, b) => timestampMs(b.processedAt || b.scheduledAt) - timestampMs(a.processedAt || a.scheduledAt)).slice(0, 100);
   const label = gate.enabled && ["test_only", "allowlist"].includes(gate.mode) ? "Veilige testmodus · read-only" : "Uitgeschakeld · read-only";
   return { active: false, testMode: true, storageAvailable: true, label, counts, items };
 }

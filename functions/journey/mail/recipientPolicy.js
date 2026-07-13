@@ -7,7 +7,7 @@ function evaluateJourneyEmailMode(context = {}, env = process.env) {
   const gate = resolveJourneyFeatureFlag(FEATURE_FLAGS.JOURNEY_EMAIL_AUTOMATION_ENABLED, context, env);
   if (!gate.enabled) return { ...gate, allowed: false, testMode: true };
   if (!["test_only", "allowlist"].includes(gate.mode)) return { ...gate, allowed: false, testMode: true, reason: "unsafe_feature_mode_blocked" };
-  if (isProduction(context, env)) return { ...gate, allowed: false, testMode: true, reason: "production_context_blocked" };
+  if (isProduction(context, env) && gate.mode !== "allowlist") return { ...gate, allowed: false, testMode: true, reason: "production_context_blocked" };
   return { ...gate, allowed: true, testMode: true };
 }
 

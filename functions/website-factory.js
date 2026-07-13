@@ -5,6 +5,7 @@ const { createTimelineEvent } = require("./services/timelineService");
 const { storedPreviewSource } = require("./_demo-preview-source");
 const { buildWebsiteCommercialOrder, normalizeWebsitePackage, readWebsiteCommercialOrder } = require("./_website-commercial-order");
 const { sendEmail } = require("./email");
+const { createPreviewReadyService } = require("./journey/previewReady/service");
 const { randomUUID } = require("crypto");
 const {
   buildLogs,
@@ -21,6 +22,7 @@ const {
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const previewReadyService = createPreviewReadyService();
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -709,7 +711,17 @@ async function startOnboardingFactoryPipeline(context, payload = {}) {
       await persistPreviewReview(context, records, previewReview, { status: "feedback", phase: "Wachten op klantreview", progress: 78 });
       await factoryTimeline(records, "preview_ready", "Preview klaar voor klantreview", "De preview staat klaar om met de klant te delen.", "success", { runId, previewUrl: pipeline.previewUrl, version: previewReview.activeVersion });
       await factoryNotification(records, "Preview gereed", "De preview staat klaar voor controle.", "success", { runId, previewUrl: pipeline.previewUrl });
-      await sendPreviewLaunchMail(records, previewReview, "preview_ready").catch((error) => console.error("Preview ready mail skipped", { message: error.message }));
+      await previewReadyService.dispatch({
+        customerId: records.customer?.id,
+        projectId: records.project?.id,
+        previewVersionId: buildResult.previewVersion?.id,
+        previewVersionLabel: previewReview.activeVersion,
+        recipient: records.customer?.email,
+        firstName: cleanText(records.customer?.name).split(/\s+/)[0],
+        businessLabel: cleanText(records.customer?.company || records.customer?.name || records.project?.name || "uw website"),
+        occurredAt: new Date().toISOString(),
+        legacySend: () => sendPreviewLaunchMail(records, previewReview, "preview_ready", { ownership: "legacy", previewVersionReference: buildResult.previewVersion?.id || "" }),
+      }).catch((error) => console.error("Preview ready mail skipped", { message: error.message }));
     }
     return { factoryRun: sanitizePipeline(pipeline), job, journey: buildResult.journey || journey, previewVersion: buildResult.previewVersion || null };
   } catch (error) {
@@ -1896,7 +1908,7 @@ async function createPostLaunchGrowthEvents(records, review) {
   await factoryTimeline(records, "review_requested", "Review verzoek gepland", "Reviewverzoek staat klaar in de post-launch planning.", "info", {});
 }
 
-async function sendPreviewLaunchMail(records, review, type) {
+async function sendPreviewLaunchMail(records, review, type, ownershipMetadata = {}) {
   const to = cleanText(records.customer?.email);
   if (!to) return null;
   const business = cleanText(records.customer?.company || records.customer?.name || records.project?.name || "uw website");
@@ -1929,7 +1941,7 @@ async function sendPreviewLaunchMail(records, review, type) {
     templateName: type.replace(/_/g, " "),
     customerId: records.customer?.id,
     projectId: records.project?.id,
-    metadata: { previewReviewStatus: review.status },
+    metadata: { previewReviewStatus: review.status, ...ownershipMetadata },
   });
 }
 
