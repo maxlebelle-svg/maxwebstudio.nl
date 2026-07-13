@@ -40,7 +40,7 @@ test("dashboard is the only page that mounts the shared pilot and has no legacy 
   assert.match(dashboard, /id="admin-sidebar-root"/);
   assert.doesNotMatch(dashboard, /<aside class="admin-sidebar"/);
   assert.doesNotMatch(dashboard, /adminSidebarNavItems|renderAdminSidebarNavigation/);
-  for (const page of ["admin-sales.html", "admin-mail-center.html"]) {
+  for (const page of ["admin-sales.html", "admin-website-factory.html", "admin-mail-center.html"]) {
     const html = read(`public/${page}`);
     assert.match(html, /<aside class="admin-sidebar"/);
     assert.doesNotMatch(html, /admin-sidebar-dashboard-pilot|admin-sidebar-system\.css/);
@@ -91,6 +91,57 @@ test("malformed profile and workspace sources degrade without crashing", () => {
   assert.equal(pilot.resolveUser(null, null).name, "Onbekende gebruiker");
   assert.equal(pilot.safeRelationship({ getActiveRelationship() { throw new Error("unavailable"); } }), null);
   assert.doesNotThrow(() => pilot.readJson({ getItem() { throw new Error("blocked"); } }, "key", []));
+});
+
+test("relationship search input is debounced and only runs the latest query", () => {
+  const scheduled = new Map(); let nextId = 0; const calls = [];
+  const timers = { setTimeout(callback) { nextId += 1; scheduled.set(nextId, callback); return nextId; }, clearTimeout(id) { scheduled.delete(id); } };
+  const debounced = pilot.createDebouncer((value) => calls.push(value), 280, timers);
+  debounced("a"); debounced("acme");
+  assert.equal(scheduled.size, 1); assert.deepEqual(calls, []);
+  [...scheduled.values()][0]();
+  assert.deepEqual(calls, ["acme"]);
+});
+
+test("recent relationships use a bounded non-sensitive session cache", () => {
+  const previous = global.sessionStorage; const values = new Map();
+  global.sessionStorage = { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  try {
+    pilot.rememberRelationship({ entityType: "lead", leadId: "11111111-1111-4111-8111-111111111111", companyName: "Acme", lifecycleStage: "qualified", email: "private@example.test", phone: "+31 6" });
+    const stored = values.get("mwsAdminRelationshipRecents");
+    assert.match(stored, /Acme/); assert.doesNotMatch(stored, /private@example|\+31/);
+    assert.equal(JSON.parse(stored).length, 1);
+  } finally { global.sessionStorage = previous; }
+});
+
+test("lead and customer selection, URL sync, clear and selector errors remain isolated", async () => {
+  const previous = { document: global.document, location: global.location, history: global.history, localStorage: global.localStorage, ActiveRelationship: global.ActiveRelationship };
+  const selected = []; let cleared = false; let replaced = "";
+  global.document = { title: "Dashboard", activeElement: null, querySelector: () => null, querySelectorAll: () => [], getElementById: () => null };
+  global.location = { href: "http://localhost/admin-dashboard.html", origin: "http://localhost" };
+  global.history = { state: null, replaceState(_state, _title, value) { replaced = value; global.location.href = new URL(value, global.location.origin).href; } };
+  global.localStorage = { getItem: () => null };
+  global.ActiveRelationship = {
+    async setActiveRelationship(input) { selected.push(input); return input.entityType === "lead" ? { entityType: "lead", leadId: input.leadId, companyName: "Lead" } : { entityType: "customer", customerId: input.customerId, companyName: "Klant" }; },
+    clearActiveRelationship() { cleared = true; }, getActiveRelationship() { return null; },
+  };
+  try {
+    await pilot.selectRelationship({ entityType: "lead", id: "11111111-1111-4111-8111-111111111111" });
+    assert.match(replaced, /leadId=11111111/);
+    await pilot.selectRelationship({ entityType: "customer", id: "22222222-2222-4222-8222-222222222222" });
+    assert.match(replaced, /customerId=22222222/); assert.doesNotMatch(replaced, /leadId=/);
+    pilot.clearWorkspace(); assert.equal(cleared, true); assert.doesNotMatch(replaced, /customerId=/);
+    global.ActiveRelationship.setActiveRelationship = async () => { throw new Error("selector unavailable"); };
+    await assert.doesNotReject(() => pilot.selectRelationship({ entityType: "lead", id: "11111111-1111-4111-8111-111111111111" }));
+    assert.equal(selected.length, 2);
+  } finally { Object.assign(global, previous); }
+});
+
+test("Escape closes the relationship selector without propagating", () => {
+  const previous = global.document; let prevented = false;
+  global.document = { querySelector: () => null };
+  try { pilot.handleSelectorKeys({ key: "Escape", preventDefault() { prevented = true; } }); assert.equal(prevented, true); }
+  finally { global.document = previous; }
 });
 
 test("dashboard inline scripts and pilot JavaScript pass syntax checks", () => {

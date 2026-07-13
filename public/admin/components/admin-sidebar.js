@@ -96,7 +96,7 @@
     return state;
   }
 
-  function WorkspaceCard({ relationship = null, onSwitch, onSelect } = {}) {
+  function WorkspaceCard({ relationship = null, onSwitch, onSelect, onClear } = {}) {
     const card = element("section", "mws-workspace-card");
     card.setAttribute("aria-label", "Actieve werkruimte");
     card.append(element("span", "mws-workspace-kicker", "Actieve werkruimte"));
@@ -105,28 +105,44 @@
     head.append(StatusBadge({ label: relationship.entityType === "lead" ? "Lead" : "Klant", tone: relationship.statusTone || "success" }), element("strong", "mws-workspace-company", relationship.companyName || "Onbekende relatie"));
     const detail = [relationship.lifecycleStage, relationship.assignedUserName ? `Eigenaar: ${relationship.assignedUserName}` : ""].filter(Boolean).join(" · ");
     card.append(head, element("p", "mws-workspace-detail", detail || "Status nog niet beschikbaar"));
-    const button = element("button", "mws-workspace-action", "Wissel relatie");
-    button.type = "button";
+    const actions = element("div", "mws-workspace-actions");
+    const button = element("button", "mws-workspace-action", "Wissel relatie"); button.type = "button";
     if (typeof onSwitch === "function") button.addEventListener("click", onSwitch);
-    card.append(button);
+    const relationshipId = relationship.entityType === "lead" ? relationship.leadId : relationship.customerId;
+    const dossier = element("a", "mws-workspace-action is-link", "Open relatiedossier");
+    dossier.href = `admin-relatie-workspace.html?entityType=${encodeURIComponent(relationship.entityType)}&id=${encodeURIComponent(relationshipId)}&module=overview`;
+    const clear = element("button", "mws-workspace-action is-quiet", "Werkruimte wissen"); clear.type = "button";
+    if (typeof onClear === "function") clear.addEventListener("click", onClear);
+    actions.append(button, dossier, clear); card.append(actions);
     return card;
   }
 
-  function WorkspaceSelector({ results = [], onSearch, onSelect } = {}) {
+  function WorkspaceSelector({ results = [], activeType = "all", onSearch, onSelect, onTypeChange, onClose } = {}) {
     const selector = element("section", "mws-workspace-selector");
     selector.setAttribute("role", "dialog");
     selector.setAttribute("aria-modal", "true");
     selector.setAttribute("aria-label", "Relatie selecteren");
+    selector.tabIndex = -1;
+    const header = element("header", "mws-workspace-selector-header");
+    const title = element("div", ""); title.append(element("span", "mws-workspace-kicker", "Werkruimte"), element("strong", "", "Selecteer een relatie"));
+    const close = element("button", "mws-workspace-selector-close", "×"); close.type = "button"; close.setAttribute("aria-label", "Selector sluiten");
+    if (typeof onClose === "function") close.addEventListener("click", onClose);
+    header.append(title, close);
+    const tabs = element("div", "mws-workspace-tabs"); tabs.setAttribute("role", "tablist"); tabs.setAttribute("aria-label", "Relatietype");
+    [["all", "Alle"], ["lead", "Leads"], ["customer", "Klanten"]].forEach(([value, label]) => { const tab = element("button", "mws-workspace-tab", label); tab.type = "button"; tab.dataset.workspaceType = value; tab.setAttribute("role", "tab"); tab.setAttribute("aria-selected", String(activeType === value)); if (activeType === value) tab.classList.add("is-active"); if (typeof onTypeChange === "function") tab.addEventListener("click", () => onTypeChange(value)); tabs.append(tab); });
     const input = element("input", "mws-workspace-search");
     input.type = "search";
     input.placeholder = "Zoek op bedrijf, contactpersoon of e-mail";
     input.setAttribute("aria-label", input.placeholder);
+    input.dataset.workspaceSearch = "true";
     if (typeof onSearch === "function") input.addEventListener("input", (event) => onSearch(event.target.value));
+    const status = element("div", "mws-workspace-selector-status", "Typ minimaal twee tekens om te zoeken."); status.setAttribute("role", "status"); status.dataset.workspaceStatus = "true";
     const list = element("div", "mws-workspace-results");
     list.setAttribute("role", "listbox");
-    results.forEach((result) => { const option = element("button", "mws-workspace-result"); option.type = "button"; option.setAttribute("role", "option"); option.append(element("strong", "", result.companyName || "Onbekende relatie"), element("span", "", [result.entityType === "lead" ? "Lead" : "Klant", result.contactName, result.status].filter(Boolean).join(" · "))); if (typeof onSelect === "function") option.addEventListener("click", () => onSelect(result)); list.append(option); });
+    list.dataset.workspaceResults = "true";
+    results.forEach((result) => { const option = element("button", "mws-workspace-result"); option.type = "button"; option.setAttribute("role", "option"); option.append(element("strong", "", result.companyName || "Onbekende relatie"), element("span", "", [result.entityType === "lead" ? "Lead" : "Klant", result.contactName, result.status, result.assignedUserName ? `Eigenaar: ${result.assignedUserName}` : ""].filter(Boolean).join(" · "))); if (typeof onSelect === "function") option.addEventListener("click", () => onSelect(result)); list.append(option); });
     if (!results.length) list.append(element("p", "mws-workspace-no-results", "Nog geen resultaten."));
-    selector.append(input, list);
+    selector.append(header, tabs, input, status, list, element("small", "mws-workspace-selector-hint", "Gebruik ↑ en ↓ om te navigeren · Esc sluit"));
     return selector;
   }
 
@@ -156,13 +172,13 @@
   function profileCopy(user) { const copy = element("span", "mws-user-profile-copy"); copy.append(element("strong", "", user.name || user.email || "Onbekende gebruiker"), element("small", "", user.roleLabel || user.role || "Rol onbekend")); return copy; }
   function initials(name = "") { const parts = String(name || "").trim().split(/\s+/).filter(Boolean); return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}` : parts[0]?.slice(0, 2) || "—").toUpperCase(); }
 
-  function AdminSidebar({ navigation, activeId = "", relationship = null, user = {}, badgeValues = {}, canAccess = () => true, onSwitchWorkspace, onSelectWorkspace, profileActions = [] } = {}) {
+  function AdminSidebar({ navigation, activeId = "", relationship = null, user = {}, badgeValues = {}, canAccess = () => true, onSwitchWorkspace, onSelectWorkspace, onClearWorkspace, profileActions = [] } = {}) {
     const config = navigation || global.MaxAdminSidebarNavigation?.ADMIN_SIDEBAR_NAVIGATION || [];
     const sidebar = element("aside", "mws-admin-sidebar-v2");
     sidebar.setAttribute("aria-label", "Admin navigatie");
     const brand = element("a", "mws-sidebar-brand"); brand.href = "admin-dashboard.html"; brand.append(element("span", "mws-sidebar-brand-mark", "M"), element("span", "", "Max Webstudio")); sidebar.append(brand);
     const content = element("div", "mws-sidebar-content");
-    config.forEach((section) => { if (section.type === "workspace") content.append(WorkspaceCard({ relationship, onSwitch: onSwitchWorkspace, onSelect: onSelectWorkspace })); else content.append(SidebarSection({ section, activeId, badgeValues, relationship, canAccess })); });
+    config.forEach((section) => { if (section.type === "workspace") content.append(WorkspaceCard({ relationship, onSwitch: onSwitchWorkspace, onSelect: onSelectWorkspace, onClear: onClearWorkspace })); else content.append(SidebarSection({ section, activeId, badgeValues, relationship, canAccess })); });
     sidebar.append(content, UserProfileMenu({ user, actions: profileActions }));
     return sidebar;
   }

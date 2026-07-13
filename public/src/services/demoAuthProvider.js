@@ -141,6 +141,8 @@ export function logout() {
   const session = getCurrentSession();
   if (session) logActivity("auth", session.userId, "logout", { role: session.role });
   localStorage.removeItem(STORAGE_KEYS.currentSession);
+  localStorage.removeItem("maxwebstudioActiveRelationship");
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("maxwebstudio:admin-logout"));
 }
 
 export function hasPermission(resource, action) {

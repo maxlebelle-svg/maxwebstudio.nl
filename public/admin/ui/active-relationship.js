@@ -23,9 +23,10 @@
   }
 
   function normalize(input = {}) {
-    const entityType = clean(input.entityType).toLowerCase();
-    const leadId = clean(input.leadId);
-    const customerId = clean(input.customerId);
+    const entityType = clean(input.entityType || input.relationshipType).toLowerCase();
+    const relationshipId = clean(input.relationshipId);
+    const leadId = clean(input.leadId || (entityType === "lead" ? relationshipId : ""));
+    const customerId = clean(input.customerId || (entityType === "customer" ? relationshipId : ""));
     if (!ENTITY_TYPES.has(entityType)) return null;
     if (entityType === "lead" && (!UUID.test(leadId) || customerId)) return null;
     if (entityType === "customer" && (!UUID.test(customerId) || leadId)) return null;
@@ -47,8 +48,29 @@
     });
   }
 
+  function minimalStorageRecord(relationship) {
+    const normalized = normalize(relationship || {});
+    if (!normalized) return null;
+    const relationshipId = normalized.entityType === "lead" ? normalized.leadId : normalized.customerId;
+    return {
+      relationshipType: normalized.entityType,
+      relationshipId,
+      leadId: normalized.entityType === "lead" ? relationshipId : null,
+      customerId: normalized.entityType === "customer" ? relationshipId : null,
+      companyName: normalized.companyName,
+      lifecycleStage: normalized.lifecycleStage,
+      selectedAt: normalized.selectedAt,
+    };
+  }
+
   function readStored() {
-    try { return normalize(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {}); }
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {};
+      const normalized = normalize(stored);
+      const minimal = minimalStorageRecord(normalized);
+      if (minimal && JSON.stringify(stored) !== JSON.stringify(minimal)) localStorage.setItem(STORAGE_KEY, JSON.stringify(minimal));
+      return normalized;
+    }
     catch { return null; }
   }
 
@@ -60,6 +82,10 @@
   function clearActiveRelationship(source = "clear") {
     active = null;
     localStorage.removeItem(STORAGE_KEY);
+    const url = new URL(window.location.href);
+    const hadRelationshipParams = url.searchParams.has("leadId") || url.searchParams.has("customerId");
+    url.searchParams.delete("leadId"); url.searchParams.delete("customerId");
+    if (hadRelationshipParams) window.history.replaceState(window.history.state, document.title, `${url.pathname}${url.search}${url.hash}`);
     notify(null, source);
   }
 
@@ -87,7 +113,7 @@
     const validated = normalize({ ...data.relationship, selectedAt: new Date().toISOString(), selectedByAuthUserId: auth.userId });
     if (!validated) throw new Error("De relatie kon niet veilig worden geladen.");
     active = validated;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(validated));
+    if (source !== "storage") localStorage.setItem(STORAGE_KEY, JSON.stringify(minimalStorageRecord(validated)));
     notify(validated, source);
     return validated;
   }
@@ -170,10 +196,13 @@
   }, true);
   window.addEventListener("storage", (event) => {
     if (event.key !== STORAGE_KEY) return;
-    active = readStored(); notify(active, "storage");
+    const candidate = readStored();
+    if (!candidate) { active = null; notify(null, "storage"); return; }
+    validateActiveRelationship(candidate, "storage").catch(() => clearActiveRelationship("storage-validation-failed"));
   });
+  window.addEventListener("maxwebstudio:admin-logout", () => clearActiveRelationship("logout"));
 
-  window.ActiveRelationship = { ready: true, whenReady, getActiveRelationship, setActiveRelationship, clearActiveRelationship, validateActiveRelationship, subscribeToRelationshipChanges, buildRelationshipUrl };
-  active = readStored();
+  window.ActiveRelationship = { ready: true, whenReady, getActiveRelationship, setActiveRelationship, clearActiveRelationship, validateActiveRelationship, subscribeToRelationshipChanges, buildRelationshipUrl, minimalStorageRecord, readStored };
+  active = null;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hydrate, { once: true }); else hydrate();
 })();

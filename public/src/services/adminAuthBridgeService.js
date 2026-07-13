@@ -13,6 +13,8 @@ function clearDerivedAdminSessions() {
   localStorage.removeItem(ADMIN_SESSION_KEY);
   localStorage.removeItem(CURRENT_SESSION_KEY);
   localStorage.removeItem(LEGACY_ADMIN_SESSION_KEY);
+  localStorage.removeItem("maxwebstudioActiveRelationship");
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("maxwebstudio:admin-logout"));
 }
 
 async function fetchAccountProfile(accessToken) {

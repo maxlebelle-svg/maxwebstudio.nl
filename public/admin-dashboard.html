@@ -10660,6 +10660,8 @@
 
         function clearAdminSession() {
           localStorage.removeItem(adminSessionStorageKey);
+          localStorage.removeItem("maxwebstudioActiveRelationship");
+          window.dispatchEvent(new CustomEvent("maxwebstudio:admin-logout"));
           state.adminSession = null;
           state.adminToken = "";
           sessionStorage.removeItem(adminTokenStorageKey);

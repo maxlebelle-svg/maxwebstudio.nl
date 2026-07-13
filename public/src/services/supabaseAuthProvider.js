@@ -398,6 +398,8 @@ export async function signOut() {
   localStorage.removeItem("mws_admin_supabase_session");
   localStorage.removeItem("maxwebstudioCurrentSession");
   localStorage.removeItem("maxwebstudioAdminSession");
+  localStorage.removeItem("maxwebstudioActiveRelationship");
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("maxwebstudio:admin-logout"));
   return { success: true, provider: "supabase" };
 }
 
