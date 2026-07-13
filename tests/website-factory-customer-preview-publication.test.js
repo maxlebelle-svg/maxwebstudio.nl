@@ -155,9 +155,9 @@ test("maintenance selection never changes the fixed website deposit", () => {
   assert.equal(commercialPackage.normalizeMaintenance("unknown"), null);
   assert.match(clientVersions, /const amountInclVatCents = Math\.round\(amountCents \* 1\.21\)/);
   assert.match(clientVersions, /maintenance_selection_required/);
-  assert.match(factoryBackend, /activateSelectedMaintenance/);
-  assert.match(factoryBackend, /customer_subscriptions/);
-  assert.match(factoryBackend, /status: "planned"/);
+  assert.doesNotMatch(factoryBackend, /activateSelectedMaintenance/);
+  assert.match(factoryBackend, /findMaintenanceSubscription/);
+  assert.match(factoryBackend, /reviewScheduled: false/);
   for (const text of ["Projectoverzicht", "Aanbevolen", "Doorgaan zonder onderhoud?", "Onderhoud start pas na livegang", "Totaal vandaag te betalen"]) assert.match(securePreview, new RegExp(text.replace("?", "\\?")));
   for (const code of ["none", "care_basic", "care_plus", "care_growth"]) assert.ok(commercialPackage.maintenanceCatalog[code]);
   assert.match(securePreview, /maintenanceOptions/);

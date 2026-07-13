@@ -159,7 +159,7 @@ test("integration changes only Website Factory preview_ready and leaves manual Z
   assert.equal((factory.match(/previewReadyService\.dispatch\(/g) || []).length, 1);
   assert.match(factory, /ownership: "legacy", previewVersionReference: buildResult\.previewVersion\?\.id/);
   for (const type of ["preview_updated", "launch_started", "website_live"]) assert.match(factory, new RegExp(`${type}: \\{`));
-  assert.match(factory, /if \(mailType\) await sendPreviewLaunchMail\(records, review, mailType\)/);
+  assert.match(factory, /else if \(mailType\)[\s\S]*sendPreviewLaunchMail\(records, review, mailType\)/);
   assert.doesNotMatch(manual, /previewReadyService|email\.preview_ready|journey\.preview_ready/);
 });
 

@@ -65,7 +65,71 @@ const FREE_PREVIEW_DEFINITION = defineJourney({
   ],
 });
 
-const JOURNEY_DEFINITIONS = Object.freeze([DIRECT_CHECKOUT_DEFINITION, FREE_PREVIEW_DEFINITION]);
+const DIRECT_CHECKOUT_POST_LAUNCH_DEFINITION = defineJourney({
+  definitionKey: "website.direct_checkout",
+  version: 2,
+  journeyType: "website.direct_checkout",
+  productCategory: "website",
+  productCodes: websiteProductCodes,
+  phases: [
+    { key: "order", label: "Bestelling" },
+    { key: "onboarding", label: "Onboarding" },
+    { key: "production", label: "Productie" },
+    { key: "review", label: "Controle" },
+    { key: "delivery", label: "Oplevering" },
+    { key: "post_launch", label: "Nazorg" },
+  ],
+  steps: [
+    step("order_received", "Bestelling ontvangen", "order", 1, 10, false, "none", "review", "event_recorded", "internal", "payment_confirmed"),
+    step("payment_confirmed", "Betaling bevestigd", "order", 2, 15, false, "none", "review", "payment_confirmed", "internal", "onboarding_information"),
+    step("onboarding_information", "Onboarding compleet", "onboarding", 3, 15, false, "provide_information", "review", "information_received", "both", "content_ready"),
+    step("content_ready", "Content compleet", "onboarding", 4, 10, false, "provide_information", "review", "information_received", "both", "website_build"),
+    step("website_build", "Website gebouwd", "production", 5, 15, false, "none", "build", "internal_confirmation", "both", "customer_review"),
+    step("customer_review", "Klantcontrole", "review", 6, 10, false, "review", "review", "customer_confirmation", "both", "launch_checks"),
+    step("launch_checks", "Livegangcontrole", "delivery", 7, 10, false, "none", "publish", "internal_confirmation", "both", "handover"),
+    step("handover", "Technische oplevering", "delivery", 8, 5, false, "none", "handover", "status_confirmed", "both", "website_live"),
+    step("website_live", "Website live", "delivery", 9, 5, false, "none", "publish", "status_confirmed", "both", "post_launch_check"),
+    step("post_launch_check", "Nazorg en controle", "post_launch", 10, 5, false, "none", "review", "internal_confirmation", "both", null),
+  ],
+});
+
+const FREE_PREVIEW_POST_LAUNCH_DEFINITION = defineJourney({
+  definitionKey: "website.free_preview_sales",
+  version: 2,
+  journeyType: "website.free_preview_sales",
+  productCategory: "website",
+  productCodes: websiteProductCodes,
+  phases: [
+    { key: "sales", label: "Sales" },
+    { key: "preview", label: "Gratis preview" },
+    { key: "decision", label: "Besluit" },
+    { key: "conversion", label: "Opdrachtstart" },
+    { key: "delivery", label: "Oplevering" },
+    { key: "post_launch", label: "Nazorg" },
+  ],
+  steps: [
+    step("lead_qualified", "Lead gekwalificeerd", "sales", 1, 5, false, "none", "qualify", "internal_confirmation", "internal", "preview_intake"),
+    step("preview_intake", "Preview-intake compleet", "preview", 2, 10, false, "provide_information", "review", "information_received", "both", "preview_build"),
+    step("preview_build", "Preview gebouwd", "preview", 3, 15, false, "none", "build", "internal_confirmation", "both", "preview_shared"),
+    step("preview_shared", "Preview gedeeld", "preview", 4, 5, false, "review", "publish", "event_recorded", "both", "preview_feedback"),
+    step("preview_feedback", "Feedback verwerkt", "preview", 5, 5, true, "provide_information", "review", "customer_confirmation", "both", "preview_approved"),
+    step("preview_approved", "Preview goedgekeurd", "decision", 6, 5, false, "approve", "review", "customer_confirmation", "both", "commercial_agreement"),
+    step("commercial_agreement", "Opdracht bevestigd", "conversion", 7, 10, false, "approve", "review", "status_confirmed", "both", "payment_confirmed"),
+    step("payment_confirmed", "Betaling bevestigd", "conversion", 8, 5, true, "pay", "review", "payment_confirmed", "both", "project_handover"),
+    step("project_handover", "Overgedragen aan productie", "conversion", 9, 5, false, "none", "handover", "internal_confirmation", "internal", "website_build"),
+    step("website_build", "Website gebouwd", "delivery", 10, 15, false, "none", "build", "internal_confirmation", "both", "launch_checks"),
+    step("launch_checks", "Livegangcontrole", "delivery", 11, 10, false, "none", "publish", "internal_confirmation", "both", "website_live"),
+    step("website_live", "Website live", "delivery", 12, 5, false, "none", "publish", "status_confirmed", "both", "post_launch_check"),
+    step("post_launch_check", "Nazorg en controle", "post_launch", 13, 5, false, "none", "review", "internal_confirmation", "both", null),
+  ],
+});
+
+const JOURNEY_DEFINITIONS = Object.freeze([
+  DIRECT_CHECKOUT_DEFINITION,
+  FREE_PREVIEW_DEFINITION,
+  DIRECT_CHECKOUT_POST_LAUNCH_DEFINITION,
+  FREE_PREVIEW_POST_LAUNCH_DEFINITION,
+]);
 
 function step(key, label, phaseKey, order, weight, optional, customerActionType, internalActionType, completionRule, visibility, nextStepKey) {
   return { key, label, phaseKey, order, weight, optional, customerActionType, internalActionType, completionRule, visibility, nextStepKey };
@@ -144,7 +208,9 @@ module.exports = {
   CUSTOMER_ACTION_TYPES,
   DEFINITION_SCHEMA_VERSION,
   DIRECT_CHECKOUT_DEFINITION,
+  DIRECT_CHECKOUT_POST_LAUNCH_DEFINITION,
   FREE_PREVIEW_DEFINITION,
+  FREE_PREVIEW_POST_LAUNCH_DEFINITION,
   INTERNAL_ACTION_TYPES,
   JOURNEY_DEFINITIONS,
   VISIBILITY_TYPES,

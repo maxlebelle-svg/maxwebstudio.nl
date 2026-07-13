@@ -55,8 +55,8 @@ function calculateJourneyProgress(input = {}) {
 
 function resolveDefinition(instance = {}) {
   const metadata = object(instance.metadata);
-  const key = text(instance.definition_key || instance.definitionKey || metadata.definitionKey || metadata.definition_key);
-  const version = number(instance.definition_version || instance.definitionVersion || metadata.definitionVersion || metadata.definition_version, 1);
+  const key = text(metadata.progressDefinitionKey || metadata.progress_definition_key || instance.definition_key || instance.definitionKey || metadata.definitionKey || metadata.definition_key);
+  const version = number(metadata.progressDefinitionVersion || metadata.progress_definition_version || instance.definition_version || instance.definitionVersion || metadata.definitionVersion || metadata.definition_version, 1);
   return (key && getJourneyDefinition(key, version))
     || getJourneyDefinitionForType(instance.journey_type || instance.journeyType, version);
 }

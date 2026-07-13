@@ -92,7 +92,7 @@ test("both direct checkout and free preview definitions calculate independently"
 });
 
 test("central definitions have catalog products, unique steps and consistent order", () => {
-  assert.equal(JOURNEY_DEFINITIONS.length, 2);
+  assert.equal(JOURNEY_DEFINITIONS.length, 4);
   for (const definition of JOURNEY_DEFINITIONS) {
     assert.equal(validateJourneyDefinitionModel(definition), definition);
     assert.equal(new Set(definition.steps.map((step) => step.key)).size, definition.steps.length);

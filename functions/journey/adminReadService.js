@@ -50,8 +50,8 @@ async function getOverview({ filters, context, repository, log, now, env }) {
 
   for (const instance of data.journeyInstances || []) {
     const definitionRow = definitions.get(String(instance.definition_id || ""));
-    const definitionKey = definitionRow?.definition_key || instance.metadata?.definitionKey || instance.metadata?.definition_key;
-    const version = Number(definitionRow?.version || instance.definition_version || 1);
+    const definitionKey = instance.metadata?.progressDefinitionKey || definitionRow?.definition_key || instance.metadata?.definitionKey || instance.metadata?.definition_key;
+    const version = Number(instance.metadata?.progressDefinitionVersion || definitionRow?.version || instance.definition_version || 1);
     const definition = getJourneyDefinition(definitionKey, version) || getJourneyDefinitionForType(instance.journey_type, version);
     const customer = customers.get(String(instance.customer_id || "")) || {};
     const project = projectsById.get(String(instance.project_id || "")) || projectsByCustomer.get(String(instance.customer_id || "")) || {};
@@ -200,7 +200,7 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
   const executions = new Map((executionRows || []).map((row) => [text(row.outbox_id), row]));
   const counts = { pending: 0, processing: 0, sent: 0, completed: 0, failed: 0, cancelled: 0, deadLetter: 0 };
   const journeyItems = (outboxRows || [])
-    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready", "email.feedback_received", "email.preview_approved", "email.payment_paid"].includes(row.effect_type))
+    .filter((row) => row.environment === "test" && ["email.journey_test", "email.preview_ready", "email.feedback_received", "email.preview_approved", "email.payment_paid", "email.website_live"].includes(row.effect_type))
     .map((row) => {
       const execution = executions.get(text(row.id)) || {};
       const status = text(row.status).toLowerCase();
@@ -216,10 +216,23 @@ function mailAutomation(outboxRows = [], executionRows = [], storageAvailable = 
         paymentReference: text(row.payment_reference),
         orderReference: text(row.order_reference),
         invoiceReference: text(row.invoice_reference),
+        websiteReference: text(row.website_reference),
+        projectReference: text(row.project_reference),
+        publicationReference: text(row.publication_reference),
+        publicationSource: text(row.publication_source),
+        liveState: text(row.live_state),
+        urlState: text(row.url_state),
+        dnsState: text(row.dns_state),
+        sslState: text(row.ssl_state),
+        liveHostnameFingerprint: text(row.live_hostname_fingerprint),
+        hostnameCategory: text(row.hostname_category),
+        maintenanceState: text(row.maintenance_state),
+        reviewScheduled: row.review_scheduled === true || text(row.review_scheduled) === "true",
         providerCategory: text(row.provider_category),
         paymentEnvironment: text(row.payment_environment),
         paymentType: text(row.payment_type),
         commercialCompletionState: text(row.commercial_completion_state),
+        commercialReadinessState: text(row.commercial_readiness_state),
         paidComponent: text(row.paid_component),
         remainingComponent: text(row.remaining_component),
         reminderCancelledCount: Math.max(0, integer(row.reminder_cancelled_count, 0)),

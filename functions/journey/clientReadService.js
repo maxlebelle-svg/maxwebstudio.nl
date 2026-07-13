@@ -71,8 +71,11 @@ function isDefinitivelyDisabled(gate) { return gate.mode === "off" || (gate.mode
 
 function journeyProgress(snapshot) {
   const row = snapshot.definition;
-  const definition = getJourneyDefinition(row?.definition_key, row?.version || snapshot.instance.definition_version)
-    || getJourneyDefinitionForType(snapshot.instance.journey_type, snapshot.instance.definition_version);
+  const metadata = snapshot.instance.metadata || {};
+  const key = metadata.progressDefinitionKey || row?.definition_key;
+  const version = metadata.progressDefinitionVersion || row?.version || snapshot.instance.definition_version;
+  const definition = getJourneyDefinition(key, version)
+    || getJourneyDefinitionForType(snapshot.instance.journey_type, version);
   return calculateJourneyProgress({ instance: { ...snapshot.instance, definition_key: row?.definition_key }, definition });
 }
 

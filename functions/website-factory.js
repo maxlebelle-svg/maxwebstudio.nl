@@ -6,6 +6,9 @@ const { storedPreviewSource } = require("./_demo-preview-source");
 const { buildWebsiteCommercialOrder, normalizeWebsitePackage, readWebsiteCommercialOrder } = require("./_website-commercial-order");
 const { sendEmail } = require("./email");
 const { createPreviewReadyService } = require("./journey/previewReady/service");
+const { resolveWebsiteLiveContext } = require("./journey/websiteLive/contextResolver");
+const { createWebsiteLiveRepository } = require("./journey/websiteLive/repository");
+const { createWebsiteLiveService } = require("./journey/websiteLive/service");
 const { randomUUID } = require("crypto");
 const {
   buildLogs,
@@ -23,6 +26,8 @@ const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const previewReadyService = createPreviewReadyService();
+const websiteLiveRepository = createWebsiteLiveRepository();
+const websiteLiveService = createWebsiteLiveService({ websiteRepository: websiteLiveRepository });
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -527,6 +532,7 @@ async function handlePreviewLaunchAutomation(context, payload = {}, action = "")
     updatedAt: now,
     launch,
   };
+  const wasAlreadyLive = Boolean(currentReview.liveAt);
   let projectPatch = { phase: "Preview gereed", progress: Math.max(Number(records.project.progress) || 0, 75) };
   let eventType = "preview_ready";
   let notificationTitle = "Preview gereed";
@@ -578,35 +584,54 @@ async function handlePreviewLaunchAutomation(context, payload = {}, action = "")
   }
   if (action === "complete_launch") {
     review.status = "live";
-    review.launch = { ...launch, status: "live", progress: 100, completedAt: now, updatedAt: now };
-    review.liveAt = now;
-    review.postLaunchUpsells = postLaunchUpsells();
-    review.postLaunchGrowth = buildPostLaunchGrowth(records, review, now);
-    projectPatch = { status: "live", phase: "Website live", progress: 100 };
+    review.launch = { ...launch, status: "live", progress: 100, completedAt: launch.completedAt || now, updatedAt: now };
+    review.liveAt = currentReview.liveAt || now;
+    review.livePublicationReference = currentReview.livePublicationReference || records.website?.metadata?.livePublicationReference || records.website?.metadata?.netlifyDeployId || records.website?.metadata?.deploymentId || records.website?.last_deploy_at || review.liveAt;
+    review.postLaunch = { ...(currentReview.postLaunch || {}), status: "active", reviewScheduled: false, updatedAt: now };
+    projectPatch = { status: "live", phase: "Nazorg actief", progress: 95 };
     eventType = "website_live";
     notificationTitle = "Website live";
-    notificationDescription = "De website staat live en het project is afgerond.";
+    notificationDescription = "De website staat live en de nazorg is gestart.";
     mailType = "website_live";
   }
 
   const updatedProject = await persistPreviewReview(context, records, review, projectPatch);
-  const maintenanceSubscription = action === "complete_launch" ? await activateSelectedMaintenance(context, records, now) : null;
-  await factoryTimeline(records, eventType, notificationTitle, notificationDescription, eventType === "website_live" ? "success" : "info", { previewReviewStatus: review.status, launchProgress: review.launch?.progress || 0 });
-  await factoryNotification(records, notificationTitle, notificationDescription, eventType === "launch_warning" ? "warning" : "success", { notificationType: eventType, launchProgress: review.launch?.progress || 0 });
-  if (action === "complete_launch") await createPostLaunchGrowthEvents(records, review);
-  if (mailType) await sendPreviewLaunchMail(records, review, mailType).catch((error) => console.error("Preview launch mail skipped", { message: error.message, type: mailType }));
+  records.project = normalizeRecord(updatedProject?.[0] || { ...records.project, ...projectPatch, metadata: records.project.metadata });
+  const stableSideEffectKey = `${eventType}:${records.project?.id || records.customer?.id}:${action === "complete_launch" ? review.livePublicationReference : review.updatedAt}`;
+  await factoryTimeline(records, eventType, notificationTitle, notificationDescription, eventType === "website_live" ? "success" : "info", { dedupeKey: stableSideEffectKey, previewReviewStatus: review.status, launchProgress: review.launch?.progress || 0 });
+  await factoryNotification(records, notificationTitle, notificationDescription, eventType === "launch_warning" ? "warning" : "success", { dedupeKey: `factory_notification:${stableSideEffectKey}`, notificationType: eventType, launchProgress: review.launch?.progress || 0 });
+  let maintenanceSubscription = null;
+  if (action === "complete_launch") {
+    const [healthLookup, maintenanceLookup] = await Promise.all([
+      websiteLiveRepository.findHealthWebsite({ profileId: records.customer?.profile_id, authUserId: records.customer?.auth_user_id, liveUrl: records.website?.live_url, domain: records.website?.domain }).catch(() => ({ row: null })),
+      websiteLiveRepository.findMaintenanceSubscription(records.project.id).catch(() => ({ row: null })),
+    ]);
+    maintenanceSubscription = maintenanceLookup?.row || null;
+    let websiteLiveContext;
+    try {
+      websiteLiveContext = await resolveWebsiteLiveContext({ customer: records.customer, project: records.project, website: records.website, healthWebsite: healthLookup?.row || records.website, review, technicalStored: true, environment: runtimeEnvironment(), journeyType: records.project?.metadata?.journeyType || "website.direct_checkout", publicationSource: "website_factory_verified_publication", maintenanceSubscription });
+    } catch (error) {
+      websiteLiveContext = { safe: false, reasonCode: "website_live_context_resolution_failed", internalActionRequired: true };
+      console.warn("Website live context unavailable", { code: cleanText(error?.code || error?.name || "context_failed") });
+    }
+    const liveResult = await websiteLiveService.dispatch({
+      customerId: records.customer.id,
+      websiteId: records.website?.id,
+      projectId: records.project.id,
+      recipient: records.customer?.email,
+      firstName: records.customer?.name,
+      websiteLabel: records.website?.name || records.project?.name,
+      contactName: "Team Max Webstudio",
+      liveAt: review.liveAt,
+      websiteLiveContext,
+      legacySend: () => wasAlreadyLive ? null : sendPreviewLaunchMail(records, review, "website_live", { ownership: "legacy", liveUrl: websiteLiveContext.safeLiveUrl, websiteReference: records.website?.id || "" }),
+    }).catch((error) => ({ owner: "none", reason: cleanText(error?.code || error?.name || "website_live_dispatch_failed") }));
+    review.liveMailOwner = liveResult.owner;
+    review.liveMailReason = liveResult.reason;
+  } else if (mailType) {
+    await sendPreviewLaunchMail(records, review, mailType).catch((error) => console.error("Preview launch mail skipped", { message: error.message, type: mailType }));
+  }
   return { project: normalizeRecord(updatedProject?.[0] || records.project), previewReview: review, maintenanceSubscription: normalizeRecord(maintenanceSubscription) };
-}
-
-async function activateSelectedMaintenance(context, records, now) {
-  const order = readWebsiteCommercialOrder(records.project);
-  if (!order?.maintenanceCode || order.maintenanceCode === "none") return null;
-  if (order.startTrigger !== "project_delivered") throw Object.assign(new Error("Onderhoud heeft een ongeldig startmoment."), { status: 409, code: "maintenance_start_trigger_invalid" });
-  const marker = `websiteMaintenanceProject:${records.project.id}`;
-  const existing = await supabaseFetch(`${context.supabaseUrl}/rest/v1/customer_subscriptions?select=*&notes=ilike.*${encodeURIComponent(marker)}*&limit=1`, { method: "GET", headers: restHeaders(context.serviceRoleKey) }).catch(() => []);
-  if (existing[0]?.id) return existing[0];
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/customer_subscriptions`, { method: "POST", headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({ profile_id: records.customer.profile_id || null, customer_auth_user_id: records.customer.auth_user_id || null, package_name: order.maintenanceName, billing_cycle: "monthly", monthly_amount: Number(order.maintenanceAmountCents || 0) / 100, status: "planned", start_date: now.slice(0, 10), next_invoice_date: now.slice(0, 10), notes: `${marker};maintenance:${order.maintenanceCode};startTrigger:${order.startTrigger};mandate:required`, created_at: now, updated_at: now }) });
-  return rows[0] || null;
 }
 
 async function startOnboardingFactoryPipeline(context, payload = {}) {
@@ -1314,6 +1339,10 @@ function cleanText(value = "") {
   return String(value || "").trim();
 }
 
+function runtimeEnvironment() {
+  return [process.env.APP_ENV, process.env.APP_ENVIRONMENT, process.env.CONTEXT, process.env.NETLIFY_ENV].some((value) => ["production", "prod"].includes(cleanText(value).toLowerCase())) ? "production" : "test";
+}
+
 function cleanUuid(value = "") {
   const text = cleanText(value);
   return uuidPattern.test(text) ? text : "";
@@ -1880,7 +1909,7 @@ function buildGrowthAutomationSchedule(start = new Date().toISOString()) {
   const base = new Date(start);
   const addDays = (days) => new Date(base.getTime() + days * 86400000).toISOString();
   return [
-    [30, "Review vragen"], [60, "SEO check"], [90, "Nieuwe aanbevelingen"], [180, "Onderhoud"], [365, "Jubileummail"],
+    [60, "SEO check"], [90, "Nieuwe aanbevelingen"], [180, "Onderhoud"], [365, "Jubileummail"],
   ].map(([days, label]) => ({ label, dueAt: addDays(days), status: "scheduled" }));
 }
 
@@ -1895,17 +1924,6 @@ function buildGrowthTasks(recommendations, start = new Date().toISOString()) {
     dueDate: due,
     notes: item.reason,
   }));
-}
-
-async function createPostLaunchGrowthEvents(records, review) {
-  const recommendations = review.postLaunchGrowth?.recommendations || [];
-  if (recommendations[0]) {
-    await factoryTimeline(records, "growth_recommendation_created", "Nieuwe groeikansen klaar", "Max Brain heeft post-launch groeikansen klaargezet.", "success", { recommendations: recommendations.length });
-    await factoryNotification(records, "Nieuwe groeikans", recommendations[0].title, "info", { notificationType: "growth_recommendation_created" });
-  }
-  await factoryTimeline(records, "upsell_available", "Upsells beschikbaar", "Post-launch upsells staan klaar in het klantdossier.", "info", { upsells: review.postLaunchUpsells?.length || 0 });
-  await factoryNotification(records, "Nieuwe upsell", "Er staan nieuwe groeidiensten klaar voor deze klant.", "info", { notificationType: "upsell_available" });
-  await factoryTimeline(records, "review_requested", "Review verzoek gepland", "Reviewverzoek staat klaar in de post-launch planning.", "info", {});
 }
 
 async function sendPreviewLaunchMail(records, review, type, ownershipMetadata = {}) {
@@ -1927,7 +1945,7 @@ async function sendPreviewLaunchMail(records, review, type, ownershipMetadata = 
     },
     website_live: {
       subject: `${business} staat live`,
-      text: `Beste,\n\nGoed nieuws: de website staat live. In het klantportaal vindt u de vervolgstappen en aanbevolen groeimogelijkheden.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      text: `Beste,\n\nGoed nieuws: de website staat live.${ownershipMetadata.liveUrl ? `\n\nBekijk de website: ${ownershipMetadata.liveUrl}` : ""}\n\nDe nazorg is gestart. In het klantportaal vindt u de actuele projectstatus en ondersteuning.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
   };
   const template = templates[type];
