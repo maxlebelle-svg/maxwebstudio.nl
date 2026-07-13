@@ -727,11 +727,12 @@
       .social-studio-workbench > .social-studio-workbench-bar { order: 0; }
       .social-studio-workbench > .social-studio-toolbar { order: 1; }
       .social-studio-workbench > .social-studio-platforms { order: 2; }
-      .social-studio-workbench > .social-studio-grid { order: 3; }
-      .social-studio-workbench > .social-studio-pipeline { order: 4; }
-      .social-studio-workbench > .social-studio-templates { order: 5; }
-      .social-studio-workbench > .social-studio-morework { order: 6; }
-      .social-studio-workbench > .social-studio-variants { order: 7; }
+      .social-studio-workbench > .social-studio-brand-panel { order: 3; }
+      .social-studio-workbench > .social-studio-grid { order: 4; }
+      .social-studio-workbench > .social-studio-pipeline { order: 5; }
+      .social-studio-workbench > .social-studio-templates { order: 6; }
+      .social-studio-workbench > .social-studio-morework { order: 7; }
+      .social-studio-workbench > .social-studio-variants { order: 8; }
 
       .social-studio-workbench-bar {
         position: sticky;
@@ -825,6 +826,7 @@
       .social-studio-form,
       .social-studio-preview-shell,
       .social-studio-pipeline,
+      .social-studio-brand-panel,
       .social-studio-templates,
       .social-studio-variants {
         border-color: var(--studio-line);
@@ -832,6 +834,153 @@
         background: linear-gradient(160deg, rgba(16, 32, 56, 0.86), rgba(7, 18, 34, 0.86));
         box-shadow: 0 22px 60px rgba(0, 8, 22, 0.18);
       }
+
+      .social-studio-brand-panel {
+        display: grid;
+        gap: 18px;
+        padding: 20px;
+      }
+
+      .social-studio-brand-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .social-studio-brand-heading h2 {
+        margin: 5px 0 6px;
+        color: var(--studio-text);
+        font-size: 20px;
+      }
+
+      .social-studio-brand-heading p:last-child {
+        margin: 0;
+        color: var(--studio-muted);
+        font-size: 12px;
+      }
+
+      .social-studio-context-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .social-studio-context-chip {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        min-height: 34px;
+        padding: 7px 10px;
+        border: 1px solid rgba(96, 165, 250, 0.2);
+        border-radius: 999px;
+        color: #dbeafe;
+        background: rgba(37, 99, 235, 0.1);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .social-studio-context-chip span { color: rgba(191, 219, 254, 0.62); }
+
+      .social-studio-brand-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin: 0;
+      }
+
+      .social-studio-brand-summary div {
+        padding: 13px;
+        border: 1px solid var(--studio-line);
+        border-radius: 10px;
+        background: rgba(3, 12, 25, 0.36);
+      }
+
+      .social-studio-brand-summary dt {
+        color: var(--studio-muted);
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .social-studio-brand-summary dd {
+        margin: 5px 0 0;
+        color: var(--studio-text);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.5;
+      }
+
+      .social-studio-dialog {
+        width: min(960px, calc(100vw - 32px));
+        max-height: calc(100vh - 32px);
+        padding: 0;
+        overflow: auto;
+        border: 1px solid rgba(96, 165, 250, 0.24);
+        border-radius: 18px;
+        color: var(--studio-text);
+        background: #071426;
+        box-shadow: 0 40px 120px rgba(0, 5, 18, 0.7);
+      }
+
+      .social-studio-dialog::backdrop {
+        background: rgba(0, 7, 20, 0.76);
+        backdrop-filter: blur(10px);
+      }
+
+      .social-studio-dialog form { display: grid; gap: 22px; padding: 26px; }
+
+      .social-studio-dialog-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .social-studio-dialog-heading h2 { margin: 5px 0 7px; color: #fff; font-size: 26px; }
+      .social-studio-dialog-heading p:last-child { max-width: 700px; margin: 0; color: var(--studio-muted); line-height: 1.6; }
+
+      .social-studio-dialog-close {
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--studio-line);
+        border-radius: 10px;
+        color: #fff;
+        background: rgba(255,255,255,.05);
+        cursor: pointer;
+        font-size: 24px;
+      }
+
+      .social-studio-brand-fields,
+      .social-studio-contact-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .social-studio-brand-fields label,
+      .social-studio-contact-fields label {
+        display: grid;
+        gap: 7px;
+        color: var(--studio-muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .social-studio-brand-fields input,
+      .social-studio-brand-fields textarea,
+      .social-studio-contact-fields input {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid var(--studio-line);
+        border-radius: 9px;
+        color: #fff;
+        background: rgba(3, 12, 25, 0.72);
+      }
+
+      .social-studio-brand-fields textarea { min-height: 96px; resize: vertical; }
+      .social-studio-contact-fields { margin: 0; padding: 16px; border: 1px solid var(--studio-line); border-radius: 12px; }
+      .social-studio-contact-fields legend { padding: 0 8px; color: var(--studio-muted); font-size: 11px; font-weight: 850; }
+      .social-studio-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; position: sticky; bottom: 0; padding-top: 16px; background: linear-gradient(180deg, transparent, #071426 28%); }
 
       .social-studio-toolbar {
         grid-template-columns: repeat(4, minmax(150px, 1fr));
@@ -1101,6 +1250,9 @@
 
         .social-studio-content-grid,
         .social-studio-toolbar,
+        .social-studio-brand-summary,
+        .social-studio-brand-fields,
+        .social-studio-contact-fields,
         .social-studio-library-tools-grid,
         .social-studio-planning,
         .social-studio-skeleton {
@@ -1139,6 +1291,8 @@
           display: grid;
           align-items: start;
         }
+
+        .social-studio-brand-heading { display: grid; }
 
         .social-studio-toolbar,
         .social-studio-form,
@@ -1276,6 +1430,20 @@
               <option value="story">Story 9:16</option>
             </select></label>
             <p class="admin-form-message social-studio-message" id="social-studio-message" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="admin-card social-studio-brand-panel" id="social-brand-panel" aria-labelledby="social-brand-heading">
+            <div class="social-studio-brand-heading">
+              <div>
+                <p class="section-kicker">Merkcontext</p>
+                <h2 id="social-brand-heading">Deze context gebruikt Social Studio</h2>
+                <p id="social-brand-source">Intern Max Webstudio-profiel</p>
+              </div>
+              <button class="button secondary" id="edit-brand-voice" type="button">Brand Voice bewerken</button>
+            </div>
+            <div class="social-studio-context-chips" id="social-context-chips" aria-live="polite"></div>
+            <dl class="social-studio-brand-summary" id="social-brand-summary"></dl>
+            <p class="admin-form-message" id="social-context-message" role="status" aria-live="polite"></p>
           </section>
 
           <section class="admin-card social-studio-pipeline" aria-labelledby="social-pipeline-heading">
@@ -1463,6 +1631,29 @@
         </section>
       </div>
     </main>
+    <dialog class="social-studio-dialog" id="brand-voice-dialog" aria-labelledby="brand-voice-dialog-title">
+      <form id="brand-voice-form">
+        <div class="social-studio-dialog-heading">
+          <div>
+            <p class="section-kicker">Brand Voice</p>
+            <h2 id="brand-voice-dialog-title">Merkstem verfijnen</h2>
+            <p>Centrale relatiegegevens blijven leidend. Social Studio bewaart alleen aanvullende schrijfregels per merk.</p>
+          </div>
+          <button class="social-studio-dialog-close" type="button" id="close-brand-voice" aria-label="Sluiten">×</button>
+        </div>
+        <div class="social-studio-brand-fields" id="brand-voice-fields"></div>
+        <fieldset class="social-studio-contact-fields">
+          <legend>Belangrijke contactgegevens</legend>
+          <label>Website<input name="contactWebsite" type="url" /></label>
+          <label>E-mail<input name="contactEmail" type="email" /></label>
+          <label>Telefoon<input name="contactPhone" type="text" /></label>
+        </fieldset>
+        <div class="social-studio-dialog-actions">
+          <button class="button secondary" type="button" id="cancel-brand-voice">Annuleren</button>
+          <button class="button primary" type="submit">Brand Voice opslaan</button>
+        </div>
+      </form>
+    </dialog>
     <script type="module" src="src/social-media-studio.js?v=20260713-social-studio-mvp"></script>
     <script src="admin/ui/global-command-palette.js?v=20260712-live-context-fix" defer></script>
   </body>

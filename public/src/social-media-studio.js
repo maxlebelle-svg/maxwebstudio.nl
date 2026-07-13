@@ -5,6 +5,18 @@ import {
   normalizeStatus as normalizeContentStatus,
 } from "./social-studio/core.mjs";
 import { LocalSocialStudioRepository } from "./social-studio/local-repository.mjs";
+import {
+  BRAND_VOICE_FIELDS,
+  BrandVoiceRepository,
+  mergeBrandVoiceSources,
+} from "./social-studio/brand-voice.mjs";
+import {
+  buildRelationshipContext,
+  contextChips,
+  loadRelationshipWorkspace,
+  readCentralBranding,
+  relationshipScope,
+} from "./social-studio/relationship-context.mjs";
 
 (function () {
   "use strict";
@@ -18,6 +30,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
   };
 
   const repository = new LocalSocialStudioRepository(window.localStorage, storageKeys);
+  const brandVoiceRepository = new BrandVoiceRepository(window.localStorage);
 
   const platformLabels = {
     facebook: "Facebook",
@@ -262,6 +275,9 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
   const state = {
     platform: "facebook",
     contentType: "social-post",
+    scopeId: "internal:max-webstudio",
+    brandVoice: null,
+    relationshipContext: null,
     variants: [],
     variantQuery: "",
     variantFilter: "all",
@@ -283,6 +299,16 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     selectedType: document.getElementById("social-selected-type"),
     autosave: document.getElementById("social-autosave"),
     editorFormat: document.getElementById("social-editor-format"),
+    brandSource: document.getElementById("social-brand-source"),
+    contextChips: document.getElementById("social-context-chips"),
+    brandSummary: document.getElementById("social-brand-summary"),
+    contextMessage: document.getElementById("social-context-message"),
+    editBrandVoice: document.getElementById("edit-brand-voice"),
+    brandVoiceDialog: document.getElementById("brand-voice-dialog"),
+    brandVoiceForm: document.getElementById("brand-voice-form"),
+    brandVoiceFields: document.getElementById("brand-voice-fields"),
+    closeBrandVoice: document.getElementById("close-brand-voice"),
+    cancelBrandVoice: document.getElementById("cancel-brand-voice"),
     campaign: document.getElementById("social-campaign"),
     goal: document.getElementById("social-goal"),
     date: document.getElementById("social-date"),
@@ -393,6 +419,155 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     });
   }
 
+  function activeRelationship() {
+    return window.ActiveRelationship?.getActiveRelationship?.() || null;
+  }
+
+  function renderContextChipRows(context) {
+    elements.contextChips.replaceChildren(...contextChips(context).map((chip) => {
+      const item = document.createElement("span");
+      item.className = "social-studio-context-chip";
+      const label = document.createElement("span");
+      const value = document.createElement("strong");
+      label.textContent = `${chip.label}:`;
+      value.textContent = chip.value;
+      item.append(label, value);
+      return item;
+    }));
+  }
+
+  function renderBrandSummary(voice) {
+    const rows = [
+      ["Merk", voice.brandName || "Nog niet ingevuld"],
+      ["Tone", voice.toneOfVoice?.join(" · ") || "Nog niet ingevuld"],
+      ["Doelgroep", voice.targetAudience || "Nog niet ingevuld"],
+      ["Contentpijlers", voice.contentPillars?.join(" · ") || "Nog niet ingevuld"],
+      ["CTA", voice.standardCtas?.[0] || "Nog niet ingevuld"],
+      ["Claims", voice.riskyClaims?.join(" · ") || "Geen aanvullende claimregels"],
+    ];
+    elements.brandSummary.replaceChildren(...rows.map(([label, value]) => {
+      const wrapper = document.createElement("div");
+      const term = document.createElement("dt");
+      const detail = document.createElement("dd");
+      term.textContent = label;
+      detail.textContent = value;
+      wrapper.append(term, detail);
+      return wrapper;
+    }));
+  }
+
+  function renderBrandContext() {
+    const context = state.relationshipContext || { brand: { brandName: "Max Webstudio" } };
+    elements.brandSource.textContent = context.source === "secured-relationship-workspace"
+      ? `Beveiligde relatiecontext · ${context.brand?.brandName || "Relatie"}`
+      : context.source === "active-relationship-summary"
+        ? `Beperkte relatiecontext · ${context.brand?.brandName || "Relatie"}`
+        : "Intern Max Webstudio-profiel";
+    renderContextChipRows(context);
+    renderBrandSummary(state.brandVoice || {});
+  }
+
+  async function refreshBrandContext(relationship = activeRelationship()) {
+    elements.contextMessage.textContent = relationship ? "Merk- en relatiecontext wordt veilig geladen..." : "Intern merkprofiel geladen.";
+    let scope;
+    try {
+      scope = relationshipScope(relationship);
+      state.scopeId = scope.scopeId;
+      let workspace = {};
+      let source = "max-webstudio-default";
+      if (relationship) {
+        try {
+          const loaded = await loadRelationshipWorkspace(relationship);
+          workspace = loaded.workspace;
+          source = "secured-relationship-workspace";
+        } catch (error) {
+          source = "active-relationship-summary";
+          elements.contextMessage.textContent = `${error.message} Alleen de reeds gevalideerde relatiesamenvatting wordt gebruikt.`;
+        }
+      }
+      const centralBranding = readCentralBranding(scope);
+      const localExtensions = brandVoiceRepository.load(scope.scopeId) || {};
+      const centralRelationship = workspace.relationship || relationship || {};
+      state.brandVoice = mergeBrandVoiceSources({ scopeId: scope.scopeId, centralRelationship, centralBranding, localExtensions });
+      state.relationshipContext = source === "secured-relationship-workspace" || !relationship
+        ? buildRelationshipContext({ scope, activeRelationship: relationship, workspace, centralBranding, contentItems: state.variants })
+        : {
+          scopeId: scope.scopeId,
+          source,
+          relationship,
+          brand: { brandName: relationship.companyName || "Relatie", industry: "", audience: "", colors: [], toneOfVoice: state.brandVoice.toneOfVoice.join(", "), region: "", services: [] },
+          website: { id: null, url: relationship.websiteUrl || "", status: "" },
+          project: { id: null, name: "", status: "" },
+          contact: { email: relationship.email || "", phone: relationship.phone || "" },
+          assets: [], previousContent: [],
+        };
+      state.relationshipContext.source = source;
+      if (source !== "active-relationship-summary") elements.contextMessage.textContent = relationship ? "Relatiecontext en Brand Voice zijn geladen." : "Intern Max Webstudio-profiel geladen.";
+      renderBrandContext();
+    } catch (error) {
+      state.scopeId = "internal:max-webstudio";
+      state.brandVoice = mergeBrandVoiceSources({ scopeId: state.scopeId, localExtensions: brandVoiceRepository.load(state.scopeId) || {} });
+      state.relationshipContext = buildRelationshipContext({ scope: relationshipScope(null), contentItems: state.variants });
+      elements.contextMessage.textContent = `Relatiecontext is geweigerd: ${error.message}`;
+      renderBrandContext();
+    }
+  }
+
+  function brandFieldControl(field, label, type) {
+    const wrapper = document.createElement("label");
+    wrapper.htmlFor = `brand-voice-${field}`;
+    const title = document.createElement("span");
+    title.textContent = label;
+    const control = type === "text" ? document.createElement("input") : document.createElement("textarea");
+    control.id = `brand-voice-${field}`;
+    control.name = field;
+    control.dataset.brandField = field;
+    if (type === "text") control.type = "text";
+    const source = document.createElement("small");
+    source.dataset.brandSource = field;
+    wrapper.append(title, control, source);
+    return wrapper;
+  }
+
+  function openBrandVoiceDialog() {
+    elements.brandVoiceFields.replaceChildren(...BRAND_VOICE_FIELDS.map(([field, label, type]) => brandFieldControl(field, label, type)));
+    for (const [field] of BRAND_VOICE_FIELDS) {
+      const control = elements.brandVoiceForm.elements[field];
+      const value = state.brandVoice?.[field];
+      control.value = Array.isArray(value) ? value.join("\n") : value || "";
+      const inherited = state.brandVoice?.provenance?.[field] === "central";
+      control.readOnly = inherited;
+      const source = elements.brandVoiceFields.querySelector(`[data-brand-source="${field}"]`);
+      source.textContent = inherited ? "Uit centrale relatie- of brandingbron" : "Lokale Social Studio-uitbreiding";
+    }
+    const contact = state.brandVoice?.contactDetails || {};
+    elements.brandVoiceForm.elements.contactWebsite.value = contact.website || "";
+    elements.brandVoiceForm.elements.contactEmail.value = contact.email || "";
+    elements.brandVoiceForm.elements.contactPhone.value = contact.phone || "";
+    const contactInherited = state.brandVoice?.provenance?.contactDetails === "central";
+    ["contactWebsite", "contactEmail", "contactPhone"].forEach((name) => { elements.brandVoiceForm.elements[name].readOnly = contactInherited; });
+    elements.brandVoiceDialog.showModal();
+  }
+
+  function saveBrandVoiceFromForm(event) {
+    event.preventDefault();
+    const extensions = {};
+    for (const [field] of BRAND_VOICE_FIELDS) {
+      if (state.brandVoice?.provenance?.[field] !== "central") extensions[field] = elements.brandVoiceForm.elements[field].value;
+    }
+    if (state.brandVoice?.provenance?.contactDetails !== "central") {
+      extensions.contactDetails = {
+        website: elements.brandVoiceForm.elements.contactWebsite.value,
+        email: elements.brandVoiceForm.elements.contactEmail.value,
+        phone: elements.brandVoiceForm.elements.contactPhone.value,
+      };
+    }
+    brandVoiceRepository.save(state.scopeId, extensions);
+    elements.brandVoiceDialog.close();
+    refreshBrandContext();
+    setMessage("Brand Voice lokaal opgeslagen voor deze werkruimte.", "success");
+  }
+
   function getContext() {
     return {
       client: elements.client.value.trim(),
@@ -407,6 +582,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
 
   function getCurrentContent() {
     return {
+      scopeId: state.scopeId,
       contentType: state.contentType,
       platform: state.platform,
       title: elements.title.value.trim(),
@@ -416,11 +592,24 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
       link: elements.link.value.trim(),
       hashtags: elements.hashtags.value.trim(),
       tone: elements.tone.value,
+      brandVoiceSnapshot: state.brandVoice ? {
+        scopeId: state.brandVoice.scopeId,
+        brandName: state.brandVoice.brandName,
+        toneOfVoice: state.brandVoice.toneOfVoice,
+        contentPillars: state.brandVoice.contentPillars,
+        updatedAt: state.brandVoice.updatedAt,
+      } : null,
+      relationshipContextSnapshot: state.relationshipContext ? {
+        scopeId: state.relationshipContext.scopeId,
+        source: state.relationshipContext.source,
+        brand: state.relationshipContext.brand,
+      } : null,
       ...getContext(),
     };
   }
 
   function setFormContent(content) {
+    if (content.scopeId === state.scopeId) state.scopeId = content.scopeId;
     state.contentType = content.contentType || state.contentType;
     state.platform = content.platform && platformLabels[content.platform] ? content.platform : state.platform;
     elements.client.value = content.client || elements.client.value || "";
@@ -657,6 +846,7 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     const fallback = platformFallbacks[state.platform];
     const variant = normalizeContentItem({
       id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      scopeId: content.scopeId,
       contentType: content.contentType,
       platform: content.platform,
       title: content.title || fallback.title,
@@ -673,6 +863,8 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
       time: content.time,
       status: content.status,
       visualFormat: content.visualFormat,
+      brandVoiceSnapshot: content.brandVoiceSnapshot,
+      relationshipContextSnapshot: content.relationshipContextSnapshot,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -1128,6 +1320,13 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
     }
 
     elements.backButton.addEventListener("click", returnToStart);
+    elements.editBrandVoice.addEventListener("click", openBrandVoiceDialog);
+    elements.closeBrandVoice.addEventListener("click", () => elements.brandVoiceDialog.close());
+    elements.cancelBrandVoice.addEventListener("click", () => elements.brandVoiceDialog.close());
+    elements.brandVoiceForm.addEventListener("submit", saveBrandVoiceFromForm);
+    elements.brandVoiceDialog.addEventListener("click", (event) => {
+      if (event.target === elements.brandVoiceDialog) elements.brandVoiceDialog.close();
+    });
     document.addEventListener("keydown", (event) => {
       const target = event.target;
       const isEditing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
@@ -1158,6 +1357,8 @@ import { LocalSocialStudioRepository } from "./social-studio/local-repository.mj
       updateAll();
     }
     bindEvents();
+    window.ActiveRelationship?.subscribeToRelationshipChanges?.((relationship) => refreshBrandContext(relationship));
+    refreshBrandContext();
     renderVariants();
     updateHero();
   }

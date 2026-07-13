@@ -31,6 +31,7 @@ export function normalizeContentItem(input = {}) {
     schemaVersion: SOCIAL_STUDIO_SCHEMA_VERSION,
     entityType: "social-content",
     id: input.id || `content-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    scopeId: input.scopeId || "internal:max-webstudio",
     contentType: input.contentType || "social-post",
     platform: input.platform || "facebook",
     status: normalizeStatus(input.status),
@@ -58,6 +59,8 @@ export function normalizeContentItem(input = {}) {
     integrations: { ...(input.integrations || {}) },
     metrics: { ...(input.metrics || {}) },
     extensions: { ...(input.extensions || {}) },
+    brandVoiceSnapshot: input.brandVoiceSnapshot && typeof input.brandVoiceSnapshot === "object" ? { ...input.brandVoiceSnapshot } : null,
+    relationshipContextSnapshot: input.relationshipContextSnapshot && typeof input.relationshipContextSnapshot === "object" ? { ...input.relationshipContextSnapshot } : null,
     createdAt: input.createdAt || now,
     updatedAt: input.updatedAt || now,
   };
