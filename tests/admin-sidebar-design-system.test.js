@@ -41,7 +41,7 @@ test("new sidebar styles stay isolated to the approved rollout pages", () => {
   const adminPages = fs.readdirSync(path.join(root, "public")).filter((file) => /^admin-.*\.html$/.test(file));
   adminPages.forEach((file) => {
     const html = read(`public/${file}`);
-    if (["admin-dashboard.html", "admin-sales.html"].includes(file)) {
+    if (["admin-dashboard.html", "admin-sales.html", "admin-website-factory.html"].includes(file)) {
       assert.match(html, /admin-sidebar-system\.css/);
       assert.match(html, /admin\/components\/admin-sidebar\.js/);
       assert.match(html, /admin\/config\/sidebar-navigation\.js/);

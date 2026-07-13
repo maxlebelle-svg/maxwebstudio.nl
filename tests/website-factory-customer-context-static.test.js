@@ -100,16 +100,25 @@ test("active context hydrates the existing Factory shell instead of replacing it
   assert.doesNotMatch(styles, /\.factory-customer-context div/);
 });
 
-test("Factory opens with an explicit customerId or a server-validated active customer", () => {
+test("Factory opens with an explicit relation or a server-validated active workspace", () => {
   const factory = read("public/admin-website-factory.html");
   const relationship = read("public/admin/ui/active-relationship.js");
+  assert.match(factory, /let requestedLeadId = params\.get\("leadId"\)/);
   assert.match(factory, /let requestedCustomerId = params\.get\("customerId"\)/);
-  assert.match(factory, /requestedCustomerId = await validatedActiveCustomerId\(\)/);
+  assert.match(factory, /await validatedActiveFactoryRelationship\(\)/);
+  assert.match(factory, /activeRelationship\?\.entityType === "lead"/);
+  assert.match(factory, /activeRelationship\?\.entityType === "customer"/);
+  assert.match(factory, /writeCanonicalFactoryLeadId\(requestedLeadId\)/);
   assert.match(factory, /writeCanonicalFactoryCustomerId\(requestedCustomerId\)/);
+  assert.match(factory, /url\.searchParams\.delete\("customerId"\)/);
+  assert.match(factory, /url\.searchParams\.delete\("leadId"\)/);
   assert.match(factory, /window\.history\.replaceState/);
   assert.match(relationship, /await validateActiveRelationship/);
   assert.match(relationship, /function whenReady\(\)/);
   assert.match(factory, /relationshipService\.whenReady\(\)/);
+  assert.match(factory, /subscribeToRelationshipChanges/);
+  assert.match(factory, /\["dashboard-sidebar", "dashboard-sidebar-clear"\]/);
+  assert.match(factory, /window\.location\.assign\(target\)/);
 });
 
 test("customer mode does not invent a lead selection and renders a customer card", () => {
