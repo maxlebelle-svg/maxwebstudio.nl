@@ -17,6 +17,9 @@ import {
   readCentralBranding,
   relationshipScope,
 } from "./social-studio/relationship-context.mjs";
+import { AI_OUTPUT_FIELDS, CONTENT_OBJECTIVES } from "./social-studio/ai-contracts.mjs";
+import { buildSocialStudioAIRequest, summarizeAIRequestContext } from "./social-studio/ai-prompt-builder.mjs";
+import { LocalMockSocialStudioAIAdapter } from "./social-studio/ai-mock-adapter.mjs";
 
 (function () {
   "use strict";
@@ -31,6 +34,7 @@ import {
 
   const repository = new LocalSocialStudioRepository(window.localStorage, storageKeys);
   const brandVoiceRepository = new BrandVoiceRepository(window.localStorage);
+  const aiAdapter = new LocalMockSocialStudioAIAdapter();
 
   const platformLabels = {
     facebook: "Facebook",
@@ -113,7 +117,8 @@ import {
     ["before-after", "Website Before / After", "Maak de transformatie direct voelbaar", "compare", "instagram", "square"],
     ["website-tip", "Website Tip", "Praktisch inzicht dat meteen waarde geeft", "bulb", "linkedin", "square"],
     ["ai-news", "AI Nieuws", "Duiding zonder hype of vakjargon", "sparkles", "linkedin", "landscape"],
-    ["blog", "Blog", "Verdieping met structuur en zoekintentie", "document", "blog", "landscape"],
+    ["google-business-post", "Google Bedrijfspost", "Lokale zichtbaarheid met één heldere actie", "pin", "google", "landscape"],
+    ["blog", "Blogidee", "Verdieping met structuur en zoekintentie", "document", "blog", "landscape"],
     ["advertisement", "Advertentie", "Eén boodschap, één doelgroep, één actie", "target", "ad", "landscape"],
     ["email-campaign", "E-mailcampagne", "Persoonlijk, relevant en conversiegericht", "mail", "email", "landscape"],
   ].map(([id, label, description, icon, platform, visualFormat]) => ({ id, label, description, icon, platform, visualFormat }));
@@ -130,6 +135,7 @@ import {
     "before-after": ["Dezelfde onderneming. Een compleet andere eerste indruk.", "Vergelijk structuur, uitstraling en conversie vóór en na de nieuwe website.", "Bekijk de transformatie", "#beforeafter #website #branding"],
     "website-tip": ["Je belangrijkste knop is waarschijnlijk te vaag", "Leg één praktisch verbeterpunt uit dat een ondernemer vandaag nog kan toepassen.", "Controleer je eigen website", "#websitetip #conversie #ondernemen"],
     "ai-news": ["AI verandert niet wat goed ondernemerschap is", "Duid één actuele ontwikkeling, maak de impact concreet en scheid kans van hype.", "Volg voor nuchtere AI-updates", "#ai #innovatie #ondernemen"],
+    "google-business-post": ["Een lokale update die direct duidelijk is", "Vertel concreet wat er nieuw, nuttig of beschikbaar is en maak de volgende stap laagdrempelig.", "Bekijk de mogelijkheden", ""],
     blog: ["Waarom een snelle website alleen niet genoeg is", "Bouw het artikel op rond zoekintentie, een herkenbare uitdaging en praktische vervolgstappen.", "Plan een kennismaking", ""],
     advertisement: ["Meer aanvragen uit je website", "Benoem het gewenste resultaat, verlaag de drempel en stuur naar één duidelijke actie.", "Vraag een vrijblijvende scan aan", ""],
     "email-campaign": ["Een kleine verbetering met groot effect", "Open persoonlijk, deel één waardevol inzicht en maak de vervolgstap moeiteloos.", "Bekijk wat er mogelijk is", ""],
@@ -270,6 +276,7 @@ import {
     document: '<path d="M5 2h10l4 4v16H5z"/><path d="M15 2v5h4M8 12h8M8 16h8"/>',
     target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/>',
+    pin: '<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
   };
 
   const state = {
@@ -278,6 +285,11 @@ import {
     scopeId: "internal:max-webstudio",
     brandVoice: null,
     relationshipContext: null,
+    aiStep: 1,
+    aiRequest: null,
+    aiOutput: null,
+    aiVariation: 0,
+    aiAcceptedFields: new Set(),
     variants: [],
     variantQuery: "",
     variantFilter: "all",
@@ -298,6 +310,23 @@ import {
     backButton: document.getElementById("social-studio-back"),
     selectedType: document.getElementById("social-selected-type"),
     autosave: document.getElementById("social-autosave"),
+    aiLaunch: document.getElementById("open-ai-creator"),
+    aiCreator: document.getElementById("social-ai-creator"),
+    aiClose: document.getElementById("close-ai-creator"),
+    aiSteps: document.getElementById("social-ai-steps"),
+    aiForm: document.getElementById("social-ai-form"),
+    aiPrevious: document.getElementById("social-ai-previous"),
+    aiNext: document.getElementById("social-ai-next"),
+    aiStepLabel: document.getElementById("social-ai-step-label"),
+    aiContextChips: document.getElementById("social-ai-context-chips"),
+    aiContextSummary: document.getElementById("social-ai-context-summary"),
+    aiAssets: document.getElementById("social-ai-assets"),
+    aiReview: document.getElementById("social-ai-review"),
+    aiGenerate: document.getElementById("generate-ai-preview"),
+    aiOutput: document.getElementById("social-ai-output"),
+    aiFinish: document.getElementById("social-ai-finish"),
+    aiOpenEditor: document.getElementById("open-ai-in-editor"),
+    aiMessage: document.getElementById("social-ai-message"),
     editorFormat: document.getElementById("social-editor-format"),
     brandSource: document.getElementById("social-brand-source"),
     contextChips: document.getElementById("social-context-chips"),
@@ -604,6 +633,16 @@ import {
         source: state.relationshipContext.source,
         brand: state.relationshipContext.brand,
       } : null,
+      extensions: state.aiOutput ? {
+        aiDraft: {
+          requestId: state.aiOutput.requestId,
+          outputId: state.aiOutput.outputId,
+          generator: state.aiOutput.generator,
+          mode: state.aiOutput.mode,
+          acceptedFields: [...state.aiAcceptedFields],
+          output: { ...state.aiOutput },
+        },
+      } : {},
       ...getContext(),
     };
   }
@@ -658,15 +697,343 @@ import {
     elements.message.className = `admin-form-message social-studio-message ${type || ""}`.trim();
   }
 
+  const aiStepLabels = ["Doel", "Briefing", "Context", "Genereren", "Bewerken", "Afronden"];
+  const aiListFields = new Set(["hookVariants", "hashtags", "reelScript", "storyStructure", "carouselStructure", "platformNotes", "claimWarnings"]);
+  const aiFieldLabels = {
+    mainIdea: "Hoofdidee",
+    hookVariants: "Hookvarianten",
+    caption: "Caption",
+    cta: "Call to action",
+    hashtags: "Hashtags",
+    imagePrompt: "AI-afbeelding prompt",
+    visualDirection: "Visuele richting",
+    reelScript: "Reelscript",
+    storyStructure: "Story-opbouw",
+    carouselStructure: "Carousel-opbouw",
+    altText: "Alt-tekst",
+    platformNotes: "Platformnotities",
+    claimWarnings: "Claimcontrole",
+    brandContextSummary: "Gebruikte merkcontext",
+  };
+
+  function setAIMessage(text, type = "") {
+    elements.aiMessage.textContent = text;
+    elements.aiMessage.className = `admin-form-message ${type}`.trim();
+  }
+
+  function populateAICreatorOptions() {
+    const objective = elements.aiForm.elements.objective;
+    objective.replaceChildren(...CONTENT_OBJECTIVES.map((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+      return option;
+    }));
+    const contentType = elements.aiForm.elements.contentType;
+    contentType.replaceChildren(...contentTypes.map((type) => {
+      const option = document.createElement("option");
+      option.value = type.id;
+      option.textContent = type.label;
+      return option;
+    }));
+  }
+
+  function renderAIStepNavigation() {
+    elements.aiSteps.replaceChildren(...aiStepLabels.map((label, index) => {
+      const item = document.createElement("span");
+      item.className = "social-studio-ai-step-dot";
+      item.textContent = `${index + 1}. ${label}`;
+      item.classList.toggle("is-active", state.aiStep === index + 1);
+      item.classList.toggle("is-done", state.aiStep > index + 1);
+      item.setAttribute("aria-current", state.aiStep === index + 1 ? "step" : "false");
+      return item;
+    }));
+    elements.aiForm.querySelectorAll("[data-ai-step]").forEach((step) => {
+      step.hidden = Number(step.dataset.aiStep) !== state.aiStep;
+    });
+    elements.aiPrevious.hidden = state.aiStep === 1;
+    elements.aiNext.hidden = state.aiStep >= 6;
+    elements.aiNext.textContent = state.aiStep === 4 ? "Bekijk concept" : "Volgende";
+    elements.aiStepLabel.textContent = `Stap ${state.aiStep} van 6`;
+    if (state.aiStep === 3) renderAIContext();
+    if (state.aiStep === 4) renderAIReview();
+    if (state.aiStep === 5) renderAIOutput();
+    if (state.aiStep === 6) renderAIFinish();
+  }
+
+  function openAICreator() {
+    window.clearTimeout(autosaveTimer);
+    state.aiStep = 1;
+    state.aiRequest = null;
+    state.aiOutput = null;
+    state.aiVariation = 0;
+    state.aiAcceptedFields = new Set();
+    elements.aiForm.reset();
+    elements.aiForm.elements.objective.value = "zichtbaarheid";
+    elements.aiForm.elements.platform.value = "instagram";
+    elements.aiForm.elements.contentType.value = "instagram-post";
+    elements.aiForm.elements.audience.value = state.brandVoice?.targetAudience || state.relationshipContext?.brand?.audience || "";
+    elements.aiForm.elements.contentPillar.value = state.brandVoice?.contentPillars?.[0] || "";
+    elements.aiForm.elements.toneOfVoice.value = state.brandVoice?.toneOfVoice?.join(", ") || "";
+    elements.aiForm.elements.desiredCta.value = state.brandVoice?.standardCtas?.[0] || "";
+    elements.aiForm.elements.campaign.value = elements.campaign.value || "";
+    elements.start.hidden = true;
+    elements.stage.hidden = false;
+    elements.skeleton.hidden = true;
+    elements.workbench.hidden = true;
+    elements.aiCreator.hidden = false;
+    setAIMessage("Lokale preview actief: er worden geen gegevens extern verstuurd.", "success");
+    renderAIStepNavigation();
+    elements.aiForm.elements.objective.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function collectAIRequest() {
+    const form = new FormData(elements.aiForm);
+    const relationship = activeRelationship();
+    return buildSocialStudioAIRequest({
+      scopeId: state.scopeId,
+      relationship: relationship ? { id: relationship.id, companyName: relationship.companyName || relationship.name || "" } : null,
+      topic: form.get("topic"),
+      objective: form.get("objective"),
+      audience: form.get("audience"),
+      contentPillar: form.get("contentPillar"),
+      platform: form.get("platform"),
+      contentType: form.get("contentType"),
+      toneOfVoice: form.get("toneOfVoice"),
+      desiredCta: form.get("desiredCta"),
+      facts: form.get("facts"),
+      assets: (state.relationshipContext?.assets || []).map((asset) => ({
+        id: asset.id || asset.assetId || "",
+        name: asset.name || asset.fileName || asset.label || "Asset",
+        category: asset.category || asset.type || "brand",
+      })),
+      desiredLength: form.get("desiredLength"),
+      emojiPreference: form.get("emojiPreference"),
+      campaign: form.get("campaign"),
+      language: form.get("language"),
+      brandVoice: state.brandVoice || {},
+      relationshipContext: state.relationshipContext || {},
+    });
+  }
+
+  function validateCurrentAIStep() {
+    if (state.aiStep === 2) {
+      for (const name of ["topic", "audience"]) {
+        const field = elements.aiForm.elements[name];
+        if (!field.value.trim()) {
+          setAIMessage(name === "topic" ? "Geef eerst een concreet onderwerp." : "Beschrijf eerst de doelgroep.", "error");
+          field.focus();
+          return false;
+        }
+      }
+      const result = collectAIRequest();
+      if (!result.valid) {
+        setAIMessage(result.errors[0]?.message || "De briefing is nog niet compleet.", "error");
+        return false;
+      }
+      state.aiRequest = result.request;
+    }
+    if (state.aiStep === 4 && !state.aiOutput) {
+      setAIMessage("Genereer eerst een lokaal concept.", "error");
+      elements.aiGenerate.focus();
+      return false;
+    }
+    if (state.aiStep === 5 && !state.aiAcceptedFields.size) {
+      setAIMessage("Kies minimaal één onderdeel met ‘Gebruik in editor’.", "error");
+      return false;
+    }
+    return true;
+  }
+
+  function renderAIContext() {
+    const request = state.aiRequest || collectAIRequest().request;
+    const chips = contextChips(state.relationshipContext || {});
+    elements.aiContextChips.replaceChildren(...chips.map((chip) => {
+      const item = document.createElement("span");
+      item.className = "social-studio-context-chip";
+      item.textContent = `${chip.label}: ${chip.value}`;
+      return item;
+    }));
+    elements.aiContextSummary.textContent = request ? summarizeAIRequestContext(request) : "De briefing wordt nog voorbereid.";
+    const assets = state.relationshipContext?.assets || [];
+    elements.aiAssets.replaceChildren(...(assets.length ? assets : [{ name: "Geen goedgekeurde assets gekoppeld" }]).map((asset) => {
+      const chip = document.createElement("span");
+      chip.className = "social-studio-context-chip";
+      chip.textContent = asset.name || asset.fileName || asset.label || "Merkasset";
+      return chip;
+    }));
+  }
+
+  function renderAIReview() {
+    const request = state.aiRequest;
+    if (!request) {
+      elements.aiReview.textContent = "Vul eerst de briefing in.";
+      return;
+    }
+    elements.aiReview.replaceChildren();
+    const title = document.createElement("strong");
+    const detail = document.createElement("p");
+    title.textContent = `${request.topic} · ${platformLabels[request.platform] || request.platform}`;
+    detail.textContent = `${request.objective} voor ${request.audience}. ${summarizeAIRequestContext(request)}`;
+    elements.aiReview.append(title, detail);
+  }
+
+  async function generateAIPreview() {
+    const result = collectAIRequest();
+    if (!result.valid) {
+      setAIMessage(result.errors[0]?.message || "De briefing is nog niet compleet.", "error");
+      return;
+    }
+    state.aiRequest = result.request;
+    elements.aiGenerate.disabled = true;
+    elements.aiGenerate.textContent = "Concept wordt opgebouwd…";
+    setAIMessage("Lokale regels bouwen je concept op…");
+    try {
+      state.aiOutput = await aiAdapter.generate(state.aiRequest, { variation: state.aiVariation });
+      state.aiAcceptedFields.clear();
+      setAIMessage("Concept gereed. Bekijk en bewerk ieder onderdeel bewust.", "success");
+      renderAIOutput();
+    } catch (error) {
+      setAIMessage(error.message || "Het lokale concept kon niet worden opgebouwd.", "error");
+    } finally {
+      elements.aiGenerate.disabled = false;
+      elements.aiGenerate.textContent = state.aiOutput ? "Maak een nieuwe variant" : "Genereer lokaal concept";
+    }
+  }
+
+  function serializeAIField(field, value) {
+    return aiListFields.has(field) ? (Array.isArray(value) ? value : []).join("\n") : String(value || "");
+  }
+
+  function parseAIField(field, value) {
+    if (!aiListFields.has(field)) return String(value || "").trim();
+    return String(value || "").split(field === "hashtags" ? /[\s\n]+/ : /\n+/).map((item) => item.trim()).filter(Boolean);
+  }
+
+  function applyAIFieldToEditor(field) {
+    if (!state.aiOutput) return;
+    const value = state.aiOutput[field];
+    const editorFields = {
+      hookVariants: [elements.title, Array.isArray(value) ? value[0] : value],
+      caption: [elements.caption, value],
+      cta: [elements.cta, value],
+      hashtags: [elements.hashtags, Array.isArray(value) ? value.join(" ") : value],
+      imagePrompt: [elements.imagePrompt, value],
+    };
+    if (editorFields[field]) editorFields[field][0].value = editorFields[field][1] || "";
+    state.aiAcceptedFields.add(field);
+    updateAll();
+    renderAIOutput();
+    setAIMessage(`${aiFieldLabels[field]} gekozen voor de editor.`, "success");
+  }
+
+  async function regenerateAIField(field) {
+    if (!state.aiRequest || !state.aiOutput) return;
+    state.aiVariation += 1;
+    try {
+      const variation = await aiAdapter.generate(state.aiRequest, { variation: state.aiVariation });
+      state.aiOutput[field] = variation[field];
+      state.aiAcceptedFields.delete(field);
+      renderAIOutput();
+      setAIMessage(`Nieuwe variant voor ${aiFieldLabels[field].toLowerCase()} gemaakt.`, "success");
+    } catch (error) {
+      setAIMessage(error.message || "Nieuwe variant maken is niet gelukt.", "error");
+    }
+  }
+
+  function renderAIOutput() {
+    elements.aiOutput.replaceChildren();
+    if (!state.aiOutput) {
+      elements.aiOutput.textContent = "Er is nog geen concept gegenereerd.";
+      return;
+    }
+    AI_OUTPUT_FIELDS.forEach((field) => {
+      const card = document.createElement("article");
+      card.className = "social-studio-ai-output-card";
+      if (field === "claimWarnings") card.classList.add("is-warning");
+      const header = document.createElement("header");
+      const label = document.createElement("strong");
+      const accepted = document.createElement("span");
+      label.textContent = aiFieldLabels[field] || field;
+      accepted.textContent = state.aiAcceptedFields.has(field) ? "Gekozen" : "Vrij concept";
+      header.append(label, accepted);
+      const textarea = document.createElement("textarea");
+      textarea.value = serializeAIField(field, state.aiOutput[field]);
+      textarea.setAttribute("aria-label", aiFieldLabels[field] || field);
+      textarea.addEventListener("input", () => {
+        state.aiOutput[field] = parseAIField(field, textarea.value);
+        state.aiAcceptedFields.delete(field);
+        accepted.textContent = "Aangepast · opnieuw kiezen";
+      });
+      const actions = document.createElement("div");
+      actions.className = "social-studio-ai-output-actions";
+      const use = document.createElement("button");
+      use.type = "button";
+      use.className = "button primary";
+      use.textContent = state.aiAcceptedFields.has(field) ? "Gekozen voor editor" : "Gebruik in editor";
+      use.addEventListener("click", () => applyAIFieldToEditor(field));
+      const variant = document.createElement("button");
+      variant.type = "button";
+      variant.className = "button secondary";
+      variant.textContent = "Nieuwe variant";
+      variant.addEventListener("click", () => regenerateAIField(field));
+      const copy = document.createElement("button");
+      copy.type = "button";
+      copy.className = "button secondary";
+      copy.textContent = "Kopieer";
+      copy.addEventListener("click", () => copyToClipboard(serializeAIField(field, state.aiOutput[field]), `${aiFieldLabels[field]} gekopieerd.`));
+      actions.append(use, variant, copy);
+      card.append(header, textarea, actions);
+      elements.aiOutput.append(card);
+    });
+  }
+
+  function renderAIFinish() {
+    const chosen = [...state.aiAcceptedFields].map((field) => aiFieldLabels[field]).join(", ");
+    elements.aiFinish.textContent = chosen
+      ? `Gekozen voor de editor: ${chosen}. De volledige lokale preview blijft als herkomstinformatie bij het concept bewaard.`
+      : "Kies eerst minimaal één onderdeel voor de editor.";
+    elements.aiOpenEditor.disabled = !state.aiAcceptedFields.size;
+  }
+
+  function openAIConceptInEditor() {
+    if (!state.aiRequest || !state.aiOutput || !state.aiAcceptedFields.size) {
+      setAIMessage("Kies eerst minimaal één onderdeel voor de editor.", "error");
+      return;
+    }
+    const type = contentTypes.find((item) => item.id === state.aiRequest.contentType) || contentTypes[0];
+    const requestPlatform = state.aiRequest.platform;
+    state.contentType = type.id;
+    state.platform = platformLabels[requestPlatform] ? requestPlatform : type.platform;
+    elements.selectedType.textContent = `${type.label} · lokaal AI-concept`;
+    elements.campaign.value = state.aiRequest.campaign || elements.campaign.value;
+    elements.tone.value = state.aiRequest.toneOfVoice[0] || elements.tone.value;
+    elements.visualFormat.value = type.visualFormat;
+    elements.aiCreator.hidden = true;
+    elements.workbench.hidden = false;
+    elements.skeleton.hidden = true;
+    updatePlatformButtons();
+    updateAll();
+    scheduleAutosave();
+    elements.title.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setMessage("Gekozen AI-onderdelen staan in de editor; niets is automatisch gepubliceerd.", "success");
+  }
+
   function openContentWorkflow(typeId) {
     const type = contentTypes.find((item) => item.id === typeId);
     if (!type) return;
+    state.aiRequest = null;
+    state.aiOutput = null;
+    state.aiAcceptedFields.clear();
     const [title, caption, cta, hashtags] = contentTypeSeeds[type.id] || contentTypeSeeds["instagram-post"];
     state.contentType = type.id;
     state.platform = type.platform;
     elements.selectedType.textContent = type.label;
     elements.start.hidden = true;
     elements.stage.hidden = false;
+    elements.aiCreator.hidden = true;
     elements.skeleton.hidden = false;
     elements.workbench.hidden = true;
 
@@ -698,6 +1065,7 @@ import {
     elements.stage.hidden = true;
     elements.workbench.hidden = true;
     elements.skeleton.hidden = true;
+    elements.aiCreator.hidden = true;
     elements.start.hidden = false;
     elements.start.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1206,9 +1574,7 @@ import {
   }
 
   function generateSocialContent() {
-    // Future hook: send editor context to a Netlify Function that calls OpenAI.
-    // Future hook: enrich the prompt with customer, brand, tone and campaign data from Supabase.
-    setMessage("AI-generatie wordt later gekoppeld.", "success");
+    openAICreator();
     return getCurrentContent();
   }
 
@@ -1260,6 +1626,29 @@ import {
   }
 
   function bindEvents() {
+    elements.aiForm.addEventListener("submit", (event) => event.preventDefault());
+    elements.aiLaunch.addEventListener("click", openAICreator);
+    elements.aiClose.addEventListener("click", returnToStart);
+    elements.aiPrevious.addEventListener("click", () => {
+      if (state.aiStep > 1) {
+        state.aiStep -= 1;
+        setAIMessage("");
+        renderAIStepNavigation();
+      }
+    });
+    elements.aiNext.addEventListener("click", () => {
+      if (!validateCurrentAIStep()) return;
+      if (state.aiStep < 6) {
+        state.aiStep += 1;
+        setAIMessage("");
+        renderAIStepNavigation();
+      }
+    });
+    elements.aiGenerate.addEventListener("click", () => {
+      if (state.aiOutput) state.aiVariation += 1;
+      generateAIPreview();
+    });
+    elements.aiOpenEditor.addEventListener("click", openAIConceptInEditor);
     elements.platformButtons.forEach((button) => {
       button.addEventListener("click", () => {
         state.platform = button.dataset.platform;
@@ -1343,6 +1732,7 @@ import {
 
   function init() {
     renderContentTypes();
+    populateAICreatorOptions();
     fillPlatformFilter();
     fillStatusFilter();
     renderMoreWorkOffers();

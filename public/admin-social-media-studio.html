@@ -603,6 +603,112 @@
         gap: 14px;
       }
 
+      .social-studio-ai-launch {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        min-height: 92px;
+        padding: 18px 20px;
+        border: 1px solid rgba(69, 215, 240, 0.34);
+        border-radius: 15px;
+        color: #fff;
+        background:
+          radial-gradient(circle at 80% 10%, rgba(69, 215, 240, 0.2), transparent 30%),
+          linear-gradient(120deg, rgba(37, 99, 235, 0.28), rgba(14, 116, 144, 0.13));
+        cursor: pointer;
+        text-align: left;
+        transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      }
+
+      .social-studio-ai-launch:hover,
+      .social-studio-ai-launch:focus-visible {
+        border-color: rgba(103, 232, 249, 0.7);
+        box-shadow: 0 24px 70px rgba(8, 145, 178, 0.16);
+        transform: translateY(-2px);
+      }
+
+      .social-studio-ai-launch strong,
+      .social-studio-ai-launch small { display: block; }
+      .social-studio-ai-launch strong { font-size: 18px; }
+      .social-studio-ai-launch small { margin-top: 4px; color: var(--studio-muted); font-size: 12px; font-weight: 700; }
+
+      .social-studio-ai-creator {
+        display: grid;
+        gap: 20px;
+        padding: clamp(20px, 3vw, 34px);
+        border: 1px solid var(--studio-line);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 100% 0%, rgba(69, 215, 240, 0.1), transparent 28%),
+          linear-gradient(155deg, rgba(12, 29, 52, 0.96), rgba(5, 15, 29, 0.98));
+        box-shadow: 0 34px 100px rgba(0, 7, 20, 0.32);
+      }
+
+      .social-studio-ai-header {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .social-studio-ai-header h2 { margin: 10px 0 7px; color: #fff; font-size: clamp(26px, 3vw, 38px); letter-spacing: -.03em; }
+      .social-studio-ai-header p { margin: 0; color: var(--studio-muted); line-height: 1.6; }
+
+      .social-studio-ai-steps {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .social-studio-ai-step-dot {
+        display: grid;
+        gap: 6px;
+        padding: 10px;
+        border: 1px solid var(--studio-line);
+        border-radius: 9px;
+        color: rgba(211,225,242,.48);
+        background: rgba(3,12,25,.34);
+        font-size: 10px;
+        font-weight: 850;
+      }
+
+      .social-studio-ai-step-dot::before { content: ""; height: 3px; border-radius: 2px; background: rgba(148,163,184,.15); }
+      .social-studio-ai-step-dot.is-active { color: #fff; border-color: rgba(96,165,250,.44); }
+      .social-studio-ai-step-dot.is-active::before,
+      .social-studio-ai-step-dot.is-done::before { background: linear-gradient(90deg,var(--studio-blue),var(--studio-cyan)); }
+
+      .social-studio-ai-creator form { display: grid; gap: 18px; }
+      .social-studio-ai-step { min-height: 390px; padding: clamp(18px,3vw,30px); border: 1px solid var(--studio-line); border-radius: 15px; background: rgba(3,12,25,.38); }
+      .social-studio-ai-step h3 { margin: 6px 0 7px; color: #fff; font-size: clamp(24px,3vw,34px); letter-spacing: -.025em; }
+      .social-studio-ai-step > p:not(.section-kicker) { margin: 0 0 24px; color: var(--studio-muted); }
+
+      .social-studio-ai-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+      .social-studio-ai-grid .is-wide { grid-column: 1 / -1; }
+      .social-studio-ai-grid label { display: grid; gap: 8px; color: var(--studio-muted); font-size: 12px; font-weight: 850; }
+      .social-studio-ai-grid input,
+      .social-studio-ai-grid select,
+      .social-studio-ai-grid textarea {
+        width: 100%; min-height: 46px; border: 1px solid var(--studio-line); border-radius: 10px; color: #fff; background: rgba(4,14,28,.76);
+      }
+      .social-studio-ai-grid textarea { min-height: 130px; resize: vertical; }
+
+      .social-studio-ai-context-summary,
+      .social-studio-ai-review,
+      .social-studio-ai-finish { margin-top: 18px; padding: 18px; border: 1px solid var(--studio-line); border-radius: 12px; color: var(--studio-muted); background: rgba(4,14,28,.62); line-height: 1.65; }
+      .social-studio-ai-assets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+      .social-studio-ai-output { display: grid; gap: 12px; }
+      .social-studio-ai-output-card { display: grid; gap: 10px; padding: 15px; border: 1px solid var(--studio-line); border-radius: 12px; background: rgba(4,14,28,.58); }
+      .social-studio-ai-output-card header { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+      .social-studio-ai-output-card header strong { color: #fff; }
+      .social-studio-ai-output-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+      .social-studio-ai-output-card textarea { width: 100%; min-height: 100px; border: 0; border-radius: 9px; color: rgba(242,247,255,.92); background: rgba(1,8,18,.55); line-height: 1.65; resize: vertical; }
+      .social-studio-ai-output-card.is-warning { border-color: rgba(251,191,36,.3); }
+
+      .social-studio-ai-navigation { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+      .social-studio-ai-navigation span { color: var(--studio-muted); text-align: center; font-size: 11px; font-weight: 850; }
+
       .social-studio-content-card {
         position: relative;
         display: grid;
@@ -1249,6 +1355,7 @@
         }
 
         .social-studio-content-grid,
+        .social-studio-ai-grid,
         .social-studio-toolbar,
         .social-studio-brand-summary,
         .social-studio-brand-fields,
@@ -1258,6 +1365,11 @@
         .social-studio-skeleton {
           grid-template-columns: 1fr;
         }
+
+        .social-studio-ai-steps { display: flex; overflow-x: auto; scrollbar-width: none; }
+        .social-studio-ai-step-dot { flex: 0 0 120px; }
+        .social-studio-ai-step { min-height: 0; }
+        .social-studio-ai-navigation { position: sticky; bottom: 8px; z-index: 10; padding: 10px; border-radius: 12px; background: rgba(5,15,29,.92); backdrop-filter: blur(18px); }
 
         .social-studio-content-card { min-height: 145px; }
 
@@ -1383,6 +1495,13 @@
               <h2 id="social-start-heading">Wat wil je vandaag maken?</h2>
               <p>Kies een format. Social Studio zet de juiste canvas, kanaalregels en schrijfrichting voor je klaar.</p>
             </div>
+            <button class="social-studio-ai-launch" id="open-ai-creator" type="button">
+              <span class="social-studio-content-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2zM19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7zM5 13l.7 2.3L8 16l-2.3.7L5 19l-.7-2.3L2 16l2.3-.7z"/></svg>
+              </span>
+              <span><strong>Laat AI ideeën bedenken</strong><small>Lokale preview · gebruikt je veilige merkcontext</small></span>
+              <span aria-hidden="true">→</span>
+            </button>
             <div class="social-studio-content-grid" id="social-content-type-grid" aria-label="Kies een contentformat"></div>
             <div class="social-studio-shortcuts" aria-label="Sneltoetsen">
               <span><kbd>⌘</kbd><kbd>K</kbd> Command palette</span>
@@ -1395,6 +1514,70 @@
             <div class="social-studio-skeleton" id="social-studio-skeleton" hidden aria-hidden="true">
               <span></span><span></span><span></span><span></span>
             </div>
+            <section class="social-studio-ai-creator" id="social-ai-creator" hidden aria-labelledby="social-ai-heading">
+              <header class="social-studio-ai-header">
+                <button class="social-studio-back" id="close-ai-creator" type="button" aria-label="Terug naar contentkeuze">←</button>
+                <div>
+                  <span class="workflow-module-label">Lokale AI-preview · geen externe provider</span>
+                  <h2 id="social-ai-heading">Van briefing naar sterk concept</h2>
+                  <p>Rustig opgebouwd, met merkcontext en expliciete controle over wat in de editor komt.</p>
+                </div>
+              </header>
+              <nav class="social-studio-ai-steps" id="social-ai-steps" aria-label="AI Creator stappen"></nav>
+              <form id="social-ai-form">
+                <section class="social-studio-ai-step" data-ai-step="1">
+                  <p class="section-kicker">Stap 1</p><h3>Kies het doel</h3><p>Waar moet deze content beweging creëren?</p>
+                  <div class="social-studio-ai-grid">
+                    <label>Contentdoel<select name="objective" required></select></label>
+                    <label>Platform<select name="platform" required>
+                      <option value="instagram">Instagram</option><option value="facebook">Facebook</option><option value="linkedin">LinkedIn</option><option value="google">Google Bedrijfsprofiel</option><option value="story">Instagram Story</option><option value="reel">Instagram Reel</option><option value="carousel">Carrousel</option><option value="blog">Blog</option>
+                    </select></label>
+                    <label>Contenttype<select name="contentType" required></select></label>
+                  </div>
+                </section>
+                <section class="social-studio-ai-step" data-ai-step="2" hidden>
+                  <p class="section-kicker">Stap 2</p><h3>Geef onderwerp en richting</h3><p>Een concreet vertrekpunt geeft betere ideeën dan een lange technische prompt.</p>
+                  <div class="social-studio-ai-grid">
+                    <label class="is-wide">Onderwerp<input name="topic" required placeholder="Bijv. waarom een snelle website alleen niet genoeg is" /></label>
+                    <label>Doelgroep<input name="audience" required placeholder="Lokale dienstverleners" /></label>
+                    <label>Contentpijler<input name="contentPillar" placeholder="Websites, groei, vakmanschap..." /></label>
+                    <label>Gewenste tone of voice<input name="toneOfVoice" placeholder="Deskundig, persoonlijk" /></label>
+                    <label>Gewenste CTA<input name="desiredCta" placeholder="Plan een kennismaking" /></label>
+                    <label class="is-wide">Belangrijke feiten of input<textarea name="facts" placeholder="Eén verifieerbaar feit per regel"></textarea></label>
+                    <label>Gewenste lengte<select name="desiredLength"><option value="short">Kort</option><option value="medium" selected>Gemiddeld</option><option value="long">Uitgebreid</option></select></label>
+                    <label>Emoji-voorkeur<select name="emojiPreference"><option>Geen</option><option selected>Spaarzaam</option><option>Functioneel</option><option>Expressief</option></select></label>
+                    <label>Publicatiedoel of campagne<input name="campaign" /></label>
+                    <label>Taal<select name="language"><option>Nederlands</option><option>Engels</option><option>Duits</option></select></label>
+                  </div>
+                </section>
+                <section class="social-studio-ai-step" data-ai-step="3" hidden>
+                  <p class="section-kicker">Stap 3</p><h3>Controleer merkcontext</h3><p>Alleen deze gegevens worden gebruikt voor het lokale concept.</p>
+                  <div class="social-studio-context-chips" id="social-ai-context-chips"></div>
+                  <div class="social-studio-ai-context-summary" id="social-ai-context-summary"></div>
+                  <div class="social-studio-ai-assets" id="social-ai-assets"></div>
+                </section>
+                <section class="social-studio-ai-step" data-ai-step="4" hidden>
+                  <p class="section-kicker">Stap 4</p><h3>Genereer een lokaal concept</h3><p>De mockadapter gebruikt vaste, controleerbare regels. Er worden geen gegevens extern verstuurd.</p>
+                  <div class="social-studio-ai-review" id="social-ai-review"></div>
+                  <button class="button primary" id="generate-ai-preview" type="button">Genereer lokaal concept</button>
+                </section>
+                <section class="social-studio-ai-step" data-ai-step="5" hidden>
+                  <p class="section-kicker">Stap 5</p><h3>Bewerk en kies bewust</h3><p>Ieder onderdeel blijft apart bewerkbaar. Alleen een expliciete keuze gaat naar de editor.</p>
+                  <div class="social-studio-ai-output" id="social-ai-output"></div>
+                </section>
+                <section class="social-studio-ai-step" data-ai-step="6" hidden>
+                  <p class="section-kicker">Stap 6</p><h3>Bewaar of plan</h3><p>Open de editor om je gekozen onderdelen verder te verfijnen, bewaren of plannen.</p>
+                  <div class="social-studio-ai-finish" id="social-ai-finish"></div>
+                  <button class="button primary" id="open-ai-in-editor" type="button">Open gekozen concept in editor</button>
+                </section>
+                <footer class="social-studio-ai-navigation">
+                  <button class="button secondary" id="social-ai-previous" type="button">Vorige</button>
+                  <span id="social-ai-step-label">Stap 1 van 6</span>
+                  <button class="button primary" id="social-ai-next" type="button">Volgende</button>
+                </footer>
+                <p class="admin-form-message" id="social-ai-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
             <div class="social-studio-workbench" id="social-studio-workbench" hidden>
               <div class="social-studio-workbench-bar">
                 <button class="social-studio-back" id="social-studio-back" type="button" aria-label="Terug naar contentkeuze">←</button>
@@ -1560,7 +1743,7 @@
                 <button class="button secondary" type="button" id="save-variant">Variant opslaan</button>
                 <button class="button secondary" type="button" id="copy-text">Kopieer tekst</button>
                 <button class="button secondary" type="button" id="reset-editor">Reset editor</button>
-                <button class="button secondary" type="button" id="generate-social-content" disabled aria-disabled="true">AI binnenkort</button>
+                <button class="button secondary" type="button" id="generate-social-content">Open AI Creator</button>
                 <button class="button secondary" type="button" id="publish-social-post" disabled aria-disabled="true">Publiceren binnenkort</button>
               </div>
             </form>

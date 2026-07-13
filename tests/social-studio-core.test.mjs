@@ -26,8 +26,10 @@ assert.deepEqual(legacyVariant.integrations, {});
 assert.deepEqual(legacyVariant.metrics, {});
 assert.deepEqual(legacyVariant.extensions, {});
 
+assert.equal(SOCIAL_STUDIO_CAPABILITIES.aiContentCreator.status, "active");
+assert.equal(SOCIAL_STUDIO_CAPABILITIES.aiContentCreator.adapter, "provider-neutral/local-preview");
+
 for (const capability of [
-  "aiContentCreator",
   "publishing",
   "analytics",
   "seoStudio",

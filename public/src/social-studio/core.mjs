@@ -10,7 +10,7 @@ export const CONTENT_STATUSES = Object.freeze([
 export const SOCIAL_STUDIO_CAPABILITIES = Object.freeze({
   editor: Object.freeze({ status: "active", adapter: "local" }),
   planning: Object.freeze({ status: "active", adapter: "local" }),
-  aiContentCreator: Object.freeze({ status: "planned", adapter: null }),
+  aiContentCreator: Object.freeze({ status: "active", adapter: "provider-neutral/local-preview" }),
   publishing: Object.freeze({ status: "planned", adapter: null }),
   analytics: Object.freeze({ status: "planned", adapter: null }),
   seoStudio: Object.freeze({ status: "planned", adapter: null }),
