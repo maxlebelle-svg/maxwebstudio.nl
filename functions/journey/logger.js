@@ -1,5 +1,6 @@
 const SAFE_CONTEXT_FIELDS = new Set([
   "action",
+  "actionType",
   "attemptCount",
   "code",
   "component",
@@ -10,6 +11,7 @@ const SAFE_CONTEXT_FIELDS = new Set([
   "environment",
   "eventType",
   "featureFlag",
+  "featureFlagDecision",
   "mode",
   "operation",
   "provider",

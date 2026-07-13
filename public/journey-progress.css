@@ -1,0 +1,86 @@
+.portal-progress-card[data-journey-progress-loading="true"] #command-progress-title,
+.portal-progress-card[data-journey-progress-loading="true"] #command-progress-subtitle,
+.portal-progress-card[data-journey-progress-loading="true"] #command-progress-value {
+  opacity: 0.68;
+}
+
+.portal-command-step.is-blocked > span {
+  border-color: rgba(251, 191, 36, 0.72);
+  color: #111827;
+  background: #fbbf24;
+}
+
+.portal-command-step.is-skipped > span {
+  border-style: dashed;
+  color: var(--portal-muted);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.journey-estimate-label,
+.journey-progress-message {
+  margin: 0;
+  color: var(--portal-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.journey-estimate-label::before {
+  content: "i";
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  border: 1px solid rgba(147, 197, 253, 0.32);
+  border-radius: 50%;
+  color: var(--portal-cyan);
+}
+
+.journey-contact-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: center;
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid rgba(147, 197, 253, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  min-width: 0;
+}
+
+.journey-contact-card img,
+.journey-contact-avatar {
+  grid-row: 1 / span 2;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.journey-contact-avatar {
+  display: grid;
+  place-items: center;
+  color: #04111f;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-green));
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.journey-contact-card small,
+.journey-contact-card strong,
+.journey-contact-card p { display: block; margin: 0; }
+.journey-contact-card small { color: var(--portal-cyan); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.journey-contact-card strong { color: var(--portal-text); font-size: 14px; }
+.journey-contact-card p { color: var(--portal-muted); font-size: 12px; font-weight: 700; }
+.journey-contact-links { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px 14px; min-width: 0; }
+.journey-contact-links a { color: #93c5fd; font-size: 12px; font-weight: 850; overflow-wrap: anywhere; }
+.journey-contact-links a:focus-visible { outline: 3px solid rgba(88, 199, 255, .5); outline-offset: 3px; border-radius: 4px; }
+
+@media (max-width: 520px) {
+  .journey-contact-card { grid-template-columns: auto minmax(0, 1fr); }
+  .journey-contact-links { grid-column: 1 / -1; }
+  .portal-command-step { grid-template-columns: 32px minmax(0, 1fr); }
+  .portal-command-step > span { width: 32px; height: 32px; }
+}

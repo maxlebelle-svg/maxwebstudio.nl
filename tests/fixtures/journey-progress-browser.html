@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Journey Progress Browser Fixture</title>
+  <link rel="stylesheet" href="/public/styles.css" />
+  <link rel="stylesheet" href="/public/journey-progress.css" />
+</head>
+<body class="portal-body">
+  <main class="portal-app customer-portal-demo" style="display:block;max-width:1180px;margin:auto">
+    <div class="portal-main">
+      <section class="portal-command-center" style="display:grid">
+        <section class="portal-next-step-card" id="portal-command-next-step" aria-label="Jouw volgende stap">
+          <span>Jouw volgende stap</span>
+          <strong id="command-next-title">Laden</strong>
+          <p id="command-next-text">Laden</p>
+          <div class="portal-actions" id="command-next-actions"></div>
+        </section>
+        <div class="portal-command-shell" style="grid-template-columns:minmax(0,700px)">
+          <section class="portal-command-main" style="grid-template-columns:minmax(0,700px)">
+            <article class="portal-command-card portal-progress-card" id="portal-command-progress">
+              <div class="portal-command-card-head">
+                <div><span>Projectvoortgang</span><h3 id="command-progress-title">Laden</h3><p id="command-progress-subtitle">Laden</p></div>
+                <strong id="command-progress-value">…</strong>
+              </div>
+              <div class="portal-command-progressbar"><span id="command-progress-bar"></span></div>
+              <div class="portal-command-steps" id="command-progress-steps"></div>
+            </article>
+          </section>
+        </div>
+        <strong id="project-workspace-progress">82%</strong>
+      </section>
+    </div>
+  </main>
+  <script type="module">
+    import { loadClientJourneyProgress } from "/public/src/ui/clientJourneyProgress.js";
+    const mode = new URLSearchParams(location.search).get("mode") || "journey";
+    const base = {
+      source: "journey", available: true, percentage: 50, status: "active", currentPhase: "production",
+      currentStep: { key: "website_build", label: "Website gebouwd", order: 5, status: "in_progress", customerActionType: "none" },
+      currentStepDescription: "Uw website wordt ontworpen en technisch opgebouwd.",
+      completedMilestones: [
+        { key: "onboarding_information", label: "Onboarding compleet", order: 3, status: "completed", customerActionType: "provide_information" },
+        { key: "content_ready", label: "Content compleet", order: 4, status: "completed", customerActionType: "provide_information" },
+      ],
+      remainingMilestones: [
+        { key: "website_build", label: "Website gebouwd", order: 5, status: "in_progress", customerActionType: "none" },
+        { key: "customer_review", label: "Klantcontrole", order: 6, status: "pending", customerActionType: "review" },
+        { key: "handover", label: "Oplevering", order: 8, status: "skipped", optional: true, customerActionType: "approve" },
+      ],
+      nextStep: { key: "customer_review", label: "Klantcontrole", order: 6, status: "pending", customerActionType: "review" },
+      customerActionRequired: false, customerAction: { type: "none", label: null, url: null, available: false }, blocked: false,
+      lastUpdatedAt: "2026-07-13T10:00:00.000Z", productLabel: "Business Website", contact: null, complete: false,
+    };
+    const fixtures = {
+      journey: base,
+      legacy: { ...base, source: "legacy_estimate", percentage: 65, estimateLabel: "Gebaseerd op de huidige projectfase", completedMilestones: [], remainingMilestones: [], currentStep: { key: "", label: "Website bouwen", status: "in_progress", customerActionType: "none" }, currentStepDescription: "Website bouwen" },
+      unavailable: { source: "unavailable", available: false, percentage: null, contact: null },
+      blocked: { ...base, percentage: 40, blocked: true, blocker: { label: "We wachten op de benodigde projectinformatie." }, currentStep: { key: "content_ready", label: "Content compleet", order: 4, status: "blocked", customerActionType: "provide_information" }, remainingMilestones: [{ key: "content_ready", label: "Content compleet", order: 4, status: "blocked", customerActionType: "provide_information" }], customerActionRequired: true, customerAction: { type: "provide_information", label: "Bestanden aanleveren", url: "/klantportaal.html#bestanden", available: true } },
+      long: { ...base, productLabel: "Premium Growth Website met een zeer uitgebreide strategie- en conversieoptimalisatie", currentStepDescription: "Uw website wordt ontworpen, technisch opgebouwd en uitgebreid gecontroleerd op alle belangrijke schermformaten en conversiemomenten voordat de beoordeling start." },
+      preview: { ...base, percentage: 55, currentPhase: "review", currentStep: { key: "customer_review", label: "Klantcontrole", order: 6, status: "ready", customerActionType: "review" }, currentStepDescription: "Uw ontwerp staat klaar om rustig te beoordelen.", customerActionRequired: true, customerAction: { type: "review", label: "Ontwerp beoordelen", url: "/klantportaal.html#website-review", available: true } },
+      invoice: { ...base, percentage: 90, currentPhase: "conversion", currentStep: { key: "payment_confirmed", label: "Betaling bevestigd", order: 8, status: "ready", customerActionType: "pay" }, currentStepDescription: "De betaling wordt gecontroleerd voordat het project verdergaat.", customerActionRequired: true, customerAction: { type: "pay", label: "Factuur bekijken", url: "/klantportaal.html#facturen", available: true } },
+      complete: { ...base, percentage: 100, status: "completed", complete: true, currentStep: null, currentStepDescription: null, remainingMilestones: [], customerActionRequired: false },
+    };
+    await loadClientJourneyProgress({ load: async () => ({ state: fixtures[mode]?.available ? "ready" : "unavailable", disabled: false, progress: fixtures[mode] || fixtures.journey }) });
+  </script>
+</body>
+</html>

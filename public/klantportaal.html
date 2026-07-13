@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260712-customer-assets-v2" />
+    <link rel="stylesheet" href="journey-progress.css?v=20260713-phase4" />
   </head>
   <body class="portal-body">
     <main class="portal-app customer-portal-demo">
@@ -801,6 +802,7 @@
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { approveBranding, loadBrandingState, registerLogoConcepts, registerUploadedLogo, upsertBrandingProject } = await import("./src/brand-assets-adapter.js");
         const { signOut: signOutSupabase, getSession: getSupabaseSession } = await import("./src/services/supabaseAuthProvider.js");
+        const { loadClientJourneyProgress } = await import("./src/ui/clientJourneyProgress.js");
         const params = new URLSearchParams(window.location.search);
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const companySettings = getCompanySettings();
@@ -5339,6 +5341,7 @@
         publishedPreviewVersions = dedupePreviewVersions(await loadPublishedPreviewVersions().catch(() => []));
         renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
+        await loadClientJourneyProgress().catch(() => null);
         renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
         window.dispatchEvent(new CustomEvent("relationship-assets:refresh-requested"));
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
