@@ -191,6 +191,17 @@ test("maintenance option cards reserve independent title, price and description 
   assert.doesNotMatch(styles, /\.preview-checkout \.maintenance-option-price\s*\{[^}]*position:\s*absolute/s);
 });
 
+test("maintenance confirmation modal prioritizes Basis without swapping handlers", () => {
+  assert.match(securePreview, /class="button primary" type="button" id="choose-basic-maintenance" autofocus>Kies Basis onderhoud<\/button>/);
+  assert.match(securePreview, /class="button secondary" type="button" id="confirm-no-maintenance">Doorgaan zonder onderhoud<\/button>/);
+  assert.match(securePreview, /id="maintenance-none-dialog" aria-labelledby="maintenance-dialog-title"/);
+  assert.match(securePreview, /choose-basic-maintenance"\)\.addEventListener\("click", \(\) => \{ maintenanceDialog\.close\(\); saveMaintenance\("care_basic"\)/);
+  assert.match(securePreview, /confirm-no-maintenance"\)\.addEventListener\("click", \(\) => \{ maintenanceDialog\.close\(\); saveMaintenance\("none", true\)/);
+  assert.ok(securePreview.indexOf('id="choose-basic-maintenance"') < securePreview.indexOf('id="confirm-no-maintenance"'));
+  assert.match(securePreview, /De meeste klanten kiezen Basis onderhoud, zodat updates, back-ups, SSL-controle en technische ondersteuning vanaf dag één geregeld zijn\./);
+  assert.match(styles, /\.maintenance-confirm \.button\s*\{[\s\S]*min-height: 44px/);
+});
+
 test("portal thumbnail and full link expose the same version id", () => {
   assert.match(portal, /iframe\.dataset\.previewVersionId = previewVersion\.id/);
   assert.match(portal, /open\.dataset\.previewVersionId = previewVersion\.id/);

@@ -10665,6 +10665,10 @@ h3 {
   padding: 0;
 }
 
+.maintenance-confirm .button {
+  min-height: 44px;
+}
+
 @media (max-width: 980px) {
   .preview-checkout {
     grid-template-columns: 1fr;
