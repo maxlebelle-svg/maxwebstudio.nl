@@ -38,10 +38,12 @@
     return svg;
   }
 
-  function MetricBadge({ value = "", tone = "neutral", label = "" } = {}) {
-    const badge = element("span", `mws-sidebar-badge is-${tone}`, value);
+  function MetricBadge({ value = "", tone = "neutral", label = "", loading = false } = {}) {
+    const badge = element("span", `mws-sidebar-badge is-${tone}${loading ? " is-loading" : ""}`, loading ? "" : value);
     if (label) badge.setAttribute("aria-label", label);
-    if (value === "" || value === null || value === undefined) badge.hidden = true;
+    if (label) badge.title = label;
+    if (loading) { badge.setAttribute("role", "status"); badge.append(element("span", "mws-sidebar-badge-skeleton")); }
+    if (!loading && (value === "" || value === null || value === undefined)) badge.hidden = true;
     return badge;
   }
 
@@ -71,7 +73,11 @@
     if (disabled) { link.classList.add("is-disabled"); link.setAttribute("aria-disabled", "true"); link.tabIndex = -1; }
     if (workspaceMuted) link.classList.add("is-workspace-muted");
     link.append(icon(item.icon), element("span", "mws-sidebar-item-label", item.label));
-    if (item.badge) link.append(MetricBadge({ value: badgeValue, tone: item.statusTone, label: `${item.label}: ${badgeValue}` }));
+    if (item.badge) {
+      const metric = badgeValue && typeof badgeValue === "object" ? badgeValue : { value: badgeValue };
+      const hasDisplayValue = Boolean(metric.loading) || !["", null, undefined].includes(metric.value);
+      link.append(MetricBadge({ value: metric.value, tone: metric.tone || item.statusTone, loading: Boolean(metric.loading), label: metric.label || (hasDisplayValue ? `${item.label}: ${metric.value}` : "") }));
+    }
     return link;
   }
 
@@ -102,8 +108,11 @@
     card.append(element("span", "mws-workspace-kicker", "Actieve werkruimte"));
     if (!relationship) { card.append(EmptyWorkspaceState({ onSelect: onSelect || onSwitch })); return card; }
     const head = element("div", "mws-workspace-heading");
-    head.append(StatusBadge({ label: relationship.entityType === "lead" ? "Lead" : "Klant", tone: relationship.statusTone || "success" }), element("strong", "mws-workspace-company", relationship.companyName || "Onbekende relatie"));
-    const detail = [relationship.lifecycleStage, relationship.assignedUserName ? `Eigenaar: ${relationship.assignedUserName}` : ""].filter(Boolean).join(" · ");
+    const statuses = element("div", "mws-workspace-statuses");
+    statuses.append(StatusBadge({ label: relationship.entityType === "lead" ? "Lead" : "Klant", tone: relationship.statusTone || "success" }));
+    if (relationship.lifecycleStage) statuses.append(StatusBadge({ label: relationship.lifecycleStage, tone: relationship.lifecycleTone || "neutral" }));
+    head.append(statuses, element("strong", "mws-workspace-company", relationship.companyName || "Onbekende relatie"));
+    const detail = relationship.assignedUserName ? `Eigenaar: ${relationship.assignedUserName}` : "";
     card.append(head, element("p", "mws-workspace-detail", detail || "Status nog niet beschikbaar"));
     const actions = element("div", "mws-workspace-actions");
     const button = element("button", "mws-workspace-action", "Wissel relatie"); button.type = "button";

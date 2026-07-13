@@ -11,6 +11,9 @@
     support: "Support", customer: "Klant", demo_user: "Demo Gebruiker",
   });
   const selectorState = { open: false, type: "all", query: "", request: null, restoreFocus: null, debouncedSearch: null };
+  const metricState = { general: null, workspace: null, loadingGeneral: true, loadingWorkspace: false, workspaceKey: "", request: null, requestId: 0, cache: new Map() };
+  const WORKSPACE_BADGES = Object.freeze(["websiteFactory", "demoSites", "assets", "brandStatus", "domains", "openTasks", "openQuotes", "openInvoices", "subscriptionStatus", "mailCount", "timelineEvents"]);
+  const METRIC_TO_BADGE = Object.freeze({ assets: "assets", demoSites: "demoSites", openTasks: "openTasks", timelineEvents: "timelineEvents", mailCount: "mailCount", openQuotes: "openQuotes", openInvoices: "openInvoices", overdueInvoices: "openInvoices", subscriptions: "subscriptionStatus", activeSubscriptions: "subscriptionStatus", website: "domains", project: "websiteFactory", journey: "websiteFactory", brandAssets: "brandStatus", websiteFactory: "websiteFactory", previewVersions: "websiteFactory" });
   let latestAccessContext = {};
 
   function readJson(storage, key, fallback) {
@@ -39,7 +42,18 @@
 
   function relationshipForSidebar(relationship) {
     if (!relationship) return null;
-    return { ...relationship, statusTone: relationship.entityType === "lead" ? "info" : "success" };
+    return { ...relationship, statusTone: relationship.entityType === "lead" ? "info" : "success", lifecycleTone: semanticTone(relationship.lifecycleStage) };
+  }
+
+  function semanticTone(value) {
+    const normalized = String(value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+    if (/inactief|inactive|niet gestart|onbekend|unknown|geen gegevens|niet beschikbaar/.test(normalized)) return "neutral";
+    if (/failed|fout|blocked|geblokkeerd|mislukt|overdue|verlopen|rejected|afgewezen|lost/.test(normalized)) return "danger";
+    if (/waiting|wacht|pending|actie|partial|gedeeltelijk|follow up|opvolgen|bijna/.test(normalized)) return "warning";
+    if (/production|productie|building|branding|content|campagne|aanpassingen/.test(normalized)) return "purple";
+    if (/preview|received|ontvangen|review|beoordeling|qualified|interesse/.test(normalized)) return "info";
+    if (/live|online|active|actief|paid|betaald|complete|compleet|approved|goedgekeurd|success|won|verkocht|customer|klant/.test(normalized)) return "success";
+    return "neutral";
   }
 
   function createDebouncer(callback, wait = 280, timers = global) {
@@ -52,6 +66,118 @@
   function adminToken() {
     const session = readJson(global.localStorage, SESSION_KEY, {});
     return session.accessToken || session.access_token || "";
+  }
+
+  function relationshipKey(relationship) {
+    const type = relationship?.entityType;
+    const id = type === "lead" ? relationship?.leadId : relationship?.customerId;
+    return ["lead", "customer"].includes(type) && UUID.test(String(id || "")) ? `${type}:${id}` : "";
+  }
+
+  function metric(value, tone, label) {
+    return value === null || value === undefined || value === "" ? undefined : { value, tone, label };
+  }
+
+  function loadingMetric(label) { return { loading: true, tone: "neutral", label: `${label} wordt geladen` }; }
+  function unavailableMetric(label) { return { value: "—", tone: "neutral", label: `${label} tijdelijk niet beschikbaar` }; }
+
+  function buildBadgeValues() {
+    const badges = {};
+    if (metricState.loadingGeneral && !metricState.general) badges.openLeads = loadingMetric("Open leads");
+    else if (metricState.general?.openLeads === null) badges.openLeads = unavailableMetric("Open leads");
+    else if (Number.isFinite(metricState.general?.openLeads)) badges.openLeads = metric(metricState.general.openLeads, "info", `${metricState.general.openLeads} open leads binnen jouw toegestane scope`);
+
+    if (!metricState.workspaceKey) return badges;
+    if (metricState.loadingWorkspace) {
+      WORKSPACE_BADGES.forEach((key) => { badges[key] = loadingMetric(key); });
+      return badges;
+    }
+    if (!metricState.workspace) {
+      WORKSPACE_BADGES.forEach((key) => { badges[key] = unavailableMetric(key); });
+      return badges;
+    }
+
+    const summary = metricState.workspace;
+    const values = summary.metrics || {};
+    const statuses = summary.statuses || {};
+    if (statuses.websiteFactory) badges.websiteFactory = metric(statuses.websiteFactory.label, statuses.websiteFactory.tone, `Website Factory: ${statuses.websiteFactory.label}`);
+    if (Number.isFinite(values.demoSites)) badges.demoSites = metric(values.demoSites, "info", `${values.demoSites} gekoppelde demo${values.demoSites === 1 ? "" : "'s"}`);
+    if (Number.isFinite(values.assets)) badges.assets = metric(values.assets, "info", `${values.assets} gekoppelde assets`);
+    if (statuses.brandCenter) badges.brandStatus = metric(statuses.brandCenter.label, statuses.brandCenter.tone, `Brand Center: ${statuses.brandCenter.label}`);
+    if (statuses.domainCenter) badges.domains = metric(statuses.domainCenter.label, statuses.domainCenter.tone, `Domein Center: ${statuses.domainCenter.label}`);
+    if (Number.isFinite(values.openTasks)) badges.openTasks = metric(values.openTasks, values.openTasks ? "warning" : "neutral", `${values.openTasks} open taken`);
+    if (Number.isFinite(values.openQuotes)) badges.openQuotes = metric(values.openQuotes, values.openQuotes ? "warning" : "neutral", `${values.openQuotes} open offertes voor deze relatie`);
+    if (Number.isFinite(values.overdueInvoices) && values.overdueInvoices > 0) {
+      const openCopy = Number.isFinite(values.openInvoices) ? `; ${values.openInvoices} open totaal` : "";
+      badges.openInvoices = metric(`${values.overdueInvoices} achterstallig`, "danger", `${values.overdueInvoices} werkelijk achterstallige facturen${openCopy}`);
+    } else if (Number.isFinite(values.openInvoices)) {
+      const overdueKnown = Number.isFinite(values.overdueInvoices);
+      badges.openInvoices = metric(values.openInvoices, values.openInvoices ? "warning" : "neutral", overdueKnown ? `${values.openInvoices} open facturen; geen als achterstallig gemarkeerd` : `${values.openInvoices} open facturen; achterstallige status tijdelijk niet beschikbaar`);
+    }
+    if (Number.isFinite(values.subscriptions)) {
+      const active = Number.isFinite(values.activeSubscriptions) ? values.activeSubscriptions : null;
+      if (active > 0) badges.subscriptionStatus = metric(active === 1 ? "Actief" : `${active} actief`, "success", active === 1 ? "1 actief abonnement" : `${active} actieve abonnementen`);
+      else if (values.subscriptions === 0) badges.subscriptionStatus = metric("Geen", "neutral", "Geen abonnementen voor deze relatie");
+      else if (active === 0) badges.subscriptionStatus = metric("Inactief", "neutral", "Geen actief abonnement voor deze relatie");
+      else badges.subscriptionStatus = metric(values.subscriptions, "neutral", `${values.subscriptions} abonnement${values.subscriptions === 1 ? "" : "en"}; actieve status tijdelijk niet beschikbaar`);
+    }
+    if (Number.isFinite(values.mailCount)) badges.mailCount = metric(values.mailCount, "info", `${values.mailCount} gekoppelde e-maillogs`);
+    if (Number.isFinite(values.timelineEvents)) badges.timelineEvents = metric(values.timelineEvents, "neutral", `${values.timelineEvents} gekoppelde timeline-events`);
+
+    (summary.errors || []).forEach((error) => { const badge = METRIC_TO_BADGE[error.metric]; if (badge && !badges[badge]) badges[badge] = unavailableMetric(badge); });
+    return badges;
+  }
+
+  async function loadSidebarMetrics(relationship = safeRelationship(global.ActiveRelationship), options = {}) {
+    const token = adminToken();
+    const key = relationshipKey(relationship);
+    metricState.workspaceKey = key;
+    metricState.requestId += 1;
+    const requestId = metricState.requestId;
+    metricState.request?.abort(); metricState.request = null;
+    if (!token) { metricState.loadingGeneral = false; metricState.loadingWorkspace = false; metricState.general = null; metricState.workspace = null; refresh(); return; }
+
+    const cached = key ? metricState.cache.get(key) : null;
+    if (!options.force && cached && Date.now() - cached.storedAt < 30000) {
+      metricState.workspace = cached.workspace; metricState.loadingWorkspace = false; refresh(); return;
+    }
+    metricState.loadingGeneral = !metricState.general;
+    metricState.loadingWorkspace = Boolean(key);
+    metricState.workspace = null;
+    refresh();
+    const controller = new AbortController(); metricState.request = controller;
+    const params = new URLSearchParams();
+    if (key) { const [entityType, id] = key.split(":"); params.set("entityType", entityType); params.set("id", id); }
+    try {
+      const response = await global.fetch(`/api/admin-sidebar-metrics${params.size ? `?${params}` : ""}`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` }, cache: "no-store", signal: controller.signal });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.error || "Sidebarinformatie kon niet worden geladen.");
+      if (requestId !== metricState.requestId || key !== metricState.workspaceKey) return;
+      metricState.general = data.general || null;
+      metricState.workspace = key ? data.workspace || null : null;
+      if (key && data.workspace) metricState.cache.set(key, { workspace: data.workspace, storedAt: Date.now() });
+    } catch (error) {
+      if (error.name === "AbortError" || requestId !== metricState.requestId) return;
+      if (!metricState.general) metricState.general = { openLeads: null, errors: [{ metric: "openLeads", code: "ENDPOINT_FAILED" }] };
+      metricState.workspace = null;
+    } finally {
+      if (requestId === metricState.requestId) { metricState.loadingGeneral = false; metricState.loadingWorkspace = false; metricState.request = null; refresh(); }
+    }
+  }
+
+  function resetWorkspaceMetrics(relationship = safeRelationship(global.ActiveRelationship)) {
+    metricState.workspace = null;
+    metricState.workspaceKey = relationshipKey(relationship);
+    metricState.loadingWorkspace = Boolean(metricState.workspaceKey);
+    refresh();
+    return loadSidebarMetrics(relationship, { force: true });
+  }
+
+  function clearMetricState() {
+    metricState.requestId += 1; metricState.request?.abort(); metricState.request = null;
+    metricState.general = null; metricState.workspace = null; metricState.workspaceKey = "";
+    metricState.loadingGeneral = false; metricState.loadingWorkspace = false; metricState.cache.clear();
+    refresh();
   }
 
   function syncRelationshipUrl(relationship = null) {
@@ -218,13 +344,17 @@
     const session = readJson(global.localStorage, SESSION_KEY, {});
     const profiles = readJson(global.localStorage, PROFILES_KEY, []);
     const role = context.role || session.role || session.user?.role || "";
-    const relationship = relationshipForSidebar(safeRelationship(global.ActiveRelationship));
+    const activeRelationship = safeRelationship(global.ActiveRelationship);
+    const liveRelationship = metricState.workspace?.relationship && metricState.workspaceKey === relationshipKey(activeRelationship)
+      ? { ...activeRelationship, ...metricState.workspace.relationship }
+      : activeRelationship;
+    const relationship = relationshipForSidebar(liveRelationship);
     const sidebar = components.AdminSidebar({
       navigation,
       activeId: "dashboard",
       relationship,
       user: resolveUser({ ...session, role }, profiles),
-      badgeValues: {},
+      badgeValues: buildBadgeValues(),
       canAccess: (item) => canAccessItem(item, { ...context, role }),
       onSwitchWorkspace: openWorkspaceSelector,
       onSelectWorkspace: openWorkspaceSelector,
@@ -241,18 +371,19 @@
 
   function mount() {
     refresh();
+    loadSidebarMetrics();
     document.querySelector("[data-sidebar-session-close]")?.addEventListener("click", () => toggleSessionPanel(false));
-    global.addEventListener("maxwebstudio:relationship-change", () => refresh());
-    global.addEventListener("maxwebstudio:relationship-ready", () => refresh());
-    global.addEventListener("storage", (event) => { if ([SESSION_KEY, PROFILES_KEY].includes(event.key)) refresh(); });
-    global.addEventListener("maxwebstudio:admin-logout", () => { try { global.sessionStorage?.removeItem(RECENTS_KEY); } catch {} closeWorkspaceSelector(); });
+    global.addEventListener("maxwebstudio:relationship-change", () => resetWorkspaceMetrics());
+    global.addEventListener("maxwebstudio:relationship-ready", () => resetWorkspaceMetrics());
+    global.addEventListener("storage", (event) => { if (event.key === SESSION_KEY) loadSidebarMetrics(); else if (event.key === PROFILES_KEY) refresh(); });
+    global.addEventListener("maxwebstudio:admin-logout", () => { try { global.sessionStorage?.removeItem(RECENTS_KEY); } catch {} clearMetricState(); closeWorkspaceSelector(); });
     const closeSelectorOutside = (event) => { const selector = document.querySelector(".mws-workspace-selector"); if (selectorState.open && selector && !selector.contains(event.target) && !event.target.closest(".mws-workspace-card,#active-relationship-workspace [data-relationship-switch]")) closeWorkspaceSelector(); };
     document.addEventListener("pointerdown", closeSelectorOutside, true);
     document.addEventListener("click", closeSelectorOutside, true);
     document.addEventListener("click", (event) => { if (!event.target.closest("#active-relationship-workspace [data-relationship-switch]")) return; event.preventDefault(); event.stopImmediatePropagation(); openWorkspaceSelector(); }, true);
   }
 
-  const api = Object.freeze({ canAccessItem, clearWorkspace, closeWorkspaceSelector, createDebouncer, handleSelectorKeys, openWorkspaceSelector, pilotNavigation, readJson, recentResults, refresh, relationshipForSidebar, rememberRelationship, resolveUser, safeRelationship, searchRelationships, selectRelationship, syncRelationshipUrl, toggleSessionPanel });
+  const api = Object.freeze({ buildBadgeValues, canAccessItem, clearMetricState, clearWorkspace, closeWorkspaceSelector, createDebouncer, handleSelectorKeys, loadSidebarMetrics, metricState, openWorkspaceSelector, pilotNavigation, readJson, recentResults, refresh, relationshipForSidebar, relationshipKey, rememberRelationship, resetWorkspaceMetrics, resolveUser, safeRelationship, searchRelationships, selectRelationship, semanticTone, syncRelationshipUrl, toggleSessionPanel });
   global.MaxAdminSidebarPilot = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof document !== "undefined") {

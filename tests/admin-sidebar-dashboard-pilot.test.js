@@ -73,6 +73,16 @@ test("workspace card supports empty and filled read-only relationship states", (
   assert.match(treeText(filled), /Gekwalificeerd/);
 }));
 
+test("workspace lifecycle colors use the central semantic status meaning", () => {
+  assert.equal(pilot.semanticTone("Live"), "success");
+  assert.equal(pilot.semanticTone("Preview klaar"), "info");
+  assert.equal(pilot.semanticTone("In productie"), "purple");
+  assert.equal(pilot.semanticTone("Wacht op klant"), "warning");
+  assert.equal(pilot.semanticTone("Geblokkeerd"), "danger");
+  assert.equal(pilot.semanticTone("Niet gestart"), "neutral");
+  assert.equal(pilot.semanticTone("Inactief"), "neutral");
+});
+
 test("dashboard is active, workspace links remain clickable, and avatar initials fall back", () => withFakeDocument(() => {
   delete require.cache[require.resolve("../public/admin/components/admin-sidebar.js")];
   const components = require("../public/admin/components/admin-sidebar.js");
@@ -144,6 +154,74 @@ test("Escape closes the relationship selector without propagating", () => {
   finally { global.document = previous; }
 });
 
+test("live badge mapping uses semantic tones, real zeroes and explicit unavailable states", () => {
+  const state = pilot.metricState;
+  Object.assign(state, {
+    general: { openLeads: 8 }, loadingGeneral: false, workspaceKey: "customer:44444444-4444-4444-8444-444444444444", loadingWorkspace: false,
+    workspace: {
+      metrics: { assets: 0, demoSites: 2, openTasks: 3, openQuotes: 1, openInvoices: 4, overdueInvoices: 1, subscriptions: 1, activeSubscriptions: 1, mailCount: 5, timelineEvents: null },
+      statuses: { websiteFactory: { label: "Preview klaar", tone: "info" }, brandCenter: { label: "Logo klaar", tone: "purple" }, domainCenter: { label: "Actief", tone: "success" } },
+      errors: [{ metric: "timelineEvents", code: "QUERY_FAILED" }],
+    },
+  });
+  const badges = pilot.buildBadgeValues();
+  assert.deepEqual(badges.openLeads.value, 8);
+  assert.deepEqual(badges.assets.value, 0);
+  assert.equal(badges.openInvoices.value, "1 achterstallig");
+  assert.equal(badges.openInvoices.tone, "danger");
+  assert.equal(badges.websiteFactory.tone, "info");
+  assert.equal(badges.timelineEvents.value, "—");
+});
+
+test("workspace loading clears old badges and uses small non-blocking skeleton states", () => {
+  const state = pilot.metricState;
+  Object.assign(state, { general: { openLeads: 2 }, loadingGeneral: false, workspaceKey: "lead:33333333-3333-4333-8333-333333333333", workspace: null, loadingWorkspace: true });
+  const badges = pilot.buildBadgeValues();
+  assert.equal(badges.openLeads.value, 2);
+  assert.equal(badges.assets.loading, true);
+  assert.equal(badges.openInvoices.loading, true);
+  assert.equal(badges.assets.value, undefined);
+});
+
+test("partial finance failures never imply no overdue invoice or inactive subscription", () => {
+  Object.assign(pilot.metricState, {
+    general: { openLeads: 2 }, loadingGeneral: false, workspaceKey: "customer:44444444-4444-4444-8444-444444444444", loadingWorkspace: false,
+    workspace: { metrics: { openInvoices: 3, overdueInvoices: null, subscriptions: 1, activeSubscriptions: null }, statuses: {}, errors: [{ metric: "overdueInvoices" }, { metric: "activeSubscriptions" }] },
+  });
+  const badges = pilot.buildBadgeValues();
+  assert.equal(badges.openInvoices.value, 3);
+  assert.match(badges.openInvoices.label, /tijdelijk niet beschikbaar/);
+  assert.equal(badges.subscriptionStatus.value, 1);
+  assert.match(badges.subscriptionStatus.label, /tijdelijk niet beschikbaar/);
+});
+
+test("a delayed response from an old relationship cannot overwrite the new workspace", async () => {
+  const previous = { document: global.document, localStorage: global.localStorage, fetch: global.fetch, ActiveRelationship: global.ActiveRelationship };
+  const pending = [];
+  global.document = { getElementById: () => null };
+  global.localStorage = { getItem: (key) => key === "mws_admin_supabase_session" ? JSON.stringify({ accessToken: "token" }) : null };
+  global.fetch = (url) => new Promise((resolve) => pending.push({ url: String(url), resolve }));
+  try {
+    const first = pilot.loadSidebarMetrics({ entityType: "lead", leadId: "33333333-3333-4333-8333-333333333333" }, { force: true });
+    const second = pilot.loadSidebarMetrics({ entityType: "customer", customerId: "44444444-4444-4444-8444-444444444444" }, { force: true });
+    pending[1].resolve(jsonFetch({ success: true, general: { openLeads: 4 }, workspace: { relationship: { entityType: "customer", customerId: "44444444-4444-4444-8444-444444444444" }, metrics: { assets: 9 }, statuses: {}, errors: [] } }));
+    await second;
+    pending[0].resolve(jsonFetch({ success: true, general: { openLeads: 99 }, workspace: { relationship: { entityType: "lead", leadId: "33333333-3333-4333-8333-333333333333" }, metrics: { assets: 99 }, statuses: {}, errors: [] } }));
+    await first;
+    assert.equal(pilot.metricState.workspaceKey, "customer:44444444-4444-4444-8444-444444444444");
+    assert.equal(pilot.metricState.workspace.metrics.assets, 9);
+    assert.equal(pilot.metricState.general.openLeads, 4);
+  } finally { Object.assign(global, previous); }
+});
+
+test("clearing workspace removes relationship metrics while general metrics remain", () => {
+  Object.assign(pilot.metricState, { general: { openLeads: 3 }, workspaceKey: "", workspace: null, loadingGeneral: false, loadingWorkspace: false });
+  const badges = pilot.buildBadgeValues();
+  assert.equal(badges.openLeads.value, 3);
+  assert.equal(badges.assets, undefined);
+  assert.equal(badges.openInvoices, undefined);
+});
+
 test("dashboard inline scripts and pilot JavaScript pass syntax checks", () => {
   const html = read("public/admin-dashboard.html");
   const scripts = [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)].filter((match) => !/\bsrc\s*=/.test(match[1]));
@@ -158,3 +236,5 @@ test("dashboard inline scripts and pilot JavaScript pass syntax checks", () => {
     assert.equal(result.status, 0, `${file}: ${result.stderr}`);
   }
 });
+
+function jsonFetch(body, status = 200) { return { ok: status >= 200 && status < 300, status, json: async () => body }; }
