@@ -9,10 +9,10 @@ const aliases = Object.freeze({
   premium_growth: "premium_growth",
 });
 const maintenanceCatalog = Object.freeze({
-  none: { maintenanceCode: "none", maintenanceName: "Geen onderhoud", maintenanceAmountCents: 0, startTrigger: "none" },
-  care_basic: { maintenanceCode: "care_basic", maintenanceName: "Basis onderhoud", maintenanceAmountCents: 1995, startTrigger: "project_delivered" },
-  care_plus: { maintenanceCode: "care_plus", maintenanceName: "Plus onderhoud", maintenanceAmountCents: 4900, startTrigger: "project_delivered" },
-  care_growth: { maintenanceCode: "care_growth", maintenanceName: "Groei onderhoud", maintenanceAmountCents: 9900, startTrigger: "project_delivered" },
+  none: { maintenanceCode: "none", maintenanceName: "Geen onderhoud", maintenanceAmountCents: 0, startTrigger: "none", description: "Je regelt hosting, updates en back-ups zelf.", benefits: [] },
+  care_basic: { maintenanceCode: "care_basic", maintenanceName: PRODUCTS.care_basic.name, maintenanceAmountCents: Number(PRODUCTS.care_basic.monthlyExVatCents), startTrigger: "project_delivered", description: PRODUCTS.care_basic.description, benefits: ["Hosting", "SSL-certificaat", "Back-ups", "Technische monitoring"] },
+  care_plus: { maintenanceCode: "care_plus", maintenanceName: PRODUCTS.care_plus.name, maintenanceAmountCents: Number(PRODUCTS.care_plus.monthlyExVatCents), startTrigger: "project_delivered", description: PRODUCTS.care_plus.description, benefits: ["Alles uit Basis onderhoud", "Kleine maandelijkse wijzigingen"] },
+  care_growth: { maintenanceCode: "care_growth", maintenanceName: PRODUCTS.care_growth.name, maintenanceAmountCents: Number(PRODUCTS.care_growth.monthlyExVatCents), startTrigger: "project_delivered", description: PRODUCTS.care_growth.description, benefits: ["Alles uit Plus onderhoud", "Maandelijkse check", "Conversieadvies"] },
 });
 
 function normalizeWebsitePackage(value = "") {
@@ -66,9 +66,10 @@ function normalizeMaintenance(value = "") {
 function selectMaintenance(order = {}, { maintenanceCode = "", authUserId = "", confirmedNone = false, now = new Date().toISOString() } = {}) {
   const maintenance = normalizeMaintenance(maintenanceCode);
   if (!maintenance || (maintenance.maintenanceCode === "none" && confirmedNone !== true)) return null;
+  const { description: _description, benefits: _benefits, ...commercialMaintenance } = maintenance;
   return {
     ...order,
-    ...maintenance,
+    ...commercialMaintenance,
     maintenanceSelectedAt: now,
     maintenanceSelectedByAuthUserId: authUserId,
     maintenanceDeclinedAt: maintenance.maintenanceCode === "none" ? now : "",

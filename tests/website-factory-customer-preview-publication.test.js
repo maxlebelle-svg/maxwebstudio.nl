@@ -14,6 +14,7 @@ const clientRender = fs.readFileSync(path.join(root, "functions/client-preview-r
 const portal = fs.readFileSync(path.join(root, "public/klantportaal.html"), "utf8");
 const previewEmbed = fs.readFileSync(path.join(root, "public/preview-embed.html"), "utf8");
 const securePreview = fs.readFileSync(path.join(root, "public/preview.html"), "utf8");
+const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
 const netlifyConfig = fs.readFileSync(path.join(root, "netlify.toml"), "utf8");
 const mollieProducts = fs.readFileSync(path.join(root, "functions/mollie-products.js"), "utf8");
 
@@ -154,9 +155,26 @@ test("maintenance selection never changes the fixed website deposit", () => {
   assert.match(factoryBackend, /activateSelectedMaintenance/);
   assert.match(factoryBackend, /customer_subscriptions/);
   assert.match(factoryBackend, /status: "planned"/);
-  for (const text of ["Bescherm je investering", "Aanbevolen", "Doorgaan zonder onderhoud?", "Start onderhoud", "Vandaag betalen"]) assert.match(securePreview, new RegExp(text.replace("?", "\\?")));
-  for (const code of ["none", "care_basic", "care_plus", "care_growth"]) assert.match(securePreview, new RegExp(`data-maintenance-code="${code}"`));
-  assert.match(securePreview, /@media\(max-width:850px\)/);
+  for (const text of ["Projectoverzicht", "Aanbevolen", "Doorgaan zonder onderhoud?", "Onderhoud start pas na livegang", "Totaal vandaag te betalen"]) assert.match(securePreview, new RegExp(text.replace("?", "\\?")));
+  for (const code of ["none", "care_basic", "care_plus", "care_growth"]) assert.ok(commercialPackage.maintenanceCatalog[code]);
+  assert.match(securePreview, /maintenanceOptions/);
+  assert.match(styles, /@media \(max-width: 980px\)[\s\S]*\.preview-checkout\s*\{[\s\S]*grid-template-columns: 1fr/);
+});
+
+test("premium preview checkout keeps commercial values dynamic and accessible", () => {
+  assert.match(securePreview, /class="preview-checkout"/);
+  assert.match(securePreview, /class="preview-project-summary"/);
+  assert.doesNotMatch(securePreview, /background:\s*(?:linear-gradient\([^)]*#fff|#fff(?:fff)?)/i);
+  assert.match(securePreview, /readiness\.packageName \|\| readiness\.packageKey/);
+  assert.match(securePreview, /euro\(readiness\.totalAmountCents\)/);
+  assert.match(securePreview, /euro\(readiness\.amountInclVatCents\)/);
+  assert.match(securePreview, /euro\(readiness\.remainingAmountCents\)/);
+  assert.match(securePreview, /selectedMaintenance\.amountCents/);
+  assert.doesNotMatch(securePreview, /€\s*(?:19[,.]95|49|99|150|181[,.]50|495)/);
+  assert.match(securePreview, /role="radio" aria-checked=/);
+  assert.match(securePreview, /aria-live="polite"/);
+  assert.match(styles, /position: sticky/);
+  assert.match(styles, /overflow: hidden/);
 });
 
 test("portal thumbnail and full link expose the same version id", () => {

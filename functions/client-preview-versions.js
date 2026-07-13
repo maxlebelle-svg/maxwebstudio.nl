@@ -2,7 +2,7 @@ const { corsHeaders } = require("./_cors");
 const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
 const { getBaseUrl, getMollieApiKey } = require("./mollie-products");
-const { buildWebsiteCommercialOrder, readWebsiteCommercialOrder, selectMaintenance } = require("./_website-commercial-order");
+const { buildWebsiteCommercialOrder, maintenanceCatalog, readWebsiteCommercialOrder, selectMaintenance } = require("./_website-commercial-order");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -326,6 +326,7 @@ async function resolvePaymentReadiness(context, customer, version) {
     amountInclVatCents,
     amountInclVat: (amountInclVatCents / 100).toFixed(2),
     packageKey,
+    packageName: cleanText(order.packageName),
     websiteId: cleanText(order.websiteId),
     projectId: cleanText(order.projectId),
     totalAmountCents: Number(order.totalAmountCents || 0),
@@ -335,6 +336,14 @@ async function resolvePaymentReadiness(context, customer, version) {
     maintenanceName: cleanText(order.maintenanceName),
     maintenanceAmountCents: Number(order.maintenanceAmountCents || 0),
     maintenanceStartTrigger: cleanText(order.startTrigger),
+    maintenanceOptions: Object.values(maintenanceCatalog).map((option) => ({
+      code: option.maintenanceCode,
+      name: option.maintenanceName,
+      amountCents: option.maintenanceAmountCents,
+      description: option.description,
+      benefits: option.benefits,
+      recommended: option.maintenanceCode === "care_basic",
+    })),
     previewVersionId: version.id,
     checkoutUrl: reusable ? cleanText(invoice.mollie_checkout_url) : "",
     invoiceId: cleanText(invoice?.id),
