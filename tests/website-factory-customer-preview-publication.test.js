@@ -197,7 +197,7 @@ test("maintenance confirmation modal prioritizes Basis without swapping handlers
   assert.match(securePreview, /id="maintenance-none-dialog" aria-labelledby="maintenance-dialog-title"/);
   assert.match(securePreview, /choose-basic-maintenance"\)\.addEventListener\("click", \(\) => \{ maintenanceDialog\.close\(\); saveMaintenance\("care_basic"\)/);
   assert.match(securePreview, /confirm-no-maintenance"\)\.addEventListener\("click", \(\) => \{ maintenanceDialog\.close\(\); saveMaintenance\("none", true\)/);
-  assert.ok(securePreview.indexOf('id="choose-basic-maintenance"') < securePreview.indexOf('id="confirm-no-maintenance"'));
+  assert.ok(securePreview.indexOf('id="confirm-no-maintenance"') < securePreview.indexOf('id="choose-basic-maintenance"'));
   assert.match(securePreview, /De meeste klanten kiezen Basis onderhoud, zodat updates, back-ups, SSL-controle en technische ondersteuning vanaf dag één geregeld zijn\./);
   assert.match(styles, /\.maintenance-confirm \.button\s*\{[\s\S]*min-height: 44px/);
 });
