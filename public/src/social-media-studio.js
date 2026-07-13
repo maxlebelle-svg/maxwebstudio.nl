@@ -17,6 +17,15 @@
     ad: "Advertentie",
   };
 
+  const statusLabels = {
+    idea: "Idee",
+    draft: "Concept",
+    review: "Ter beoordeling",
+    ready: "Klaar om te publiceren",
+  };
+
+  const statusOrder = Object.keys(statusLabels);
+
   const platformRules = {
     facebook: { max: 63206, ideal: 280, hashtagMin: 0, hashtagMax: 5, visual: "Liggend of vierkant" },
     instagram: { max: 2200, ideal: 180, hashtagMin: 3, hashtagMax: 12, visual: "Vierkant of staand" },
@@ -183,6 +192,7 @@
     variants: [],
     variantQuery: "",
     variantFilter: "all",
+    statusFilter: "all",
   };
 
   const elements = {
@@ -192,9 +202,12 @@
     campaign: document.getElementById("social-campaign"),
     goal: document.getElementById("social-goal"),
     date: document.getElementById("social-date"),
+    time: document.getElementById("social-time"),
+    status: document.getElementById("social-status"),
     visualFormat: document.getElementById("social-visual-format"),
     variantSearch: document.getElementById("variant-search"),
     variantFilter: document.getElementById("variant-platform-filter"),
+    statusFilter: document.getElementById("variant-status-filter"),
     jsonFile: document.getElementById("social-json-file"),
     title: document.getElementById("social-title"),
     caption: document.getElementById("social-caption"),
@@ -223,6 +236,8 @@
     previewHashtags: document.getElementById("preview-hashtags"),
     previewTone: document.getElementById("preview-tone"),
     platformChecks: document.getElementById("platform-checks"),
+    pipelineGrid: document.getElementById("social-pipeline-grid"),
+    scheduleList: document.getElementById("social-schedule-list"),
     variantList: document.getElementById("variant-list"),
     saveDraft: document.getElementById("save-draft"),
     saveVariant: document.getElementById("save-variant"),
@@ -273,12 +288,24 @@
     });
   }
 
+  function fillStatusFilter() {
+    elements.statusFilter.replaceChildren();
+    [["all", "Alle statussen"], ...Object.entries(statusLabels)].forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      elements.statusFilter.append(option);
+    });
+  }
+
   function getContext() {
     return {
       client: elements.client.value.trim(),
       campaign: elements.campaign.value.trim(),
       goal: elements.goal.value,
       date: elements.date.value,
+      time: elements.time.value || "09:00",
+      status: elements.status.value || "draft",
       visualFormat: elements.visualFormat.value,
     };
   }
@@ -302,6 +329,8 @@
     elements.campaign.value = content.campaign || elements.campaign.value || "";
     if (content.goal) elements.goal.value = content.goal;
     elements.date.value = content.date || elements.date.value || defaultDate();
+    elements.time.value = content.time || elements.time.value || "09:00";
+    elements.status.value = statusLabels[content.status] ? content.status : "draft";
     if (content.visualFormat) elements.visualFormat.value = content.visualFormat;
     elements.title.value = content.title || "";
     elements.caption.value = content.caption || "";
@@ -322,6 +351,8 @@
     elements.campaign.value = context.campaign || "";
     elements.goal.value = context.goal || "Meer aanvragen";
     elements.date.value = context.date || defaultDate();
+    elements.time.value = context.time || "09:00";
+    elements.status.value = statusLabels[context.status] ? context.status : "draft";
     elements.visualFormat.value = context.visualFormat || "square";
   }
 
@@ -422,7 +453,8 @@
   function updateHero() {
     const filteredCount = filteredVariants().length;
     elements.heroCount.textContent = `${state.variants.length} ${state.variants.length === 1 ? "variant" : "varianten"}`;
-    elements.heroDetail.textContent = `${filteredCount} zichtbaar met huidige filters. Laatst bijgewerkt: ${formatDate(new Date().toISOString().slice(0, 10))}.`;
+    const readyCount = state.variants.filter((variant) => normalizeStatus(variant.status) === "ready").length;
+    elements.heroDetail.textContent = `${filteredCount} zichtbaar · ${readyCount} klaar voor publicatie. Laatst bijgewerkt: ${formatDate(new Date().toISOString().slice(0, 10))}.`;
   }
 
   function buildCopyText(content = getCurrentContent()) {
@@ -466,6 +498,8 @@
       campaign: content.campaign,
       goal: content.goal,
       date: content.date,
+      time: content.time,
+      status: content.status,
       visualFormat: content.visualFormat,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -525,12 +559,15 @@
     const title = document.createElement("strong");
     const meta = document.createElement("span");
     const caption = document.createElement("small");
+    const status = document.createElement("span");
 
     title.textContent = variant.title || "Naamloze variant";
-    meta.textContent = `${platformLabels[variant.platform] || "Platform"} · ${variant.client || "Geen klant"} · ${formatDate(variant.date || variant.createdAt)} · ${variant.cta || "Geen CTA"}`;
+    meta.textContent = `${platformLabels[variant.platform] || "Platform"} · ${variant.client || "Geen klant"} · ${formatDate(variant.date || variant.createdAt)} om ${variant.time || "09:00"} · ${variant.cta || "Geen CTA"}`;
     caption.textContent = variant.caption || "Geen tekst opgeslagen.";
+    status.className = "social-studio-status-badge";
+    status.textContent = statusLabels[normalizeStatus(variant.status)];
 
-    content.append(title, meta, caption);
+    content.append(title, meta, caption, status);
 
     const actions = document.createElement("div");
     actions.className = "social-studio-actions";
@@ -538,6 +575,7 @@
       actionButton("Laden", () => loadVariant(variant), "primary"),
       actionButton("Kopieer", () => copyToClipboard(buildCopyText(variant), "Variant gekopieerd."), "secondary"),
       actionButton("Dupliceer", () => duplicateVariant(variant), "secondary"),
+      actionButton(nextStatusLabel(variant), () => advanceVariantStatus(variant.id), "secondary"),
       actionButton("Verwijderen", () => removeVariant(variant.id), "secondary"),
     );
 
@@ -557,13 +595,15 @@
   function filteredVariants() {
     return state.variants.filter((variant) => {
       const matchesPlatform = state.variantFilter === "all" || variant.platform === state.variantFilter;
+      const matchesStatus = state.statusFilter === "all" || normalizeStatus(variant.status) === state.statusFilter;
       const query = state.variantQuery.trim().toLowerCase();
       const haystack = JSON.stringify(variant).toLowerCase();
-      return matchesPlatform && (!query || haystack.includes(query));
+      return matchesPlatform && matchesStatus && (!query || haystack.includes(query));
     });
   }
 
   function renderVariants() {
+    renderPipeline();
     const variants = filteredVariants();
     elements.variantList.textContent = "";
 
@@ -579,6 +619,72 @@
 
     variants.forEach((variant) => {
       elements.variantList.append(createVariantCard(variant));
+    });
+  }
+
+  function normalizeStatus(status) {
+    return statusLabels[status] ? status : "draft";
+  }
+
+  function nextStatusLabel(variant) {
+    const currentIndex = statusOrder.indexOf(normalizeStatus(variant.status));
+    const nextStatus = statusOrder[Math.min(currentIndex + 1, statusOrder.length - 1)];
+    return currentIndex === statusOrder.length - 1 ? "Status klaar" : `Naar ${statusLabels[nextStatus].toLowerCase()}`;
+  }
+
+  function advanceVariantStatus(id) {
+    state.variants = state.variants.map((variant) => {
+      if (variant.id !== id) return variant;
+      const currentIndex = statusOrder.indexOf(normalizeStatus(variant.status));
+      const nextStatus = statusOrder[Math.min(currentIndex + 1, statusOrder.length - 1)];
+      return { ...variant, status: nextStatus, updatedAt: new Date().toISOString() };
+    });
+    writeJson(storageKeys.variants, state.variants);
+    renderVariants();
+    updateHero();
+    setMessage("Workflowstatus bijgewerkt.", "success");
+  }
+
+  function renderPipeline() {
+    const counts = statusOrder.reduce((result, status) => {
+      result[status] = state.variants.filter((variant) => normalizeStatus(variant.status) === status).length;
+      return result;
+    }, {});
+
+    elements.pipelineGrid.replaceChildren(...statusOrder.map((status) => {
+      const card = document.createElement("article");
+      card.className = "social-studio-pipeline-card";
+      const label = document.createElement("span");
+      const count = document.createElement("strong");
+      const detail = document.createElement("small");
+      label.textContent = statusLabels[status];
+      count.textContent = String(counts[status]);
+      detail.textContent = status === "ready" ? "Gereed voor handmatige publicatie" : "Opgeslagen contentvarianten";
+      card.append(label, count, detail);
+      return card;
+    }));
+
+    const scheduled = state.variants
+      .filter((variant) => variant.date)
+      .sort((a, b) => `${a.date}T${a.time || "09:00"}`.localeCompare(`${b.date}T${b.time || "09:00"}`))
+      .slice(0, 5);
+
+    elements.scheduleList.textContent = "";
+    if (!scheduled.length) {
+      const empty = document.createElement("li");
+      empty.textContent = "Nog geen content ingepland.";
+      elements.scheduleList.append(empty);
+      return;
+    }
+
+    scheduled.forEach((variant) => {
+      const item = document.createElement("li");
+      const title = document.createElement("span");
+      const planning = document.createElement("strong");
+      title.textContent = `${variant.title || "Naamloze variant"} · ${platformLabels[variant.platform] || "Platform"}`;
+      planning.textContent = `${formatDate(variant.date)} · ${variant.time || "09:00"}`;
+      item.append(title, planning);
+      elements.scheduleList.append(item);
     });
   }
 
@@ -617,6 +723,7 @@
     state.platform = offer.platform;
     elements.campaign.value = offer.title;
     elements.goal.value = offer.goal;
+    elements.status.value = "draft";
     elements.title.value = `${offer.title} voor ondernemers`;
     elements.caption.value = offer.copy;
     elements.cta.value = offer.cta;
@@ -641,6 +748,8 @@
       campaign: "Nieuwe website campagne",
       goal: "Meer aanvragen",
       date: defaultDate(),
+      time: "09:00",
+      status: "draft",
       visualFormat: "square",
     });
     state.platform = "instagram";
@@ -656,6 +765,8 @@
       campaign: "Nieuwe website campagne",
       goal: "Meer aanvragen",
       date: defaultDate(),
+      time: "09:00",
+      status: "draft",
       visualFormat: "square",
     });
     saveVariant();
@@ -668,7 +779,7 @@
       currentDraft: getCurrentContent(),
       variants,
       exportedAt: new Date().toISOString(),
-      note: "Lokale Social Media Studio export. Nog niet gekoppeld aan publicatie-API's.",
+      note: "Lokale Social Studio export. Nog niet gekoppeld aan publicatie-API's.",
     };
   }
 
@@ -695,7 +806,9 @@
         if (parsed.context) setContext(parsed.context);
         if (parsed.currentDraft) setFormContent(parsed.currentDraft);
         if (Array.isArray(parsed.variants)) {
-          state.variants = parsed.variants.filter((variant) => variant && variant.platform);
+          state.variants = parsed.variants
+            .filter((variant) => variant && variant.platform)
+            .map((variant) => ({ ...variant, status: normalizeStatus(variant.status), time: variant.time || "09:00" }));
           writeJson(storageKeys.variants, state.variants);
         }
         renderVariants();
@@ -799,7 +912,7 @@
       button.addEventListener("click", () => applyTemplate(button.dataset.template));
     });
 
-    [elements.client, elements.campaign, elements.goal, elements.date, elements.visualFormat, elements.title, elements.caption, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
+    [elements.client, elements.campaign, elements.goal, elements.date, elements.time, elements.status, elements.visualFormat, elements.title, elements.caption, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
       field.addEventListener("input", updateAll);
       field.addEventListener("change", updateAll);
     });
@@ -811,6 +924,11 @@
     });
     elements.variantFilter.addEventListener("change", () => {
       state.variantFilter = elements.variantFilter.value;
+      renderVariants();
+      updateHero();
+    });
+    elements.statusFilter.addEventListener("change", () => {
+      state.statusFilter = elements.statusFilter.value;
       renderVariants();
       updateHero();
     });
@@ -838,9 +956,11 @@
 
   function init() {
     fillPlatformFilter();
+    fillStatusFilter();
     renderMoreWorkOffers();
     const legacyVariants = readJson(storageKeys.legacyVariants, []);
-    state.variants = readJson(storageKeys.variants, Array.isArray(legacyVariants) ? legacyVariants : []);
+    state.variants = readJson(storageKeys.variants, Array.isArray(legacyVariants) ? legacyVariants : [])
+      .map((variant) => ({ ...variant, status: normalizeStatus(variant.status), time: variant.time || "09:00" }));
     const context = readJson(storageKeys.context, {});
     setContext({ ...context, date: context.date || defaultDate() });
     const draft = readJson(storageKeys.draft, readJson(storageKeys.legacyDraft, null));
