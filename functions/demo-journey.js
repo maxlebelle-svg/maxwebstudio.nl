@@ -356,9 +356,16 @@ function buildLaunchState(current = {}, now = "") {
 
 async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const params = event.queryStringParameters || {};
+  const relationshipType = cleanText(params.relationshipType || params.relationship_type).toLowerCase();
+  const relationshipId = cleanUuid(params.relationshipId || params.relationship_id);
   const leadId = cleanUuid(params.leadId || params.lead_id);
   const id = cleanText(params.id);
   const customerId = cleanUuid(params.customerId || params.customer_id);
+  if ((relationshipType || relationshipId) && !(["lead", "customer"].includes(relationshipType) && relationshipId)) {
+    return jsonResponse(400, { success: false, error: "Ongeldige relatiecontext." });
+  }
+  if (relationshipType === "lead" && leadId !== relationshipId) return jsonResponse(400, { success: false, error: "Leadcontext komt niet overeen." });
+  if (relationshipType === "customer" && customerId !== relationshipId) return jsonResponse(400, { success: false, error: "Klantcontext komt niet overeen." });
   const query = new URLSearchParams({ select: "*", order: "updated_at.desc.nullslast", limit: "25" });
   if (id) query.set("id", `eq.${id}`);
   if (leadId) query.set("lead_id", `eq.${leadId}`);
@@ -1441,7 +1448,7 @@ function mapJourney(row = {}) {
     websiteUrl: cleanText(row.website_url),
     demoStatus: normalizeStatus(row.demo_status || "geen_demo"),
     generatedBriefing: cleanText(row.generated_briefing),
-    previewUrl: cleanText(row.preview_url),
+    previewUrl: canonicalAdminPreviewUrl(row.preview_url, row.id, row.preview_token),
     previewPackage,
     savedDemoSite: previewPackage?.savedDemoSite || previewPackage?.saved_demo_site || null,
     previewGeneratedAt: cleanText(row.preview_generated_at),
@@ -1901,6 +1908,13 @@ function contentTypeForPreviewPath(path = "") {
 
 function previewUrlForJourney(id = "", token = "") {
   return `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
+}
+
+function canonicalAdminPreviewUrl(value = "", id = "", token = "") {
+  const current = cleanText(value);
+  if (!isDemoPreviewUrl(current) || !cleanText(id) || !cleanText(token)) return current;
+  const source = current.match(/[?&]source=([^&#]+)/i)?.[1] || "";
+  return source ? appendQueryParam(previewUrlForJourney(id, token), "source", decodeURIComponent(source)) : previewUrlForJourney(id, token);
 }
 
 function isDemoPreviewUrl(value = "") {

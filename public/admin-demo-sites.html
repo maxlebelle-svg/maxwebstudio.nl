@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
     <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
     <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
+    <script src="admin/data/relationship-scope.js"></script>
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
@@ -23162,6 +23163,9 @@
         const refresh = document.getElementById("demo-sites-library-refresh");
         let records = [];
         let activeActionRecord = null;
+        let requestGeneration = 0;
+        let activeController = null;
+        let activeRelationship = null;
 
         const endpoints = {
           journey: "/.netlify/functions/demo-journey",
@@ -23199,6 +23203,13 @@
           if (!message) return;
           message.textContent = text;
           message.className = `admin-form-message ${type}`;
+        }
+
+        function clearDemoSites(text = "Selecteer een actieve relatie om demo-sites te bekijken.") {
+          records = [];
+          activeActionRecord = null;
+          render();
+          setMessage(text, "info");
         }
 
         function absoluteUrl(url = "") {
@@ -23580,7 +23591,7 @@
             const savedDemo = savedDemoSiteMeta(record) || {};
             const previewResolution = resolveActiveDemoPreview(record);
             const previewSource = previewResolution.source;
-            const preview = sourceUrl(savedDemo.previewUrl || record.previewUrl, previewSource);
+            const preview = sourceUrl(record.previewUrl || savedDemo.previewUrl, previewSource);
             const thumbnail = savedDemoThumbnail(record);
             const demoName = savedDemo.businessName || record.businessName || "demo-site";
             const factoryHref = `admin-website-factory.html${savedDemo.customerId || record.customerId
@@ -23604,7 +23615,7 @@
                 <div class="demo-library-thumbnail">
                   <a class="demo-library-thumbnail-link" href="${escapeHtml(preview || factoryHref)}" target="${preview ? "_blank" : "_self"}" rel="noopener" aria-label="${escapeHtml(`Preview openen van ${demoName}`)}"></a>
                   ${preview
-                    ? `<div class="demo-library-browser-bar" aria-hidden="true"><span></span><span></span><span></span><small>Live demo-preview</small></div><div class="demo-library-preview-frame" aria-hidden="true"><iframe src="${escapeHtml(preview)}" title="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" tabindex="-1"></iframe></div>`
+                    ? `<div class="demo-library-browser-bar" aria-hidden="true"><span></span><span></span><span></span><small>Live demo-preview</small></div><div class="demo-library-preview-frame" aria-hidden="true" data-preview-shell><iframe data-demo-preview-url="${escapeHtml(preview)}" title="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" tabindex="-1"></iframe><div class="demo-preview-error" data-preview-error hidden><strong>Preview niet beschikbaar</strong><small>De previewlink is verlopen of bestaat niet meer. Genereer de preview opnieuw in Website Factory.</small></div></div>`
                     : thumbnail
                       ? `<img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" />`
                       : `<span class="demo-library-thumbnail-placeholder"><strong>Miniatuur volgt</strong><small>Sla deze demo-site opnieuw op voor een previewbeeld.</small></span>`}
@@ -24073,7 +24084,36 @@
           if (action === "upsell") return openUpsellModal(record);
         }
 
-        async function loadDemoSites() {
+        async function verifyPreviewFrames(generation) {
+          await Promise.all([...document.querySelectorAll("[data-demo-preview-url]")].map(async (frame) => {
+            const url = frame.dataset.demoPreviewUrl || "";
+            const shell = frame.closest("[data-preview-shell]");
+            const error = shell?.querySelector("[data-preview-error]");
+            try {
+              const response = await fetch(url, { cache: "no-store" });
+              if (generation !== requestGeneration) return;
+              if (!response.ok) throw new Error(`Preview ${response.status}`);
+              frame.src = url;
+            } catch {
+              if (generation !== requestGeneration) return;
+              frame.removeAttribute("src");
+              frame.hidden = true;
+              if (error) error.hidden = false;
+            }
+          }));
+        }
+
+        async function loadDemoSites(relationship = activeRelationship) {
+          const scoped = window.MaxRelationshipScope?.canonicalRelationship(relationship);
+          const generation = ++requestGeneration;
+          activeController?.abort();
+          activeController = new AbortController();
+          records = [];
+          render();
+          if (!scoped) {
+            clearDemoSites();
+            return;
+          }
           const token = getBearer();
           if (!token) {
             setMessage("Log opnieuw in om demo-sites te laden.", "warning");
@@ -24082,15 +24122,20 @@
           }
           setMessage("Demo-sites laden...", "info");
           try {
-            const response = await fetch("/.netlify/functions/demo-journey", {
+            const query = window.MaxRelationshipScope.relationshipQuery(scoped);
+            const response = await fetch(`/.netlify/functions/demo-journey?${query}`, {
               headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+              signal: activeController.signal,
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || "Demo-sites konden niet worden geladen.");
+            if (generation !== requestGeneration) return;
             records = Array.isArray(data.records) ? data.records : [];
             render();
+            verifyPreviewFrames(generation);
             setMessage(`${records.filter(isSavedDemoSite).length} opgeslagen demo-sites geladen.`, "success");
           } catch (error) {
+            if (error.name === "AbortError" || generation !== requestGeneration) return;
             setMessage(error.message || "Demo-sites konden niet worden geladen.", "error");
             if (list) list.innerHTML = `<div class="sales-timeline-empty">Laden mislukt.</div>`;
           }
@@ -24098,7 +24143,7 @@
 
         search?.addEventListener("input", render);
         status?.addEventListener("change", render);
-        refresh?.addEventListener("click", loadDemoSites);
+        refresh?.addEventListener("click", () => loadDemoSites());
         list?.addEventListener("change", async (event) => {
           const sourceSelect = event.target.closest("[data-demo-preview-source]");
           if (sourceSelect) {
@@ -24231,7 +24276,16 @@
             setModalMessage(document.getElementById("demo-action-upsell-preview-message"), error.message || "Voorstelmail kon niet worden verzonden.", "error");
           }
         });
-        if (document.getElementById("demo-sites-library")) loadDemoSites();
+        if (document.getElementById("demo-sites-library")) {
+          window.ActiveRelationship.whenReady().then((relationship) => {
+            activeRelationship = relationship;
+            loadDemoSites(relationship);
+          });
+          window.ActiveRelationship.subscribeToRelationshipChanges((relationship) => {
+            activeRelationship = relationship;
+            loadDemoSites(relationship);
+          });
+        }
       })();
     </script>
     <script src="admin/ui/global-command-palette.js?v=20260712-live-context-fix" defer></script>

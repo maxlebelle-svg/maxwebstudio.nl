@@ -20344,6 +20344,10 @@ a.project-workspace-summary-card:hover {
   transform-origin: 0 0;
 }
 
+.demo-preview-error { display: grid; min-height: 190px; place-content: center; gap: 8px; padding: 24px; text-align: center; color: #dbeafe; background: #071321; }
+.demo-preview-error strong { font-size: 1rem; }
+.demo-preview-error small { max-width: 36ch; color: #94a3b8; line-height: 1.5; }
+
 .demo-library-thumbnail > img {
   display: block;
   width: 100%;

@@ -10,6 +10,7 @@ const profileFields = ["businessName", "industry", "targetAudience", "toneOfVoic
 const kitFields = ["colors", "fonts", "buttonStyle", "imageStyle", "toneRules", "dos", "donts"];
 
 const state = loadState();
+let activeRelationship = null;
 const elements = {
   metrics: document.getElementById("brand-center-metrics"),
   profileForm: document.getElementById("brand-profile-form"),
@@ -31,24 +32,32 @@ const elements = {
 
 init();
 
-function init() {
+async function init() {
   setupTabs();
   fillSelect(elements.logoForm.elements.logoType, logoTypes);
   fillSelect(elements.logoForm.elements.format, logoFormats);
   fillSelect(elements.logoForm.elements.status, logoStatuses);
   fillSelect(elements.printForm.elements.printType, printTypes);
   fillSelect(elements.printForm.elements.status, printStatuses);
-  fillStaticForm(elements.profileForm, state.brandProfile);
-  fillStaticForm(elements.kitForm, state.brandKit);
+  activeRelationship = await window.ActiveRelationship.whenReady();
+  syncRelationshipView();
+  window.ActiveRelationship.subscribeToRelationshipChanges((relationship) => {
+    activeRelationship = relationship;
+    syncRelationshipView();
+  });
   elements.profileForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    state.brandProfile = readNamedFields(elements.profileForm, profileFields);
+    const project = ensureActiveProject();
+    if (!project) return render();
+    project.brandProfile = readNamedFields(elements.profileForm, profileFields);
     saveState();
     render();
   });
   elements.kitForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    state.brandKit = readNamedFields(elements.kitForm, kitFields);
+    const project = ensureActiveProject();
+    if (!project) return render();
+    project.brandKit = readNamedFields(elements.kitForm, kitFields);
     saveState();
     render();
   });
@@ -58,6 +67,46 @@ function init() {
     button.addEventListener("click", () => resetForm(document.getElementById(button.dataset.resetForm)));
   });
   elements.exportButton.addEventListener("click", exportPackage);
+  render();
+}
+
+function scopedState() {
+  return window.MaxRelationshipScope.scopeBrandingState(state, activeRelationship);
+}
+
+function activeProject() {
+  return scopedState().projects[0] || null;
+}
+
+function ensureActiveProject() {
+  const existing = activeProject();
+  if (existing) return existing;
+  const relationship = window.MaxRelationshipScope.canonicalRelationship(activeRelationship);
+  if (!relationship) return null;
+  const id = `brand-${relationship.relationshipType}-${relationship.relationshipId}`;
+  const project = {
+    id, projectId: id,
+    customerId: relationship.relationshipType === "customer" ? relationship.relationshipId : "",
+    leadId: relationship.relationshipType === "lead" ? relationship.relationshipId : "",
+    relationshipType: relationship.relationshipType,
+    relationshipId: relationship.relationshipId,
+    companyName: activeRelationship?.companyName || "Relatie",
+    brandProfile: {}, brandKit: {}, status: "not_started",
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  state.projects.unshift(project);
+  return project;
+}
+
+function syncRelationshipView() {
+  const scoped = scopedState();
+  elements.profileForm.reset();
+  elements.kitForm.reset();
+  fillStaticForm(elements.profileForm, scoped.brandProfile);
+  fillStaticForm(elements.kitForm, scoped.brandKit);
+  document.querySelectorAll("#brand-profile-form :is(input,select,textarea,button),#logo-form :is(input,select,textarea,button),#brand-kit-form :is(input,select,textarea,button),#print-form :is(input,select,textarea,button),#export-brand-package").forEach((control) => {
+    control.disabled = !activeRelationship;
+  });
   render();
 }
 
@@ -91,7 +140,8 @@ function fillSelect(select, values) {
 function bindRecordForm(form, collectionName, reader) {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const record = reader(form);
+    if (!activeRelationship) return;
+    const record = window.MaxRelationshipScope.attachRelationship(reader(form), activeRelationship);
     const collection = state[collectionName];
     const index = collection.findIndex((item) => item.id === record.id);
     if (index >= 0) collection[index] = record;
@@ -128,8 +178,9 @@ function readPrintForm(form) {
 }
 
 function render() {
+  const view = scopedState();
   renderMetrics();
-  renderRecords(elements.logoList, state.logoAssets, {
+  renderRecords(elements.logoList, view.logoAssets, {
     empty: "Nog geen logo assets.",
     title: "assetName",
     meta: "logoType",
@@ -138,7 +189,7 @@ function render() {
     edit: (record) => fillForm(elements.logoForm, record),
     remove: (record) => removeRecord("logoAssets", record.id),
   });
-  renderRecords(elements.printList, state.printAssets, {
+  renderRecords(elements.printList, view.printAssets, {
     empty: "Nog geen print assets.",
     title: "assetName",
     meta: "printType",
@@ -150,22 +201,23 @@ function render() {
   renderSimpleRows(elements.colorSystemList, colorSystemRows(), "Nog geen kleurensysteem.");
   renderSimpleRows(elements.typographyList, typographyRows(), "Nog geen typografie.");
   renderSimpleRows(elements.iconList, iconRows(), "Nog geen iconen.");
-  renderAssetRows(elements.downloadList, state.downloadAssets, "Nog geen downloads.");
-  renderAssetRows(elements.socialList, state.socialAssets, "Nog geen social assets.");
-  renderAssetRows(elements.marketingList, [...state.marketingAssets, ...state.emailAssets], "Nog geen marketing assets.");
+  renderAssetRows(elements.downloadList, view.downloadAssets, "Nog geen downloads.");
+  renderAssetRows(elements.socialList, view.socialAssets, "Nog geen social assets.");
+  renderAssetRows(elements.marketingList, [...view.marketingAssets, ...view.emailAssets], "Nog geen marketing assets.");
   renderSimpleRows(elements.statusList, statusRows(), "Nog geen statusdata.");
   renderSimpleRows(elements.versionList, versionRows(), "Nog geen versies.");
 }
 
 function renderMetrics() {
+  const view = scopedState();
   const readinessScore = calculateReadiness();
   const metrics = [
     ["Profile completeness", `${profileCompleteness()}%`],
-    ["Logo count", state.logoAssets.length],
-    ["Approved logos", state.logoAssets.filter((item) => item.status === "approved").length],
-    ["Downloads", state.downloadAssets.length],
-    ["Social assets", state.socialAssets.length],
-    ["Print assets", state.printAssets.length],
+    ["Logo count", view.logoAssets.length],
+    ["Approved logos", view.logoAssets.filter((item) => item.status === "approved").length],
+    ["Downloads", view.downloadAssets.length],
+    ["Social assets", view.socialAssets.length],
+    ["Print assets", view.printAssets.length],
     ["Readiness", `${readinessScore}%`],
   ];
   elements.metrics.replaceChildren(...metrics.map(([label, value]) => metricCard(label, value)));
@@ -328,27 +380,31 @@ function readNamedFields(form, fields) {
 }
 
 function profileCompleteness() {
-  const filled = profileFields.filter((field) => String(state.brandProfile[field] || "").trim()).length;
+  const profile = scopedState().brandProfile;
+  const filled = profileFields.filter((field) => String(profile[field] || "").trim()).length;
   return Math.round((filled / profileFields.length) * 100);
 }
 
 function kitCompleteness() {
-  const filled = kitFields.filter((field) => String(state.brandKit[field] || "").trim()).length;
+  const kit = scopedState().brandKit;
+  const filled = kitFields.filter((field) => String(kit[field] || "").trim()).length;
   return Math.round((filled / kitFields.length) * 100);
 }
 
 function calculateReadiness() {
-  const logoReady = state.logoAssets.length ? state.logoAssets.filter((item) => ["selected", "approved"].includes(item.status)).length / state.logoAssets.length : 0;
-  const printReady = state.printAssets.length ? state.printAssets.filter((item) => ["selected", "approved"].includes(item.status)).length / state.printAssets.length : 0;
+  const view = scopedState();
+  const logoReady = view.logoAssets.length ? view.logoAssets.filter((item) => ["selected", "approved"].includes(item.status)).length / view.logoAssets.length : 0;
+  const printReady = view.printAssets.length ? view.printAssets.filter((item) => ["selected", "approved"].includes(item.status)).length / view.printAssets.length : 0;
   return Math.round((profileCompleteness() / 100 * 0.35 + kitCompleteness() / 100 * 0.25 + logoReady * 0.25 + printReady * 0.15) * 100);
 }
 
 function colorSystemRows() {
-  const profile = state.brandProfile || {};
+  const view = scopedState();
+  const profile = view.brandProfile || {};
   const colors = {
-    Primary: profile.primaryColor || state.projects[0]?.colors?.[0] || "",
-    Secondary: profile.secondaryColor || state.projects[0]?.colors?.[1] || "",
-    Accent: profile.accentColor || state.projects[0]?.colors?.[2] || "",
+    Primary: profile.primaryColor || view.projects[0]?.colors?.[0] || "",
+    Secondary: profile.secondaryColor || view.projects[0]?.colors?.[1] || "",
+    Accent: profile.accentColor || view.projects[0]?.colors?.[2] || "",
     Background: "#ffffff",
     Success: "#22c55e",
     Warning: "#f59e0b",
@@ -359,9 +415,10 @@ function colorSystemRows() {
 }
 
 function typographyRows() {
-  const profile = state.brandProfile || {};
-  const kit = state.brandKit || {};
-  const primary = profile.fontPreference || state.projects[0]?.typography || "Inter";
+  const view = scopedState();
+  const profile = view.brandProfile || {};
+  const kit = view.brandKit || {};
+  const primary = profile.fontPreference || view.projects[0]?.typography || "Inter";
   return [
     ["Primary font", primary, "Hoofdlettertype"],
     ["Secondary font", kit.fonts || "System UI", "Ondersteunend"],
@@ -372,22 +429,24 @@ function typographyRows() {
 }
 
 function iconRows() {
+  const view = scopedState();
   return [
-    ["Iconstijl", state.projects[0]?.iconStyle || "Lijniconen", "Website en social"],
-    ["Status", state.socialAssets.length ? "Voorbereid" : "Nog te maken", "Brand Center"],
+    ["Iconstijl", view.projects[0]?.iconStyle || "Lijniconen", "Website en social"],
+    ["Status", view.socialAssets.length ? "Voorbereid" : "Nog te maken", "Brand Center"],
   ];
 }
 
 function statusRows() {
+  const view = scopedState();
   return [
-    ["Branding compleet", state.downloadAssets.length && state.socialAssets.length ? "Ja" : "Nee", "Downloads en social kit"],
-    ["Print klaar", state.printAssets.filter((item) => ["ready", "approved"].includes(item.status)).length, "Ready/approved"],
-    ["Website Factory", state.projects.filter((item) => item.status === "linked_to_factory").length, "Gekoppeld"],
+    ["Branding compleet", view.downloadAssets.length && view.socialAssets.length ? "Ja" : "Nee", "Downloads en social kit"],
+    ["Print klaar", view.printAssets.filter((item) => ["ready", "approved"].includes(item.status)).length, "Ready/approved"],
+    ["Website Factory", view.projects.filter((item) => item.status === "linked_to_factory").length, "Gekoppeld"],
   ];
 }
 
 function versionRows() {
-  return state.versions.map((item) => [item.label || item.id, item.status || "ready", formatDate(item.createdAt)]);
+  return scopedState().versions.map((item) => [item.label || item.id, item.status || "ready", formatDate(item.createdAt)]);
 }
 
 function rgbDetail(value = "") {
@@ -403,15 +462,17 @@ function formatDate(value = "") {
 }
 
 function exportPackage() {
+  const view = scopedState();
   const payload = {
-    brandProfile: state.brandProfile,
-    logoAssets: state.logoAssets,
-    brandKit: state.brandKit,
-    printAssets: state.printAssets,
-    downloadAssets: state.downloadAssets,
-    socialAssets: state.socialAssets,
-    marketingAssets: state.marketingAssets,
-    emailAssets: state.emailAssets,
+    relationship: window.MaxRelationshipScope.canonicalRelationship(activeRelationship),
+    brandProfile: view.brandProfile,
+    logoAssets: view.logoAssets,
+    brandKit: view.brandKit,
+    printAssets: view.printAssets,
+    downloadAssets: view.downloadAssets,
+    socialAssets: view.socialAssets,
+    marketingAssets: view.marketingAssets,
+    emailAssets: view.emailAssets,
     readinessScore: calculateReadiness(),
     generatedAt: new Date().toISOString(),
   };

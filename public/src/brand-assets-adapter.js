@@ -283,21 +283,21 @@ export function registerUploadedLogo(fileLike = {}, projectInput = {}) {
 
 export function getBrandAssets(clientId = "") {
   const state = loadBrandingState();
-  const project = clientId ? state.projects.find((item) => [item.id, item.customerId, item.projectId].includes(clientId)) : state.projects[0];
+  const project = clientId ? state.projects.find((item) => [item.id, item.customerId, item.projectId].includes(clientId)) : null;
   return Promise.resolve({
     success: true,
     clientId,
     brandAssets: {
-      logo: state.logoAssets.find((asset) => asset.projectId === project?.id && ["approved", "selected"].includes(asset.status)) || state.logoAssets[0] || null,
+      logo: project ? state.logoAssets.find((asset) => asset.projectId === project.id && ["approved", "selected"].includes(asset.status)) || state.logoAssets.find((asset) => asset.projectId === project.id) || null : null,
       colors: project?.colors || [],
       fonts: [project?.typography || "Inter"].filter(Boolean),
-      images: state.logoAssets.filter((asset) => asset.projectId === project?.id),
+      images: project ? state.logoAssets.filter((asset) => asset.projectId === project.id) : [],
       copy: [],
       slogans: [project?.briefing?.slogan].filter(Boolean),
       brandGuidelines: project || null,
-      downloads: state.downloadAssets.filter((asset) => asset.projectId === project?.id),
-      socialAssets: state.socialAssets.filter((asset) => asset.projectId === project?.id),
-      printAssets: state.printAssets.filter((asset) => asset.projectId === project?.id),
+      downloads: project ? state.downloadAssets.filter((asset) => asset.projectId === project.id) : [],
+      socialAssets: project ? state.socialAssets.filter((asset) => asset.projectId === project.id) : [],
+      printAssets: project ? state.printAssets.filter((asset) => asset.projectId === project.id) : [],
     },
   });
 }
