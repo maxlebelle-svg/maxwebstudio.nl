@@ -1,15 +1,28 @@
-const { getCompanySettings } = require("../company-settings");
 const { createEmailLog, updateEmailLog } = require("./mailLogService");
 const { createActivityEvent } = require("./timelineService");
+const { applyTransactionalEmailPolicy } = require("./transactionalEmailPolicy");
 
 async function sendTrackedEmail(input = {}, dependencies = {}) {
   const env = dependencies.env || process.env;
   const fetchImpl = dependencies.fetchImpl || global.fetch;
-  const companySettings = getCompanySettings();
   const provider = env.EMAIL_PROVIDER || "resend";
-  const from = input.from || env.FROM_EMAIL || companySettings.primaryEmail;
+  let governedInput;
+  try {
+    governedInput = applyTransactionalEmailPolicy(input, env);
+  } catch (error) {
+    const warning = `Email skipped: ${cleanText(error.code) || "email_policy_rejected"}`;
+    const rejectedLog = await safeCreateLog({ ...input, provider: "resend", status: "failed", errorCode: error.code, errorMessage: warning });
+    await safeUpdateLog(rejectedLog?.id, { status: "failed", errorCode: error.code, errorMessage: warning });
+    if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: rejectedLog?.id || "", warning, failed: true }));
+    return { sent: false, warning, errorCode: error.code, retryable: false, ambiguous: false, logId: rejectedLog?.id || "" };
+  }
+  const from = governedInput.from;
   const payload = {
-    ...input,
+    ...governedInput,
+    metadata: {
+      ...(input.metadata && typeof input.metadata === "object" ? input.metadata : {}),
+      deliveryConfiguration: governedInput.deliveryConfiguration,
+    },
     from,
     provider: "resend",
     status: "pending",
@@ -24,7 +37,7 @@ async function sendTrackedEmail(input = {}, dependencies = {}) {
       errorCode: "unsupported_provider",
       errorMessage: warning,
     });
-    if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning, failed: true }));
+    if (!governedInput.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(governedInput, { logId: log?.id || "", warning, failed: true }));
     console.log(warning);
     return { sent: false, warning, logId: log?.id || "" };
   }
@@ -36,14 +49,14 @@ async function sendTrackedEmail(input = {}, dependencies = {}) {
       errorCode: "missing_resend_api_key",
       errorMessage: warning,
     });
-    if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning, failed: true }));
+    if (!governedInput.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(governedInput, { logId: log?.id || "", warning, failed: true }));
     console.log(warning);
     return { sent: false, warning, logId: log?.id || "" };
   }
 
   try {
-    const idempotencyKey = normalizeIdempotencyKey(input.idempotencyKey);
-    const timeoutMs = boundedTimeout(input.timeoutMs);
+    const idempotencyKey = normalizeIdempotencyKey(governedInput.idempotencyKey);
+    const timeoutMs = boundedTimeout(governedInput.timeoutMs);
     const response = await fetchWithTimeout(fetchImpl, "https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -53,13 +66,13 @@ async function sendTrackedEmail(input = {}, dependencies = {}) {
       },
       body: JSON.stringify({
         from,
-        to: input.to,
-        bcc: input.bcc,
-        reply_to: input.replyTo,
-        subject: input.subject,
-        html: input.html,
-        text: input.text,
-        attachments: input.attachments || [],
+        to: governedInput.to,
+        bcc: governedInput.bcc,
+        reply_to: governedInput.replyTo,
+        subject: governedInput.subject,
+        html: governedInput.html,
+        text: governedInput.text,
+        attachments: governedInput.attachments || [],
       }),
     }, timeoutMs);
 
@@ -73,7 +86,7 @@ async function sendTrackedEmail(input = {}, dependencies = {}) {
         errorCode: cleanText(data.name) || `resend_${response.status}`,
         errorMessage: safeProviderError(message),
       });
-      if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning: message, failed: true }));
+      if (!governedInput.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(governedInput, { logId: log?.id || "", warning: message, failed: true }));
       return {
         sent: false,
         warning: "Email failed: Resend rejected the message",
@@ -91,8 +104,8 @@ async function sendTrackedEmail(input = {}, dependencies = {}) {
       errorMessage: "",
       errorCode: "",
     });
-    if (!input.suppressTimelineEvent) {
-      await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", providerMessageId: cleanText(data.id) }));
+    if (!governedInput.suppressTimelineEvent) {
+      await safeCreateActivity(emailActivityEvent(governedInput, { logId: log?.id || "", providerMessageId: cleanText(data.id) }));
     }
 
     return { sent: true, id: cleanText(data.id), logId: log?.id || "", statusCode: response.status, providerResult: "accepted" };
@@ -105,7 +118,7 @@ async function sendTrackedEmail(input = {}, dependencies = {}) {
       errorCode,
       errorMessage: errorCode,
     });
-    if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning: error.message, failed: true }));
+    if (!governedInput.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(governedInput, { logId: log?.id || "", warning: error.message, failed: true }));
     return {
       sent: false,
       warning: "Email failed: provider request error",

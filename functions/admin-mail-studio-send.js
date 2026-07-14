@@ -27,7 +27,6 @@ function createHandler({ sendEmail = sendTrackedEmail, fetchImpl = (...args) => 
     const result = await sendEmail({
       to: recipient.email,
       bcc: payload.bcc,
-      replyTo: payload.replyTo,
       subject: payload.subject,
       html: payload.html,
       text: payload.text,
@@ -79,6 +78,7 @@ function validateMailStudioPayload(payload = {}) {
   if (!UUID.test(cleanText(payload.relationshipId))) return { valid: false, error: "Kies een geldige ontvanger." };
   if (!cleanText(payload.subject)) return { valid: false, error: "Onderwerp ontbreekt." };
   if (!cleanText(payload.html)) return { valid: false, error: "E-mail HTML ontbreekt." };
+  if (!cleanText(payload.text)) return { valid: false, error: "E-mail platte tekst ontbreekt." };
 
   const html = String(payload.html || "");
   const checks = [

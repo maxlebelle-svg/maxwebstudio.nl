@@ -199,7 +199,7 @@ async function sendCustomerConfirmation(lead, context = {}) {
     const result = await (context.deliverEmail || sendEmail)({
       to: lead.email,
       from: process.env.LEAD_FROM_EMAIL || process.env.FROM_EMAIL || undefined,
-      subject: "Bedankt voor je aanvraag bij Max Webstudio 🚀",
+      subject: "Bedankt voor je aanvraag bij Max Webstudio",
       html: buildCustomerConfirmationHtml(lead),
       text: buildCustomerConfirmationText(lead),
       templateKey: "lead_customer_confirmation",

@@ -35,6 +35,7 @@ test("mail send resolves the canonical current email and ignores a manipulated b
         to: "attacker@example.test",
         subject: "Veilig onderwerp",
         html: validHtml(),
+        text: "Veilig onderwerp en inhoud.",
         idempotencyKey: "mail-studio:test",
       }),
     });
