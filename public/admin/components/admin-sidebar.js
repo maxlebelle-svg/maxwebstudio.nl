@@ -71,13 +71,13 @@
     return [...String(value)].reduce((total, character) => (total + character.charCodeAt(0)) % 6, 0);
   }
 
-  function SidebarItem({ item, active = false, badgeValue, disabled = false, workspaceMuted = false } = {}) {
+  function SidebarItem({ item, active = false, badgeValue, disabled = false, workspaceMuted = false, relationship = null } = {}) {
     const link = element("a", "mws-sidebar-item");
-    link.href = item.route;
+    link.href = global.ActiveRelationship?.buildRelationshipUrl?.(item.route, relationship) || item.route;
     link.dataset.sidebarItem = item.id;
     link.dataset.workspaceRequired = String(Boolean(item.workspaceRequired));
     if (active) { link.classList.add("is-active"); link.setAttribute("aria-current", "page"); }
-    if (disabled) { link.classList.add("is-disabled"); link.setAttribute("aria-disabled", "true"); link.tabIndex = -1; }
+    if (disabled) { link.classList.add("is-disabled"); link.setAttribute("aria-disabled", "true"); link.tabIndex = -1; link.addEventListener("click", (event) => event.preventDefault()); }
     if (workspaceMuted) link.classList.add("is-workspace-muted");
     link.append(icon(item.icon), element("span", "mws-sidebar-item-label", item.label));
     if (item.badge) {
@@ -94,7 +94,15 @@
     const heading = element("h2", "mws-sidebar-section-label", section.label);
     const list = element("nav", "mws-sidebar-section-items");
     list.setAttribute("aria-label", section.label);
-    section.items.filter(canAccess).forEach((entry) => list.append(SidebarItem({ item: entry, active: entry.id === activeId, badgeValue: badgeValues[entry.badge], workspaceMuted: entry.workspaceRequired && !relationship })));
+    section.items.filter(canAccess).forEach((entry) => {
+      const relationshipType = relationship?.relationshipType || relationship?.entityType || "";
+      const unsupported = Boolean(entry.workspaceRequired && relationship && !entry.relationshipTypes.includes(relationshipType));
+      const missing = Boolean(entry.workspaceRequired && !relationship);
+      const link = SidebarItem({ item: entry, active: entry.id === activeId, badgeValue: badgeValues[entry.badge], disabled: missing || unsupported, workspaceMuted: missing || unsupported, relationship });
+      if (missing) link.title = "Selecteer eerst een actieve lead of klant.";
+      if (unsupported) link.title = "Deze functie wordt beschikbaar nadat de lead klant is geworden.";
+      list.append(link);
+    });
     wrapper.append(heading, list);
     return wrapper;
   }

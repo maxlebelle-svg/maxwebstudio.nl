@@ -32,6 +32,7 @@
       badge: options.badge || null,
       statusTone: options.statusTone || "neutral",
       workspaceRequired: Boolean(options.workspaceRequired),
+      relationshipTypes: Object.freeze([...(options.relationshipTypes || (options.workspaceRequired ? ["lead", "customer"] : []))]),
       permission: options.permission || permission("dashboard", "view"),
       secondary: Boolean(options.secondary),
     });
@@ -71,8 +72,8 @@
         item("social-media-studio", "Social Media Studio", "admin-social-media-studio.html", "send", { badge: "socialChannels", statusTone: "purple", workspaceRequired: true, permission: permission("projects", "view", roleGroups.production) }),
         item("brand-center", "Brand Center", "admin-brand-center.html", "palette", { badge: "brandStatus", statusTone: "purple", workspaceRequired: true, permission: permission("websites", "view", roleGroups.production) }),
         item("domain-center", "Domein Center", "admin-domain-center.html", "globe", { badge: "domains", statusTone: "info", workspaceRequired: true, permission: permission("integrations", "view", roleGroups.production) }),
-        item("customer-onboarding", "Klant Onboarding", "admin-onboarding.html", "clipboard-check", { badge: "onboardingProgress", statusTone: "warning", workspaceRequired: true, permission: permission("customers", "view") }),
-        item("roadmap", "Roadmap / Takenbord", "admin-roadmap.html", "list-checks", { badge: "openTasks", statusTone: "warning", workspaceRequired: true, permission: permission("developerTools", "view", roleGroups.technical) }),
+        item("customer-onboarding", "Klant Onboarding", "admin-onboarding.html", "clipboard-check", { badge: "onboardingProgress", statusTone: "warning", workspaceRequired: true, relationshipTypes: ["customer"], permission: permission("customers", "view") }),
+        item("roadmap", "Roadmap / Takenbord", "admin-roadmap.html", "list-checks", { badge: "openTasks", statusTone: "warning", permission: permission("developerTools", "view", roleGroups.technical), secondary: true }),
         item("websites", "Websites", "admin-websites.html", "layout", { permission: permission("websites", "view", roleGroups.production), secondary: true }),
         item("projects", "Projecten", "admin-projecten.html", "briefcase", { permission: permission("projects", "view", roleGroups.production), secondary: true }),
       ]),

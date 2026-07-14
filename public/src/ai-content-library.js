@@ -1,6 +1,8 @@
 import { listDemoImageGroups } from "./config/demoImageAssets.js";
 
-const storageKey = "maxwebstudioAiContentLibrary";
+const storageKeyBase = "maxwebstudioAiContentLibrary";
+let storageKey = "";
+let initialized = false;
 const contentTypes = ["homepage hero", "about", "service", "CTA", "SEO", "social post", "email", "FAQ", "blog", "review", "USP", "other"];
 const textStatuses = ["draft", "selected", "approved"];
 const pageStatuses = ["planned", "ready", "approved"];
@@ -35,7 +37,7 @@ const downloadSizes = [
 ];
 
 const imageGroups = listDemoImageGroups();
-const state = loadState();
+let state = createDefaultPackage("installatiebedrijf");
 const filters = {
   query: "",
   status: "Alles",
@@ -77,7 +79,8 @@ const elements = {
 
 init();
 
-function init() {
+async function init() {
+  await switchRelationship(await window.ActiveRelationship?.whenReady?.());
   setupTabs();
   fillSelect(elements.blockForm.elements.contentType, contentTypes);
   fillSelect(elements.blockForm.elements.status, textStatuses);
@@ -90,7 +93,18 @@ function init() {
   bindRecordForm(elements.pageForm, "pages", readPageForm, "Pagina opgeslagen.");
   bindRecordForm(elements.seoForm, "seoRecords", readSeoForm, "SEO record opgeslagen.");
   bindEvents();
+  initialized = true;
   render();
+  window.ActiveRelationship?.subscribeToRelationshipChanges?.((relationship) => switchRelationship(relationship));
+}
+
+async function switchRelationship(relationship) {
+  const type = relationship?.relationshipType || relationship?.entityType;
+  const id = relationship?.relationshipId || (type === "lead" ? relationship?.leadId : relationship?.customerId);
+  storageKey = ["lead", "customer"].includes(type) && id ? `${storageKeyBase}:${type}:${id}` : "";
+  state = storageKey ? loadState() : createDefaultPackage("installatiebedrijf");
+  if (elements?.message) elements.message.textContent = storageKey ? "" : "Selecteer eerst een actieve lead of klant.";
+  if (initialized) render();
 }
 
 function bindEvents() {
@@ -1209,6 +1223,7 @@ function loadState() {
 }
 
 function saveState() {
+  if (!storageKey) { setMessage("Selecteer eerst een actieve lead of klant.", "error"); return; }
   localStorage.setItem(storageKey, JSON.stringify(state));
 }
 

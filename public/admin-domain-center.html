@@ -526,6 +526,8 @@
         };
         let activeDomain = null;
         let activeTab = "overview";
+        let activeRelationship = null;
+        let domainRequestId = 0;
 
         function escapeHtml(value) {
           return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -558,7 +560,11 @@
         async function fetchDomainCenter(options = {}) {
           const token = getAdminBearer();
           if (!token) throw new Error("Log in als admin om domeinen te laden.");
-          const response = await fetch(domainEndpoint, {
+          if (!activeRelationship) throw new Error("Selecteer eerst een actieve lead of klant.");
+          const relationshipType = activeRelationship.relationshipType || activeRelationship.entityType;
+          const relationshipId = activeRelationship.relationshipId || (relationshipType === "lead" ? activeRelationship.leadId : activeRelationship.customerId);
+          const endpoint = options.domain ? domainEndpoint : `${domainEndpoint}?relationshipType=${encodeURIComponent(relationshipType)}&relationshipId=${encodeURIComponent(relationshipId)}`;
+          const response = await fetch(endpoint, {
             method: options.domain ? "POST" : "GET",
             headers: {
               Accept: "application/json",
@@ -566,7 +572,7 @@
               Authorization: `Bearer ${token}`,
             },
             credentials: "include",
-            body: options.domain ? JSON.stringify({ domain: options.domain }) : undefined,
+            body: options.domain ? JSON.stringify({ domain: options.domain, relationshipType, relationshipId }) : undefined,
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok || data.success === false) throw new Error(data.error || "Domein Center kon niet laden.");
@@ -832,12 +838,17 @@
         }
 
         async function loadDomainCenter() {
+          const currentRequest = ++domainRequestId;
+          state.domains = [];
+          state.metrics = [];
+          activeRelationship = window.ActiveRelationship?.getActiveRelationship?.() || await window.ActiveRelationship?.whenReady?.();
           state.loading = true;
           renderSummary();
           renderTable();
           setSourceState("CRM laden", "info");
           try {
             const data = await fetchDomainCenter();
+            if (currentRequest !== domainRequestId) return;
             state.domains = Array.isArray(data.records) ? data.records : [];
             state.metrics = Array.isArray(data.metrics) ? data.metrics : [];
             state.error = "";
@@ -846,6 +857,7 @@
               renderSearchResult("gevonden", "success", "Quantumbouw staat in Domain Center.", "Gevonden via CRM domein/website/lead data.");
             }
           } catch (error) {
+            if (currentRequest !== domainRequestId) return;
             state.error = error.message || "Domeinen konden niet laden.";
             setSourceState("Login of bron nodig", "warning");
           } finally {
@@ -896,6 +908,7 @@
         window.checkSslStatus = checkSslStatus;
         window.connectEmailProvider = connectEmailProvider;
 
+        window.ActiveRelationship?.subscribeToRelationshipChanges?.(() => loadDomainCenter());
         loadDomainCenter();
       })();
     </script>

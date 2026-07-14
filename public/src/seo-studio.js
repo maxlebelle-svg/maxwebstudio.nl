@@ -1,4 +1,6 @@
-const STORAGE_KEY = "maxwebstudio.seoStudioDraft.v1";
+const STORAGE_KEY_BASE = "maxwebstudio.seoStudioDraft.v1";
+let activeRelationship = await window.ActiveRelationship?.whenReady?.();
+let STORAGE_KEY = relationshipStorageKey(activeRelationship);
 
 const initialState = {
   clientSite: "",
@@ -18,7 +20,13 @@ const initialState = {
   schemaPreparedAt: "",
 };
 
-const state = loadState();
+let state = loadState();
+
+function relationshipStorageKey(relationship) {
+  const type = relationship?.relationshipType || relationship?.entityType;
+  const id = relationship?.relationshipId || (type === "lead" ? relationship?.leadId : relationship?.customerId);
+  return ["lead", "customer"].includes(type) && id ? `${STORAGE_KEY_BASE}:${type}:${id}` : "";
+}
 
 const nodes = {
   clientSite: document.getElementById("seo-client-site"),
@@ -66,6 +74,7 @@ const nodes = {
 
 function loadState() {
   try {
+    if (!STORAGE_KEY) return { ...initialState };
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) return { ...initialState };
     const parsed = JSON.parse(stored);
@@ -76,6 +85,7 @@ function loadState() {
 }
 
 function saveState(showMessage = false) {
+  if (!STORAGE_KEY) { setMessage("Selecteer eerst een actieve lead of klant.", "error"); return; }
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   if (showMessage) setMessage("Concept opgeslagen.", "success");
 }
@@ -406,3 +416,12 @@ nodes.faqList.addEventListener("click", (event) => {
 
 syncInputs();
 render();
+if (!STORAGE_KEY) setMessage("Selecteer eerst een actieve lead of klant.", "error");
+window.ActiveRelationship?.subscribeToRelationshipChanges?.((relationship) => {
+  activeRelationship = relationship;
+  STORAGE_KEY = relationshipStorageKey(relationship);
+  state = loadState();
+  syncInputs();
+  render();
+  setMessage(STORAGE_KEY ? "Relatiecontext geladen." : "Selecteer eerst een actieve lead of klant.", STORAGE_KEY ? "success" : "error");
+});

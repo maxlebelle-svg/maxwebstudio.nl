@@ -7,6 +7,8 @@
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   let active = null;
   let ready = false;
+  let hydrationRequestId = 0;
+  let validationRequestId = 0;
   let resolveReady;
   const readyPromise = new Promise((resolve) => { resolveReady = resolve; });
 
@@ -87,17 +89,18 @@
   }
 
   function clearActiveRelationship(source = "clear") {
+    validationRequestId += 1;
     active = null;
     localStorage.removeItem(STORAGE_KEY);
     const url = new URL(window.location.href);
-    const hadRelationshipParams = url.searchParams.has("leadId") || url.searchParams.has("customerId");
-    url.searchParams.delete("leadId"); url.searchParams.delete("customerId");
+    const hadRelationshipParams = ["relationshipType", "relationshipId", "leadId", "customerId"].some((key) => url.searchParams.has(key));
+    url.searchParams.delete("relationshipType"); url.searchParams.delete("relationshipId"); url.searchParams.delete("leadId"); url.searchParams.delete("customerId");
     if (hadRelationshipParams) window.history.replaceState(window.history.state, document.title, `${url.pathname}${url.search}${url.hash}`);
     notify(null, source);
   }
 
   function contextError(code = "UNKNOWN", fallback = "") {
-    const messages = { INVALID_ID: "Deze relatie heeft geen geldige centrale koppeling.", INVALID_ENTITY_TYPE: "Dit zoekresultaat kan niet als relatie worden geopend.", NOT_FOUND: "Deze relatie bestaat niet meer of is nog niet centraal opgeslagen.", FORBIDDEN: "Je hebt geen toegang tot deze relatie.", ARCHIVED: "Deze relatie is gearchiveerd en kan niet worden geopend.", CONTEXT_MISMATCH: "De relatiegegevens komen niet met elkaar overeen.", STALE_DEPLOYMENT: "De relatiecontext is bijgewerkt. Vernieuw de pagina en probeer opnieuw.", RELATIONSHIP_SOURCE_QUERY_FAILED: "De relatiebron kon niet veilig worden gecontroleerd. Probeer het later opnieuw.", SERVICE_UNAVAILABLE: "Relatiecontrole is tijdelijk niet beschikbaar." };
+    const messages = { INVALID_ID: "Deze relatie heeft geen geldige centrale koppeling.", INVALID_ENTITY_TYPE: "Dit zoekresultaat kan niet als relatie worden geopend.", NOT_FOUND: "Deze relatie bestaat niet meer of is nog niet centraal opgeslagen.", FORBIDDEN: "Je hebt geen toegang tot deze relatie.", ARCHIVED: "Deze relatie is gearchiveerd en kan niet worden geopend.", CONTEXT_MISMATCH: "De relatiegegevens komen niet met elkaar overeen.", STALE_CONTEXT: "Een nieuwere relatiekeuze is al actief.", STALE_DEPLOYMENT: "De relatiecontext is bijgewerkt. Vernieuw de pagina en probeer opnieuw.", RELATIONSHIP_SOURCE_QUERY_FAILED: "De relatiebron kon niet veilig worden gecontroleerd. Probeer het later opnieuw.", SERVICE_UNAVAILABLE: "Relatiecontrole is tijdelijk niet beschikbaar." };
     const error = new Error(messages[code] || fallback || "Deze relatie kon niet worden geopend.");
     error.code = code;
     error.userMessage = error.message;
@@ -105,6 +108,7 @@
   }
 
   async function validateActiveRelationship(input, source = "user") {
+    const requestId = ++validationRequestId;
     const candidate = normalize(input);
     const auth = session();
     if (!candidate) throw contextError("INVALID_ID");
@@ -119,6 +123,7 @@
     if (data.contractVersion !== 2) throw contextError("STALE_DEPLOYMENT");
     const validated = normalize({ ...data.relationship, selectedAt: new Date().toISOString(), selectedByAuthUserId: auth.userId });
     if (!validated) throw new Error("De relatie kon niet veilig worden geladen.");
+    if (requestId !== validationRequestId) throw contextError("STALE_CONTEXT");
     active = validated;
     if (source !== "storage") localStorage.setItem(STORAGE_KEY, JSON.stringify(minimalStorageRecord(validated)));
     notify(validated, source);
@@ -135,9 +140,14 @@
   }
   function buildRelationshipUrl(url, relationship = active) {
     const target = new URL(url, window.location.origin);
-    target.searchParams.delete("leadId"); target.searchParams.delete("customerId");
-    if (relationship?.entityType === "lead") target.searchParams.set("leadId", relationship.leadId);
-    if (relationship?.entityType === "customer") target.searchParams.set("customerId", relationship.customerId);
+    target.searchParams.delete("relationshipType"); target.searchParams.delete("relationshipId"); target.searchParams.delete("leadId"); target.searchParams.delete("customerId");
+    const normalized = normalize(relationship || {});
+    if (normalized) {
+      target.searchParams.set("relationshipType", normalized.relationshipType);
+      target.searchParams.set("relationshipId", normalized.relationshipId);
+      if (normalized.relationshipType === "lead") target.searchParams.set("leadId", normalized.relationshipId);
+      if (normalized.relationshipType === "customer") target.searchParams.set("customerId", normalized.relationshipId);
+    }
     return `${target.pathname}${target.search}${target.hash}`;
   }
 
@@ -180,15 +190,37 @@
     bar.querySelector("[data-relationship-switch]")?.addEventListener("click", () => window.MaxCommand?.open?.(""));
   }
 
-  async function hydrate() {
+  function relationshipFromUrl() {
     const params = new URLSearchParams(window.location.search);
+    const relationshipType = clean(params.get("relationshipType")).toLowerCase();
+    const relationshipId = clean(params.get("relationshipId"));
     const leadId = clean(params.get("leadId"));
     const customerId = clean(params.get("customerId"));
-    if (leadId && customerId) { clearActiveRelationship("invalid-deep-link"); finishHydration(); return; }
-    const candidate = leadId ? { entityType: "lead", leadId } : customerId ? { entityType: "customer", customerId } : readStored();
-    if (!candidate) { render(); finishHydration(); return; }
-    try { await validateActiveRelationship(candidate, leadId || customerId ? "deep-link" : "restore"); }
-    catch { clearActiveRelationship("validation-failed"); }
+    if (leadId && customerId) return { invalid: true, candidate: null };
+    const legacyType = leadId ? "lead" : customerId ? "customer" : "";
+    const legacyId = leadId || customerId;
+    if ((relationshipType || relationshipId) && (!ENTITY_TYPES.has(relationshipType) || !UUID.test(relationshipId))) return { invalid: true, candidate: null };
+    if (legacyId && (relationshipType && relationshipType !== legacyType || relationshipId && relationshipId !== legacyId)) return { invalid: true, candidate: null };
+    if (relationshipType && relationshipId) return { invalid: false, candidate: { relationshipType, relationshipId } };
+    if (legacyId) return { invalid: false, candidate: { relationshipType: legacyType, relationshipId: legacyId } };
+    return { invalid: false, candidate: null };
+  }
+
+  async function hydrate(options = {}) {
+    const requestId = ++hydrationRequestId;
+    const fromUrl = relationshipFromUrl();
+    if (fromUrl.invalid) { clearActiveRelationship(options.source || "invalid-deep-link"); finishHydration(); return; }
+    const candidate = fromUrl.candidate || (options.allowStored === false ? null : readStored());
+    if (!candidate) {
+      if (options.allowStored === false) clearActiveRelationship(options.source || "history"); else render();
+      finishHydration(); return;
+    }
+    try {
+      const validated = await validateActiveRelationship(candidate, fromUrl.candidate ? (options.source || "deep-link") : "restore");
+      if (requestId !== hydrationRequestId) return;
+      active = validated;
+    }
+    catch (error) { if (error?.code === "STALE_CONTEXT") return; if (requestId === hydrationRequestId) clearActiveRelationship("validation-failed"); }
     finishHydration();
   }
 
@@ -209,6 +241,7 @@
     validateActiveRelationship(candidate, "storage").catch(() => clearActiveRelationship("storage-validation-failed"));
   });
   window.addEventListener("maxwebstudio:admin-logout", () => clearActiveRelationship("logout"));
+  window.addEventListener("popstate", () => { hydrate({ allowStored: false, source: "history" }); });
 
   window.ActiveRelationship = { ready: true, whenReady, getActiveRelationship, setActiveRelationship, clearActiveRelationship, validateActiveRelationship, subscribeToRelationshipChanges, buildRelationshipUrl, minimalStorageRecord, readStored };
   active = null;

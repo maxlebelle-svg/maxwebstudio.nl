@@ -236,7 +236,10 @@
 
     <script>
       (() => {
-        const storageKey = "maxwebstudioCustomerOnboardings";
+        const storageKeyBase = "maxwebstudioCustomerOnboardings";
+        let storageKey = "";
+        let activeRelationship = null;
+        let onboardingRequestId = 0;
         const onboardingEndpoint = "/.netlify/functions/admin-customer-onboarding";
         const legacyCustomerKeys = ["maxwebstudioCustomers", "mws_customers", "customers", "crmCustomers"];
         const legacyLeadKeys = ["maxwebstudioLeads", "mws_leads", "leads", "crmLeads"];
@@ -326,6 +329,7 @@
         };
 
         function readJson(key, fallback) {
+          if (!key) return fallback;
           try {
             const parsed = JSON.parse(localStorage.getItem(key) || "null");
             return parsed ?? fallback;
@@ -335,6 +339,7 @@
         }
 
         function writeJson(key, value) {
+          if (!key) return;
           localStorage.setItem(key, JSON.stringify(value));
         }
 
@@ -496,14 +501,16 @@
           return cleanText(session.accessToken || session.access_token || session.token || sessionStorage.getItem("mws_admin_token") || sessionStorage.getItem("mwsAdminToken") || "");
         }
 
-        async function fetchAdminModule(moduleName) {
+        async function fetchAdminModule(moduleName, scoped = true) {
           const token = getAdminBearer();
           if (!token) {
             const error = new Error("Controleer de toegang om klanten te laden.");
             error.code = "AUTH_MISSING";
             throw error;
           }
-          const response = await fetch(`/.netlify/functions/admin-supabase-data?module=${encodeURIComponent(moduleName)}`, {
+          const params = new URLSearchParams({ module: moduleName });
+          if (scoped) { params.set("relationshipType", "customer"); params.set("relationshipId", activeRelationship.relationshipId || activeRelationship.customerId); }
+          const response = await fetch(`/.netlify/functions/admin-supabase-data?${params}`, {
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${token}`,
@@ -805,7 +812,7 @@
             fetchAdminModule("websites").catch(() => []),
             fetchAdminModule("projects").catch(() => []),
           ]);
-          state.profileEmployees = await fetchAdminModule("profiles").catch(() => []);
+          state.profileEmployees = await fetchAdminModule("profiles", false).catch(() => []);
           if (state.profileEmployees.length) writeJson("maxwebstudioProfiles", state.profileEmployees);
           const central = customers.map((customer) => onboardingFromCentralCustomer(customer, websites, projects, stored));
           const centralIds = new Set(central.flatMap((item) => [item.customerId, item.email].map((value) => cleanText(value).toLowerCase()).filter(Boolean)));
@@ -838,21 +845,31 @@
         }
 
         async function loadOnboardings() {
+          const currentRequest = ++onboardingRequestId;
+          state.onboardings = [];
+          state.selectedId = "";
+          if (!activeRelationship || (activeRelationship.relationshipType || activeRelationship.entityType) !== "customer") {
+            state.dataStatus = "empty";
+            state.dataMessage = activeRelationship ? "Deze functie wordt beschikbaar nadat de lead klant is geworden" : "Selecteer eerst een actieve klant.";
+            return;
+          }
           const stored = readJson(storageKey, null);
           const storedOnboardings = Array.isArray(stored) && stored.length
             ? stored.map(createOnboarding).filter((item) => developerModeActive() || item.source !== "demo")
             : [];
           try {
             state.onboardings = await loadCentralOnboardings(storedOnboardings);
+            if (currentRequest !== onboardingRequestId) return;
             if (!state.onboardings.length) {
               state.dataStatus = "empty";
               state.dataMessage = "Geen centrale klanten gevonden.";
             }
           } catch (error) {
-            state.dataStatus = "local";
+            if (currentRequest !== onboardingRequestId) return;
+            state.dataStatus = "empty";
             state.dataMessage = error.message || "Centrale klanten konden niet worden geladen.";
-            state.onboardings = storedOnboardings.length ? storedOnboardings : seedFromExistingData().filter((item) => item.source !== "demo" || developerModeActive());
-            setSaveState(state.onboardings.length ? "Lokale fallback" : "Login nodig", state.onboardings.length ? "status-warning" : "status-blocked");
+            state.onboardings = [];
+            setSaveState("Login of bron nodig", "status-blocked");
             if (!state.onboardings.length) setFormMessage(state.dataMessage, "error");
           }
           saveOnboardings(false);
@@ -1388,7 +1405,7 @@
             notify(error.message || "Website Factory input is lokaal voorbereid.", "warning");
           }
           notify("Website Factory wordt geopend met deze klantdata.", "success");
-          window.location.href = `admin-website-factory.html?leadId=${encodeURIComponent(pendingLead.id)}`;
+          window.location.href = window.ActiveRelationship.buildRelationshipUrl("admin-website-factory.html", activeRelationship);
         }
 
         async function copyQuestions() {
@@ -1488,9 +1505,20 @@
 
         async function init() {
           bindEvents();
+          activeRelationship = await window.ActiveRelationship?.whenReady?.();
+          const type = activeRelationship?.relationshipType || activeRelationship?.entityType;
+          const id = activeRelationship?.relationshipId || activeRelationship?.customerId;
+          storageKey = type === "customer" && id ? `${storageKeyBase}:customer:${id}` : "";
           await loadOnboardings();
           populateFormFromOnboarding();
           render();
+          window.ActiveRelationship?.subscribeToRelationshipChanges?.(async (relationship) => {
+            activeRelationship = relationship;
+            const nextType = relationship?.relationshipType || relationship?.entityType;
+            const nextId = relationship?.relationshipId || relationship?.customerId;
+            storageKey = nextType === "customer" && nextId ? `${storageKeyBase}:customer:${nextId}` : "";
+            await loadOnboardings(); populateFormFromOnboarding(); render();
+          });
         }
 
         init();

@@ -1,6 +1,7 @@
 const dns = require("dns").promises;
 const tls = require("tls");
 const { verifyAdmin } = require("./_admin-auth");
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const DOMAIN_SELECTS = {
   customers: [
@@ -46,11 +47,13 @@ exports.handler = async (event) => {
   }
 
   try {
+    const payload = event.httpMethod === "POST" ? parsePayload(event.body) : (event.queryStringParameters || {});
+    const relationship = relationshipFrom(payload);
+    if (!relationship) return jsonResponse(400, { success: false, code: "RELATIONSHIP_REQUIRED", error: "Selecteer eerst een actieve lead of klant." });
     if (event.httpMethod === "POST") {
-      const payload = parsePayload(event.body);
       const domain = normalizeDomain(payload.domain || payload.domainName);
       if (!domain) return jsonResponse(400, { success: false, error: "Vul een geldig domein in." });
-      const records = await buildDomainRecords({ supabaseUrl, serviceRoleKey, includeChecks: true });
+      const records = await buildDomainRecords({ supabaseUrl, serviceRoleKey, includeChecks: true, relationship });
       const existing = records.find((record) => record.domainName === domain) || null;
       const check = await checkDomain(domain);
       return jsonResponse(200, {
@@ -64,7 +67,7 @@ exports.handler = async (event) => {
       });
     }
 
-    const records = await buildDomainRecords({ supabaseUrl, serviceRoleKey, includeChecks: false });
+    const records = await buildDomainRecords({ supabaseUrl, serviceRoleKey, includeChecks: false, relationship });
     return jsonResponse(200, {
       success: true,
       source: "supabase",
@@ -85,12 +88,16 @@ exports.handler = async (event) => {
   }
 };
 
-async function buildDomainRecords({ supabaseUrl, serviceRoleKey, includeChecks = false }) {
+async function buildDomainRecords({ supabaseUrl, serviceRoleKey, includeChecks = false, relationship }) {
+  const isLead = relationship.relationshipType === "lead";
+  const idFilter = `id=eq.${relationship.relationshipId}`;
+  const customerFilter = `customer_id=eq.${relationship.relationshipId}`;
+  const profileFilter = `profile_id=eq.${relationship.relationshipId}`;
   const [customers, websites, customerWebsites, leads] = await Promise.all([
-    fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "customers", DOMAIN_SELECTS.customers, "updated_at.desc.nullslast").catch(() => []),
-    fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "websites", DOMAIN_SELECTS.websites, "updated_at.desc.nullslast").catch(() => []),
-    fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "customer_websites", DOMAIN_SELECTS.customer_websites, "updated_at.desc.nullslast").catch(() => []),
-    fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "leads", DOMAIN_SELECTS.leads, "updated_at.desc.nullslast").catch(() => []),
+    isLead ? [] : fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "customers", DOMAIN_SELECTS.customers, "updated_at.desc.nullslast", idFilter).catch(() => []),
+    isLead ? [] : fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "websites", DOMAIN_SELECTS.websites, "updated_at.desc.nullslast", customerFilter).catch(() => []),
+    isLead ? [] : fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "customer_websites", DOMAIN_SELECTS.customer_websites, "updated_at.desc.nullslast", profileFilter).catch(() => []),
+    isLead ? fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, "leads", DOMAIN_SELECTS.leads, "updated_at.desc.nullslast", idFilter).catch(() => []) : [],
   ]);
 
   const customerIndex = buildCustomerIndex(customers);
@@ -195,12 +202,12 @@ async function buildDomainRecords({ supabaseUrl, serviceRoleKey, includeChecks =
   return records;
 }
 
-async function fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, table, selects, order) {
+async function fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, table, selects, order, filter = "") {
   const options = Array.isArray(selects) ? selects : [selects];
   let lastError = null;
   for (const select of options) {
     try {
-      return await fetchTable(supabaseUrl, serviceRoleKey, table, select, order);
+      return await fetchTable(supabaseUrl, serviceRoleKey, table, select, order, filter);
     } catch (error) {
       lastError = error;
     }
@@ -208,9 +215,16 @@ async function fetchTableWithFallbacks(supabaseUrl, serviceRoleKey, table, selec
   throw lastError || new Error(`${table} kon niet worden geladen.`);
 }
 
-async function fetchTable(supabaseUrl, serviceRoleKey, table, select, order) {
-  const url = `${supabaseUrl}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=${encodeURIComponent(order)}&limit=500`;
+async function fetchTable(supabaseUrl, serviceRoleKey, table, select, order, filter = "") {
+  const url = `${supabaseUrl}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=${encodeURIComponent(order)}&limit=500${filter ? `&${filter}` : ""}`;
   return supabaseFetch(url, { method: "GET", headers: restHeaders(serviceRoleKey) });
+}
+
+function relationshipFrom(input = {}) {
+  const relationshipType = cleanText(input.relationshipType || (input.leadId ? "lead" : input.customerId ? "customer" : "")).toLowerCase();
+  const relationshipId = cleanText(input.relationshipId || (relationshipType === "lead" ? input.leadId : input.customerId));
+  if (!['lead', 'customer'].includes(relationshipType) || !UUID.test(relationshipId)) return null;
+  return { relationshipType, relationshipId };
 }
 
 function buildCustomerIndex(customers = []) {

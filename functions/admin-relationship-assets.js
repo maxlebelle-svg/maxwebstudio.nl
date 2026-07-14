@@ -22,7 +22,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === "GET") {
       const params = queryParams(event);
       const downloadId = clean(params.get("download"));
-      if (downloadId) return downloadAsset(context, downloadId);
+      if (downloadId) return downloadAsset(context, downloadId, params);
       return listAssets(context, params);
     }
     return updateAsset(context, auth.admin || {}, JSON.parse(event.body || "{}"));
@@ -40,23 +40,27 @@ exports.handler = async (event) => {
 };
 
 async function listAssets(context, params) {
-  const customerId = clean(params.get("customerId"));
-  const filter = UUID.test(customerId) ? `&customer_id=eq.${encodeURIComponent(customerId)}` : "";
+  const relationship = relationshipFrom(params);
+  if (!relationship) return json(400, { success: false, code: "RELATIONSHIP_REQUIRED", error: "Selecteer eerst een actieve lead of klant." });
+  const column = relationship.relationshipType === "lead" ? "lead_id" : "customer_id";
+  const filter = `&${column}=eq.${encodeURIComponent(relationship.relationshipId)}`;
+  const customerFilter = relationship.relationshipType === "customer" ? `&id=eq.${encodeURIComponent(relationship.relationshipId)}` : "&id=eq.00000000-0000-0000-0000-000000000000";
+  const relatedFilter = relationship.relationshipType === "customer" ? `&customer_id=eq.${encodeURIComponent(relationship.relationshipId)}` : "&customer_id=eq.00000000-0000-0000-0000-000000000000";
   const [files, customers, projects, websites] = await Promise.all([
     rest(context, `files?select=id,customer_id,lead_id,name,original_filename,mime_type,size_bytes,category,status,uploaded_by_type,is_primary,is_client_visible,metadata,created_at,updated_at&order=created_at.desc&limit=300${filter}`, { method: "GET", phase: "list_files" }),
-    rest(context, "customers?select=id,name,company&order=updated_at.desc&limit=500", { method: "GET", phase: "list_customers" }),
-    restOptional(context, "projects?select=id,customer_id,name,status&order=updated_at.desc&limit=500", "list_projects"),
-    restOptional(context, "websites?select=id,customer_id,name,domain,status&order=updated_at.desc&limit=500", "list_websites"),
+    rest(context, `customers?select=id,name,company&order=updated_at.desc&limit=1${customerFilter}`, { method: "GET", phase: "list_customers" }),
+    restOptional(context, `projects?select=id,customer_id,name,status&order=updated_at.desc&limit=50${relatedFilter}`, "list_projects"),
+    restOptional(context, `websites?select=id,customer_id,name,domain,status&order=updated_at.desc&limit=50${relatedFilter}`, "list_websites"),
   ]);
   const customerMap = new Map((customers || []).map((row) => [row.id, clean(row.company || row.name) || "Klant"]));
   const projectMap = firstByCustomer(projects);
   const websiteMap = firstByCustomer(websites);
-  const assets = (Array.isArray(files) ? files : []).map((row) => safe(row, {
+  const assets = (Array.isArray(files) ? files : []).map((row) => ({ ...safe(row, {
     customerName: customerMap.get(row.customer_id) || "Onbekende klant",
     project: projectMap.get(row.customer_id) || null,
     website: websiteMap.get(row.customer_id) || null,
-  }));
-  return json(200, { success: true, assets, filters: buildFilters(assets) });
+  }), downloadUrl: `/api/admin-relationship-assets?download=${encodeURIComponent(row.id)}&relationshipType=${relationship.relationshipType}&relationshipId=${encodeURIComponent(relationship.relationshipId)}` }));
+  return json(200, { success: true, relationship, assets, filters: buildFilters(assets) });
 }
 
 async function updateAsset(context, admin, input) {
@@ -66,8 +70,10 @@ async function updateAsset(context, admin, input) {
   if (!UUID.test(assetId) || !definition) return json(400, { success: false, code: "INVALID_ACTION", error: "Kies een geldige assetactie." });
   const asset = (await rest(context, `files?select=*&id=eq.${assetId}&limit=1`, { method: "GET", phase: "find_asset" }))?.[0];
   if (!asset) return json(404, { success: false, code: "NOT_FOUND", error: "Dit bestand bestaat niet meer." });
-  const relationshipId = clean(input.customerId || input.leadId);
-  if (relationshipId && ![asset.customer_id, asset.lead_id].includes(relationshipId)) return json(409, { success: false, code: "CONTEXT_MISMATCH", error: "Dit bestand hoort niet bij deze werkruimte." });
+  const relationship = relationshipFrom(input);
+  if (!relationship) return json(400, { success: false, code: "RELATIONSHIP_REQUIRED", error: "Selecteer eerst een actieve lead of klant." });
+  const assetRelationshipId = relationship.relationshipType === "lead" ? asset.lead_id : asset.customer_id;
+  if (assetRelationshipId !== relationship.relationshipId) return json(409, { success: false, code: "CONTEXT_MISMATCH", error: "Dit bestand hoort niet bij deze werkruimte." });
   if (definition.primary) {
     const relationshipFilter = asset.customer_id ? `customer_id=eq.${asset.customer_id}` : `lead_id=eq.${asset.lead_id}`;
     await rest(context, `files?${relationshipFilter}&is_primary=eq.true`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ is_primary: false, updated_at: new Date().toISOString() }), phase: "clear_primary" });
@@ -93,10 +99,22 @@ async function updateAsset(context, admin, input) {
   return json(200, { success: true, asset: safe(rows?.[0] || { ...asset, ...update }) });
 }
 
-async function downloadAsset(context, assetId) {
+function relationshipFrom(input = {}) {
+  const get = (key) => typeof input.get === "function" ? input.get(key) : input[key];
+  const relationshipType = clean(get("relationshipType") || (get("leadId") ? "lead" : get("customerId") ? "customer" : "")).toLowerCase();
+  const relationshipId = clean(get("relationshipId") || (relationshipType === "lead" ? get("leadId") : get("customerId")));
+  if (!['lead', 'customer'].includes(relationshipType) || !UUID.test(relationshipId)) return null;
+  return { relationshipType, relationshipId };
+}
+
+async function downloadAsset(context, assetId, params) {
   if (!UUID.test(assetId)) return json(400, { success: false, code: "INVALID_ASSET", error: "Kies een geldig bestand." });
-  const asset = (await rest(context, `files?select=id,name,original_filename,storage_path,mime_type,status&id=eq.${assetId}&limit=1`, { method: "GET", phase: "download_lookup" }))?.[0];
+  const relationship = relationshipFrom(params);
+  if (!relationship) return json(400, { success: false, code: "RELATIONSHIP_REQUIRED", error: "Selecteer eerst een actieve lead of klant." });
+  const asset = (await rest(context, `files?select=id,customer_id,lead_id,name,original_filename,storage_path,mime_type,status&id=eq.${assetId}&limit=1`, { method: "GET", phase: "download_lookup" }))?.[0];
   if (!asset?.storage_path || ["archived", "replaced", "deleted"].includes(clean(asset.status).toLowerCase())) return json(404, { success: false, code: "NOT_FOUND", error: "Dit bestand is niet beschikbaar." });
+  const assetRelationshipId = relationship.relationshipType === "lead" ? asset.lead_id : asset.customer_id;
+  if (assetRelationshipId !== relationship.relationshipId) return json(404, { success: false, code: "NOT_FOUND", error: "Dit bestand is niet beschikbaar." });
   const result = await fetch(`${context.url}/storage/v1/object/sign/${BUCKET}/${encodeStoragePath(asset.storage_path)}`, {
     method: "POST",
     headers: serviceHeaders(context),

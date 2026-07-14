@@ -214,7 +214,9 @@ exports.handler = async (event) => {
       });
     }
 
-    const rows = await fetchRows(supabaseUrl, serviceRoleKey, definition);
+    const relationship = relationshipFromQuery(event.queryStringParameters || {}, moduleName);
+    if (relationship.error) return jsonResponse(400, { success: false, code: relationship.error, error: relationship.message });
+    const rows = await fetchRows(supabaseUrl, serviceRoleKey, definition, relationship.filter);
     const records = rows.map(definition.map).filter((record) => record.id);
     return jsonResponse(200, {
       success: true,
@@ -272,12 +274,13 @@ exports.handler = async (event) => {
   }
 };
 
-async function fetchRows(supabaseUrl, serviceRoleKey, definition) {
+async function fetchRows(supabaseUrl, serviceRoleKey, definition, filter = null) {
   const params = new URLSearchParams({
     select: definition.select,
     limit: "300",
   });
   if (definition.order) params.set("order", definition.order);
+  if (filter) params.set(filter.column, `eq.${filter.value}`);
   try {
     return await supabaseFetch(`${supabaseUrl}/rest/v1/${definition.table}?${params.toString()}`, {
       method: "GET",
@@ -291,11 +294,23 @@ async function fetchRows(supabaseUrl, serviceRoleKey, definition) {
       limit: "300",
     });
     if (definition.order) fallbackParams.set("order", definition.order);
+    if (filter) fallbackParams.set(filter.column, `eq.${filter.value}`);
     return supabaseFetch(`${supabaseUrl}/rest/v1/${definition.table}?${fallbackParams.toString()}`, {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
     });
   }
+}
+
+function relationshipFromQuery(query, moduleName) {
+  const relationshipType = cleanText(query.relationshipType).toLowerCase();
+  const relationshipId = cleanText(query.relationshipId);
+  if (!relationshipType && !relationshipId) return { filter: null };
+  if (relationshipType !== "customer" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(relationshipId)) return { error: "INVALID_RELATIONSHIP", message: "Deze module vereist een geldige klantcontext." };
+  const columns = { customers: "id", websites: "customer_id", projects: "customer_id", files: "customer_id", change_requests: "customer_id", client_portal_messages: "customer_id", client_portal_notifications: "customer_id", quotes: "customer_id", subscriptions: "customer_id" };
+  const column = columns[moduleName];
+  if (!column) return { error: "UNSUPPORTED_RELATIONSHIP_FILTER", message: "Deze databron ondersteunt geen klantfilter." };
+  return { relationshipType, relationshipId, filter: { column, value: relationshipId } };
 }
 
 function parsePayload(body) {

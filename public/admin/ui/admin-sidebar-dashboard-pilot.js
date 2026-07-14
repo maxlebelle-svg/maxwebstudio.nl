@@ -246,9 +246,13 @@
 
   function syncRelationshipUrl(relationship = null) {
     const url = new URL(global.location.href);
-    url.searchParams.delete("leadId"); url.searchParams.delete("customerId");
-    if (relationship?.entityType === "lead" && relationship.leadId) url.searchParams.set("leadId", relationship.leadId);
-    if (relationship?.entityType === "customer" && relationship.customerId) url.searchParams.set("customerId", relationship.customerId);
+    url.searchParams.delete("relationshipType"); url.searchParams.delete("relationshipId"); url.searchParams.delete("leadId"); url.searchParams.delete("customerId");
+    const relationshipType = relationship?.relationshipType || relationship?.entityType;
+    const relationshipId = relationship?.relationshipId || (relationshipType === "lead" ? relationship?.leadId : relationship?.customerId);
+    if (["lead", "customer"].includes(relationshipType) && relationshipId) {
+      url.searchParams.set("relationshipType", relationshipType); url.searchParams.set("relationshipId", relationshipId);
+      url.searchParams.set(relationshipType === "lead" ? "leadId" : "customerId", relationshipId);
+    }
     global.history.replaceState(global.history.state, document.title, `${url.pathname}${url.search}${url.hash}`);
   }
 

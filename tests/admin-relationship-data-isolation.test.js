@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
+const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const scope = require("../public/admin/data/relationship-scope.js");
 
 const quantum = { relationshipType: "customer", relationshipId: "customer-quantum" };
@@ -53,4 +54,48 @@ test("Demo journey server enforces matching canonical relationship filters", () 
   assert.match(source, /query\.set\("customer_id"/);
   assert.match(source, /canonicalAdminPreviewUrl\(row\.preview_url, row\.id, row\.preview_token\)/);
   assert.match(source, /previewUrlForJourney\(id, token\)/);
+});
+
+test("Asset Manager requires canonical scope for list, action and download", () => {
+  const handler = read("functions/admin-relationship-assets.js");
+  const client = read("public/admin/ui/central-asset-library.js");
+  assert.match(handler, /RELATIONSHIP_REQUIRED/);
+  assert.match(handler, /relationshipFrom\(params\)/);
+  assert.match(handler, /relationshipFrom\(input\)/);
+  assert.match(handler, /lead_id.*customer_id|customer_id.*lead_id/s);
+  assert.match(client, /relationshipType=.*relationshipId=/);
+  assert.match(client, /currentRequest !== requestId/);
+  assert.match(client, /assets = \[\]; render\(\)/);
+  assert.doesNotMatch(client, /requestedCustomerId/);
+});
+
+test("local creative studios namespace drafts by canonical relationship and never read global legacy drafts", () => {
+  const ai = read("public/src/ai-content-library.js");
+  const seo = read("public/src/seo-studio.js");
+  const social = read("public/src/social-media-studio.js");
+  for (const source of [ai, seo, social]) {
+    assert.match(source, /relationshipType/);
+    assert.match(source, /relationshipId/);
+    assert.match(source, /Selecteer eerst een actieve lead of klant/);
+    assert.match(source, /subscribeToRelationshipChanges/);
+  }
+  assert.doesNotMatch(social, /readJson\(storageKeys\.legacy/);
+});
+
+test("Domain Center and customer onboarding issue only relationship-filtered production reads", () => {
+  const domainHandler = read("functions/admin-domain-center.js");
+  const domainPage = read("public/admin-domain-center.html");
+  const dataHandler = read("functions/admin-supabase-data.js");
+  const onboarding = read("public/admin-onboarding.html");
+  assert.match(domainHandler, /RELATIONSHIP_REQUIRED/);
+  assert.match(domainHandler, /isLead \? \[\] : fetchTableWithFallbacks/);
+  assert.match(domainHandler, /isLead \? fetchTableWithFallbacks/);
+  assert.match(domainPage, /currentRequest !== domainRequestId/);
+  assert.match(domainPage, /relationshipType=.*relationshipId=/);
+  assert.match(dataHandler, /relationshipFromQuery/);
+  assert.match(dataHandler, /params\.set\(filter\.column, `eq\.\$\{filter\.value\}`\)/);
+  assert.match(onboarding, /relationshipType", "customer"/);
+  assert.match(onboarding, /state\.onboardings = \[\]/);
+  assert.doesNotMatch(onboarding, /state\.onboardings = storedOnboardings\.length \? storedOnboardings : seedFromExistingData/);
+  assert.match(onboarding, /Deze functie wordt beschikbaar nadat de lead klant is geworden/);
 });

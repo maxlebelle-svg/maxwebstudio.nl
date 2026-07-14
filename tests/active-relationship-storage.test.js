@@ -70,6 +70,52 @@ test("central logout event clears in-memory and stored relationship context", as
   }
 });
 
+test("central route URLs carry canonical and compatible relationship parameters", async () => {
+  const harness = createHarness();
+  await harness.api.setActiveRelationship({ relationshipType: "lead", relationshipId: LEAD_ID });
+  const route = harness.api.buildRelationshipUrl("admin-demo-sites.html?view=grid#recent");
+  const url = new URL(route, "http://localhost");
+  assert.equal(url.searchParams.get("relationshipType"), "lead");
+  assert.equal(url.searchParams.get("relationshipId"), LEAD_ID);
+  assert.equal(url.searchParams.get("leadId"), LEAD_ID);
+  assert.equal(url.searchParams.get("customerId"), null);
+  assert.equal(url.hash, "#recent");
+});
+
+test("browser back and forward revalidate URL context and clear an empty history entry", async () => {
+  const harness = createHarness();
+  harness.document.dispatchEvent(new harness.CustomEvent("DOMContentLoaded"));
+  await settle();
+  harness.window.location.href = `http://localhost/admin-dashboard.html?relationshipType=customer&relationshipId=${CUSTOMER_ID}&customerId=${CUSTOMER_ID}`;
+  harness.window.location.search = `?relationshipType=customer&relationshipId=${CUSTOMER_ID}&customerId=${CUSTOMER_ID}`;
+  harness.window.dispatchEvent(new harness.CustomEvent("popstate"));
+  await settle();
+  assert.equal(harness.api.getActiveRelationship().relationshipType, "customer");
+  harness.window.location.href = "http://localhost/admin-dashboard.html";
+  harness.window.location.search = "";
+  harness.window.dispatchEvent(new harness.CustomEvent("popstate"));
+  await settle();
+  assert.equal(harness.api.getActiveRelationship(), null);
+});
+
+test("a delayed restore cannot clear or overwrite a newer user selection", async () => {
+  const pending = [];
+  const harness = createHarness({
+    relationship: { relationshipType: "lead", relationshipId: LEAD_ID, leadId: LEAD_ID },
+    fetch: async (_url, request) => new Promise((resolve) => pending.push({ input: JSON.parse(request.body), resolve })),
+  });
+  harness.document.dispatchEvent(new harness.CustomEvent("DOMContentLoaded"));
+  await settle();
+  const selection = harness.api.setActiveRelationship({ relationshipType: "customer", relationshipId: CUSTOMER_ID });
+  await settle();
+  pending[1].resolve(validResponse("customer"));
+  await selection;
+  assert.equal(harness.api.getActiveRelationship().relationshipType, "customer");
+  pending[0].resolve(validResponse("lead"));
+  await settle();
+  assert.equal(harness.api.getActiveRelationship().relationshipType, "customer");
+});
+
 function createHarness(options = {}) {
   class Emitter {
     constructor() { this.listeners = new Map(); }
@@ -87,15 +133,20 @@ function createHarness(options = {}) {
   window.history = { state: null, replaceState(_state, _title, next) { window.location.href = new URL(next, window.location.origin).href; } };
   const document = new Emitter(); document.readyState = "loading"; document.body = null; document.title = "Dashboard";
   const requests = [];
-  const fetch = async (_url, request) => {
+  const defaultFetch = async (_url, request) => {
     requests.push(request);
     if (options.failValidation) return { ok: false, status: 403, json: async () => ({ success: false, code: "FORBIDDEN", error: "Forbidden" }) };
     const input = JSON.parse(request.body);
     const lead = input.entityType === "lead";
     return { ok: true, status: 200, json: async () => ({ success: true, contractVersion: 2, relationship: lead ? { entityType: "lead", leadId: LEAD_ID, customerId: null, companyName: "Validated Lead", lifecycleStage: "qualified", email: "not-stored@example.test", phone: "+31 6" } : { entityType: "customer", leadId: null, customerId: CUSTOMER_ID, companyName: "Validated Customer", lifecycleStage: "active", email: "not-stored@example.test", phone: "+31 6" } }) };
   };
+  const fetch = options.fetch || defaultFetch;
   vm.runInNewContext(source, { window, document, localStorage: storage, fetch, URL, URLSearchParams, CustomEvent, console: { error() {}, warn() {} }, setTimeout, clearTimeout });
   return { api: window.ActiveRelationship, CustomEvent, document, requests, storage, window };
+}
+
+function validResponse(type) {
+  return { ok: true, status: 200, json: async () => ({ success: true, contractVersion: 2, relationship: type === "lead" ? { entityType: "lead", leadId: LEAD_ID, customerId: null, companyName: "Validated Lead" } : { entityType: "customer", leadId: null, customerId: CUSTOMER_ID, companyName: "Validated Customer" } }) };
 }
 
 function settle() { return new Promise((resolve) => setTimeout(resolve, 10)); }

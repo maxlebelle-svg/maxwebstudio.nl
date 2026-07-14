@@ -97,7 +97,7 @@ test("workspace lifecycle colors use the central semantic status meaning", () =>
   assert.equal(pilot.semanticTone("Inactief"), "neutral");
 });
 
-test("dashboard is active, workspace links remain clickable, and avatar initials fall back", () => withFakeDocument(() => {
+test("dashboard is active, missing-workspace links are disabled, and avatar initials fall back", () => withFakeDocument(() => {
   delete require.cache[require.resolve("../public/admin/components/admin-sidebar.js")];
   const components = require("../public/admin/components/admin-sidebar.js");
   const sidebar = components.AdminSidebar({ navigation: pilot.pilotNavigation(navigation.ADMIN_SIDEBAR_NAVIGATION), activeId: "dashboard", user: { name: "Max Le Belle", roleLabel: "Admin" } });
@@ -105,7 +105,7 @@ test("dashboard is active, workspace links remain clickable, and avatar initials
   const factory = find(sidebar, (node) => node.dataset.sidebarItem === "website-factory");
   const avatar = find(sidebar, (node) => node.classList.contains("mws-sidebar-avatar"));
   assert.equal(dashboard.getAttribute("aria-current"), "page");
-  assert.equal(factory.getAttribute("aria-disabled"), undefined);
+  assert.equal(factory.getAttribute("aria-disabled"), "true");
   assert.equal(factory.classList.contains("is-workspace-muted"), true);
   assert.equal(avatar.textContent, "ML");
 }));

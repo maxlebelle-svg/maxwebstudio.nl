@@ -14,6 +14,8 @@
     status: document.getElementById("central-asset-status"),
   };
   let assets = [];
+  let activeRelationship = null;
+  let requestId = 0;
   const previewUrls = new Set();
 
   function token() {
@@ -91,7 +93,7 @@
         if (action === "open") window.open(url, "_blank", "noopener");
         else { const link = document.createElement("a"); link.href = url; link.download = asset.name; link.click(); }
       } else {
-        const response = await fetch("/api/admin-relationship-assets", { method: "POST", headers: { Authorization: `Bearer ${token()}`, "Content-Type": "application/json" }, body: JSON.stringify({ assetId: asset.id, customerId: asset.customerId, action }) });
+        const response = await fetch("/api/admin-relationship-assets", { method: "POST", headers: { Authorization: `Bearer ${token()}`, "Content-Type": "application/json" }, body: JSON.stringify({ assetId: asset.id, action, relationshipType: activeRelationship.relationshipType, relationshipId: activeRelationship.relationshipId }) });
         const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "Asset kon niet worden gekoppeld.");
         elements.message.textContent = action === "branding" ? "Asset is klaargezet voor Branding." : "Asset is klaargezet voor de website.";
         await load();
@@ -99,20 +101,27 @@
     } catch (error) { elements.message.textContent = error.message || "Actie niet gelukt."; } finally { button.disabled = false; }
   }
   async function load() {
+    const currentRequest = ++requestId;
+    assets = []; render();
     if (!token()) { elements.message.textContent = "Log opnieuw in om klantuploads te bekijken."; return; }
+    activeRelationship = window.ActiveRelationship?.getActiveRelationship?.() || await window.ActiveRelationship?.whenReady?.();
+    if (!activeRelationship) { elements.message.textContent = "Selecteer eerst een actieve lead of klant."; return; }
     elements.message.textContent = "Klantuploads laden…";
     try {
-      const requestedCustomerId = new URLSearchParams(location.search).get("customerId");
-      const endpoint = requestedCustomerId ? `/api/admin-relationship-assets?customerId=${encodeURIComponent(requestedCustomerId)}` : "/api/admin-relationship-assets";
+      const relationshipType = activeRelationship.relationshipType || activeRelationship.entityType;
+      const relationshipId = activeRelationship.relationshipId || (relationshipType === "lead" ? activeRelationship.leadId : activeRelationship.customerId);
+      const endpoint = `/api/admin-relationship-assets?relationshipType=${encodeURIComponent(relationshipType)}&relationshipId=${encodeURIComponent(relationshipId)}`;
       const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${token()}`, Accept: "application/json" }, cache: "no-store" });
       const data = await response.json().catch(() => ({})); if (!response.ok || !data.success) throw new Error(data.error || "Klantuploads konden niet worden geladen.");
+      if (currentRequest !== requestId) return;
       assets = Array.isArray(data.assets) ? data.assets : [];
       fillSelect(elements.customer, data.filters?.customers || [], "Alle klanten"); fillSelect(elements.category, data.filters?.categories || [], "Alle categorieën"); fillSelect(elements.type, data.filters?.mimeTypes || [], "Alle bestandstypen"); fillSelect(elements.status, data.filters?.statuses || [], "Alle statussen");
       elements.message.textContent = `${assets.length} bestanden uit de centrale bibliotheek.`; render();
-    } catch (error) { elements.message.textContent = error.message; elements.grid.innerHTML = '<div class="central-asset-empty"><strong>Bibliotheek tijdelijk niet beschikbaar</strong></div>'; }
+    } catch (error) { if (currentRequest !== requestId) return; elements.message.textContent = error.message; elements.grid.innerHTML = '<div class="central-asset-empty"><strong>Bibliotheek tijdelijk niet beschikbaar</strong></div>'; }
   }
   Object.values(elements).filter((element) => element?.matches?.("input,select")).forEach((element) => { element.addEventListener("input", render); element.addEventListener("change", render); });
   elements.grid.addEventListener("click", (event) => { const button = event.target.closest("[data-central-action]"); const card = event.target.closest("[data-central-asset-id]"); if (!button || !card) return; const asset = assets.find((item) => item.id === card.dataset.centralAssetId); if (asset) act(asset, button.dataset.centralAction, button); });
   window.addEventListener("beforeunload", () => previewUrls.forEach((url) => URL.revokeObjectURL(url)));
+  window.ActiveRelationship?.subscribeToRelationshipChanges?.(() => load());
   load();
 })();

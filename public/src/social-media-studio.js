@@ -8,6 +8,7 @@
     legacyDraft: "mws_social_media_studio_draft",
     legacyVariants: "mws_social_media_studio_variants",
   };
+  let activeRelationship = null;
 
   const platformLabels = {
     facebook: "Facebook",
@@ -243,7 +244,9 @@
 
   function readJson(key, fallback) {
     try {
-      const rawValue = localStorage.getItem(key);
+      const scoped = scopedStorageKey(key);
+      if (!scoped) return fallback;
+      const rawValue = localStorage.getItem(scoped);
       if (!rawValue) return fallback;
       return JSON.parse(rawValue);
     } catch (error) {
@@ -254,12 +257,25 @@
 
   function writeJson(key, value) {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      const scoped = scopedStorageKey(key);
+      if (!scoped) { setMessage("Selecteer eerst een actieve lead of klant.", "error"); return false; }
+      localStorage.setItem(scoped, JSON.stringify(value));
       return true;
     } catch (error) {
       console.warn("Social Media Studio opslag kon niet worden bijgewerkt.", error);
       return false;
     }
+  }
+
+  function scopedStorageKey(key) {
+    const type = activeRelationship?.relationshipType || activeRelationship?.entityType;
+    const id = activeRelationship?.relationshipId || (type === "lead" ? activeRelationship?.leadId : activeRelationship?.customerId);
+    return ["lead", "customer"].includes(type) && id ? `${key}:${type}:${id}` : "";
+  }
+
+  function removeJson(key) {
+    const scoped = scopedStorageKey(key);
+    if (scoped) localStorage.removeItem(scoped);
   }
 
   function fillPlatformFilter() {
@@ -484,7 +500,7 @@
 
   function resetEditor() {
     setFormContent({ platform: state.platform, tone: "Professioneel", date: elements.date.value, visualFormat: elements.visualFormat.value });
-    localStorage.removeItem(storageKeys.draft);
+    removeJson(storageKeys.draft);
     setMessage("Editor gereset.", "success");
   }
 
@@ -724,9 +740,9 @@
     const confirmed = window.confirm("Weet je zeker dat je alle Social Media Studio concepten en varianten wilt wissen?");
     if (!confirmed) return;
     state.variants = [];
-    localStorage.removeItem(storageKeys.draft);
-    localStorage.removeItem(storageKeys.variants);
-    localStorage.removeItem(storageKeys.context);
+    removeJson(storageKeys.draft);
+    removeJson(storageKeys.variants);
+    removeJson(storageKeys.context);
     renderVariants();
     updateHero();
     setMessage("Lokale Social Media Studio opslag gewist.", "success");
@@ -836,22 +852,27 @@
     }
   }
 
-  function init() {
-    fillPlatformFilter();
-    renderMoreWorkOffers();
-    const legacyVariants = readJson(storageKeys.legacyVariants, []);
-    state.variants = readJson(storageKeys.variants, Array.isArray(legacyVariants) ? legacyVariants : []);
+  function hydrateRelationshipState() {
+    state.variants = readJson(storageKeys.variants, []);
     const context = readJson(storageKeys.context, {});
     setContext({ ...context, date: context.date || defaultDate() });
-    const draft = readJson(storageKeys.draft, readJson(storageKeys.legacyDraft, null));
-    if (draft) {
-      setFormContent(draft);
-    } else {
-      updateAll();
-    }
-    bindEvents();
+    const draft = readJson(storageKeys.draft, null);
+    if (draft) setFormContent(draft); else updateAll();
     renderVariants();
     updateHero();
+    if (!activeRelationship) setMessage("Selecteer eerst een actieve lead of klant.", "error");
+  }
+
+  async function init() {
+    activeRelationship = await window.ActiveRelationship?.whenReady?.();
+    fillPlatformFilter();
+    renderMoreWorkOffers();
+    hydrateRelationshipState();
+    bindEvents();
+    window.ActiveRelationship?.subscribeToRelationshipChanges?.((relationship) => {
+      activeRelationship = relationship;
+      hydrateRelationshipState();
+    });
   }
 
   window.generateSocialContent = generateSocialContent;
