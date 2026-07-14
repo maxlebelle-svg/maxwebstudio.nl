@@ -5,6 +5,7 @@ const { getCompanySettings, getMailtoLink } = require("./company-settings");
 const { createTimelineEvent } = require("./services/timelineService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allowedPackages = new Set([
   "Basis",
   "Plus",
@@ -48,6 +49,8 @@ exports.handler = async (event) => {
     const portalStatus = getPortalStatus(input);
     const emailStatus = input.sendWelcomeEmail ? "send_requested" : "draft_only";
     const ownerMetadata = buildOwnerMetadata(input);
+    const sourceLead = input.leadId ? await readByLookup({ supabaseUrl, serviceRoleKey, table: "leads", lookup: `id=eq.${encodeURIComponent(input.leadId)}` }) : null;
+    const leadAttribution = buildLeadAttribution(sourceLead);
     const authUser = await ensureAuthUser(supabaseUrl, serviceRoleKey, input);
     const existingProfile = await readByLookup({ supabaseUrl, serviceRoleKey, table: "profiles", lookup: `auth_user_id=eq.${encodeURIComponent(authUser.id)}` });
     const existingProfileMetadata = existingProfile?.metadata && typeof existingProfile.metadata === "object" ? existingProfile.metadata : {};
@@ -77,6 +80,7 @@ exports.handler = async (event) => {
           sourceEnvironment: recordEnvironment,
           portalAccessStatus: effectivePortalStatus.access,
           createdFromLeadId: input.leadId || "",
+          leadAttribution,
           emailStatus,
           ...ownerMetadata,
         },
@@ -108,6 +112,7 @@ exports.handler = async (event) => {
           sourceEnvironment: recordEnvironment,
           portalAccessStatus: effectivePortalStatus.access,
           createdFromLeadId: input.leadId || "",
+          leadAttribution,
           emailStatus,
           billingStatus: input.sendWelcomeEmail ? "pending_customer_activation" : "internal_record_only",
           incassoMandate: "missing",
@@ -257,6 +262,7 @@ function validatePayload(payload) {
   if (!emailPattern.test(value.email)) return { success: false, error: "Vul een geldig e-mailadres in." };
   if (!allowedPackages.has(value.package)) return { success: false, error: "Kies een geldig pakket." };
   if (!value.domain) return { success: false, error: "Vul een website of domein in." };
+  if (value.leadId && !uuidPattern.test(value.leadId)) return { success: false, error: "Kies een geldige bronlead." };
 
   return { success: true, value };
 }
@@ -668,6 +674,22 @@ function cleanText(value) {
   return String(value || "").trim();
 }
 
+function buildLeadAttribution(lead = null) {
+  if (!lead || typeof lead !== "object") return {};
+  const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+  return {
+    sourceLeadId: cleanText(lead.id),
+    externalSource: cleanText(lead.external_source || metadata.externalSource || metadata.source),
+    acquisitionChannel: cleanText(lead.acquisition_channel || metadata.acquisitionChannel),
+    sourcedByUserId: cleanText(lead.sourced_by_user_id || metadata.sourcedByUserId),
+    createdByUserId: cleanText(lead.created_by || metadata.createdBy),
+    ownerUserId: cleanText(lead.owner_id || metadata.ownerAuthUserId),
+    assignedUserId: cleanText(lead.assigned_user_id || metadata.assignedUserId),
+    closedByUserId: cleanText(lead.closed_by_user_id || lead.won_by || metadata.closedByUserId || metadata.wonBy),
+    soldAt: cleanText(lead.won_at || metadata.wonAt),
+  };
+}
+
 function escapeHtml(value) {
   return cleanText(value)
     .replace(/&/g, "&amp;")
@@ -691,3 +713,5 @@ function jsonResponse(statusCode, body) {
     body: JSON.stringify(body),
   };
 }
+
+exports._test = { buildLeadAttribution };

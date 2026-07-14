@@ -10,6 +10,7 @@ const {
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
+const acquisitionChannels = new Set(["website", "email", "outbound_sales", "referral", "phone", "social", "partner", "manual", "import", "other"]);
 const allowedStatuses = new Set([
   "lead",
   "bellen",
@@ -350,7 +351,7 @@ async function assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id }) {
 
 async function readLeadRows({ supabaseUrl, serviceRoleKey, id = "" }) {
   const selects = [
-    "id,company_name,contact_name,email,phone,website,status,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes,is_demo,environment,metadata,created_at,updated_at",
+    "id,company_name,contact_name,email,phone,website,status,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,acquisition_channel,sourced_by_user_id,closed_by_user_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company_name,contact_name,email,phone,website,status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company,name,email,phone,source,status,converted_customer_id,notes,is_demo,environment,metadata,created_at,updated_at,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes",
@@ -622,6 +623,24 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
   const ownerEmail = firstCleanText(payload.ownerEmail, payload.owner_email, existingMeta.ownerEmail, existingMeta.owner_email, payload.createdByEmail, options.create ? admin.email : "").toLowerCase();
   const ownerName = firstCleanText(payload.ownerName, payload.owner_name, existingMeta.ownerName, existingMeta.owner_name, payload.createdByName, options.create ? admin.email : "");
   const analysisScore = websiteAnalysisScore(payload.websiteAnalysis || payload.metadata?.websiteAnalysis);
+  const acquisitionChannel = cleanText(payload.acquisitionChannel || payload.acquisition_channel || options.existingLead?.acquisition_channel || options.existingLead?.acquisitionChannel || existingMeta.acquisitionChannel || existingMeta.acquisition_channel).toLowerCase();
+  if (acquisitionChannel && !acquisitionChannels.has(acquisitionChannel)) {
+    const error = new Error("Kies een geldig acquisitiekanaal.");
+    error.status = 400;
+    throw error;
+  }
+  const sourcedByInput = cleanText(payload.sourcedByUserId || payload.sourced_by_user_id || options.existingLead?.sourced_by_user_id || options.existingLead?.sourcedByUserId || existingMeta.sourcedByUserId || existingMeta.sourced_by_user_id);
+  const sourcedByUserId = firstUuid(sourcedByInput);
+  if (sourcedByInput && !sourcedByUserId) {
+    const error = new Error("Kies een geldige medewerker bij 'Ingebracht door'.");
+    error.status = 400;
+    throw error;
+  }
+  if (sourcedByUserId && !managerRoles.has(normalizeRole(admin.role)) && sourcedByUserId !== firstUuid(admin.id)) {
+    const error = new Error("Je mag alleen jezelf als bronmedewerker kiezen.");
+    error.status = 403;
+    throw error;
+  }
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
   const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
   const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
@@ -657,6 +676,8 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     normalized_phone: identifiers.normalizedPhone || normalizePhone(payload.phone),
     external_source: cleanText(payload.externalSource || payload.external_source || payload.source || "admin-dashboard-leadfinder"),
     external_source_id: identifiers.externalSourceId,
+    acquisition_channel: acquisitionChannel || null,
+    sourced_by_user_id: sourcedByUserId,
     last_activity_at: cleanText(payload.lastActivityAt || payload.last_activity_at || now),
     last_contacted_at: cleanText(payload.lastContactedAt || payload.last_contacted_at || existingMeta.lastContactedAt || existingMeta.last_contacted_at),
     next_action_at: cleanText(payload.nextActionAt || payload.next_action_at || payload.followUpDate || existingMeta.nextActionAt || existingMeta.next_action_at),
@@ -681,6 +702,9 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       googlePlaceId: cleanText(payload.googlePlaceId),
       externalSource: cleanText(payload.externalSource || payload.external_source || payload.source || "admin-dashboard-leadfinder"),
       externalSourceId: identifiers.externalSourceId,
+      acquisitionChannel,
+      sourcedByUserId: sourcedByUserId || "",
+      sourcedByName: cleanText(payload.sourcedByName || payload.sourced_by_name),
       normalizedCompanyName: identifiers.normalizedCompanyName,
       normalizedDomain: identifiers.normalizedDomain,
       normalizedPhone: identifiers.normalizedPhone,
@@ -864,6 +888,9 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     demoRequestedAt: cleanText(payload.demoRequestedAt),
     externalSource: cleanText(payload.externalSource || payload.external_source || payload.source || "admin-dashboard-leadfinder"),
     externalSourceId: identifiers.externalSourceId,
+    acquisitionChannel: cleanText(payload.acquisitionChannel || payload.acquisition_channel || existingMeta.acquisitionChannel || existingMeta.acquisition_channel),
+    sourcedByUserId: cleanText(payload.sourcedByUserId || payload.sourced_by_user_id || existingMeta.sourcedByUserId || existingMeta.sourced_by_user_id),
+    sourcedByName: cleanText(payload.sourcedByName || payload.sourced_by_name || existingMeta.sourcedByName || existingMeta.sourced_by_name),
     normalizedCompanyName: identifiers.normalizedCompanyName,
     normalizedDomain: identifiers.normalizedDomain || normalizeDomain(payload.websiteUrl || payload.website),
     normalizedPhone: identifiers.normalizedPhone || normalizePhone(payload.phone),
@@ -1196,6 +1223,7 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     appointmentLocation,
     wonAt,
     wonBy,
+    closedByUserId: action === "win" ? admin.id : lead.closedByUserId,
     lostAt,
     lostBy,
     lostReason,
@@ -1223,6 +1251,7 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     appointment_location: appointmentLocation || null,
     won_at: wonAt || null,
     won_by: firstUuid(wonBy),
+    closed_by_user_id: action === "win" ? firstUuid(admin.id) : firstUuid(lead.closedByUserId),
     lost_at: lostAt || null,
     lost_by: firstUuid(lostBy),
     lost_reason: lostReason || null,
@@ -1411,6 +1440,10 @@ function mapLead(row = {}) {
     normalizedPhone: cleanText(row.normalized_phone || meta.normalizedPhone || meta.normalized_phone),
     externalSource: cleanText(row.external_source || meta.externalSource || meta.external_source),
     externalSourceId: cleanText(row.external_source_id || meta.externalSourceId || meta.external_source_id),
+    acquisitionChannel: cleanText(row.acquisition_channel || meta.acquisitionChannel || meta.acquisition_channel),
+    sourcedByUserId: cleanText(row.sourced_by_user_id || meta.sourcedByUserId || meta.sourced_by_user_id),
+    sourcedByName: cleanText(meta.sourcedByName || meta.sourced_by_name),
+    closedByUserId: cleanText(row.closed_by_user_id || meta.closedByUserId || meta.closed_by_user_id || row.won_by || meta.wonBy),
     lastActivityAt: cleanText(row.last_activity_at || meta.lastActivityAt || meta.last_activity_at || row.updated_at),
     lastContactedAt: cleanText(row.last_contacted_at || meta.lastContactedAt || meta.last_contacted_at),
     lastContactedBy: cleanText(row.last_contacted_by || meta.lastContactedBy || meta.last_contacted_by),
@@ -1739,4 +1772,4 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-exports._test = { callOutcomes, operationalLeadGroup };
+exports._test = { acquisitionChannels, callOutcomes, leadPayload, operationalLeadGroup };

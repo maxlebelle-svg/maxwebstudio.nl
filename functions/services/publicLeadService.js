@@ -33,6 +33,7 @@ async function persistPublicLead(input = {}, dependencies = {}) {
     environment: "production",
     metadata: {
       source: lead.source,
+      acquisitionChannel: "website",
       publicRequestId: requestId,
       submittedAt: lead.submittedAt,
       packageInterest: lead.packageInterest,

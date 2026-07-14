@@ -351,7 +351,8 @@
                 <label for="leadfinder-score">Leadscore<input id="leadfinder-score" type="number" min="0" max="100" value="70" /></label>
                 <label for="leadfinder-call-status">Leadstatus<select id="leadfinder-call-status"></select></label>
                 <label for="leadfinder-follow-up">Opvolgdatum<input id="leadfinder-follow-up" type="date" /></label>
-                <label class="admin-profile-wide" for="leadfinder-source">Bron<input id="leadfinder-source" type="text" placeholder="Handmatig, netwerk, social, demo..." /></label>
+                <label for="leadfinder-source">Acquisitiekanaal<select id="leadfinder-source"><option value="">Onbekend</option><option value="website">Website</option><option value="email">E-mail</option><option value="outbound_sales">Actieve acquisitie</option><option value="referral">Aanbeveling</option><option value="phone">Telefoon</option><option value="social">Social media</option><option value="partner">Partner</option><option value="manual">Handmatig</option><option value="import">Import</option><option value="other">Overig</option></select></label>
+                <label for="leadfinder-sourced-by">Ingebracht door<select id="leadfinder-sourced-by"><option value="">Onbekend</option><option value="self">Mijzelf</option></select></label>
                 <label class="admin-profile-wide" for="leadfinder-notes">Notities<textarea id="leadfinder-notes" placeholder="Waarom is dit een kans? Welke websiteproblemen zijn zichtbaar?"></textarea></label>
               </div>
               <div class="admin-profile-actions">
@@ -19438,6 +19439,7 @@
         callStatus: document.getElementById("leadfinder-call-status"),
         followUp: document.getElementById("leadfinder-follow-up"),
         source: document.getElementById("leadfinder-source"),
+        sourcedBy: document.getElementById("leadfinder-sourced-by"),
         notes: document.getElementById("leadfinder-notes"),
         reset: document.getElementById("leadfinder-reset"),
         message: document.getElementById("leadfinder-message"),
@@ -22514,6 +22516,12 @@
           dashboardSelect.innerHTML = `<option value="">Alle verkopers</option>${optionsHtml}`;
           dashboardSelect.value = canSwitchDashboard ? selectedValue : "";
         }
+        if (leadfinderElements.sourcedBy) {
+          const context = getLeadfinderUserContext();
+          const mayChooseColleague = ["super_admin", "admin", "sales_manager"].includes(context.role);
+          const sourceOptions = sorted.filter((option) => option.authUserId && (mayChooseColleague || option.authUserId === context.userId));
+          leadfinderElements.sourcedBy.innerHTML = `<option value="">Onbekend</option>${sourceOptions.map((option) => `<option value="${escapeHtml(option.authUserId)}">${escapeHtml(option.label)}</option>`).join("")}`;
+        }
         logLeadfinderDiagnostic("Leadfinder medewerkers gedetecteerd", {
           detectedEmployees: sorted.map((option) => ({ value: option.value, label: option.label })),
           selectedEmployeeFilter: selectedValue || "Alle medewerkers",
@@ -23309,14 +23317,19 @@
             ["Branche", lead.industry || "-"],
             ["Regio", lead.region || "-"],
             ["Score", `${lead.leadScore || 0}/100`],
-            ["Toegewezen medewerker", getLeadOwnerLabel(lead)],
+            ["Eigenaar", lead.ownerName || lead.ownerEmail || "Onbekend"],
+            ["Toegewezen aan", lead.assignedUserName || lead.assignedUserEmail || getLeadOwnerLabel(lead) || "Onbekend"],
+            ["Ingebracht door", lead.sourcedByName || lead.sourcedByUserId || "Onbekend"],
+            ["Sale gesloten door", lead.closedByUserId || "Onbekend"],
+            ["Verkoopdatum", lead.wonAt ? formatLeadDate(lead.wonAt) : "Onbekend"],
             ["Aangemaakt", formatLeadDate(lead.createdAt)],
             ["Laatste update", formatLeadDate(lead.updatedAt)],
             ["Website-status", getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)],
             ["Opvolgdatum", lead.followUpDate || "-"],
             ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || "-"],
             ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
-            ["Bron", lead.source || lead._source || leadfinderSourceStatus?.mode || "central"],
+            ["Acquisitiekanaal", lead.acquisitionChannel || "Onbekend"],
+            ["Bronsysteem", lead.externalSource || lead.source || lead._source || "Onbekend"],
             ["Notities", getLeadNotes(lead) || "-"],
           ] : [["Geen lead geselecteerd", "Klik op Bekijken in de lijst."]]);
         }
@@ -23845,7 +23858,11 @@
           leadScore: analysisScore ?? Number(leadfinderElements.score?.value || 70),
           callStatus: leadfinderElements.callStatus?.value || "nieuw",
           followUpDate: leadfinderElements.followUp?.value || "",
-          source: leadfinderElements.source?.value || "handmatig",
+          source: "admin-sales",
+          externalSource: "admin-sales",
+          acquisitionChannel: leadfinderElements.source?.value || "",
+          sourcedByUserId: leadfinderElements.sourcedBy?.value || "",
+          sourcedByName: leadfinderElements.sourcedBy?.selectedOptions?.[0]?.textContent === "Onbekend" ? "" : leadfinderElements.sourcedBy?.selectedOptions?.[0]?.textContent || "",
           notes: leadfinderElements.notes?.value || "",
           googlePlaceId: leadfinderElements.form?.dataset.googlePlaceId || "",
           googleMapsUrl: leadfinderElements.form?.dataset.googleMapsUrl || "",
