@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { persistPublicLead } = require("../functions/services/publicLeadService");
+const { persistPublicLead, _private } = require("../functions/services/publicLeadService");
 const { createHandler } = require("../functions/send-lead");
 
 const UUID = "11111111-1111-4111-8111-111111111111";
@@ -44,7 +44,7 @@ test("current production schema falls back to baseline columns without losing li
     if ((options.method || "GET") !== "POST") return response(200, []);
     const record = JSON.parse(options.body);
     posts.push(record);
-    if (posts.length === 1) return response(400, { code: "PGRST204", message: "Could not find the 'lead_status' column in the schema cache" });
+    if (posts.length === 1) return response(400, { code: "42703", message: "column leads.lead_status does not exist" });
     return response(201, [{ id: UUID, ...record }]);
   };
   const result = await persistPublicLead(input, { env: { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "secret" }, fetchImpl });
@@ -55,6 +55,84 @@ test("current production schema falls back to baseline columns without losing li
   assert.equal(posts[1].status, "nieuw");
   assert.equal(posts[1].metadata.leadStatus, "new");
   assert.equal(posts[1].metadata.externalSourceId, input.id);
+});
+
+test("fallback accepts only undefined lifecycle columns", () => {
+  const accepts = [
+    { code: "42703", message: "column leads.lead_status does not exist" },
+    { code: "42703", message: "column external_source does not exist" },
+    { code: "42703", message: "column normalized_phone does not exist" },
+    { code: "undefined_column", message: "PostgreSQL undefined column: last_activity_at" },
+  ];
+  const rejects = [
+    { code: "22023", message: "invalid value for column lead_status" },
+    { code: "23505", message: "duplicate value for external_source_id" },
+    { code: "42501", message: "RLS denied access to lead_status" },
+    { code: "PGRST204", message: "Could not find lead_status in the schema cache" },
+    { code: "42703", message: "schema cache does not contain lead_status" },
+    { code: "42703", message: "RLS permission denied for lead_status" },
+    { code: "42703", message: "column unrelated_field does not exist" },
+    { code: "42703", message: "column lead_status_backup does not exist" },
+  ];
+  accepts.forEach((error) => assert.equal(_private.isMissingLifecycleColumnError(error), true, JSON.stringify(error)));
+  rejects.forEach((error) => assert.equal(_private.isMissingLifecycleColumnError(error), false, JSON.stringify(error)));
+});
+
+test("approved undefined lifecycle columns perform exactly one legacy retry", async () => {
+  for (const column of ["lead_status", "external_source", "normalized_phone"]) {
+    let posts = 0;
+    const fetchImpl = async (_url, options = {}) => {
+      if ((options.method || "GET") !== "POST") return response(200, []);
+      posts += 1;
+      if (posts === 1) return response(400, { code: "42703", message: `column leads.${column} does not exist` });
+      return response(201, [{ id: UUID }]);
+    };
+    const result = await persistPublicLead(input, { env: { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "secret" }, fetchImpl });
+    assert.equal(result.created, true, column);
+    assert.equal(posts, 2, column);
+  }
+});
+
+test("non-lifecycle database errors never retry with the legacy record", async () => {
+  for (const databaseError of [
+    { code: "22023", message: "invalid value for column lead_status" },
+    { code: "23505", message: "duplicate key violates unique constraint on external_source_id" },
+    { code: "23503", message: "foreign key constraint failed for lead_status" },
+    { code: "23502", message: "null value violates constraint on lead_status" },
+    { code: "42501", message: "permission denied by RLS for lead_status" },
+    { code: "PGRST204", message: "Could not find lead_status in the schema cache" },
+  ]) {
+    let posts = 0;
+    const fetchImpl = async (_url, options = {}) => {
+      if ((options.method || "GET") !== "POST") return response(200, []);
+      posts += 1;
+      return response(400, databaseError);
+    };
+    await assert.rejects(
+      persistPublicLead(input, { env: { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "secret" }, fetchImpl }),
+      { status: 503, message: databaseError.message },
+    );
+    assert.equal(posts, 1, databaseError.code);
+  }
+});
+
+test("network and timeout errors propagate without a fallback retry", async () => {
+  for (const transportError of [
+    Object.assign(new Error("network unavailable"), { code: "ENETUNREACH" }),
+    Object.assign(new Error("request timed out"), { name: "AbortError" }),
+  ]) {
+    let posts = 0;
+    const fetchImpl = async (_url, options = {}) => {
+      if ((options.method || "GET") !== "POST") return response(200, []);
+      posts += 1;
+      throw transportError;
+    };
+    await assert.rejects(
+      persistPublicLead(input, { env: { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "secret" }, fetchImpl }),
+      (error) => error === transportError,
+    );
+    assert.equal(posts, 1);
+  }
 });
 
 test("handler never creates timeline or email before durable lead exists", async () => {

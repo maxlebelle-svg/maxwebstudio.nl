@@ -44,7 +44,7 @@ async function persistPublicLead(input = {}, dependencies = {}) {
   };
 
   let { response, data } = await insertLead({ supabaseUrl, headers, fetchImpl, record });
-  if (!response.ok && isMissingColumnResponse(response, data)) {
+  if (!response.ok && isMissingLifecycleColumnError(data)) {
     const raced = await findExisting({ supabaseUrl, headers, fetchImpl, requestId, email: lead.email });
     if (raced) return { lead: raced, created: false, requestId };
     ({ response, data } = await insertLead({
@@ -98,10 +98,12 @@ function legacyCompatibleRecord(record) {
   };
 }
 
-function isMissingColumnResponse(response, data) {
-  if (response.status !== 400) return false;
-  const evidence = [data?.code, data?.message, data?.details, data?.hint].map(cleanText).join(" ").toLowerCase();
-  return evidence.includes("pgrst204") || evidence.includes("42703") || evidence.includes("column") || evidence.includes("schema cache");
+function isMissingLifecycleColumnError(data) {
+  const sqlState = cleanText(data?.code).toLowerCase();
+  if (sqlState !== "42703" && sqlState !== "undefined_column") return false;
+  const evidence = [data?.message, data?.details, data?.hint, data?.error].map(cleanText).join(" ").toLowerCase();
+  if (/schema\s+cache|\bpermission\b|\brls\b|\bconstraint\b|type mismatch|invalid (?:value|input)|\bauth\b|\bjwt\b|\bconnection\b|\bnetwork\b|\btimeout\b|timed out/.test(evidence)) return false;
+  return /(?:^|[^a-z0-9_])(lead_status|external_source|external_source_id|normalized_company_name|normalized_phone|last_activity_at)(?:$|[^a-z0-9_])/.test(evidence);
 }
 
 async function findExisting({ supabaseUrl, headers, fetchImpl, requestId, email }) {
@@ -140,4 +142,4 @@ function statusError(status, message) { const error = new Error(message); error.
 function cleanText(value) { return String(value || "").trim(); }
 function isUuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleanText(value)); }
 
-module.exports = { persistPublicLead, _private: { isMissingColumnResponse, legacyCompatibleRecord, normalizeInput, stableRequestId } };
+module.exports = { persistPublicLead, _private: { isMissingLifecycleColumnError, legacyCompatibleRecord, normalizeInput, stableRequestId } };
