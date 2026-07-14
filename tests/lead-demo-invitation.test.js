@@ -180,6 +180,13 @@ test("duplicate planning verstuurt niet opnieuw en testomgeving verstuurt nooit 
   const normal = await run({}); assert.equal(normal.state.mailCalls.length, 0);
 });
 
+test("productieflag alleen verstuurt niets zolang afzenderverificatie niet expliciet gereed is", async () => {
+  const previous = { ...process.env }; const state = fixture({});
+  Object.assign(process.env, { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role", SITE_URL: "https://maxwebstudio.nl", FROM_EMAIL: "Max Webstudio <info@maxwebstudio.nl>", APP_ENV: "production", LEAD_DEMO_INVITATION_EMAIL_ENABLED: "on", RESEND_DOMAIN_VERIFIED: "false" });
+  try { const response = await state.handler(event()); assert.equal(JSON.parse(response.body).status, "planned"); assert.equal(state.mailCalls.length, 0); }
+  finally { process.env = previous; }
+});
+
 test("statusroute toont not_invited of actuele begrensde status en afzenderwaarschuwing", async () => {
   const previous = { ...process.env }; const state = fixture({ invitationStatus: "sent" });
   Object.assign(process.env, { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role", FROM_EMAIL: "Max Webstudio <info@maxwebstudio.nl>", RESEND_DOMAIN_VERIFIED: "false" });

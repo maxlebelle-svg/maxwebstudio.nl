@@ -127,7 +127,7 @@ async function dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned,
   if (planned.duplicate) return { status: "planned", sent: false };
   const production = [process.env.APP_ENV, process.env.APP_ENVIRONMENT, process.env.CONTEXT].map((value) => clean(value).toLowerCase()).some((value) => ["production", "prod"].includes(value));
   const enabled = ["1", "true", "yes", "on"].includes(clean(process.env.LEAD_DEMO_INVITATION_EMAIL_ENABLED).toLowerCase());
-  if (!production || !enabled) return { status: "planned", sent: false };
+  if (!production || !enabled || !senderReadiness(config).ready) return { status: "planned", sent: false };
   const result = await sendMail({
     to: clean(lead.email).toLowerCase(), from: config.fromEmail || undefined, replyTo: config.replyTo || undefined,
     subject: mail.subject, html: mail.html, text: mail.text, templateKey: "lead_demo_invitation", templateName: "Je website-demo staat klaar",
