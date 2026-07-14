@@ -218,7 +218,11 @@
     const config = navigation || global.MaxAdminSidebarNavigation?.ADMIN_SIDEBAR_NAVIGATION || [];
     const sidebar = element("aside", "mws-admin-sidebar-v2");
     sidebar.setAttribute("aria-label", "Admin navigatie");
-    const brand = element("a", "mws-sidebar-brand"); brand.href = "admin-dashboard.html"; brand.append(element("span", "mws-sidebar-brand-mark", "M"), element("span", "", "Max Webstudio")); sidebar.append(brand);
+    const brand = element("a", "mws-sidebar-brand"); brand.href = "admin-dashboard.html"; brand.setAttribute("aria-label", "Max Webstudio admin dashboard");
+    const brandLogo = element("img", "mws-sidebar-brand-logo"); brandLogo.src = "/max-webstudio-logo-full.svg"; brandLogo.alt = "Max Webstudio"; brandLogo.width = 174; brandLogo.height = 40;
+    const brandFallback = element("span", "mws-sidebar-brand-mark", "M"); brandFallback.setAttribute("aria-hidden", "true");
+    brandLogo.addEventListener("error", () => brand.classList.add("is-fallback"), { once: true });
+    brand.append(brandLogo, brandFallback); sidebar.append(brand);
     const content = element("div", "mws-sidebar-content");
     config.forEach((section) => { if (section.type === "workspace") content.append(WorkspaceCard({ relationship, onSwitch: onSwitchWorkspace, onSelect: onSelectWorkspace, onClear: onClearWorkspace })); else content.append(SidebarSection({ section, activeId, badgeValues, relationship, canAccess })); });
     sidebar.append(content, UserProfileMenu({ user, perspective, actions: profileActions }));

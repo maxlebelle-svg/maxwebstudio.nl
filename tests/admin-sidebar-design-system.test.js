@@ -30,6 +30,9 @@ test("sidebar module exports the full phase one component contract without auto 
   for (const name of ["AdminSidebar", "SidebarSection", "SidebarItem", "WorkspaceCard", "WorkspaceSelector", "MetricBadge", "StatusBadge", "Avatar", "UserProfileMenu", "EmptyWorkspaceState", "LoadingSkeleton"]) assert.match(source, new RegExp(`\\b${name}\\b`));
   assert.doesNotMatch(source, /DOMContentLoaded|querySelector\(|appendChild\(AdminSidebar|\.replaceChildren\(AdminSidebar/);
   assert.match(source, /image\.addEventListener\("error"/);
+  assert.match(source, /brandLogo\.src = "\/max-webstudio-logo-full\.svg"/);
+  assert.match(source, /brandLogo\.alt = "Max Webstudio"/);
+  assert.match(source, /brand\.classList\.add\("is-fallback"\)/);
   assert.match(source, /aria-current/);
   assert.match(source, /aria-disabled/);
 });

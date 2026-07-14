@@ -34,7 +34,10 @@
 .admin-body .admin-crm-shell { grid-template-columns: 288px minmax(0, 1fr); }
 .admin-body #admin-sidebar-root { min-width: 0; }
 .mws-sidebar-brand { display: flex; align-items: center; gap: 10px; min-height: 44px; color: inherit; font-weight: 850; text-decoration: none; }
-.mws-sidebar-brand-mark { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 11px; background: linear-gradient(135deg, #155eef, #19c2ff); box-shadow: 0 10px 28px rgba(21, 94, 239, 0.3); }
+.mws-sidebar-brand-logo { display: block; width: 174px; height: 40px; object-fit: contain; object-position: left center; }
+.mws-sidebar-brand-mark { display: none; width: 36px; height: 36px; place-items: center; border-radius: 11px; background: linear-gradient(135deg, #155eef, #19c2ff); box-shadow: 0 10px 28px rgba(21, 94, 239, 0.3); }
+.mws-sidebar-brand.is-fallback .mws-sidebar-brand-logo { display: none; }
+.mws-sidebar-brand.is-fallback .mws-sidebar-brand-mark { display: grid; }
 .mws-sidebar-content { display: grid; flex: 1; gap: 18px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .mws-sidebar-section { display: grid; gap: 7px; }
 .mws-sidebar-section-label, .mws-workspace-kicker { margin: 0; color: rgba(226, 236, 248, 0.48); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
