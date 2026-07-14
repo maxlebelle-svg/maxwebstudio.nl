@@ -23693,6 +23693,7 @@
           ["6", "demo_requested", "Demo gewenst"],
           ["7", "proposal_requested", "Voorstel gewenst"],
           ["8", "not_interested", "Niet geïnteresseerd"],
+          ["9", "interested", "Geïnteresseerd"],
         ];
         const answer = window.prompt(`Wat was de uitkomst?\n${options.map(([key, , label]) => `${key}. ${label}`).join("\n")}`, "1");
         const selected = options.find(([key]) => key === String(answer || "").trim());

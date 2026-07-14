@@ -623,6 +623,13 @@
             <label for="leadfinder-filter-score">Score<select id="leadfinder-filter-score"><option value="">Alle scores</option></select></label>
           </div>
 
+          <div class="admin-profile-actions" id="lead-operational-groups" aria-label="Operationele leadgroepen">
+            <button class="button secondary" type="button" data-lead-outcome-filter="interested" data-filter-title="Geïnteresseerd">Geïnteresseerd <span data-lead-outcome-count="interested">0</span></button>
+            <button class="button secondary" type="button" data-lead-outcome-filter="not_interested" data-filter-title="Niet geïnteresseerd">Niet geïnteresseerd <span data-lead-outcome-count="not_interested">0</span></button>
+            <button class="button secondary" type="button" data-lead-outcome-filter="voicemail_left" data-filter-title="Voicemail ingesproken">Voicemail ingesproken <span data-lead-outcome-count="voicemail_left">0</span></button>
+            <button class="button secondary" type="button" data-lead-outcome-filter="callback_requested" data-filter-title="Terugbellen gevraagd">Terugbellen gevraagd <span data-lead-outcome-count="callback_requested">0</span></button>
+          </div>
+
           <section class="admin-card admin-developer-only" id="legacy-lead-import-panel" aria-labelledby="legacy-lead-import-title">
             <div class="admin-profile-form-heading">
               <div>
@@ -22555,6 +22562,7 @@
 
       function leadMatchesQuickFilter(lead = {}, filter = activeLeadfinderQuickFilter) {
         if (!filter?.type) return true;
+        if (filter.type.startsWith("outcome:")) return String(lead.lastCallOutcome || "") === filter.type.slice(8);
                 if (filter.type === "new_today") {
                   return isSameDay(lead.createdAt) && isOpenLeadStatus(lead);
                 }
@@ -22673,6 +22681,10 @@
         const minScore = Number(leadfinderElements.filterScore?.value || 0);
 
         const baseLeads = getLeadfinderLeads();
+        document.querySelectorAll("[data-lead-outcome-count]").forEach((element) => {
+          const outcome = element.dataset.leadOutcomeCount;
+          element.textContent = String(baseLeads.filter((lead) => String(lead.lastCallOutcome || "") === outcome).length);
+        });
         const filteredLeads = baseLeads.filter((lead) => {
           const haystack = [
             lead.companyName,
@@ -24337,6 +24349,11 @@
                   leadfinderElements.search?.focus();
                 });
                 leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
+                document.getElementById("lead-operational-groups")?.addEventListener("click", (event) => {
+                  const button = event.target.closest("[data-lead-outcome-filter]");
+                  if (!button) return;
+                  applyLeadfinderQuickFilter(`outcome:${button.dataset.leadOutcomeFilter}`, button.dataset.filterTitle || "Operationele leadgroep");
+                });
                 leadfinderElements.legacyImport?.scan?.addEventListener("click", scanLegacyLeadImports);
                 leadfinderElements.legacyImport?.export?.addEventListener("click", exportLegacyLeadImports);
                 leadfinderElements.legacyImport?.importSelected?.addEventListener("click", importSelectedLegacyLeads);

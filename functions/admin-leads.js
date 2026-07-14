@@ -78,15 +78,16 @@ const lifecycleStatuses = new Set([
 const terminalLeadStatuses = new Set(["won", "lost", "not_interesting", "customer"]);
 const nextActionTypes = new Set(["call", "email", "send_demo", "create_demo", "send_proposal", "follow_up", "appointment", "await_response", "custom"]);
 const callOutcomes = new Map([
+  ["interested", { label: "Geïnteresseerd", status: "interesting", nextActionType: "follow_up", defaultBusinessDays: 2 }],
   ["no_answer", { label: "Geen gehoor", status: "contact_attempted", nextActionType: "call", defaultBusinessDays: 2 }],
   ["voicemail_left", { label: "Voicemail ingesproken", status: "follow_up", nextActionType: "call", defaultBusinessDays: 2 }],
   ["wrong_number", { label: "Verkeerd nummer", status: "contact_attempted", nextActionType: "custom" }],
-  ["callback_requested", { label: "Terugbellen gevraagd", status: "call_scheduled", nextActionType: "call" }],
+  ["callback_requested", { label: "Terugbellen gevraagd", status: "follow_up", nextActionType: "call" }],
   ["contacted", { label: "Contact gehad", status: "contacted", nextActionType: "follow_up", defaultBusinessDays: 3 }],
   ["appointment_scheduled", { label: "Afspraak gemaakt", status: "appointment_scheduled", nextActionType: "appointment" }],
   ["demo_requested", { label: "Demo gewenst", status: "demo_requested", nextActionType: "create_demo" }],
   ["proposal_requested", { label: "Voorstel gewenst", status: "proposal_sent", nextActionType: "send_proposal" }],
-  ["not_interested", { label: "Niet geïnteresseerd", status: "not_interesting", nextActionType: "custom" }],
+  ["not_interested", { label: "Niet geïnteresseerd", status: "lost", nextActionType: "custom" }],
   ["no_budget", { label: "Geen budget", status: "lost", nextActionType: "custom" }],
   ["later", { label: "Later opnieuw benaderen", status: "follow_up", nextActionType: "follow_up", defaultBusinessDays: 5 }],
   ["already_helped", { label: "Al voorzien", status: "lost", nextActionType: "custom" }],
@@ -1108,6 +1109,9 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     nextActionAt = cleanText(payload.nextActionAt || payload.next_action_at) || nextBusinessDateIso(outcomeConfig.defaultBusinessDays);
     nextActionNote = cleanText(payload.nextActionNote || payload.next_action_note || payload.note);
     nextActionCreatedAutomatically = !cleanText(payload.nextActionAt || payload.next_action_at) && Boolean(outcomeConfig.defaultBusinessDays);
+    if (lastCallOutcome === "callback_requested" && !nextActionAt) {
+      return jsonResponse(400, { success: false, error: "Kies een datum en tijd voor de terugbelafspraak." });
+    }
     lastContactedAt = now;
     lastContactedBy = admin.id;
     if (lastCallOutcome === "appointment_scheduled") appointmentAt = nextActionAt;
@@ -1243,12 +1247,15 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     metadata: {
       action,
       outcome: lastCallOutcome,
+      previousOutcome: lead.lastCallOutcome,
       note: cleanText(payload.note),
       nextActionType,
       nextActionAt,
       nextActionNote,
       nextActionCreatedAutomatically,
       leadStatus: nextStatus,
+      previousLeadStatus: lead.leadStatus,
+      occurredAt: now,
       appointmentAt,
       lostReason,
     },
@@ -1530,6 +1537,7 @@ function legacyCallStatus(status = "", outcome = "") {
 
 function outcomeEventType(outcome = "") {
   return ({
+    interested: "lead_interested",
     no_answer: "no_answer",
     voicemail_left: "voicemail_left",
     wrong_number: "call_completed",
@@ -1544,6 +1552,11 @@ function outcomeEventType(outcome = "") {
     already_helped: "lead_lost",
     business_closed: "lead_lost",
   })[outcome] || "call_completed";
+}
+
+function operationalLeadGroup(lead = {}) {
+  const outcome = cleanText(lead.lastCallOutcome || lead.last_call_outcome || lead.metadata?.lastCallOutcome);
+  return ["interested", "not_interested", "voicemail_left", "callback_requested"].includes(outcome) ? outcome : "";
 }
 
 function nextBusinessDateIso(days = 0) {
@@ -1725,3 +1738,5 @@ function jsonResponse(statusCode, body) {
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };
 }
+
+exports._test = { callOutcomes, operationalLeadGroup };
