@@ -11,6 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script src="admin/ui/shared-helpers.js"></script>
+    <script src="admin/ui/website-factory-context-sync.js"></script>
+    <script>window.maxwebstudioFactoryInitialContext = window.WebsiteFactoryContextSync.parseCanonicalContext(window.location.search);</script>
     <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
@@ -21207,6 +21209,8 @@
         let customerPreviewPublication = null;
         let leadSelectionVersion = 0;
         let manualLeadSelectionActive = false;
+        const factoryContextSync = window.WebsiteFactoryContextSync;
+        const factoryContextRequestGuard = factoryContextSync.createRequestGuard();
         const journeyLocks = new Set();
         const intakeQuestions = [
           { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["tegelzetbedrijf", "Tegelzetbedrijf / tegelwerk"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
@@ -23500,6 +23504,21 @@
           setMessage(elements.message, factoryContextState === "unauthorized" ? "Je adminsessie is verlopen. Log opnieuw in om verder te gaan." : factoryContextState === "forbidden" ? "Je hebt geen toegang tot deze klantwerkruimte." : factoryContextState === "customer_not_found" ? "Deze klant kon niet worden gevonden." : error?.message || "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw.", "error");
         }
 
+        function renderLeadContextError(message = "De actieve lead kon niet veilig worden geladen.") {
+          factoryContextState = "lead_context_error";
+          factoryCustomerSelection = null;
+          factoryCustomerContext = null;
+          leads = [];
+          if (elements.lead) elements.lead.value = "";
+          renderLeadPicker();
+          renderLeadCommandPreview(null);
+          elements.activeContext.className = "factory-context-banner factory-context-error admin-card";
+          elements.activeContext.innerHTML = `<div class="factory-context-main"><span class="factory-context-kicker">Website Factory</span><strong>Leadcontext niet beschikbaar</strong><small>${escapeHtml(message)}</small></div><div class="factory-context-actions"><button class="button primary" type="button" data-lead-context-retry>Opnieuw proberen</button><a class="button secondary" href="admin-sales.html">Terug naar leads</a><a class="button secondary" href="admin-website-factory.html">Andere lead of klant kiezen</a></div>`;
+          elements.activeContext.hidden = false;
+          elements.activeContext.querySelector("[data-lead-context-retry]")?.addEventListener("click", () => window.location.reload());
+          setMessage(elements.message, message, "error");
+        }
+
         async function loadJourney(expectedLeadId = elements.lead?.value || "", expectedVersion = leadSelectionVersion) {
           const leadId = expectedLeadId || "";
           if (!leadId) {
@@ -23567,11 +23586,16 @@
           lastFactoryResponse = null;
         }
 
-        function selectFactoryLead(leadId = "") {
+        function selectFactoryLead(leadId = "", options = {}) {
           if (!leadId || !elements.lead) return;
+          const manual = options.manual !== false;
+          if (!manual && manualLeadSelectionActive) return;
           factoryCustomerSelection = null;
           factoryCustomerContext = null;
-          manualLeadSelectionActive = true;
+          if (manual) {
+            manualLeadSelectionActive = true;
+            factoryContextRequestGuard.invalidate();
+          }
           const selectionVersion = ++leadSelectionVersion;
           clearFactoryRuntimeState();
           intakeState = {};
@@ -23582,6 +23606,16 @@
           renderLeadPicker();
           loadIntakeLocally();
           fillFromLead(selectedLead());
+          const lead = selectedLead();
+          if (lead) {
+            renderActiveContextBanner({
+              entityType: "lead",
+              title: lead.companyName || lead.company_name || lead.businessName || lead.name || "Lead",
+              subtitle: [lead.industry || lead.branch, lead.region || lead.city || lead.address].filter(Boolean).join(" · "),
+              website: lead.websiteUrl || lead.website_url || lead.website || "",
+              status: lead.status || lead.leadStatus || lead.lifecycleStage || "",
+            });
+          }
           renderJourney();
           return loadJourney(leadId, selectionVersion)
             .then(() => renderLeadCommandbar())
@@ -25394,10 +25428,33 @@
           wireEvents();
           renderJourney();
           const params = factoryQueryParams();
+          const canonicalContext = window.maxwebstudioFactoryInitialContext || factoryContextSync.parseCanonicalContext(window.location.search);
+          const contextRequestToken = factoryContextRequestGuard.begin();
+          let canonicalRelationship = null;
+          if (canonicalContext.state === "invalid") {
+            renderLeadContextError(canonicalContext.error);
+            renderMetrics();
+            return;
+          }
+          if (canonicalContext.state === "valid") {
+            canonicalRelationship = await validatedActiveFactoryRelationship();
+            if (!factoryContextRequestGuard.isCurrent(contextRequestToken) || manualLeadSelectionActive) return;
+            const currentContext = factoryContextSync.parseCanonicalContext(window.location.search);
+            if (currentContext.state !== "valid" || currentContext.relationshipType !== canonicalContext.relationshipType || currentContext.relationshipId !== canonicalContext.relationshipId) return;
+            const decision = factoryContextSync.decideLeadSelection({ context: canonicalContext, relationship: canonicalRelationship });
+            if (decision.state === "error") {
+              renderLeadContextError(decision.error);
+              renderMetrics();
+              return;
+            }
+          }
           let requestedLeadId = params.get("leadId") || params.get("lead_id") || window.maxwebstudioAdminPage?.leadId || "";
           let requestedCustomerId = params.get("customerId") || params.get("customer_id") || "";
           const requestedJourneyId = params.get("demoJourneyId") || params.get("demo_journey_id") || params.get("id") || "";
-          if (!requestedCustomerId && !requestedLeadId && !requestedJourneyId) {
+          if (canonicalContext.state === "valid") {
+            requestedLeadId = canonicalContext.relationshipType === "lead" ? canonicalContext.relationshipId : "";
+            requestedCustomerId = canonicalContext.relationshipType === "customer" ? canonicalContext.relationshipId : "";
+          } else if (!requestedCustomerId && !requestedLeadId && !requestedJourneyId) {
             const activeRelationship = await validatedActiveFactoryRelationship();
             if (activeRelationship?.entityType === "customer") {
               requestedCustomerId = activeRelationship.customerId;
@@ -25424,6 +25481,13 @@
             return;
           }
           await loadLeads();
+          if (canonicalContext.state === "valid" && canonicalContext.relationshipType === "lead") {
+            if (!factoryContextRequestGuard.isCurrent(contextRequestToken) || manualLeadSelectionActive) return;
+            upsertLeadOption({ ...canonicalRelationship, id: canonicalContext.relationshipId, leadId: canonicalContext.relationshipId });
+            await selectFactoryLead(canonicalContext.relationshipId, { manual: false });
+            renderMetrics();
+            return;
+          }
           if (requestedJourneyId) {
             try {
               const data = await apiRequest(`${endpoint}?id=${encodeURIComponent(requestedJourneyId)}`);
@@ -25473,6 +25537,7 @@
         }
 
         wireActiveFactoryRelationshipSync();
+        window.addEventListener("popstate", () => window.location.reload());
 
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", init);
