@@ -21,23 +21,26 @@ exports.handler = async (event) => {
     }
     const resetLink = await createPasswordResetLink(input.email);
 
+    let mailResult = null;
     if (resetLink.status === "generated") {
       const mailPreview = buildMailPreview(input.email, resetLink);
-      const result = await sendEmail({
+      mailResult = await sendEmail({
         to: input.email,
         subject: mailPreview.subject,
         html: buildPasswordResetEmailHtml(input.email, mailPreview),
         text: mailPreview.text,
         templateKey: "client-password-reset",
         templateName: "Klant wachtwoord reset",
-        suppressTimelineEvent: true,
+        customerId: input.relationshipType === "customer" ? input.relationshipId : null,
+        leadId: input.relationshipType === "lead" ? input.relationshipId : null,
+        suppressTimelineEvent: !input.relationshipId,
         metadata: {
           source: "client_login_password_reset",
         },
       });
 
-      if (!result.sent) {
-        console.error("Client password reset mail was not sent", { warning: result.warning || "" });
+      if (!mailResult.sent) {
+        console.error("Client password reset mail was not sent", { warning: mailResult.warning || "" });
       }
     } else {
       console.info("Client password reset link not generated", { email: redactEmail(input.email), status: resetLink.status });
@@ -46,6 +49,13 @@ exports.handler = async (event) => {
     return jsonResponse(200, {
       success: true,
       message: "Als dit e-mailadres bekend is, wordt er een resetlink verstuurd.",
+      ...(input.relationshipId ? {
+        email: {
+          requested: true,
+          sent: Boolean(mailResult?.sent),
+          warning: cleanText(mailResult?.warning),
+        },
+      } : {}),
     });
   } catch (error) {
     console.error("Client password reset failed", { message: error.message });
@@ -86,7 +96,7 @@ async function resolveRelationshipEmail(payload = {}) {
     error.statusCode = response.ok ? 422 : 503;
     throw error;
   }
-  return { email: cleanText(row.email).toLowerCase() };
+  return { email: cleanText(row.email).toLowerCase(), relationshipType, relationshipId };
 }
 
 function parsePayload(body) {

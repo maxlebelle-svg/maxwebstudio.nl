@@ -131,7 +131,7 @@ async function dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned,
   const result = await sendMail({
     to: clean(lead.email).toLowerCase(), from: config.fromEmail || undefined, replyTo: config.replyTo || undefined,
     subject: mail.subject, html: mail.html, text: mail.text, templateKey: "lead_demo_invitation", templateName: "Je website-demo staat klaar",
-    leadId: lead.id, triggeredBy: "admin_lead_demo_invitation", suppressTimelineEvent: true,
+    leadId: lead.id, triggeredBy: "admin_lead_demo_invitation",
     idempotencyKey: `lead.demo.invitation:${stable}`, metadata: { demoJourneyId: journey.id, profileId: profile.id, outboxId: planned.outbox_id },
   });
   const sent = Boolean(result?.sent && result?.id);

@@ -759,6 +759,8 @@
       </div>
     </main>
 
+    <script src="admin/ui/admin-toast.js"></script>
+    <script src="src/emailActionNotifications.js"></script>
     <script src="src/emailStudioTemplateSelection.js"></script>
     <script>
       (() => {
@@ -1663,157 +1665,129 @@
           const confirmation = `Bevestig handmatige verzending:\n\nNaam: ${lead.contactName || lead.companyName || "Onbekend"}\nE-mail: ${to}\nRelatietype: ${lead.relationshipType === "lead" ? "Lead" : "Klant"}\nTemplate: ${active.name || "Onbekend"}`;
           if (!window.confirm(confirmation)) return;
           sendInFlight = true;
-          if (active.id === "lead-demo-uitnodiging") {
-            try {
+          const notification = window.EmailActionNotifications.start({
+            showToast: window.showToast,
+            recipient: to,
+            template: active.name || "Mail Studio template",
+            onOpenTimeline: () => window.location.assign("admin-notification-center.html?eventType=email_sent"),
+            onRepeat: () => window.setTimeout(sendManualEmail, 0),
+          });
+          try {
+            if (active.id === "lead-demo-uitnodiging") {
               if (lead.relationshipType !== "lead") throw new Error("De demo-uitnodiging is uitsluitend voor leads. Gebruik voor klanten de bestaande accounttemplate.");
               await sendLeadDemoInvitation({ lead, token });
-            } catch (error) {
-              setMessage(error.message, "error");
-            } finally {
-              sendInFlight = false;
-            }
-            return;
-          }
-          if (active.id === "account-aanmaken") {
-            try {
+            } else if (active.id === "account-aanmaken") {
               if (lead.relationshipType === "lead") await sendLeadDemoInvitation({ lead, token, accountOnly: true });
               else await sendAccountActivationEmail({ lead, to, token });
-            } catch (error) {
-              setMessage(error.message, "error");
-            } finally {
-              sendInFlight = false;
-            }
-            return;
-          }
-          if (active.id === "client-password-reset") {
-            try {
+            } else if (active.id === "client-password-reset") {
               await sendPasswordResetEmail({ lead, token });
-            } finally {
-              sendInFlight = false;
+            } else {
+              await sendRenderedEmail({ lead, token, active });
             }
-            return;
+            notification.success();
+          } catch (error) {
+            const message = notification.failure(error);
+            setMessage(message, "error");
+          } finally {
+            sendInFlight = false;
+            elements.sendEmail.disabled = false;
+            syncManualSendPanel();
           }
+        }
+
+        async function sendRenderedEmail({ lead, token, active }) {
           const payload = buildEmailRenderPayload();
           latestRenderedEmailHtml = renderResendEmailHtml(payload);
           elements.sendEmail.disabled = true;
           elements.sendEmail.textContent = "Versturen...";
-          try {
-            const response = await fetch("/.netlify/functions/admin-mail-studio-send", {
-              method: "POST",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+          const response = await fetch("/.netlify/functions/admin-mail-studio-send", {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              relationshipType: lead.relationshipType,
+              relationshipId: lead.relationshipId,
+              idempotencyKey: `mail-studio:${lead.relationshipType}:${lead.relationshipId}:${crypto.randomUUID()}`,
+              subject: payload.subject,
+              html: latestRenderedEmailHtml,
+              text: payload.bodyText,
+              preheader: payload.preheader,
+              templateKey: payload.template?.id || activeId,
+              templateName: payload.template?.name || elements.name.value || "Mail Studio template",
+              metadata: {
+                recipientName: lead.contactName,
+                companyName: lead.companyName,
+                source: "manual_email_studio",
               },
-              body: JSON.stringify({
-                relationshipType: lead.relationshipType,
-                relationshipId: lead.relationshipId,
-                idempotencyKey: `mail-studio:${lead.relationshipType}:${lead.relationshipId}:${crypto.randomUUID()}`,
-                subject: payload.subject,
-                html: latestRenderedEmailHtml,
-                text: payload.bodyText,
-                preheader: payload.preheader,
-                templateKey: payload.template?.id || activeId,
-                templateName: payload.template?.name || elements.name.value || "Mail Studio template",
-                metadata: {
-                  recipientName: lead.contactName,
-                  companyName: lead.companyName,
-                  source: "manual_email_studio",
-                },
-              }),
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || data.success === false) throw new Error(data.error || "Mail kon niet worden verzonden.");
-            setMessage(`Mail verzonden naar ${to}.`, "success");
-            if (elements.sendNote) elements.sendNote.textContent = `Laatste verzending: ${payload.template?.name || "template"} naar ${to}.`;
-          } catch (error) {
-            setMessage(error.message || "Mail kon niet worden verzonden.", "error");
-          } finally {
-            sendInFlight = false;
-            elements.sendEmail.disabled = false;
-            elements.sendEmail.textContent = "Mail versturen";
-          }
+            }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false || !data.email?.sent) throw new Error(data.error || data.email?.warning || "Mail kon niet worden verzonden.");
+          setMessage(`Mail verzonden naar ${lead.email}.`, "success");
+          if (elements.sendNote) elements.sendNote.textContent = `Laatste verzending: ${payload.template?.name || active.name || "template"} naar ${lead.email}.`;
         }
 
         async function sendPasswordResetEmail({ lead, token }) {
           const to = lead.email;
           elements.sendEmail.disabled = true;
           elements.sendEmail.textContent = "Resetlink maken...";
-          try {
-            const response = await fetch("/.netlify/functions/client-password-reset", {
-              method: "POST",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ relationshipType: lead.relationshipType, relationshipId: lead.relationshipId }),
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || data.success === false) throw new Error(data.error || "Resetmail kon niet worden verzonden.");
-            setMessage(`Resetmail aangevraagd voor ${to}.`, "success");
-            if (elements.sendNote) elements.sendNote.textContent = `De echte resetmail is via de beveiligde resetflow aangevraagd voor ${to}.`;
-          } catch (error) {
-            setMessage(error.message || "Resetmail kon niet worden verzonden.", "error");
-          } finally {
-            elements.sendEmail.disabled = false;
-            elements.sendEmail.textContent = "Mail versturen";
-          }
+          const response = await fetch("/.netlify/functions/client-password-reset", {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ relationshipType: lead.relationshipType, relationshipId: lead.relationshipId }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false || !data.email?.sent) throw new Error(data.error || data.email?.warning || "Resetmail kon niet worden verzonden.");
+          setMessage(`Resetmail verzonden naar ${to}.`, "success");
+          if (elements.sendNote) elements.sendNote.textContent = `De resetmail is via de beveiligde resetflow verzonden naar ${to}.`;
         }
 
         async function sendLeadDemoInvitation({ lead, token, accountOnly = false }) {
           elements.sendEmail.disabled = true;
           const request = window.EmailStudioTemplateSelection.accountInvitationRequest({ recipient: lead, status: leadInvitationStatus, actionKey: crypto.randomUUID() });
           elements.sendEmail.textContent = "Veilig plannen…";
-          try {
-            const response = await fetch(request.endpoint, {
-              method: "POST",
-              headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-              body: JSON.stringify(request.payload),
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.error || "Demo-uitnodiging kon niet veilig worden gepland.");
-            leadInvitationStatus = data.status || "planned";
-            const invitationLabel = accountOnly ? "Accountuitnodiging" : "Demo-uitnodiging";
-            const message = data.emailSent ? `${invitationLabel} verzonden naar ${lead.email}.` : data.status === "send_failed" ? "Uitnodiging opgeslagen, maar verzending is mislukt. Opnieuw versturen is veilig." : `${invitationLabel} is duurzaam gepland.`;
-            setMessage(message, data.status === "send_failed" ? "error" : "success");
-            if (elements.sendNote) elements.sendNote.textContent = `${message} Er is geen customer aangemaakt.`;
-          } finally {
-            elements.sendEmail.disabled = false;
-            syncManualSendPanel();
-          }
+          const response = await fetch(request.endpoint, {
+            method: "POST",
+            headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify(request.payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) throw new Error(data.error || "Demo-uitnodiging kon niet veilig worden gepland.");
+          leadInvitationStatus = data.status || "planned";
+          const invitationLabel = accountOnly ? "Accountuitnodiging" : "Demo-uitnodiging";
+          if (!data.emailSent) throw new Error(data.status === "send_failed" ? "De uitnodiging is opgeslagen, maar de e-mailverzending is mislukt. Probeer het opnieuw." : `${invitationLabel} is gepland, maar nog niet verzonden.`);
+          const message = `${invitationLabel} verzonden naar ${lead.email}.`;
+          setMessage(message, "success");
+          if (elements.sendNote) elements.sendNote.textContent = `${message} Er is geen customer aangemaakt.`;
         }
 
         async function sendAccountActivationEmail({ lead, to, token }) {
           elements.sendEmail.disabled = true;
           const request = window.EmailStudioTemplateSelection.accountInvitationRequest({ recipient: lead, status: customerInvitationStatus, actionKey: crypto.randomUUID() });
           elements.sendEmail.textContent = "Activatielink maken...";
-          try {
-            const response = await fetch(request.endpoint, {
-              method: "POST",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify(request.payload),
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || data.success === false) throw new Error(data.error || "Accountmail kon niet worden voorbereid.");
-            const sent = Boolean(data.email?.sent);
-            customerInvitationStatus = data.account?.status || (sent ? "sent" : customerInvitationStatus);
-            setMessage(sent ? `Accountactivatie verstuurd naar ${to}.` : "Accountactivatie voorbereid. Controleer Resend-configuratie of mailpreview.", sent ? "success" : "warning");
-            if (elements.sendNote) {
-              elements.sendNote.textContent = sent
-                ? `Veilige activatielink verzonden naar ${to}.`
-                : "Activatielink voorbereid, maar de e-mail is niet verzonden in deze omgeving.";
-            }
-          } catch (error) {
-            setMessage(error.message || "Accountactivatie kon niet worden verstuurd.", "error");
-          } finally {
-            elements.sendEmail.disabled = false;
-            elements.sendEmail.textContent = "Mail versturen";
-          }
+          const response = await fetch(request.endpoint, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(request.payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Accountmail kon niet worden voorbereid.");
+          const sent = Boolean(data.email?.sent);
+          customerInvitationStatus = data.account?.status || (sent ? "sent" : customerInvitationStatus);
+          if (!sent) throw new Error(data.email?.warning || "De accountuitnodiging is voorbereid, maar niet verzonden. Probeer het opnieuw.");
+          setMessage(`Accountactivatie verstuurd naar ${to}.`, "success");
+          if (elements.sendNote) elements.sendNote.textContent = `Veilige activatielink verzonden naar ${to}.`;
         }
 
         async function insertVariable(variable) {

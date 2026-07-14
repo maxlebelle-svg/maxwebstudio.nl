@@ -696,6 +696,17 @@ a {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--toast-accent) 28%, transparent);
 }
 
+.toast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.toast-actions[hidden] {
+  display: none;
+}
+
 .toast-progress {
   position: absolute;
   right: 0;

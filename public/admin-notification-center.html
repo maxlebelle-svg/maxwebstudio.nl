@@ -630,6 +630,8 @@
           option.textContent = type.replace(/_/g, " ");
           elements.type.append(option);
         });
+        const requestedEventType = new URLSearchParams(window.location.search).get("eventType") || "";
+        if (eventTypes.includes(requestedEventType)) elements.type.value = requestedEventType;
         elements.quickFilters.innerHTML = quickFilters.map(([label, value]) => `<button class="button secondary" type="button" data-quick-filter="${escapeAttribute(value)}">${escapeHtml(label)}</button>`).join("");
 
         elements.filters.addEventListener("submit", (event) => {

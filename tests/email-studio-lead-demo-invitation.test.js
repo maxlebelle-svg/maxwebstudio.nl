@@ -96,5 +96,6 @@ test("demo opslaan blijft los van uitnodigen en alleen expliciete leadactie plan
   const demoJourney = fs.readFileSync(path.join(__dirname, "../functions/demo-journey.js"), "utf8");
   assert.doesNotMatch(demoJourney, /admin-lead-demo-invitation/);
   assert.match(emailStudio, /sendLeadDemoInvitation/);
-  assert.match(emailStudio, /\$\{invitationLabel\} is duurzaam gepland/);
+  assert.match(emailStudio, /\$\{invitationLabel\} is gepland, maar nog niet verzonden/);
+  assert.match(emailStudio, /if \(!data\.emailSent\) throw new Error/);
 });
