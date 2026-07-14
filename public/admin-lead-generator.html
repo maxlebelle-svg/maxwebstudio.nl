@@ -21709,7 +21709,7 @@
         button.title = enabled ? `Open WhatsApp voor ${phone}` : "Geen telefoonnummer bekend bij deze lead";
       }
 
-      function leadIntakeChecklist(lead = {}) {
+      function legacyLeadIntakeChecklist(lead = {}) {
         const bedrijf = lead.companyName || "";
         const contact = displayLeadContactName(lead) === "Nog niet bekend" ? "" : displayLeadContactName(lead);
         const website = lead.websiteUrl || "";
@@ -21778,6 +21778,76 @@
           "Preview/check focus:",
           "Vervolgstap:",
           "",
+        ].join("\n");
+      }
+
+      function leadIntakeChecklist(lead = {}) {
+        const bedrijf = lead.companyName || "[bedrijfsnaam]";
+        const medewerker = getLeadfinderUserContext().name || "[naam medewerker]";
+        return [
+          "TELEFOONSCRIPT MAX WEBSTUDIO",
+          "",
+          "Goedemiddag!",
+          "",
+          `Je spreekt met ${medewerker}, stoor ik?`,
+          "",
+          `Spreek ik toevallig met de eigenaar van ${bedrijf}? Is de onderneming nog actief?`,
+          "",
+          "Mooi zo!",
+          "",
+          "Ik zal je niet lang ophouden, maar ik heb je website bekeken en het viel mij op dat je heel veel kansen laat liggen.",
+          "",
+          "Ik zal meteen met de deur in huis vallen: ik help ondernemers aan een compleet nieuwe website die sowieso meer vertrouwen en klanten voor je oplevert.",
+          "",
+          "Alleen doen wij dat nét iets anders dan de meeste webdesignbureaus.",
+          "",
+          "NIEUWSGIERIGHEID",
+          "",
+          "Normaal gesproken vraagt een webbureau eerst een offerte te tekenen...",
+          "...en daarna hopen klanten dat ze tevreden zijn.",
+          "",
+          "Wij draaien dat volledig om.",
+          "Wij ontwerpen eerst vrijblijvend een compleet nieuw concept voor jouw bedrijf.",
+          "",
+          "Pas als jij denkt: ‘Ja, dit is precies wat ik zoek.’ betaal je een kleine vergoeding van € 500.",
+          "Vind je het niks? Dan kost het je helemaal niets.",
+          "",
+          "GEEN AFSPRAAK NODIG",
+          "",
+          "Wij maken de demo.",
+          "En zodra deze klaar is, ontvang je gewoon een persoonlijke link per e-mail.",
+          "Die kun je bekijken wanneer het jou uitkomt.",
+          "",
+          "KWALIFICATIE",
+          "",
+          "Mag ik je even snel drie korte vragen stellen?",
+          "1. Wat zijn de belangrijkste diensten van het bedrijf?",
+          "Antwoord:",
+          "2. In welke regio wil je vooral gevonden worden?",
+          `Antwoord: ${lead.region || ""}`,
+          "3. Op welk e-mailadres mag ik de persoonlijke demo straks sturen?",
+          `Antwoord: ${lead.email || ""}`,
+          "",
+          "VERWACHTING SCHEPPEN",
+          "",
+          "Perfect.",
+          "Wij gaan vervolgens een volledig nieuw ontwerp voor je bedrijf maken.",
+          "Geen standaard template.",
+          "Maar echt gebaseerd op jouw onderneming.",
+          "",
+          "Wanneer de demo klaar is, ontvang je een e-mail met een persoonlijke link.",
+          "Daar kun je alles rustig bekijken.",
+          "Pas daarna beslis je zelf of je verder wilt.",
+          "Geen verplichtingen.",
+          "Geen aanbetaling.",
+          "Geen risico.",
+          "",
+          "AFSLUITING",
+          "",
+          "Hartelijk bedankt.",
+          "Je ontvangt de demo binnen enkele dagen in je mailbox.",
+          "Ik ben benieuwd wat je ervan vindt.",
+          "Fijne dag nog!",
         ].join("\n");
       }
 
