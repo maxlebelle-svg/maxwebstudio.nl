@@ -1,10 +1,15 @@
 const { sendEmail } = require("./email");
 const { getCompanySettings, getWhatsappLink } = require("./company-settings");
 const { createTimelineEvent } = require("./services/timelineService");
+const { persistPublicLead } = require("./services/publicLeadService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-exports.handler = async (event) => {
+function createHandler(dependencies = {}) {
+  const persist = dependencies.persistPublicLead || persistPublicLead;
+  const deliverEmail = dependencies.sendEmail || sendEmail;
+  const createEvent = dependencies.createTimelineEvent || createTimelineEvent;
+  return async (event) => {
   if (event.httpMethod !== "POST") {
     return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
   }
@@ -25,19 +30,25 @@ exports.handler = async (event) => {
   }
 
   try {
+    const persisted = await persist(lead);
+    const leadId = persisted.lead?.id;
+    if (!leadId) throw new Error("Leadopslag gaf geen geldige lead-ID terug.");
     await safeCreateTimeline({
+      createEvent,
+      leadId,
       eventType: "lead_created",
       title: `Nieuwe lead ontvangen: ${lead.name}`,
       description: lead.company ? `${lead.company} heeft een aanvraag ingestuurd.` : "Er is een nieuwe aanvraag ingestuurd.",
       module: "sales",
-      referenceType: "lead_email",
-      referenceId: lead.email,
+      referenceType: "lead",
+      referenceId: leadId,
       actorName: lead.name,
       actorRole: "lead",
       icon: "🔔",
       severity: "info",
       metadata: {
         dedupeKey: `lead_created:${lead.email}:${lead.submittedAt}`,
+        publicRequestId: persisted.requestId,
         leadEmail: lead.email,
         leadName: lead.name,
         company: lead.company,
@@ -45,7 +56,7 @@ exports.handler = async (event) => {
       },
     });
     const companySettings = getCompanySettings();
-    const result = await sendEmail({
+    const result = await deliverEmail({
       to: process.env.LEAD_TO_EMAIL || process.env.ADMIN_EMAIL || companySettings.primaryEmail,
       from: process.env.LEAD_FROM_EMAIL || process.env.FROM_EMAIL || undefined,
       replyTo: lead.email,
@@ -55,6 +66,8 @@ exports.handler = async (event) => {
       templateKey: "lead_notification",
       templateName: "Nieuwe lead notificatie",
       triggeredBy: "homepage_contact_form",
+      leadId,
+      idempotencyKey: `public-lead-notification:${persisted.requestId}`,
       metadata: {
         leadEmail: lead.email,
         leadName: lead.name,
@@ -67,27 +80,33 @@ exports.handler = async (event) => {
     if (!result.sent) {
       return jsonResponse(502, {
         success: false,
-        error: "Aanvraag is ontvangen, maar e-mail kon niet worden verzonden.",
+        error: "Aanvraag is opgeslagen, maar de interne e-mail kon niet worden verzonden.",
         warning: result.warning,
       });
     }
 
-    const confirmation = await sendCustomerConfirmation(lead);
+    const confirmation = await sendCustomerConfirmation(lead, { leadId, requestId: persisted.requestId, deliverEmail });
     const confirmationWarning = confirmation.warning || "";
 
     return jsonResponse(200, {
       success: true,
       confirmationSent: Boolean(confirmation.sent),
+      leadId,
+      created: persisted.created,
       warning: confirmationWarning || undefined,
     });
   } catch (error) {
-    console.error("Lead email failed", { message: error.message });
-    return jsonResponse(500, { success: false, error: "Aanvraag kon niet worden verzonden." });
+    console.error("Lead request failed", { message: error.message });
+    return jsonResponse(error.status || 500, { success: false, error: "Aanvraag kon niet veilig worden opgeslagen." });
   }
-};
+  };
+}
+
+exports.handler = createHandler();
 
 function sanitizeLead(payload) {
   return {
+    id: cleanText(payload.id || payload.requestId),
     name: cleanText(payload.name),
     company: cleanText(payload.company),
     email: cleanText(payload.email).toLowerCase(),
@@ -102,8 +121,10 @@ function sanitizeLead(payload) {
 }
 
 async function safeCreateTimeline(input) {
+  const createEvent = input.createEvent || createTimelineEvent;
   try {
-    return await createTimelineEvent(input);
+    const { createEvent: _ignored, ...event } = input;
+    return await createEvent(event);
   } catch (error) {
     console.error("Lead timeline event failed", { message: error.message });
     return null;
@@ -173,9 +194,9 @@ function buildLeadText(lead) {
   ].join("\n");
 }
 
-async function sendCustomerConfirmation(lead) {
+async function sendCustomerConfirmation(lead, context = {}) {
   try {
-    const result = await sendEmail({
+    const result = await (context.deliverEmail || sendEmail)({
       to: lead.email,
       from: process.env.LEAD_FROM_EMAIL || process.env.FROM_EMAIL || undefined,
       subject: "Bedankt voor je aanvraag bij Max Webstudio 🚀",
@@ -184,6 +205,8 @@ async function sendCustomerConfirmation(lead) {
       templateKey: "lead_customer_confirmation",
       templateName: "Lead klantbevestiging",
       triggeredBy: "homepage_contact_form",
+      leadId: context.leadId,
+      idempotencyKey: `public-lead-confirmation:${context.requestId}`,
       metadata: {
         leadName: lead.name,
         company: lead.company,
@@ -208,6 +231,9 @@ async function sendCustomerConfirmation(lead) {
     return { sent: false, warning: "Klantbevestiging kon niet worden verzonden." };
   }
 }
+
+exports.createHandler = createHandler;
+exports._test = { sanitizeLead, validateLead };
 
 function buildCustomerConfirmationHtml(lead) {
   const companySettings = getCompanySettings();
