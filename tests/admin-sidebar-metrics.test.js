@@ -25,6 +25,22 @@ test("no workspace returns only a scoped, exact general lead metric", async () =
   assert.match(body.general.definition, /toegestane scope/);
 }));
 
+test("general lead metric falls back to legacy status when lead_status is absent", async () => withBackend("super_admin", async (state) => {
+  const result = await handler(event());
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  assert.equal(body.general.openLeads, 6);
+  assert(state.urls.some((url) => url.includes("/rest/v1/leads") && !url.includes("lead_status") && url.includes("status=in")));
+}, { missingLeadLifecycle: true }));
+
+test("lead workspace remains readable on the baseline production schema", async () => withBackend("admin", async () => {
+  const result = await handler(event({ entityType: "lead", id: LEAD }));
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  assert.equal(body.workspace.relationship.leadId, LEAD);
+  assert.equal(body.workspace.relationship.lifecycleStage, "nieuw");
+}, { missingLeadLifecycle: true }));
+
 test("admin customer context returns minimal real metrics and separates open from overdue invoices", async () => withBackend("admin", async () => {
   const result = await handler(event({ entityType: "customer", id: CUSTOMER }));
   const body = JSON.parse(result.body);
@@ -129,9 +145,12 @@ async function withBackend(role, callback, options = {}) {
     if (stringUrl.includes("/rest/v1/profiles")) return response(200, [{ id: VIEWED_PROFILE, auth_user_id: VIEWED_AUTH, name: "Lisanne", email: "lisanne@example.test", role: "sales_partner", status: "active" }]);
     const parsed = new URL(stringUrl); const table = parsed.pathname.split("/").at(-1);
     if (options.failTable === table) return response(503, { code: "UPSTREAM" });
+    if (options.missingLeadLifecycle && table === "leads" && stringUrl.includes("lead_status")) return response(400, { code: "42703", message: "column leads.lead_status does not exist" });
     if (isCountRequest(parsed)) return countResponse(countFor(table, parsed));
     if (table === "customers") return response(200, [{ id: CUSTOMER, company: "QuantumBouw", name: "Private Name", status: "active", portal_status: "production", metadata: role === "sales_partner" ? { owner_auth_user_id: ACTOR } : {} }]);
-    if (table === "leads") return response(200, [{ id: LEAD, company_name: "Leadbedrijf", lead_status: "interesting", assigned_user_id: state.foreign ? "other" : ACTOR, assigned_user_name: "Max" }]);
+    if (table === "leads") return response(200, options.missingLeadLifecycle
+      ? [{ id: LEAD, company_name: "Leadbedrijf", status: "nieuw", assigned_to: state.foreign ? "other" : ACTOR, owner_id: ACTOR, metadata: {} }]
+      : [{ id: LEAD, company_name: "Leadbedrijf", lead_status: "interesting", assigned_user_id: state.foreign ? "other" : ACTOR, assigned_user_name: "Max" }]);
     if (table === "websites") return response(200, [{ id: "website", status: "building", hosting_status: "active", ssl_status: "valid", domain: "quantum.example" }]);
     if (table === "projects") return response(200, [{ id: "project", status: "active", phase: "production", progress: 60 }]);
     if (table === "demo_journeys") return response(200, [{ id: JOURNEY, demo_status: "preview_verstuurd" }]);
@@ -145,6 +164,7 @@ async function withBackend(role, callback, options = {}) {
 
 function isCountRequest(url) { return url.searchParams.get("select") === "id"; }
 function countFor(table, url) {
+  if (table === "leads" && !url.searchParams.has("lead_status")) return 6;
   if (table === "leads" && url.searchParams.get("lead_status") === "is.null") return 2;
   if (table === "leads" && url.searchParams.has("lead_status")) return 7;
   return { files: 4, demo_journeys: 2, crm_tasks: 3, customer_timeline_events: 9, email_logs: 5, quotes: 2, invoices: url.searchParams.get("status")?.includes("expired") && !url.searchParams.get("status")?.includes("draft") ? 1 : 3, subscriptions: url.searchParams.get("status") ? 1 : 1, website_preview_versions: 2 }[table] ?? 0;

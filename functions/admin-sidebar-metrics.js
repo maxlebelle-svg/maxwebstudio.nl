@@ -46,10 +46,18 @@ async function loadGeneralMetrics(context, admin, viewedEmployee = null) {
   if (!["super_admin", "admin", "sales_manager", "sales_partner", "sales"].includes(normalizeRole(admin.role))) return { openLeads: null, definition: "Niet beschikbaar voor deze rol" };
   const ownership = viewedEmployee ? ownershipFilterForIdentity(viewedEmployee.authUserId, viewedEmployee.id) : ownershipFilter(admin);
   try {
-    const [modern, legacy] = await Promise.all([
-      exactCount(context, "leads", [`lead_status=in.(${OPEN_LEAD_STATUSES.join(",")})`, ownership].filter(Boolean)),
-      exactCount(context, "leads", ["lead_status=is.null", `status=in.(${OPEN_LEGACY_LEAD_STATUSES.join(",")})`, ownership].filter(Boolean)),
-    ]);
+    let modern;
+    let legacy;
+    try {
+      [modern, legacy] = await Promise.all([
+        exactCount(context, "leads", [`lead_status=in.(${OPEN_LEAD_STATUSES.join(",")})`, ownership].filter(Boolean)),
+        exactCount(context, "leads", ["lead_status=is.null", `status=in.(${OPEN_LEGACY_LEAD_STATUSES.join(",")})`, ownership].filter(Boolean)),
+      ]);
+    } catch (error) {
+      if (!isMissingColumnError(error)) throw error;
+      modern = 0;
+      legacy = await exactCount(context, "leads", [`status=in.(${OPEN_LEGACY_LEAD_STATUSES.join(",")})`, ownership].filter(Boolean));
+    }
     const openLeads = modern + legacy;
     return { openLeads, definition: "Open leads binnen jouw toegestane scope" };
   } catch (error) {
@@ -174,7 +182,7 @@ function deriveCommerceStatus(values) {
 
 async function resolveRelationship(context, entityType, id) {
   if (entityType === "lead") {
-    const lead = await one(context, "leads", "id,company_name,status,lead_status,assigned_user_id,assigned_user_name,owner_id,owner_auth_user_id,owner_profile_id,converted_customer_id,customer_id,metadata", [`id=eq.${id}`]);
+    const lead = await compatibleLead(context, [`id=eq.${id}`]);
     if (!lead) return { relationship: null, lead: null, customer: null };
     const customerId = uuid(lead.converted_customer_id || lead.customer_id);
     const customer = customerId ? await one(context, "customers", "id,name,company,status,portal_status,profile_id,auth_user_id,metadata", [`id=eq.${customerId}`]) : null;
@@ -182,8 +190,23 @@ async function resolveRelationship(context, entityType, id) {
   }
   const customer = await one(context, "customers", "id,name,company,status,portal_status,profile_id,auth_user_id,metadata", [`id=eq.${id}`]);
   if (!customer) return { relationship: null, lead: null, customer: null };
-  const leadRows = await rows(context, "leads", "id,assigned_user_id,assigned_user_name,owner_id,owner_auth_user_id,owner_profile_id,metadata", [`or=(converted_customer_id.eq.${id},customer_id.eq.${id})`], "updated_at.desc", 1);
+  let leadRows;
+  try {
+    leadRows = await rows(context, "leads", "id,assigned_user_id,assigned_user_name,owner_id,owner_auth_user_id,owner_profile_id,metadata", [`or=(converted_customer_id.eq.${id},customer_id.eq.${id})`], "updated_at.desc", 1);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    leadRows = [];
+  }
   return { relationship: customer, customer, lead: leadRows[0] || null };
+}
+
+async function compatibleLead(context, filters) {
+  try {
+    return await one(context, "leads", "id,company_name,status,lead_status,assigned_user_id,assigned_user_name,owner_id,owner_auth_user_id,owner_profile_id,converted_customer_id,customer_id,metadata", filters);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return one(context, "leads", "id,company_name,status,owner_id,assigned_to,metadata", filters);
+  }
 }
 
 function mapRelationship(resolved) {
@@ -203,7 +226,7 @@ function canAccess(admin, row, sourceLead = null) {
   const role = normalizeRole(admin.role);
   if (["super_admin", "admin", "sales_manager", "developer"].includes(role)) return true;
   const meta = row.metadata || {};
-  const owners = [row.assigned_user_id, row.owner_auth_user_id, row.owner_profile_id, meta.assignedUserId, meta.assigned_user_id, meta.ownerAuthUserId, meta.owner_profile_id, sourceLead?.assigned_user_id, sourceLead?.owner_auth_user_id].map(clean).filter(Boolean);
+  const owners = [row.assigned_user_id, row.assigned_to, row.owner_id, row.owner_auth_user_id, row.owner_profile_id, meta.assignedUserId, meta.assigned_user_id, meta.ownerAuthUserId, meta.owner_profile_id, sourceLead?.assigned_user_id, sourceLead?.assigned_to, sourceLead?.owner_id, sourceLead?.owner_auth_user_id].map(clean).filter(Boolean);
   return owners.includes(clean(admin.id)) || owners.includes(clean(admin.profileId));
 }
 
@@ -253,7 +276,8 @@ function restUrl(context, table, select, filters, order, limit) { const params =
 async function timedFetch(url, options, timeoutMs = 5000) { const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeoutMs); try { return await fetch(url, { ...options, signal: controller.signal }); } catch (error) { if (error.name === "AbortError") throw coded("QUERY_TIMEOUT", 503, "Een sidebarbron reageerde niet op tijd."); throw error; } finally { clearTimeout(timer); } }
 function restHeaders(context, extra = {}) { return { apikey: context.key, Authorization: `Bearer ${context.key}`, Accept: "application/json", ...extra }; }
 function relationFilter(leadId, customerId) { const clauses = []; if (leadId) clauses.push(`lead_id.eq.${leadId}`); if (customerId) clauses.push(`customer_id.eq.${customerId}`); return clauses.length ? [`or=(${clauses.join(",")})`] : null; }
-function queryError(table, statusCode, data) { console.warn("Sidebar metric source unavailable", { table, statusCode, code: data?.code || "" }); return coded("QUERY_FAILED", statusCode >= 500 ? 503 : 400, `${table} kon niet worden gelezen.`); }
+function queryError(table, statusCode, data) { console.warn("Sidebar metric source unavailable", { table, statusCode, code: data?.code || "" }); const error = coded("QUERY_FAILED", statusCode >= 500 ? 503 : 400, `${table} kon niet worden gelezen.`); error.sourceCode = clean(data?.code); error.sourceMessage = clean(data?.message); return error; }
+function isMissingColumnError(error) { const evidence = `${clean(error?.sourceCode)} ${clean(error?.sourceMessage)}`.toLowerCase(); return evidence.includes("pgrst204") || evidence.includes("42703") || evidence.includes("column") || evidence.includes("schema cache"); }
 function metricError(metric, error) { return { metric, code: error.code || "QUERY_FAILED" }; }
 function status(label, tone) { return { label, tone }; }
 function numberOrNull(value) { return Number.isFinite(value) ? value : null; }

@@ -35,6 +35,26 @@ test("new public lead is inserted as production lead with stable request ID", as
   assert.equal(record.is_demo, false);
   assert.equal(record.environment, "production");
   assert.equal(record.lead_status, "new");
+  assert.equal(calls.filter((call) => call.options.method === "POST").length, 1);
+});
+
+test("current production schema falls back to baseline columns without losing lifecycle metadata", async () => {
+  const posts = [];
+  const fetchImpl = async (_url, options = {}) => {
+    if ((options.method || "GET") !== "POST") return response(200, []);
+    const record = JSON.parse(options.body);
+    posts.push(record);
+    if (posts.length === 1) return response(400, { code: "PGRST204", message: "Could not find the 'lead_status' column in the schema cache" });
+    return response(201, [{ id: UUID, ...record }]);
+  };
+  const result = await persistPublicLead(input, { env: { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "secret" }, fetchImpl });
+  assert.equal(result.created, true);
+  assert.equal(posts.length, 2);
+  assert.equal(posts[1].lead_status, undefined);
+  assert.equal(posts[1].external_source, undefined);
+  assert.equal(posts[1].status, "nieuw");
+  assert.equal(posts[1].metadata.leadStatus, "new");
+  assert.equal(posts[1].metadata.externalSourceId, input.id);
 });
 
 test("handler never creates timeline or email before durable lead exists", async () => {

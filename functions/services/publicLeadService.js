@@ -43,12 +43,17 @@ async function persistPublicLead(input = {}, dependencies = {}) {
     updated_at: now,
   };
 
-  const response = await fetchImpl(`${supabaseUrl}/rest/v1/leads`, {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json", Prefer: "return=representation" },
-    body: JSON.stringify(record),
-  });
-  const data = await readJson(response);
+  let { response, data } = await insertLead({ supabaseUrl, headers, fetchImpl, record });
+  if (!response.ok && isMissingColumnResponse(response, data)) {
+    const raced = await findExisting({ supabaseUrl, headers, fetchImpl, requestId, email: lead.email });
+    if (raced) return { lead: raced, created: false, requestId };
+    ({ response, data } = await insertLead({
+      supabaseUrl,
+      headers,
+      fetchImpl,
+      record: legacyCompatibleRecord(record),
+    }));
+  }
   if (response.status === 409) {
     const raced = await findExisting({ supabaseUrl, headers, fetchImpl, requestId, email: lead.email });
     if (raced) return { lead: raced, created: false, requestId };
@@ -57,6 +62,46 @@ async function persistPublicLead(input = {}, dependencies = {}) {
   const persisted = Array.isArray(data) ? data[0] : data;
   if (!isUuid(persisted?.id)) throw statusError(503, "Leadopslag gaf geen geldige lead-ID terug.");
   return { lead: persisted, created: true, requestId };
+}
+
+async function insertLead({ supabaseUrl, headers, fetchImpl, record }) {
+  const response = await fetchImpl(`${supabaseUrl}/rest/v1/leads`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify(record),
+  });
+  return { response, data: await readJson(response) };
+}
+
+function legacyCompatibleRecord(record) {
+  return {
+    company_name: record.company_name,
+    contact_name: record.contact_name,
+    email: record.email,
+    phone: record.phone,
+    status: record.status,
+    notes: record.notes,
+    is_demo: record.is_demo,
+    environment: record.environment,
+    metadata: {
+      ...record.metadata,
+      leadStatus: record.lead_status,
+      lead_status: record.lead_status,
+      normalizedCompanyName: record.normalized_company_name,
+      normalizedPhone: record.normalized_phone,
+      externalSource: record.external_source,
+      externalSourceId: record.external_source_id,
+      lastActivityAt: record.last_activity_at,
+    },
+    created_at: record.created_at,
+    updated_at: record.updated_at,
+  };
+}
+
+function isMissingColumnResponse(response, data) {
+  if (response.status !== 400) return false;
+  const evidence = [data?.code, data?.message, data?.details, data?.hint].map(cleanText).join(" ").toLowerCase();
+  return evidence.includes("pgrst204") || evidence.includes("42703") || evidence.includes("column") || evidence.includes("schema cache");
 }
 
 async function findExisting({ supabaseUrl, headers, fetchImpl, requestId, email }) {
@@ -95,4 +140,4 @@ function statusError(status, message) { const error = new Error(message); error.
 function cleanText(value) { return String(value || "").trim(); }
 function isUuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleanText(value)); }
 
-module.exports = { persistPublicLead, _private: { normalizeInput, stableRequestId } };
+module.exports = { persistPublicLead, _private: { isMissingColumnResponse, legacyCompatibleRecord, normalizeInput, stableRequestId } };
