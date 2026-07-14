@@ -4,23 +4,31 @@ const { getCompanySettings, getMailtoLink } = require("./company-settings");
 const crypto = require("crypto");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const accountActions = new Set(["invite", "resend", "new_link", "welcome"]);
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
+  if (!["GET", "POST"].includes(event.httpMethod)) {
+    return jsonResponse(405, { success: false, error: "Alleen GET- en POST-verzoeken zijn toegestaan." });
   }
 
   const adminCheck = await verifyAdmin(event, jsonResponse);
   if (!adminCheck.success) return adminCheck.response;
 
   try {
-    const payload = parsePayload(event.body);
-    const canonicalCustomer = await resolveCanonicalCustomer(payload.customerId || payload.id);
+    const payload = event.httpMethod === "GET" ? (event.queryStringParameters || {}) : parsePayload(event.body);
+    const canonicalCustomer = await resolveCanonicalCustomer(payload.customerId || payload.relationshipId || payload.id);
     const input = validatePayload(canonicalCustomer);
+    if (event.httpMethod === "GET") {
+      return jsonResponse(200, { success: true, relationshipType: "customer", relationshipId: input.customerId, account: await readCustomerAccountStatus(input) });
+    }
+    const action = cleanText(payload.action || "invite").toLowerCase();
+    if (!accountActions.has(action)) throwValidation("Kies een geldige accountactie.");
+    const actionKey = uuidPattern.test(cleanText(payload.actionKey)) ? cleanText(payload.actionKey) : crypto.randomUUID();
     const authContext = await ensureCustomerAuthContext(input);
     const setupLink = await createInviteOrResetLink(input.email);
     const mailPreview = buildMailPreview(input, setupLink);
-    const shouldSend = process.env.EMAIL_PROVIDER === "resend" && Boolean(process.env.RESEND_API_KEY);
+    const shouldSend = isProductionEnvironment() && process.env.EMAIL_PROVIDER === "resend" && Boolean(process.env.RESEND_API_KEY);
 
     if (!shouldSend) {
       return jsonResponse(200, {
@@ -31,7 +39,8 @@ exports.handler = async (event) => {
           warning: "Welkomstmail preview klaargezet. Resend is niet geconfigureerd in deze omgeving.",
         },
         mailPreview,
-        auth: authContext,
+        auth: publicAuthContext(authContext),
+        account: { status: authContext.accountStatus, action, actionKey },
       });
     }
 
@@ -54,8 +63,13 @@ exports.handler = async (event) => {
         authUserId: authContext.authUserId,
         profileId: authContext.profileId,
         authAction: authContext.authAction,
+        accountAction: action,
+        actionKey,
       },
+      idempotencyKey: `customer.account.invitation:${input.customerId}:${actionKey}`,
     });
+
+    await updateCustomerInvitationStatus(authContext, result.sent ? "sent" : "send_failed", { action, actionKey, providerMessageId: cleanText(result.id) });
 
     return jsonResponse(200, {
       success: true,
@@ -66,7 +80,8 @@ exports.handler = async (event) => {
         warning: cleanText(result.warning),
       },
       mailPreview,
-      auth: authContext,
+      auth: publicAuthContext(authContext),
+      account: { status: result.sent ? "sent" : "send_failed", action, actionKey },
     });
   } catch (error) {
     console.error("Customer welcome email failed", { message: error.message });
@@ -144,7 +159,7 @@ async function ensureCustomerAuthContext(input) {
   const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
   const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!supabaseUrl || !serviceRoleKey) {
-    return { configured: false, authUserId: "", profileId: "", authAction: "manual_required" };
+    return { configured: false, authUserId: "", profileId: "", authAction: "manual_required", accountStatus: "not_invited", profile: null };
   }
 
   const authUser = await ensureCustomerAuthUser(supabaseUrl, serviceRoleKey, input);
@@ -165,13 +180,15 @@ async function ensureCustomerAuthContext(input) {
     authUserId: cleanText(authUser.id),
     profileId: cleanText(profile?.id),
     authAction: cleanText(authUser.action || "existing"),
+    accountStatus: authUser.active || cleanText(profile.status).toLowerCase() === "active" ? "activated" : authUser.action === "created" ? "not_invited" : invitationStatus(profile),
+    profile,
   };
 }
 
 async function ensureCustomerAuthUser(supabaseUrl, serviceRoleKey, input) {
   const email = cleanText(input.email).toLowerCase();
   const existing = await findAuthUserByEmail(supabaseUrl, serviceRoleKey, email);
-  if (existing?.id) return { id: existing.id, action: "existing" };
+  if (existing?.id) return { id: existing.id, action: "existing", active: Boolean(existing.email_confirmed_at || existing.confirmed_at || existing.last_sign_in_at) };
 
   const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
     method: "POST",
@@ -197,7 +214,72 @@ async function ensureCustomerAuthUser(supabaseUrl, serviceRoleKey, input) {
     console.error("Customer auth user create failed", { status: response.status, message: data.message || data.error || "" });
     return null;
   }
-  return data?.id ? { id: data.id, action: "created" } : null;
+  return data?.id ? { id: data.id, action: "created", active: false } : null;
+}
+
+async function readCustomerAccountStatus(input) {
+  const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
+  const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!supabaseUrl || !serviceRoleKey) return { status: "not_invited", configured: false };
+  const authUser = await findAuthUserByEmail(supabaseUrl, serviceRoleKey, input.email);
+  if (!authUser?.id) return { status: "not_invited", configured: true, hasAuthUser: false };
+  const profile = await findProfileForAuthUser(supabaseUrl, serviceRoleKey, authUser.id, input.email);
+  const active = Boolean(authUser.email_confirmed_at || authUser.confirmed_at || authUser.last_sign_in_at) || cleanText(profile?.status).toLowerCase() === "active";
+  return {
+    status: active ? "activated" : invitationStatus(profile),
+    configured: true,
+    hasAuthUser: true,
+    hasProfile: Boolean(profile?.id),
+    authUserId: authUser.id,
+    profileId: profile?.id || "",
+  };
+}
+
+function invitationStatus(profile) {
+  const metadata = profile?.metadata && typeof profile.metadata === "object" ? profile.metadata : {};
+  const status = cleanText(metadata.accountInvitationStatus || metadata.account_invitation_status);
+  if (["planned", "sent", "link_expired", "send_failed"].includes(status)) return status;
+  return cleanText(profile?.status).toLowerCase() === "invited" ? "sent" : "not_invited";
+}
+
+async function updateCustomerInvitationStatus(authContext, status, details = {}) {
+  const profile = authContext?.profile;
+  const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
+  const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!profile?.id || !supabaseUrl || !serviceRoleKey) return;
+  const metadata = {
+    ...(profile.metadata && typeof profile.metadata === "object" ? profile.metadata : {}),
+    accountInvitationStatus: status,
+    accountInvitationAction: cleanText(details.action),
+    accountInvitationActionKey: cleanText(details.actionKey),
+    accountInvitationProviderMessageId: cleanText(details.providerMessageId),
+    accountInvitationUpdatedAt: new Date().toISOString(),
+  };
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+      method: "PATCH",
+      headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json", "Content-Profile": "public", Prefer: "return=minimal" },
+      body: JSON.stringify({ metadata, updated_at: new Date().toISOString() }),
+    });
+  } catch (error) {
+    console.warn("Customer invitation status could not be recorded", { message: error.message });
+  }
+}
+
+function isProductionEnvironment() {
+  return [process.env.APP_ENV, process.env.APP_ENVIRONMENT, process.env.CONTEXT, process.env.NODE_ENV]
+    .map((value) => cleanText(value).toLowerCase())
+    .some((value) => ["production", "prod"].includes(value));
+}
+
+function publicAuthContext(context = {}) {
+  return {
+    configured: Boolean(context.configured),
+    authUserId: cleanText(context.authUserId),
+    profileId: cleanText(context.profileId),
+    authAction: cleanText(context.authAction),
+    accountStatus: cleanText(context.accountStatus),
+  };
 }
 
 async function findAuthUserByEmail(supabaseUrl, serviceRoleKey, email) {
@@ -371,3 +453,5 @@ function jsonResponse(statusCode, body) {
     body: JSON.stringify(body),
   };
 }
+
+exports._test = { invitationStatus, isProductionEnvironment, publicAuthContext };
