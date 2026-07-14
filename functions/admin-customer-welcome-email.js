@@ -14,7 +14,9 @@ exports.handler = async (event) => {
   if (!adminCheck.success) return adminCheck.response;
 
   try {
-    const input = validatePayload(parsePayload(event.body));
+    const payload = parsePayload(event.body);
+    const canonicalCustomer = await resolveCanonicalCustomer(payload.customerId || payload.id);
+    const input = validatePayload(canonicalCustomer);
     const authContext = await ensureCustomerAuthContext(input);
     const setupLink = await createInviteOrResetLink(input.email);
     const mailPreview = buildMailPreview(input, setupLink);
@@ -83,6 +85,44 @@ function parsePayload(body) {
     error.statusCode = 400;
     throw error;
   }
+}
+
+async function resolveCanonicalCustomer(customerId) {
+  const id = cleanText(customerId);
+  const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
+  const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+    const error = new Error("Kies een geldige klant.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!supabaseUrl || !serviceRoleKey) {
+    const error = new Error("Klantcontrole is tijdelijk niet beschikbaar.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const response = await fetch(`${supabaseUrl}/rest/v1/customers?select=*&id=eq.${encodeURIComponent(id)}&limit=1`, {
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: "application/json" },
+  });
+  const rows = await response.json().catch(() => []);
+  const customer = Array.isArray(rows) ? rows[0] : null;
+  const metadata = customer?.metadata && typeof customer.metadata === "object" ? customer.metadata : {};
+  const unavailable = !customer || customer.archived_at || customer.deleted_at || customer.is_demo || customer.is_test || metadata.archivedAt || metadata.deletedAt || metadata.isDemo || metadata.isTest
+    || ["archived", "deleted", "inactive"].includes(cleanText(customer.status || customer.portal_status).toLowerCase())
+    || ["demo", "test"].includes(cleanText(customer.environment || metadata.environment).toLowerCase());
+  if (!response.ok || unavailable || !emailPattern.test(cleanText(customer?.email))) {
+    const error = new Error("Deze klant bestaat niet meer of is niet mailbaar.");
+    error.statusCode = response.ok ? 422 : 503;
+    throw error;
+  }
+  return {
+    customerId: id,
+    name: cleanText(customer.name || customer.contact_name || customer.company || customer.company_name),
+    company: cleanText(customer.company || customer.company_name || customer.name),
+    email: cleanText(customer.email).toLowerCase(),
+    website: cleanText(customer.website || customer.website_url),
+    package: cleanText(customer.package || "Basis"),
+  };
 }
 
 function validatePayload(payload = {}) {

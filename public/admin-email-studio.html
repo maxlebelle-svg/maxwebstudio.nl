@@ -320,6 +320,86 @@
         gap: 12px;
       }
 
+      .recipient-combobox {
+        position: relative;
+        display: grid;
+        gap: 8px;
+      }
+
+      .recipient-combobox input[role="combobox"] {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.82);
+      }
+
+      .recipient-results {
+        display: grid;
+        gap: 6px;
+        max-height: 320px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 6px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        background: rgba(5, 18, 31, 0.96);
+      }
+
+      .recipient-option {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        padding: 11px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.8);
+        background: rgba(15, 23, 42, 0.55);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .recipient-option:hover,
+      .recipient-option.is-highlighted {
+        border-color: rgba(96, 165, 250, 0.48);
+        background: rgba(37, 99, 235, 0.16);
+      }
+
+      .recipient-option[aria-selected="true"] {
+        border-color: rgba(96, 165, 250, 0.72);
+        box-shadow: inset 3px 0 0 var(--blue);
+      }
+
+      .recipient-option-copy {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+      }
+
+      .recipient-option-copy strong,
+      .recipient-option-copy span {
+        overflow-wrap: anywhere;
+      }
+
+      .recipient-selected {
+        display: grid;
+        gap: 5px;
+        padding: 12px;
+        border: 1px solid rgba(96, 165, 250, 0.28);
+        border-radius: 8px;
+        background: rgba(37, 99, 235, 0.11);
+      }
+
+      .recipient-search-status {
+        min-height: 20px;
+        margin: 0;
+        color: rgba(226, 236, 248, 0.64);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
       .email-send-actions {
         display: flex;
         flex-wrap: wrap;
@@ -553,28 +633,34 @@
             <div class="admin-section-heading">
               <div>
                 <p class="section-kicker">Handmatig versturen</p>
-                <h2 id="manual-send-heading">Lead kiezen en template mailen</h2>
+                <h2 id="manual-send-heading">Ontvanger kiezen en template mailen</h2>
               </div>
-              <span class="status-badge status-prepared" id="manual-send-state">Kies lead</span>
+              <span class="status-badge status-prepared" id="manual-send-state">Kies ontvanger</span>
             </div>
             <div class="email-send-grid">
-              <label class="email-field" for="manual-lead-select">Bestaande lead
-                <select id="manual-lead-select"></select>
-              </label>
+              <div class="recipient-combobox">
+                <label class="email-field" for="manual-recipient-search">Lead of klant zoeken
+                  <input id="manual-recipient-search" type="search" role="combobox" autocomplete="off" placeholder="Zoek op bedrijf, contactnaam of e-mailadres" aria-autocomplete="list" aria-controls="manual-recipient-results" aria-expanded="false" />
+                </label>
+                <p class="recipient-search-status" id="manual-recipient-status" role="status" aria-live="polite">Recente ontvangers laden…</p>
+                <div class="recipient-results" id="manual-recipient-results" role="listbox" aria-label="Leads en klanten" hidden></div>
+                <button class="button secondary" id="manual-recipient-more" type="button" hidden>Meer laden</button>
+                <div class="recipient-selected" id="manual-recipient-selected">Nog geen ontvanger gekozen.</div>
+              </div>
               <label class="email-field" for="manual-template-select">Template
                 <select id="manual-template-select"></select>
               </label>
               <label class="email-field" for="manual-recipient-email">Ontvanger
-                <input id="manual-recipient-email" type="email" autocomplete="off" placeholder="naam@bedrijf.nl" />
+                <input id="manual-recipient-email" type="email" autocomplete="off" placeholder="Wordt server-side gecontroleerd" readonly />
               </label>
               <label class="email-field" for="manual-temp-password">Loginlink voor preview
                 <input id="manual-temp-password" autocomplete="off" value="https://maxwebstudio.nl/login.html" />
               </label>
             </div>
             <div class="email-send-actions">
-              <p class="email-send-note" id="manual-send-note">Selecteer een lead. De preview gebruikt daarna echte leadgegevens.</p>
+              <p class="email-send-note" id="manual-send-note">Selecteer een lead of klant. De preview gebruikt daarna de gekozen relatiegegevens.</p>
               <div>
-                <button class="button secondary" id="manual-refresh-leads" type="button">Leads verversen</button>
+                <button class="button secondary" id="manual-refresh-leads" type="button">Ontvangers verversen</button>
                 <button class="button primary" id="manual-send-email" type="button">Mail versturen</button>
               </div>
             </div>
@@ -676,7 +762,6 @@
     <script>
       (() => {
         const storageKey = "maxwebstudioEmailStudioTemplates";
-        const leadStorageKeys = ["maxwebstudioLeadFinderLeads", "maxwebstudioLeads", "maxwebstudioLeadRequests"];
         const adminSessionStorageKey = "mws_admin_supabase_session";
         const adminTokenStorageKey = "mws_admin_token";
         const variables = [
@@ -859,7 +944,11 @@
           activeCount: document.getElementById("active-count"),
           toggleStatus: document.getElementById("toggle-status"),
           search: document.getElementById("admin-page-search"),
-          leadSelect: document.getElementById("manual-lead-select"),
+          recipientSearch: document.getElementById("manual-recipient-search"),
+          recipientResults: document.getElementById("manual-recipient-results"),
+          recipientStatus: document.getElementById("manual-recipient-status"),
+          recipientSelected: document.getElementById("manual-recipient-selected"),
+          recipientMore: document.getElementById("manual-recipient-more"),
           templateSelect: document.getElementById("manual-template-select"),
           recipientEmail: document.getElementById("manual-recipient-email"),
           temporaryPassword: document.getElementById("manual-temp-password"),
@@ -872,8 +961,16 @@
         let activeId = templates[0]?.id || "";
         let previewMode = "desktop";
         let latestRenderedEmailHtml = "";
-        let leads = [];
-        let activeLeadId = "";
+        let recipientResults = [];
+        let selectedRecipient = null;
+        let recipientPage = 0;
+        let recipientHasMore = false;
+        let highlightedRecipientIndex = -1;
+        let recipientRequestSequence = 0;
+        let recipientAbortController = null;
+        let recipientDebounceTimer = null;
+        let manualRecipientSelection = false;
+        let sendInFlight = false;
         const legacyTemplateIds = new Set(["wachtwoord-reset"]);
 
         function loadTemplates() {
@@ -904,84 +1001,8 @@
           localStorage.setItem(storageKey, JSON.stringify(templates));
         }
 
-        function readJsonArray(key) {
-          try {
-            const parsed = JSON.parse(localStorage.getItem(key) || "[]");
-            return Array.isArray(parsed) ? parsed : [];
-          } catch (error) {
-            console.warn(`Kon ${key} niet lezen voor E-mail Studio`, error);
-            return [];
-          }
-        }
-
-        function cleanLeadText(value) {
-          return String(value || "").trim();
-        }
-
-        function isLikelyQuestionText(value = "") {
-          const text = cleanLeadText(value);
-          return !text
-            || text.length > 55
-            || /\?/.test(text)
-            || /^\d+\./.test(text)
-            || /ben jij degene|hierover beslist|kijkt iemand|welke website|wat is je|waarom wil je/i.test(text);
-        }
-
-        function firstUsableName(candidates = [], fallback = "") {
-          return candidates.map(cleanLeadText).find((value) => !isLikelyQuestionText(value)) || fallback;
-        }
-
-        function normalizeLeadForMail(lead = {}, source = "lead") {
-          const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
-          const companyName = firstUsableName([
-            lead.companyName,
-            lead.company,
-            lead.businessName,
-            lead.bedrijf,
-            metadata.companyName,
-            metadata.company,
-            lead.packageInterest,
-          ]);
-          const contactName = firstUsableName([
-            lead.contactName,
-            lead.contact,
-            lead.contactPerson,
-            lead.contactpersoon,
-            metadata.contactName,
-            metadata.contactPerson,
-            lead.person,
-            lead.name,
-          ]);
-          return {
-            id: String(lead.id || lead.leadId || `${source}-${companyName || contactName || lead.email || Date.now()}`).trim(),
-            companyName,
-            contactName,
-            email: String(lead.email || lead.mail || "").trim(),
-            phone: String(lead.phone || lead.telephone || lead.telefoon || "").trim(),
-            websiteUrl: String(lead.websiteUrl || lead.website || lead.url || "").trim(),
-            packageName: String(lead.packageName || lead.packageInterest || lead.package || lead.pakket || metadata.packageName || "").trim(),
-            notes: String(lead.notes || lead.message || "").trim(),
-            source,
-            updatedAt: String(lead.updatedAt || lead.createdAt || "").trim(),
-          };
-        }
-
-        function readMailLeads() {
-          const combined = leadStorageKeys.flatMap((key) => readJsonArray(key).map((lead) => normalizeLeadForMail(lead, key)));
-          const seen = new Set();
-          return combined
-            .filter((lead) => lead.companyName || lead.contactName || lead.email)
-            .filter((lead) => {
-              const key = [lead.email && `email:${lead.email.toLowerCase()}`, lead.id && `id:${lead.id}`, lead.companyName && `company:${lead.companyName.toLowerCase()}`].filter(Boolean)[0];
-              if (!key || seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            })
-            .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
-        }
-
         function selectedLead() {
-          return leads.find((lead) => lead.id === activeLeadId) || null;
+          return selectedRecipient;
         }
 
         function buildPreviewDataFromLead(lead = selectedLead()) {
@@ -1265,42 +1286,155 @@
           elements.templateSelect.value = templates.some((template) => template.id === current) ? current : activeId;
         }
 
-        function renderLeadSelect() {
-          if (!elements.leadSelect) return;
-          leads = readMailLeads();
-          if (!leads.length) {
-            elements.leadSelect.innerHTML = '<option value="">Geen lokale leads gevonden</option>';
-            activeLeadId = "";
-            syncManualSendPanel();
+        function recipientKey(recipient = {}) {
+          return `${recipient.relationshipType || recipient.entityType}:${recipient.relationshipId || recipient.id}`;
+        }
+
+        function normalizeRecipient(recipient = {}) {
+          const relationshipType = String(recipient.relationshipType || recipient.entityType || "").toLowerCase();
+          const relationshipId = String(recipient.relationshipId || recipient.id || "");
+          if (!["lead", "customer"].includes(relationshipType) || !relationshipId) return null;
+          return {
+            ...recipient,
+            id: relationshipId,
+            relationshipType,
+            relationshipId,
+            companyName: String(recipient.companyName || "").trim(),
+            contactName: String(recipient.contactName || "").trim(),
+            email: String(recipient.email || "").trim(),
+            packageName: String(recipient.packageName || recipient.status || "").trim(),
+            status: String(recipient.status || recipient.lifecycleStage || "").trim(),
+          };
+        }
+
+        function renderRecipientResults() {
+          if (!elements.recipientResults) return;
+          if (!recipientResults.length) {
+            elements.recipientResults.hidden = false;
+            elements.recipientResults.innerHTML = '<div class="email-studio-empty" role="option" aria-disabled="true">Geen mailbare leads of klanten gevonden.</div>';
+          } else {
+            elements.recipientResults.hidden = false;
+            elements.recipientResults.innerHTML = recipientResults.map((recipient, index) => {
+              const key = recipientKey(recipient);
+              const selected = selectedRecipient && recipientKey(selectedRecipient) === key;
+              const badge = recipient.relationshipType === "lead" ? "Lead" : "Klant";
+              return `
+                <button class="recipient-option ${index === highlightedRecipientIndex ? "is-highlighted" : ""}" id="recipient-option-${index}" type="button" role="option" aria-selected="${selected}" data-recipient-index="${index}">
+                  <span class="status-badge ${recipient.relationshipType === "lead" ? "status-prepared" : "status-active"}">${badge}</span>
+                  <span class="recipient-option-copy">
+                    <strong>${escapeHtml(recipient.companyName || recipient.contactName || badge)}</strong>
+                    <span>${escapeHtml([recipient.contactName && recipient.contactName !== recipient.companyName ? recipient.contactName : "", recipient.email].filter(Boolean).join(" · "))}</span>
+                    ${recipient.status ? `<span>${escapeHtml(recipient.status)}</span>` : ""}
+                  </span>
+                </button>`;
+            }).join("");
+          }
+          elements.recipientMore.hidden = !recipientHasMore;
+          elements.recipientSearch.setAttribute("aria-expanded", "true");
+          elements.recipientSearch.setAttribute("aria-activedescendant", highlightedRecipientIndex >= 0 ? `recipient-option-${highlightedRecipientIndex}` : "");
+        }
+
+        function chooseRecipient(recipient, { manual = true } = {}) {
+          const normalized = normalizeRecipient(recipient);
+          if (!normalized) return;
+          selectedRecipient = normalized;
+          if (manual) manualRecipientSelection = true;
+          highlightedRecipientIndex = recipientResults.findIndex((item) => recipientKey(item) === recipientKey(normalized));
+          renderRecipientResults();
+          syncManualSendPanel();
+        }
+
+        async function loadRecipients({ append = false, query = elements.recipientSearch?.value || "" } = {}) {
+          const token = getBearer();
+          const cleanQuery = String(query || "").trim();
+          if (cleanQuery.length === 1) {
+            recipientResults = [];
+            recipientHasMore = false;
+            elements.recipientStatus.textContent = "Typ minimaal 2 tekens om te zoeken.";
+            renderRecipientResults();
             return;
           }
-          if (!activeLeadId || !leads.some((lead) => lead.id === activeLeadId)) activeLeadId = leads[0].id;
-          elements.leadSelect.innerHTML = leads.map((lead) => {
-            const label = [
-              lead.companyName || lead.contactName || "Lead",
-              lead.contactName && lead.contactName !== lead.companyName ? lead.contactName : "",
-              lead.email || "vul e-mail in",
-            ].filter(Boolean).join(" · ");
-            return `<option value="${escapeAttribute(lead.id)}">${escapeHtml(label)}</option>`;
-          }).join("");
-          elements.leadSelect.value = activeLeadId;
-          syncManualSendPanel();
+          if (!token) {
+            elements.recipientStatus.textContent = "Log opnieuw in om ontvangers te zoeken.";
+            return;
+          }
+          if (!append) recipientPage = 0;
+          recipientAbortController?.abort();
+          recipientAbortController = new AbortController();
+          const requestSequence = ++recipientRequestSequence;
+          elements.recipientStatus.textContent = cleanQuery ? "Zoeken…" : "Recente ontvangers laden…";
+          const params = new URLSearchParams({ purpose: "mail-recipient", type: "all", limit: "20", page: String(recipientPage) });
+          if (cleanQuery) params.set("q", cleanQuery);
+          try {
+            const response = await fetch(`/api/admin-relationship-search?${params.toString()}`, {
+              headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+              signal: recipientAbortController.signal,
+            });
+            const data = await response.json().catch(() => ({}));
+            if (requestSequence !== recipientRequestSequence) return;
+            if (!response.ok || data.success === false) throw new Error(data.error || "Ontvangers konden niet worden geladen.");
+            const next = (Array.isArray(data.results) ? data.results : []).map(normalizeRecipient).filter(Boolean);
+            recipientResults = append
+              ? [...new Map([...recipientResults, ...next].map((item) => [recipientKey(item), item])).values()]
+              : next;
+            recipientHasMore = Boolean(data.hasMore);
+            highlightedRecipientIndex = recipientResults.length ? 0 : -1;
+            elements.recipientStatus.textContent = `${recipientResults.length} ${cleanQuery ? "zoekresultaten" : "recente ontvangers"}`;
+            renderRecipientResults();
+          } catch (error) {
+            if (error.name === "AbortError" || requestSequence !== recipientRequestSequence) return;
+            recipientResults = append ? recipientResults : [];
+            recipientHasMore = false;
+            elements.recipientStatus.textContent = error.message || "Ontvangers konden niet worden geladen.";
+            renderRecipientResults();
+          }
+        }
+
+        async function preselectActiveRelationship() {
+          try {
+            const activeRelationship = await window.ActiveRelationship?.whenReady?.();
+            if (!activeRelationship || manualRecipientSelection) return;
+            const token = getBearer();
+            const params = new URLSearchParams({
+              purpose: "mail-recipient",
+              relationshipType: activeRelationship.relationshipType,
+              relationshipId: activeRelationship.relationshipId,
+            });
+            const response = await fetch(`/api/admin-relationship-search?${params.toString()}`, {
+              headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (manualRecipientSelection) return;
+            if (!response.ok || data.success === false || !data.result) {
+              elements.recipientStatus.textContent = data.error || "De actieve relatie kan niet als ontvanger worden gebruikt.";
+              return;
+            }
+            chooseRecipient(data.result, { manual: false });
+            elements.recipientStatus.textContent = "Actieve relatie is vooraf geselecteerd; je kunt globaal een andere ontvanger zoeken.";
+          } catch (error) {
+            elements.recipientStatus.textContent = error.message || "De actieve relatie kon niet vooraf worden geselecteerd.";
+          }
         }
 
         function syncManualSendPanel() {
           const lead = selectedLead();
-          if (elements.recipientEmail && !elements.recipientEmail.value) elements.recipientEmail.value = lead?.email || "";
+          if (elements.recipientEmail) elements.recipientEmail.value = lead?.email || "";
           if (elements.temporaryPassword && !elements.temporaryPassword.value) elements.temporaryPassword.value = "https://maxwebstudio.nl/login.html";
+          refreshPreviewDataFromLead();
           if (elements.sendState) {
             elements.sendState.textContent = lead?.email ? "Klaar" : "E-mail nodig";
             elements.sendState.className = `status-badge ${lead?.email ? "status-active" : "status-prepared"}`;
           }
+          if (elements.recipientSelected) {
+            elements.recipientSelected.innerHTML = lead
+              ? `<strong>Gekozen ontvanger · ${lead.relationshipType === "lead" ? "Lead" : "Klant"}</strong><span>${escapeHtml(lead.companyName || lead.contactName || "Relatie")} · ${escapeHtml(lead.email || "Geen e-mailadres")}</span>`
+              : "Nog geen ontvanger gekozen.";
+          }
           if (elements.sendNote) {
             elements.sendNote.textContent = lead
-              ? `Geselecteerd: ${lead.companyName || lead.contactName || "lead"}${lead.email ? ` · ${lead.email}` : " · vul ontvanger handmatig aan"}.`
-              : "Selecteer een lead. De preview gebruikt daarna echte leadgegevens.";
+              ? `Controleer vóór verzenden: ${lead.relationshipType === "lead" ? "Lead" : "Klant"} · ${lead.companyName || lead.contactName || "relatie"} · ${lead.email || "geen e-mail"} · ${activeTemplate()?.name || "template"} · ${renderWithData(activeTemplate()?.subject || "")}.`
+              : "Selecteer een lead of klant. Er wordt nooit automatisch verzonden.";
           }
-          refreshPreviewDataFromLead();
           renderPreview();
         }
 
@@ -1421,11 +1555,12 @@
         }
 
         async function sendManualEmail() {
+          if (sendInFlight) return;
           const lead = selectedLead();
-          const to = String(elements.recipientEmail?.value || lead?.email || "").trim();
+          const to = String(lead?.email || "").trim();
           if (!lead) {
-            setMessage("Kies eerst een bestaande lead.", "error");
-            elements.leadSelect?.focus();
+            setMessage("Kies eerst een bestaande lead of klant.", "error");
+            elements.recipientSearch?.focus();
             return;
           }
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
@@ -1441,12 +1576,24 @@
           readEditorIntoTemplate();
           refreshPreviewDataFromLead();
           const active = activeTemplate() || {};
+          sendInFlight = true;
           if (active.id === "account-aanmaken") {
-            await sendAccountActivationEmail({ lead, to, token });
+            try {
+              if (lead.relationshipType !== "customer") throw new Error("Accountactivatie kan alleen naar een bestaande klant worden verstuurd.");
+              await sendAccountActivationEmail({ lead, to, token });
+            } catch (error) {
+              setMessage(error.message, "error");
+            } finally {
+              sendInFlight = false;
+            }
             return;
           }
           if (active.id === "client-password-reset") {
-            await sendPasswordResetEmail({ to });
+            try {
+              await sendPasswordResetEmail({ lead, token });
+            } finally {
+              sendInFlight = false;
+            }
             return;
           }
           const payload = buildEmailRenderPayload();
@@ -1462,16 +1609,17 @@
                 Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify({
-                to,
+                relationshipType: lead.relationshipType,
+                relationshipId: lead.relationshipId,
+                idempotencyKey: `mail-studio:${lead.relationshipType}:${lead.relationshipId}:${crypto.randomUUID()}`,
                 subject: payload.subject,
                 html: latestRenderedEmailHtml,
                 text: payload.bodyText,
                 preheader: payload.preheader,
                 templateKey: payload.template?.id || activeId,
                 templateName: payload.template?.name || elements.name.value || "Mail Studio template",
-                leadId: lead.id,
                 metadata: {
-                  leadName: lead.contactName,
+                  recipientName: lead.contactName,
                   companyName: lead.companyName,
                   source: "manual_email_studio",
                 },
@@ -1484,12 +1632,14 @@
           } catch (error) {
             setMessage(error.message || "Mail kon niet worden verzonden.", "error");
           } finally {
+            sendInFlight = false;
             elements.sendEmail.disabled = false;
             elements.sendEmail.textContent = "Mail versturen";
           }
         }
 
-        async function sendPasswordResetEmail({ to }) {
+        async function sendPasswordResetEmail({ lead, token }) {
+          const to = lead.email;
           elements.sendEmail.disabled = true;
           elements.sendEmail.textContent = "Resetlink maken...";
           try {
@@ -1498,8 +1648,9 @@
               headers: {
                 Accept: "application/json",
                 "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({ email: to }),
+              body: JSON.stringify({ relationshipType: lead.relationshipType, relationshipId: lead.relationshipId }),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || data.success === false) throw new Error(data.error || "Resetmail kon niet worden verzonden.");
@@ -1526,11 +1677,6 @@
               },
               body: JSON.stringify({
                 customerId: lead.id,
-                name: lead.contactName || lead.companyName || "klant",
-                company: lead.companyName || lead.contactName || "Klant",
-                email: to,
-                website: lead.websiteUrl || "",
-                package: lead.packageName || "Basis",
               }),
             });
             const data = await response.json().catch(() => ({}));
@@ -1594,19 +1740,45 @@
           });
         });
         elements.search?.addEventListener("input", renderTemplateList);
-        elements.leadSelect?.addEventListener("change", () => {
-          activeLeadId = elements.leadSelect.value;
-          if (elements.recipientEmail) elements.recipientEmail.value = selectedLead()?.email || "";
-          syncManualSendPanel();
+        elements.recipientResults?.addEventListener("click", (event) => {
+          const option = event.target.closest("[data-recipient-index]");
+          if (!option) return;
+          chooseRecipient(recipientResults[Number(option.dataset.recipientIndex)]);
+        });
+        elements.recipientSearch?.addEventListener("input", () => {
+          clearTimeout(recipientDebounceTimer);
+          recipientDebounceTimer = setTimeout(() => loadRecipients(), 250);
+        });
+        elements.recipientSearch?.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            elements.recipientResults.hidden = true;
+            elements.recipientSearch.setAttribute("aria-expanded", "false");
+            return;
+          }
+          if (!["ArrowDown", "ArrowUp", "Enter"].includes(event.key)) return;
+          event.preventDefault();
+          if (!recipientResults.length) return;
+          if (event.key === "ArrowDown") highlightedRecipientIndex = Math.min(highlightedRecipientIndex + 1, recipientResults.length - 1);
+          if (event.key === "ArrowUp") highlightedRecipientIndex = Math.max(highlightedRecipientIndex - 1, 0);
+          if (event.key === "Enter" && highlightedRecipientIndex >= 0) {
+            chooseRecipient(recipientResults[highlightedRecipientIndex]);
+            return;
+          }
+          renderRecipientResults();
+          document.getElementById(`recipient-option-${highlightedRecipientIndex}`)?.scrollIntoView({ block: "nearest" });
+        });
+        elements.recipientSearch?.addEventListener("focus", renderRecipientResults);
+        elements.recipientMore?.addEventListener("click", () => {
+          recipientPage += 1;
+          loadRecipients({ append: true });
         });
         elements.templateSelect?.addEventListener("change", () => {
           selectTemplate(elements.templateSelect.value, "preview");
         });
-        elements.recipientEmail?.addEventListener("input", syncManualSendPanel);
         elements.temporaryPassword?.addEventListener("input", syncManualSendPanel);
         elements.refreshLeads?.addEventListener("click", () => {
-          renderLeadSelect();
-          setMessage("Leads opnieuw ingeladen.", "success");
+          loadRecipients();
+          setMessage("Ontvangers opnieuw geladen.", "success");
         });
         elements.sendEmail?.addEventListener("click", sendManualEmail);
         document.getElementById("save-template").addEventListener("click", saveTemplate);
@@ -1626,7 +1798,8 @@
         });
 
         renderVariables();
-        renderLeadSelect();
+        loadRecipients();
+        preselectActiveRelationship();
         renderTemplateList();
         renderTemplateSelect();
         renderEditor();

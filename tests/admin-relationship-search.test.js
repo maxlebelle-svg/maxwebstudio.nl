@@ -48,6 +48,31 @@ test("empty search returns no relationship dataset", async () => withBackend("ad
   assert.equal(urls.some((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers")), false);
 }));
 
+test("mail recipient mode returns globally labelled leads and customers", async () => withBackend("admin", async () => {
+  const result = await handler(event({ q: "acme", type: "all", purpose: "mail-recipient", limit: "20", page: "0" }));
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  assert(body.results.some((row) => row.relationshipType === "lead"));
+  assert(body.results.some((row) => row.relationshipType === "customer"));
+  assert(body.results.every((row) => row.email));
+}));
+
+test("Lisanne Post with lifecycle status new remains searchable", async () => withBackend("admin", async () => {
+  const result = await handler(event({ q: "lisanne", type: "all", purpose: "mail-recipient" }));
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  const lisanne = body.results.find((row) => row.companyName === "Lisanne Post");
+  assert.deepEqual([lisanne.status, lisanne.relationshipType], ["new", "lead"]);
+}));
+
+test("mail recipient requests are paginated and bounded server-side", async () => withBackend("admin", async ({ urls }) => {
+  const result = await handler(event({ q: "acme", purpose: "mail-recipient", limit: "10", page: "2" }));
+  assert.equal(result.statusCode, 200);
+  const databaseUrls = urls.filter((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers"));
+  assert(databaseUrls.every((url) => Number(new URL(url).searchParams.get("limit")) <= 11));
+  assert(databaseUrls.every((url) => new URL(url).searchParams.get("offset") === "20"));
+}));
+
 test("search failures return a controlled error response", async () => withBackend("admin", async (_state) => {
   const result = await handler(event({ q: "acme", type: "customer" }));
   assert.equal(result.statusCode, 503);
@@ -74,6 +99,9 @@ async function withBackend(role, callback, options = {}) {
     if (String(url).includes("/rest/v1/customers")) return response(200, [{ id: "44444444-4444-4444-8444-444444444444", company: "Acme Customer", name: "Ada", email: "ada@example.test", status: "active", metadata: role === "sales_partner" ? { ownerProfileId: PROFILE } : {} }]);
     if (String(url).includes("/rest/v1/leads")) {
       if (options.schemaVariantScope && !decodeURIComponent(String(url)).includes("metadata->>")) return response(400, { code: "42703" });
+      if (decodeURIComponent(String(url)).includes("lisanne")) {
+        return response(200, [{ id: "66666666-6666-4666-8666-666666666666", company_name: "Lisanne Post", contact_name: "Lisanne", email: "lisanne@example.test", lead_status: "new" }]);
+      }
       return response(200, [
       { id: "33333333-3333-4333-8333-333333333333", company_name: "Acme Lead", contact_name: "Lena", email: "lena@example.test", lead_status: "qualified", assigned_user_id: options.schemaVariantScope ? undefined : ACTOR, metadata: options.schemaVariantScope ? { assignedUserId: ACTOR } : {} },
       { id: "55555555-5555-4555-8555-555555555555", company_name: "Foreign Lead", assigned_user_id: "other" },

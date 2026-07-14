@@ -1,5 +1,6 @@
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
+const { verifyAdmin } = require("./_admin-auth");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -9,7 +10,15 @@ exports.handler = async (event) => {
   }
 
   try {
-    const input = validatePayload(parsePayload(event.body));
+    const payload = parsePayload(event.body);
+    let input;
+    if (payload.relationshipType || payload.relationshipId) {
+      const adminCheck = await verifyAdmin(event, jsonResponse, { module: "mail_studio", action: "password_reset", allowedRoles: ["super_admin", "admin", "developer"] });
+      if (!adminCheck.success) return adminCheck.response;
+      input = await resolveRelationshipEmail(payload);
+    } else {
+      input = validatePayload(payload);
+    }
     const resetLink = await createPasswordResetLink(input.email);
 
     if (resetLink.status === "generated") {
@@ -46,6 +55,39 @@ exports.handler = async (event) => {
     });
   }
 };
+
+async function resolveRelationshipEmail(payload = {}) {
+  const relationshipType = cleanText(payload.relationshipType).toLowerCase();
+  const relationshipId = cleanText(payload.relationshipId);
+  if (!["lead", "customer"].includes(relationshipType) || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(relationshipId)) {
+    const error = new Error("Kies een geldige lead of klant.");
+    error.statusCode = 400;
+    throw error;
+  }
+  const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
+  const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!supabaseUrl || !serviceRoleKey) {
+    const error = new Error("Ontvangercontrole is tijdelijk niet beschikbaar.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const table = relationshipType === "lead" ? "leads" : "customers";
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=*&id=eq.${encodeURIComponent(relationshipId)}&limit=1`, {
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: "application/json" },
+  });
+  const rows = await response.json().catch(() => []);
+  const row = Array.isArray(rows) ? rows[0] : null;
+  const metadata = row?.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  const unavailable = !row || row.archived_at || row.deleted_at || row.is_demo || row.is_test || metadata.archivedAt || metadata.deletedAt || metadata.isDemo || metadata.isTest
+    || ["archived", "deleted", "inactive"].includes(cleanText(row?.status || row?.portal_status).toLowerCase())
+    || ["demo", "test"].includes(cleanText(row?.environment || metadata.environment).toLowerCase());
+  if (!response.ok || unavailable || !emailPattern.test(cleanText(row?.email))) {
+    const error = new Error("Deze relatie bestaat niet meer of is niet mailbaar.");
+    error.statusCode = response.ok ? 422 : 503;
+    throw error;
+  }
+  return { email: cleanText(row.email).toLowerCase() };
+}
 
 function parsePayload(body) {
   try {
