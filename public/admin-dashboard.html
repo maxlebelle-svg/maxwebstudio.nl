@@ -107,13 +107,13 @@
 
         <section class="admin-hero ceo-hero" id="dashboard">
           <div class="admin-hero-copy">
-            <p class="section-kicker">CEO Mode</p>
-            <h1 id="ceo-greeting">Good morning, Max</h1>
+            <p class="section-kicker">CEO-MODUS</p>
+            <h1 id="ceo-greeting">Goedemorgen, Max</h1>
             <p>Hier is jouw dagelijkse bedrijfsbriefing.</p>
             <div class="ceo-hero-meta" aria-label="Dagelijkse context">
               <span id="ceo-current-date">Datum laden...</span>
               <span id="ceo-current-time">--:--</span>
-              <span>Weer API later</span>
+              <span>Weer nog niet gekoppeld</span>
               <span id="ceo-working-day">Werkdag controleren...</span>
             </div>
           </div>
@@ -155,13 +155,13 @@
           </div>
         </section>
 
-        <section class="admin-section ceo-scoreboard-section" aria-label="CEO scoreboard">
+        <section class="admin-section ceo-scoreboard-section" aria-label="CEO-overzicht">
           <div class="admin-section-heading">
             <div>
               <p class="section-kicker">Scoreboard</p>
               <h2>Wat verdient vandaag aandacht?</h2>
             </div>
-            <span class="status-badge status-prepared">Live briefing</span>
+            <span class="status-badge status-prepared">Actuele briefing</span>
           </div>
           <div class="ceo-scoreboard-grid" id="ceo-scoreboard" aria-live="polite">
             <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="leads"><span>Nieuwe leads vandaag</span><strong id="ceo-kpi-leads-today">0</strong><small id="ceo-kpi-leads-trend">↗ +0 vs gisteren</small></article>
@@ -172,11 +172,11 @@
             <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="websites"><span>Actieve websites</span><strong id="ceo-kpi-active-websites">0</strong><small>Online/live/active</small></article>
             <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="websites"><span>Wachten op akkoord</span><strong id="ceo-kpi-websites-approval">0</strong><small>Klantfeedback nodig</small></article>
             <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="notifications"><span>Ongelezen meldingen</span><strong id="ceo-kpi-unread-notifications">0</strong><small>Notification Center</small></article>
-            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="health"><span>Platform gezondheid</span><strong id="ceo-kpi-platform-health">Unknown</strong><small id="ceo-kpi-platform-health-copy">Health Center</small></article>
-            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="automations"><span>Automation status</span><strong id="ceo-kpi-automation-status">0</strong><small id="ceo-kpi-automation-copy">Workflows voorbereid</small></article>
-            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="projects"><span>Open onboarding</span><strong id="ceo-kpi-onboarding">0</strong><small>Projecten in startfase</small></article>
-            <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="domains"><span>Pending domains</span><strong id="ceo-kpi-domains">0</strong><small>Domeinstatus controleren</small></article>
-            <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="leads"><span>Pending telefoons</span><strong id="ceo-kpi-phone">0</strong><small>Leads zonder verwerking</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="health"><span>Platformgezondheid</span><strong id="ceo-kpi-platform-health">Onbekend</strong><small id="ceo-kpi-platform-health-copy">Platformcontrole</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="automations"><span>Automatiseringsstatus</span><strong id="ceo-kpi-automation-status">0</strong><small id="ceo-kpi-automation-copy">Werkstromen voorbereid</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="projects"><span>Openstaande onboarding</span><strong id="ceo-kpi-onboarding">0</strong><small>Projecten in startfase</small></article>
+            <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="domains"><span>Domeinen in afwachting</span><strong id="ceo-kpi-domains">0</strong><small>Domeinstatus controleren</small></article>
+            <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="leads"><span>Ontbrekende telefoonnummers</span><strong id="ceo-kpi-phone">0</strong><small>Leads zonder verwerking</small></article>
           </div>
         </section>
 
@@ -184,7 +184,7 @@
           <article class="admin-card ceo-priority-card">
             <div class="admin-section-heading">
               <div>
-                <p class="section-kicker">Today's priorities</p>
+                <p class="section-kicker">Prioriteiten van vandaag</p>
                 <h2>Wat moet eerst?</h2>
               </div>
               <button class="button secondary" id="ceo-refresh-briefing" type="button">Ververs</button>
@@ -195,26 +195,26 @@
           <article class="admin-card ceo-ai-briefing-card">
             <div class="admin-profile-form-heading">
               <div>
-                <strong>Max AI Briefing</strong>
+                <strong>Max AI-briefing</strong>
                 <span>Gegenereerd uit bestaande CRM-data. AI-koppeling volgt later.</span>
               </div>
-              <mark class="status-badge status-prepared">Future AI</mark>
+              <mark class="status-badge status-prepared">AI gepland</mark>
             </div>
             <div class="ceo-briefing-copy" id="ceo-ai-briefing">Briefing wordt opgebouwd...</div>
             <div class="settings-actions">
               <button class="button primary" type="button" data-ceo-action="command">Vraag Max Command</button>
-              <a class="button secondary" href="admin-notification-center.html">Open feed</a>
+              <a class="button secondary" href="admin-notification-center.html">Meldingen openen</a>
             </div>
           </article>
         </section>
 
         <section class="admin-section ceo-widget-grid" aria-label="CEO widgets">
           <article class="admin-card ceo-widget-card">
-            <div class="admin-profile-form-heading"><div><strong>Sales performance</strong><span>Per medewerker, op basis van lead-eigenaar.</span></div></div>
+            <div class="admin-profile-form-heading"><div><strong>Verkoopprestaties</strong><span>Per medewerker, op basis van lead-eigenaar.</span></div></div>
             <div class="ceo-ranking-list" id="ceo-sales-performance"></div>
           </article>
           <article class="admin-card ceo-widget-card">
-            <div class="admin-profile-form-heading"><div><strong>Production status</strong><span>Website Factory, assets en QA voortgang.</span></div></div>
+            <div class="admin-profile-form-heading"><div><strong>Productiestatus</strong><span>Website Factory, bestanden en kwaliteitscontrole.</span></div></div>
             <div class="ceo-production-list" id="ceo-production-status"></div>
           </article>
           <article class="admin-card ceo-widget-card">
@@ -10941,10 +10941,10 @@
           const critical = warnings.filter((item) => ["system_error", "error", "critical"].includes(statusKey(item.eventType || item.event_type || item.severity || item.status || item.title)));
           const mailWarnings = warnings.filter((item) => /mail|resend|email/.test(statusKey([item.eventType, item.event_type, item.title, item.description].join(" "))));
           if (warnings.some((item) => ["system_error", "error"].includes(statusKey(item.eventType || item.event_type || item.severity || item.status)))) {
-            return { status: "Critical", label: "Critical", copy: "Open Health Center", warnings: warnings.length, critical: critical.length, mailHealth: mailWarnings.length ? "Warning" : "Healthy" };
+            return { status: "Critical", label: "Kritiek", copy: "Open platformcontrole", warnings: warnings.length, critical: critical.length, mailHealth: mailWarnings.length ? "Warning" : "Healthy" };
           }
-          if (warnings.length) return { status: "Warning", label: "Warning", copy: `${warnings.length} waarschuwing${warnings.length === 1 ? "" : "en"}`, warnings: warnings.length, critical: critical.length, mailHealth: mailWarnings.length ? "Warning" : "Healthy" };
-          return { status: "Unknown", label: "Unknown", copy: "Open Health Center", warnings: 0, critical: 0, mailHealth: "Unknown" };
+          if (warnings.length) return { status: "Warning", label: "Waarschuwing", copy: `${warnings.length} waarschuwing${warnings.length === 1 ? "" : "en"}`, warnings: warnings.length, critical: critical.length, mailHealth: mailWarnings.length ? "Warning" : "Healthy" };
+          return { status: "Unknown", label: "Onbekend", copy: "Open platformcontrole", warnings: 0, critical: 0, mailHealth: "Unknown" };
         }
 
         function getCeoDashboardSummary() {
@@ -11057,7 +11057,7 @@
         function updateCeoClock() {
           const now = new Date();
           const hour = now.getHours();
-          const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+          const greeting = hour < 12 ? "Goedemorgen" : hour < 18 ? "Goedemiddag" : "Goedenavond";
           if (ceoElements.greeting) ceoElements.greeting.textContent = `${greeting}, Max`;
           if (ceoElements.currentDate) ceoElements.currentDate.textContent = new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
           if (ceoElements.currentTime) ceoElements.currentTime.textContent = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" }).format(now);
@@ -11077,7 +11077,7 @@
               </div>
               <div class="ceo-priority-actions">
                 <a class="button secondary" href="${escapeHtml(item.href || "admin-dashboard.html")}">Open</a>
-                <button class="button secondary" type="button" data-ceo-dismiss>Dismiss</button>
+                <button class="button secondary" type="button" data-ceo-dismiss>Verbergen</button>
               </div>
             </article>
           `;
@@ -11088,7 +11088,7 @@
           const firstOverdue = summary.overdueInvoices[0];
           if (firstOverdue) {
             priorities.push({
-              label: "Finance",
+              label: "Financiën",
               badgeClass: "status-warning",
               severity: "high",
               title: `Factuur ${firstOverdue.number || firstOverdue.invoiceNumber || firstOverdue.id || ""} is verlopen`,
@@ -11098,7 +11098,7 @@
           }
           if (summary.websitesApproval.length) {
             priorities.push({
-              label: "Production",
+              label: "Productie",
               badgeClass: "status-prepared",
               severity: "medium",
               title: `${summary.websitesApproval.length} website${summary.websitesApproval.length === 1 ? "" : "s"} wachten op akkoord`,
@@ -11129,11 +11129,11 @@
           }
           if (summary.automation.failed) {
             priorities.push({
-              label: "Automation",
+              label: "Automatisering",
               badgeClass: "status-warning",
               severity: "high",
-              title: `${summary.automation.failed} automation run${summary.automation.failed === 1 ? "" : "s"} mislukt`,
-              action: "Open Max Automations en controleer de laatste executions.",
+              title: `${summary.automation.failed} automatiseringsrun${summary.automation.failed === 1 ? "" : "s"} mislukt`,
+              action: "Open Max Automations en controleer de laatste uitvoeringen.",
               href: "admin-max-automations.html",
             });
           }
@@ -11169,17 +11169,17 @@
           }
           if (summary.platformHealth.status === "Critical" || summary.platformHealth.status === "Warning") {
             priorities.push({
-              label: "Health",
+              label: "Platform",
               badgeClass: summary.platformHealth.status === "Critical" ? "status-warning" : "status-prepared",
               severity: summary.platformHealth.status === "Critical" ? "high" : "medium",
-              title: `Platform Health: ${summary.platformHealth.label}`,
-              action: "Controleer het Health Center voordat klantwerk oploopt.",
+              title: `Platformgezondheid: ${summary.platformHealth.label}`,
+              action: "Controleer het platform voordat klantwerk oploopt.",
               href: "admin-platform-health.html",
             });
           }
           if (summary.todayRevenue > 0) {
             priorities.push({
-              label: "Cash",
+              label: "Ontvangsten",
               badgeClass: "status-active",
               severity: "low",
               title: `${money(summary.todayRevenue)} ontvangen vandaag`,
@@ -11200,7 +11200,7 @@
           if (ceoElements.briefing) {
             const recommendation = priorities[0]?.action || "Start met sales follow-up en controleer open facturen.";
             ceoElements.briefing.innerHTML = `
-              <p>Good morning Max.</p>
+              <p>Goedemorgen Max.</p>
               <p>Vandaag zie ik ${summary.todayLeads.length} nieuwe lead${summary.todayLeads.length === 1 ? "" : "s"}, ${summary.openInvoices.length} open ${summary.openInvoices.length === 1 ? "factuur" : "facturen"}, ${summary.factoryActive.length} actieve Factory build${summary.factoryActive.length === 1 ? "" : "s"}, ${summary.feedbackOpen.length} feedbackdossier${summary.feedbackOpen.length === 1 ? "" : "s"} en ${summary.liveToday.length} livegang${summary.liveToday.length === 1 ? "" : "en"} vandaag.</p>
               <p>Mijn advies: ${escapeHtml(recommendation)}</p>
             `;
@@ -11223,7 +11223,7 @@
             : `<div><span>Sales</span><strong>Geen leaddata</strong><small>Leadfinder fallback is leeg.</small></div>`;
 
           const production = [
-            ["Platform Health", summary.platformHealth.label],
+            ["Platformgezondheid", summary.platformHealth.label],
             ["Open warnings", summary.platformHealth.warnings || 0],
             ["Critical services", summary.platformHealth.critical || 0],
             ["Website Factory", Math.max(summary.factoryRows.length, state.projects.filter((project) => ["in_ontwikkeling", "in_ontwerp", "onboarding"].includes(statusKey(project.status))).length)],

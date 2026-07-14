@@ -78,21 +78,21 @@
     ["new-quote", "Nieuwe offerte", "Maak een offerte aan", "Facturen", "Command", "admin-offertes.html", "#new-quote"],
     ["send-email", "Verzend e-mail", "Open Mail Center", "E-mails", "Command", "admin-mail-center.html", "#mail-refresh"],
     ["open-mail", "Open Mail Center", "Verzonden CRM-mails", "E-mails", "Command", "admin-mail-center.html"],
-    ["open-notifications", "Open Notification Center", "CRM notifications", "Notifications", "Command", "admin-notification-center.html"],
-    ["open-automations", "Open Max Automations", "Workflow builder en simulation runs", "Automations", "Command", "admin-max-automations.html"],
-    ["open-customer", "Open customer", "Open klantenmodule", "Klanten", "Command", "admin-klanten.html"],
-    ["open-project", "Open project", "Open projectenmodule", "Projecten", "Command", "admin-projecten.html"],
-    ["open-invoice", "Open invoice", "Open facturenmodule", "Facturen", "Command", "admin-facturen.html"],
-    ["open-timeline", "Open timeline", "Open klanttimeline en activity feed", "Notifications", "Command", "admin-notification-center.html"],
-    ["open-health", "Open health", "Open Platform Health Center", "Instellingen", "Command", "admin-platform-health.html"],
-    ["search-customer", "Search customer", "Zoek klanten in Max Command", "Klanten", "Command", "admin-klanten.html"],
-    ["search-project", "Search project", "Zoek projecten in Max Command", "Projecten", "Command", "admin-projecten.html"],
-    ["show-ceo-summary", "Show CEO summary", "Open CEO Mode briefing", "Instellingen", "Command", "admin-dashboard.html#dashboard"],
-    ["show-warnings", "Show warnings", "Open Health Center waarschuwingen", "Instellingen", "Command", "admin-platform-health.html#health-errors"],
-    ["show-critical", "Show critical", "Open kritieke Health Center signalen", "Instellingen", "Command", "admin-platform-health.html#health-errors"],
-    ["show-failed-automations", "Show failed automations", "Open mislukte automation runs", "Automations", "Command", "admin-max-automations.html"],
-    ["show-failed-payments", "Show failed payments", "Open betaalstatussen die aandacht vragen", "Facturen", "Command", "admin-facturen.html"],
-    ["run-health-scan", "Run health scan", "Open Health Center en start een nieuwe scan", "Instellingen", "Command", "admin-platform-health.html"],
+    ["open-notifications", "Meldingen openen", "CRM-meldingen", "Meldingen", "Command", "admin-notification-center.html"],
+    ["open-automations", "Max Automations openen", "Werkstroomontwerp en simulatieruns", "Automatisering", "Command", "admin-max-automations.html"],
+    ["open-customer", "Klant openen", "Open klantenmodule", "Klanten", "Command", "admin-klanten.html"],
+    ["open-project", "Project openen", "Open projectenmodule", "Projecten", "Command", "admin-projecten.html"],
+    ["open-invoice", "Factuur openen", "Open facturenmodule", "Facturen", "Command", "admin-facturen.html"],
+    ["open-timeline", "Tijdlijn openen", "Open klanttijdlijn en activiteitenoverzicht", "Meldingen", "Command", "admin-notification-center.html"],
+    ["open-health", "Platformcontrole openen", "Open het platformcontrolecentrum", "Instellingen", "Command", "admin-platform-health.html"],
+    ["search-customer", "Klant zoeken", "Zoek klanten in Max Command", "Klanten", "Command", "admin-klanten.html"],
+    ["search-project", "Project zoeken", "Zoek projecten in Max Command", "Projecten", "Command", "admin-projecten.html"],
+    ["show-ceo-summary", "CEO-overzicht tonen", "Open de briefing in CEO-MODUS", "Instellingen", "Command", "admin-dashboard.html#dashboard"],
+    ["show-warnings", "Waarschuwingen tonen", "Open waarschuwingen van de platformcontrole", "Instellingen", "Command", "admin-platform-health.html#health-errors"],
+    ["show-critical", "Kritieke signalen tonen", "Open kritieke signalen van de platformcontrole", "Instellingen", "Command", "admin-platform-health.html#health-errors"],
+    ["show-failed-automations", "Mislukte automatiseringen tonen", "Open mislukte automatiseringsruns", "Automatisering", "Command", "admin-max-automations.html"],
+    ["show-failed-payments", "Mislukte betalingen tonen", "Open betaalstatussen die aandacht vragen", "Facturen", "Command", "admin-facturen.html"],
+    ["run-health-scan", "Platformcontrole uitvoeren", "Open de platformcontrole en start een nieuwe scan", "Instellingen", "Command", "admin-platform-health.html"],
     ["open-max-brain", "Open Max Brain", "Context engine diagnostics", "AI", "Command", "admin-max-brain.html"],
     ["open-platform-health", "Open Platform Health", "System status, production monitoring en diagnostics", "Instellingen", "Command", "admin-platform-health.html"],
     ["open-dashboard", "Open Dashboard", "Max CRM home", "Instellingen", "Command", "admin-dashboard.html"],
@@ -645,7 +645,7 @@
                 <kbd>ESC</kbd>
               </label>
               <div class="max-command-intent" aria-live="polite"></div>
-              <div class="global-command-quick" aria-label="AI suggestions"></div>
+                <div class="global-command-quick" aria-label="AI-suggesties"></div>
               <div class="global-command-results" role="listbox" aria-label="Zoekresultaten"></div>
             </div>
             <aside class="max-command-preview" aria-live="polite">
@@ -659,7 +659,7 @@
                 <div class="max-command-ai-suggestions"></div>
               </section>
               <section class="max-command-actions-card">
-                <span>Quick Actions</span>
+                <span>Snelle acties</span>
                 <div class="max-command-side-actions"></div>
               </section>
               <section class="max-command-shortcuts-card">
@@ -733,7 +733,7 @@
     const quick = document.querySelector(".global-command-quick");
     if (!quick) return;
     const suggestions = suggestedCommands();
-    quick.innerHTML = `<strong>Suggested</strong>${suggestions.map((command) => {
+    quick.innerHTML = `<strong>Aanbevolen</strong>${suggestions.map((command) => {
       const item = commandResult(command);
       return `<button type="button" data-command-id="${escapeHtml(item.id)}"><span>${escapeHtml(item.icon)}</span>${escapeHtml(item.title)}</button>`;
     }).join("")}`;
@@ -770,7 +770,7 @@
         <div class="global-command-empty">
           <strong>No results found.</strong>
           <p>Probeer een klant, factuurnummer of website. Je kunt ook een nieuwe klant aanmaken.</p>
-          <button class="button secondary" type="button" data-empty-command="new-customer">Create customer</button>
+          <button class="button secondary" type="button" data-empty-command="new-customer">Klant aanmaken</button>
         </div>
       `;
       container.querySelector("[data-empty-command]")?.addEventListener("click", () => executeResult(commandResult(COMMANDS[0])));
