@@ -117,8 +117,10 @@ function normalizeProfile(row = {}) {
     name: cleanText(row.name),
     email: cleanText(row.email).toLowerCase(),
     role: cleanText(row.role).toLowerCase(),
-    status: cleanText(row.status || "active").toLowerCase(),
-    customerId: cleanText(row.customer_id || row.metadata?.customerId),
+      status: cleanText(row.status || "active").toLowerCase(),
+      customerId: cleanText(row.customer_id || row.metadata?.customerId),
+      portalMode: cleanText(row.metadata?.leadPortal?.mode),
+      leadId: cleanText(row.metadata?.leadPortal?.leadId),
     lastLoginAt: cleanText(row.last_login_at),
     avatarUrl: safeAvatarUrl(row.metadata?.avatarUrl || row.metadata?.avatar_url || row.metadata?.photoUrl || row.metadata?.photo_url),
   };

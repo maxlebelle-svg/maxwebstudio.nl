@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+  <title>Mijn website-demo | Max Webstudio</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=20260714-lead-preview">
+  <style>
+    .lead-demo-shell{max-width:1180px;margin:0 auto;padding:32px 20px 64px}.lead-demo-head,.lead-demo-card{background:#fff;border:1px solid #dce6ee;border-radius:18px;padding:24px;box-shadow:0 12px 35px rgba(12,31,48,.07)}.lead-demo-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:22px;margin-top:22px}.lead-demo-frame{width:100%;height:640px;border:1px solid #dce6ee;border-radius:14px;background:#f5f8fa}.lead-demo-actions{display:grid;gap:14px}.lead-demo-actions textarea{width:100%;min-height:130px;padding:12px;border:1px solid #cdd9e2;border-radius:10px;box-sizing:border-box}.lead-demo-meta{color:#617181}.lead-demo-error{padding:16px;border-radius:12px;background:#fff3f1;color:#9b2c21}.lead-demo-success{padding:16px;border-radius:12px;background:#eafaf4;color:#12694e}.lead-demo-blocked{padding:14px;border:1px dashed #b9c9d4;border-radius:12px;color:#617181}.lead-demo-events{display:grid;gap:10px;margin:0;padding:0;list-style:none}.lead-demo-events li{border-top:1px solid #e6edf2;padding-top:10px}@media(max-width:850px){.lead-demo-grid{grid-template-columns:1fr}.lead-demo-frame{height:520px}}
+  </style>
+</head>
+<body class="portal-body"><main class="lead-demo-shell">
+  <header class="lead-demo-head"><a class="brand" href="/"><span>Max Webstudio</span></a><p class="section-kicker">Beveiligde persoonlijke omgeving</p><h1 id="title">Uw website-demo laden…</h1><p id="intro" class="lead-demo-meta">We controleren uw account en de gekoppelde demo.</p><div id="status" role="status" aria-live="polite"></div></header>
+  <section id="content" class="lead-demo-grid" hidden>
+    <article class="lead-demo-card"><iframe id="preview" class="lead-demo-frame" title="Website-demo" sandbox="allow-forms allow-scripts allow-same-origin"></iframe></article>
+    <aside class="lead-demo-actions">
+      <section class="lead-demo-card"><h2>Uw reactie</h2><p id="next-step" class="lead-demo-meta"></p><label for="feedback">Feedback</label><textarea id="feedback" placeholder="Wat wilt u aangepast zien?"></textarea><button id="send-feedback" class="button primary" type="button">Feedback versturen</button><button id="approve" class="button secondary" type="button">Demo goedkeuren</button></section>
+      <section class="lead-demo-card"><h2>Voortgang</h2><ul id="events" class="lead-demo-events"></ul></section>
+      <section class="lead-demo-blocked"><strong>Klantonderdelen zijn nog niet actief</strong><p>Facturen, abonnementen, onboarding, projecten en klantassets worden pas beschikbaar na een expliciete klantconversie.</p></section>
+      <button id="logout" class="button secondary" type="button">Uitloggen</button>
+    </aside>
+  </section>
+</main>
+<script type="module">
+  import { getSession, signOut } from "./src/services/supabaseAuthProvider.js?v=20260714-lead-preview";
+  const $ = (id) => document.getElementById(id); let accessToken = ""; let busy = false;
+  function show(message,type=""){ $("status").className=type?`lead-demo-${type}`:""; $("status").textContent=message; }
+  async function request(method="GET",body){ const response=await fetch("/.netlify/functions/lead-preview-portal",{method,headers:{Accept:"application/json",Authorization:`Bearer ${accessToken}`,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"}); const data=await response.json().catch(()=>({})); if(!response.ok||!data.success) throw new Error(data.error||"Uw demo kon niet worden geladen."); return data; }
+  function render(data){ $("title").textContent=`Website-demo voor ${data.lead.companyName||"uw bedrijf"}`; $("intro").textContent=`Welkom ${data.lead.contactName||""}. Alleen de demo en informatie van deze lead zijn zichtbaar.`; $("next-step").textContent=data.nextStep; $("preview").src=data.demo.previewUrl||"about:blank"; $("feedback").value=data.demo.feedback||""; $("approve").disabled=data.demo.approvalStatus==="customer_approved"; $("events").innerHTML=(data.events||[]).map(item=>`<li><strong>${escapeHtml(item.title)}</strong><br><span class="lead-demo-meta">${escapeHtml(item.description||"")}</span></li>`).join("")||"<li>Nog geen zichtbare gebeurtenissen.</li>"; $("content").hidden=false; show("Uw beveiligde demo is geladen.","success"); }
+  async function action(action,extra={}){ if(busy)return; busy=true; $("send-feedback").disabled=true; $("approve").disabled=true; try{ await request("POST",{action,...extra}); render(await request()); show(action==="approve"?"Dank u. De demo is goedgekeurd.":"Uw feedback is veilig ontvangen.","success"); }catch(error){ show(error.message,"error"); }finally{ busy=false; $("send-feedback").disabled=false; }}
+  function escapeHtml(value){ const node=document.createElement("span"); node.textContent=String(value||""); return node.innerHTML; }
+  $("send-feedback").addEventListener("click",()=>action("feedback",{feedback:$("feedback").value})); $("approve").addEventListener("click",()=>action("approve")); $("logout").addEventListener("click",async()=>{await signOut();location.assign("/login.html?mode=client");});
+  try{ const result=await getSession(); accessToken=result?.session?.access_token||""; if(!accessToken){location.replace("/login.html?mode=client&redirect=/lead-preview.html");}else render(await request()); }catch(error){ show(error.message||"Uw persoonlijke demo is niet beschikbaar.","error"); }
+</script></body></html>

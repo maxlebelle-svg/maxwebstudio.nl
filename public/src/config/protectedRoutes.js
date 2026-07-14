@@ -156,6 +156,15 @@ export const PROTECTED_ROUTES = Object.freeze({
     hardReady: false,
     requiresCustomerAccess: true,
   },
+  "lead-preview": {
+    pageName: "lead-preview",
+    path: "/lead-preview.html",
+    requiredRoles: [ROLES.DEMO_USER, ROLES.CUSTOMER],
+    requiredPermissions: [],
+    allowDemo: false,
+    defaultRedirect: "/login.html?mode=client",
+    hardReady: true,
+  },
   login: {
     pageName: "login",
     path: "/login.html",

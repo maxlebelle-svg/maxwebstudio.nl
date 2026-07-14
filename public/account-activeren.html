@@ -67,10 +67,11 @@
       const asideList = document.getElementById("activation-aside-list");
       const params = new URLSearchParams(window.location.search);
       const activationMode = String(params.get("mode") || params.get("context") || "").toLowerCase();
+      const isLeadDemoActivation = activationMode === "lead_demo" || activationMode === "lead-preview";
       const isPreviewActivation = activationMode === "preview" || params.has("previewToken");
       const isCustomerActivation = isPreviewActivation || ["customer", "klant", "portal", "portaal", "onboarding", "project"].includes(activationMode) || params.has("projectId") || params.has("customerId");
       const previewContext = {
-        mode: isPreviewActivation ? "preview" : isCustomerActivation ? "customer_portal" : "dashboard",
+        mode: isLeadDemoActivation ? "lead_demo" : isPreviewActivation ? "preview" : isCustomerActivation ? "customer_portal" : "dashboard",
         projectId: params.get("projectId") || params.get("project") || "",
         token: params.get("token") || params.get("previewToken") || "",
         customerId: params.get("customerId") || "",
@@ -92,6 +93,18 @@
       }
 
       function applyActivationCopy() {
+        if (previewContext.mode === "lead_demo") {
+          kicker.textContent = "Demo-account activeren";
+          title.textContent = "Je persoonlijke website-demo staat klaar.";
+          intro.textContent = "Kies je wachtwoord. Daarna open je uitsluitend je eigen beveiligde demo-omgeving.";
+          statusTitle.textContent = "Demo-uitnodiging controleren";
+          statusText.textContent = "We controleren je tijdelijke beveiligde activatielink.";
+          submit.textContent = "Demo-account activeren";
+          asideKicker.textContent = "Persoonlijke demo";
+          asideTitle.textContent = "Bekijk en beoordeel je website-demo veilig.";
+          asideList.innerHTML = ["Alleen jouw bedrijfsgegevens en demo zijn zichtbaar.", "Geef feedback of keur het ontwerp goed.", "Facturen en klantonderdelen blijven geblokkeerd.", "Je zit nog nergens aan vast."].map((item) => `<li>${item}</li>`).join("");
+          return;
+        }
         if (previewContext.mode === "preview") {
           kicker.textContent = "Preview activeren";
           title.textContent = "Je website-preview staat klaar.";
@@ -239,6 +252,7 @@
       }
 
       function dashboardUrlForRole(role) {
+        if (previewContext.mode === "lead_demo") return "/lead-preview.html";
         if (previewContext.mode === "preview") {
           const previewUrl = new URL("/preview.html", window.location.origin);
           if (previewContext.projectId) previewUrl.searchParams.set("projectId", previewContext.projectId);
@@ -293,6 +307,15 @@
           await updatePassword(data.password);
           const session = readJson(supabaseSessionKey, null);
           if (!session?.access_token) throw new Error("Sessie ontbreekt na wachtwoord instellen. Log opnieuw in.");
+          if (previewContext.mode === "lead_demo") {
+            const activationResponse = await fetch("/.netlify/functions/lead-preview-portal", {
+              method: "POST",
+              headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify({ action: "activate" }),
+            });
+            const activationData = await activationResponse.json().catch(() => ({}));
+            if (!activationResponse.ok || !activationData.success) throw new Error(activationData.error || "Het demo-account kon niet worden geactiveerd.");
+          }
           const account = await fetchAccountProfile(session.access_token);
           storeDashboardSessions(session, account);
           const profile = account.profile || {};
