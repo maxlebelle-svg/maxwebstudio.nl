@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { verifyAdmin } = require("./_admin-auth");
 const { buildLeadDemoInvitationMail } = require("./services/leadDemoInvitationTemplate");
+const { sendTrackedEmail } = require("./services/resendMailService");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -10,13 +11,24 @@ const ACTIONS = new Set(["invite", "resend", "new_link"]);
 function createHandler(deps = {}) {
   const fetchImpl = deps.fetchImpl || global.fetch;
   const verify = deps.verifyAdmin || verifyAdmin;
+  const sendMail = deps.sendMail || sendTrackedEmail;
   const now = deps.now || (() => new Date());
   return async (event) => {
-    if (event.httpMethod !== "POST") return response(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
+    if (!["GET", "POST"].includes(event.httpMethod)) return response(405, { success: false, error: "Methode niet toegestaan." });
     const admin = await verify(event, response, { module: "lead_demo_invitation", action: "plan", allowedRoles: ["super_admin", "admin", "sales_manager", "sales_partner"] });
     if (!admin.success) return admin.response;
     const config = runtimeConfig(process.env);
     if (!config.ready) return response(503, { success: false, code: "INVITATION_NOT_CONFIGURED", error: "De demo-uitnodigingsflow is nog niet geconfigureerd." });
+    if (event.httpMethod === "GET") {
+      try {
+        const leadId = clean(event.queryStringParameters?.leadId);
+        if (!UUID.test(leadId)) throw httpError(400, "LEAD_ID_INVALID", "Kies een geldige lead.");
+        const invitation = await readOne(fetchImpl, config, "lead_demo_invitations", { select: "id,lead_id,status,invitation_count,planned_at,sent_at,activated_at,opened_at,last_error_code,updated_at", lead_id: `eq.${leadId}`, limit: "1" });
+        return response(200, { success: true, status: invitation ? clean(invitation.status) : "not_invited", invitation: invitation || null, sender: senderReadiness(config) });
+      } catch (error) {
+        return response(error.statusCode || 500, { success: false, code: error.code || "STATUS_FAILED", error: error.statusCode ? error.message : "De uitnodigingsstatus kon niet worden geladen." });
+      }
+    }
 
     let createdAuthUserId = "";
     let createdProfileId = "";
@@ -87,9 +99,10 @@ function createHandler(deps = {}) {
       const planned = Array.isArray(rows) ? rows[0] : rows;
       if (!planned?.outbox_id) throw httpError(503, "OUTBOX_NOT_CREATED", "De uitnodiging kon niet duurzaam worden gepland.");
 
+      const dispatch = await dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned, mail, lead, journey, profile, stable, occurredAt });
       return response(202, {
         success: true,
-        status: "planned",
+        status: dispatch.status,
         duplicate: Boolean(planned.duplicate),
         invitationId: clean(planned.invitation_id),
         outboxId: clean(planned.outbox_id),
@@ -98,8 +111,9 @@ function createHandler(deps = {}) {
         authUserId: authUser.id,
         createdAuthUser: !existingUser,
         createdProfile: profileResult.created,
-        emailSent: false,
-        message: "De demo-uitnodiging is duurzaam gepland voor verzending.",
+        emailSent: dispatch.sent,
+        sender: senderReadiness(config),
+        message: dispatch.sent ? "De demo-uitnodiging is veilig verzonden." : dispatch.status === "send_failed" ? "De uitnodiging is opgeslagen, maar verzending is mislukt. U kunt veilig opnieuw versturen." : "De demo-uitnodiging is duurzaam gepland voor verzending.",
       });
     } catch (error) {
       await compensate(fetchImpl, runtimeConfig(process.env), { profileId: createdProfileId, authUserId: createdAuthUserId });
@@ -107,6 +121,36 @@ function createHandler(deps = {}) {
       return response(error.statusCode || 500, { success: false, code: error.code || "INVITATION_FAILED", error: error.statusCode ? error.message : "De demo-uitnodiging kon niet veilig worden gepland." });
     }
   };
+}
+
+async function dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned, mail, lead, journey, profile, stable, occurredAt }) {
+  if (planned.duplicate) return { status: "planned", sent: false };
+  const production = [process.env.APP_ENV, process.env.APP_ENVIRONMENT, process.env.CONTEXT].map((value) => clean(value).toLowerCase()).some((value) => ["production", "prod"].includes(value));
+  const enabled = ["1", "true", "yes", "on"].includes(clean(process.env.LEAD_DEMO_INVITATION_EMAIL_ENABLED).toLowerCase());
+  if (!production || !enabled) return { status: "planned", sent: false };
+  const result = await sendMail({
+    to: clean(lead.email).toLowerCase(), from: config.fromEmail || undefined, replyTo: config.replyTo || undefined,
+    subject: mail.subject, html: mail.html, text: mail.text, templateKey: "lead_demo_invitation", templateName: "Je website-demo staat klaar",
+    leadId: lead.id, triggeredBy: "admin_lead_demo_invitation", suppressTimelineEvent: true,
+    idempotencyKey: `lead.demo.invitation:${stable}`, metadata: { demoJourneyId: journey.id, profileId: profile.id, outboxId: planned.outbox_id },
+  });
+  const sent = Boolean(result?.sent && result?.id);
+  const status = sent ? "sent" : "send_failed";
+  const at = new Date().toISOString();
+  await Promise.all([
+    patchRows(fetchImpl, config, "lead_demo_invitations", { id: `eq.${planned.invitation_id}` }, { status, sent_at: sent ? at : null, last_error_code: sent ? null : clean(result?.errorCode || "provider_send_failed"), updated_at: at }),
+    patchRows(fetchImpl, config, "lead_demo_invitation_attempts", { invitation_id: `eq.${planned.invitation_id}`, outbox_id: `eq.${planned.outbox_id}` }, { status, provider_message_id: sent ? clean(result.id) : null, error_code: sent ? null : clean(result?.errorCode || "provider_send_failed"), updated_at: at }),
+    patchRows(fetchImpl, config, "automation_outbox", { id: `eq.${planned.outbox_id}`, status: "eq.pending" }, { status: sent ? "completed" : "failed", processed_at: sent ? at : null, last_error_code: sent ? null : clean(result?.errorCode || "provider_send_failed"), updated_at: at }),
+  ]);
+  return { status, sent };
+}
+
+function senderReadiness(config) {
+  const from = clean(config.fromEmail);
+  const address = from.match(/<([^>]+)>/)?.[1] || from;
+  const domain = address.split("@")[1]?.toLowerCase() || "";
+  const verified = ["1", "true", "yes", "on"].includes(clean(process.env.RESEND_DOMAIN_VERIFIED).toLowerCase());
+  return { ready: Boolean(from && domain && verified), verified, fromConfigured: Boolean(from), domain, warning: !from ? "Afzender ontbreekt." : !verified ? "Het verzenddomein is niet als geverifieerd geconfigureerd." : "" };
 }
 
 async function resolveJourney(fetchImpl, config, input, leadId) {
@@ -185,6 +229,7 @@ function httpError(statusCode, code, message) { return Object.assign(new Error(m
 function clean(value) { return String(value || "").trim(); }
 
 async function readOne(fetchImpl, config, table, filters) { const query = new URLSearchParams(filters); const rows = await rest(fetchImpl, config, `${table}?${query}`, { method: "GET" }); return Array.isArray(rows) ? rows[0] || null : null; }
+async function patchRows(fetchImpl, config, table, filters, body) { return rest(fetchImpl, config, `${table}?${new URLSearchParams(filters)}`, { method: "PATCH", prefer: "return=representation", body }); }
 async function rpc(fetchImpl, config, name, body) { return rest(fetchImpl, config, `rpc/${name}`, { method: "POST", body }); }
 async function rest(fetchImpl, config, path, options = {}) { return request(fetchImpl, `${config.supabaseUrl}/rest/v1/${path}`, { ...options, headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, Accept: "application/json", "Accept-Profile": "public", "Content-Profile": "public", ...(options.prefer ? { Prefer: options.prefer } : {}) } }); }
 async function auth(fetchImpl, config, path, options = {}) { return request(fetchImpl, `${config.supabaseUrl}/auth/v1/${path}`, { ...options, headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, Accept: "application/json" } }); }
@@ -192,4 +237,4 @@ async function request(fetchImpl, url, options = {}) { const headers = { ...(opt
 function response(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }, body: JSON.stringify(body) }; }
 
 exports.handler = createHandler();
-exports._test = { createHandler, absolutePreviewUrl, assertJourneyReady, buildLeadDemoInvitationMail, forceRedirect, runtimeConfig, validateInput };
+exports._test = { createHandler, absolutePreviewUrl, assertJourneyReady, buildLeadDemoInvitationMail, dispatchPlannedInvitation, forceRedirect, runtimeConfig, senderReadiness, validateInput };

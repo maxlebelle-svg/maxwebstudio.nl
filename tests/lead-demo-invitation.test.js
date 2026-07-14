@@ -21,6 +21,7 @@ function reply(status, body) {
 
 function fixture(options = {}) {
   const calls = [];
+  const mailCalls = [];
   const existingUser = options.existingUser !== false;
   const lead = options.lead === null ? null : {
     id: IDS.lead,
@@ -42,6 +43,7 @@ function fixture(options = {}) {
     calls.push({ url, path: parsed.pathname, method: init.method || "GET", body });
     if (parsed.pathname.endsWith("/rest/v1/leads")) return reply(200, lead ? [lead] : []);
     if (parsed.pathname.endsWith("/rest/v1/demo_journeys")) return reply(200, journey ? [journey] : []);
+    if (parsed.pathname.endsWith("/rest/v1/lead_demo_invitations") && (init.method || "GET") === "GET") return reply(200, options.invitationStatus ? [{ id: IDS.invitation, lead_id: IDS.lead, status: options.invitationStatus }] : []);
     if (parsed.pathname.endsWith("/auth/v1/admin/users")) return reply(200, { users: existingUser ? [{ id: IDS.user, email: "lisanne@example.test", email_confirmed_at: options.active ? "2026-07-01" : null }] : [] });
     if (parsed.pathname.endsWith("/auth/v1/admin/generate_link")) return reply(200, { action_link: "https://example.supabase.co/auth/v1/verify?token=secret", user: { id: IDS.user, email: "lisanne@example.test" } });
     if (parsed.pathname.endsWith("/rest/v1/profiles") && (init.method || "GET") === "GET") return reply(200, options.profile ? [options.profile] : []);
@@ -51,10 +53,11 @@ function fixture(options = {}) {
       return reply(200, [{ invitation_id: IDS.invitation, outbox_id: IDS.outbox, duplicate: Boolean(options.duplicate) }]);
     }
     if (init.method === "DELETE") return reply(204, null);
+    if (init.method === "PATCH") return reply(200, [{}]);
     throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
   };
-  const handler = _test.createHandler({ fetchImpl, verifyAdmin: async () => ({ success: true, admin: { id: IDS.user, email: "admin@example.test" } }), now: () => new Date("2026-07-14T12:00:00.000Z") });
-  return { calls, handler };
+  const handler = _test.createHandler({ fetchImpl, verifyAdmin: async () => ({ success: true, admin: { id: IDS.user, email: "admin@example.test" } }), sendMail: async (input) => { mailCalls.push(input); return options.mailFailure ? { sent: false, errorCode: "provider_timeout" } : { sent: true, id: "resend-message-1" }; }, now: () => new Date("2026-07-14T12:00:00.000Z") });
+  return { calls, mailCalls, handler };
 }
 
 function event(payload = {}) {
@@ -158,4 +161,30 @@ test("migratie is additief, service-role-only en plant event plus outbox atomisc
   assert.match(sql, /email\.lead_demo_invitation/);
   assert.match(sql, /revoke all[\s\S]*anon, authenticated/);
   assert.doesNotMatch(sql, /\b(drop|truncate|delete\s+from)\b/i);
+});
+
+test("productieverzending gebeurt pas na outboxplanning en maximaal één keer per action key", async () => {
+  const previous = { ...process.env }; const state = fixture({});
+  Object.assign(process.env, { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role", SITE_URL: "https://maxwebstudio.nl", FROM_EMAIL: "Max Webstudio <info@maxwebstudio.nl>", APP_ENV: "production", LEAD_DEMO_INVITATION_EMAIL_ENABLED: "on", RESEND_DOMAIN_VERIFIED: "true" });
+  try {
+    const response = await state.handler(event()); const body = JSON.parse(response.body);
+    assert.equal(body.status, "sent"); assert.equal(state.mailCalls.length, 1);
+    const rpcIndex = state.calls.findIndex((call) => call.path.endsWith("plan_lead_demo_invitation"));
+    const firstPatchIndex = state.calls.findIndex((call) => call.method === "PATCH");
+    assert.ok(rpcIndex >= 0 && firstPatchIndex > rpcIndex);
+  } finally { process.env = previous; }
+});
+
+test("duplicate planning verstuurt niet opnieuw en testomgeving verstuurt nooit live", async () => {
+  const duplicate = await run({ duplicate: true }); assert.equal(duplicate.state.mailCalls.length, 0);
+  const normal = await run({}); assert.equal(normal.state.mailCalls.length, 0);
+});
+
+test("statusroute toont not_invited of actuele begrensde status en afzenderwaarschuwing", async () => {
+  const previous = { ...process.env }; const state = fixture({ invitationStatus: "sent" });
+  Object.assign(process.env, { SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role", FROM_EMAIL: "Max Webstudio <info@maxwebstudio.nl>", RESEND_DOMAIN_VERIFIED: "false" });
+  try {
+    const response = await state.handler({ httpMethod: "GET", headers: { authorization: "Bearer test" }, queryStringParameters: { leadId: IDS.lead } }); const body = JSON.parse(response.body);
+    assert.equal(response.statusCode, 200); assert.equal(body.status, "sent"); assert.equal(body.sender.ready, false); assert.match(body.sender.warning, /niet als geverifieerd/i);
+  } finally { process.env = previous; }
 });

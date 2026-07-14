@@ -49,6 +49,10 @@ exports.handler = async (event) => {
     const emailStatus = input.sendWelcomeEmail ? "send_requested" : "draft_only";
     const ownerMetadata = buildOwnerMetadata(input);
     const authUser = await ensureAuthUser(supabaseUrl, serviceRoleKey, input);
+    const existingProfile = await readByLookup({ supabaseUrl, serviceRoleKey, table: "profiles", lookup: `auth_user_id=eq.${encodeURIComponent(authUser.id)}` });
+    const existingProfileMetadata = existingProfile?.metadata && typeof existingProfile.metadata === "object" ? existingProfile.metadata : {};
+    const accountAlreadyActive = cleanText(existingProfile?.status).toLowerCase() === "active";
+    const effectivePortalStatus = accountAlreadyActive ? { database: "active", access: "active" } : portalStatus;
     const profile = await upsertByLookup({
       supabaseUrl,
       serviceRoleKey,
@@ -67,10 +71,11 @@ exports.handler = async (event) => {
         is_demo: isDemoRecord,
         environment: recordEnvironment,
         metadata: {
+          ...existingProfileMetadata,
           createdBy: "admin-customer-create-wizard",
           authAction: authUser.action,
           sourceEnvironment: recordEnvironment,
-          portalAccessStatus: portalStatus.access,
+          portalAccessStatus: effectivePortalStatus.access,
           createdFromLeadId: input.leadId || "",
           emailStatus,
           ...ownerMetadata,
@@ -94,14 +99,14 @@ exports.handler = async (event) => {
         website: input.domain,
         package: input.package,
         status: "active",
-        portal_status: portalStatus.database,
+        portal_status: effectivePortalStatus.database,
         customer_since: new Date().toISOString().slice(0, 10),
         is_demo: isDemoRecord,
         environment: recordEnvironment,
         metadata: {
           createdBy: "admin-customer-create-wizard",
           sourceEnvironment: recordEnvironment,
-          portalAccessStatus: portalStatus.access,
+          portalAccessStatus: effectivePortalStatus.access,
           createdFromLeadId: input.leadId || "",
           emailStatus,
           billingStatus: input.sendWelcomeEmail ? "pending_customer_activation" : "internal_record_only",
@@ -174,13 +179,16 @@ exports.handler = async (event) => {
       },
     });
 
-    const passwordSetup = await createPasswordSetupLink(supabaseUrl, serviceRoleKey, input);
+    const passwordSetup = accountAlreadyActive
+      ? { status: "existing_active_account", actionLink: "", redirectTo: cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || `${getCompanySettings().websiteUrl}/login.html` }
+      : await createPasswordSetupLink(supabaseUrl, serviceRoleKey, input);
     const mailPreview = buildMailPreview(input, passwordSetup);
-    const email = input.sendWelcomeEmail
+    const email = input.sendWelcomeEmail && !accountAlreadyActive
       ? await sendWelcomeEmailMessage(input, mailPreview, { customer, project, admin: adminCheck.admin })
-      : { requested: false, sent: false, warning: "Welkomstmail is alleen als concept voorbereid." };
+      : { requested: false, sent: false, warning: accountAlreadyActive ? "Bestaand actief account hergebruikt; er is geen nieuwe account-aanmaakmail verstuurd." : "Welkomstmail is alleen als concept voorbereid." };
     if (input.leadId) {
       await linkLeadToCustomer(supabaseUrl, serviceRoleKey, input.leadId, customer.id);
+      await finalizeLeadDemoIdentity(supabaseUrl, serviceRoleKey, input.leadId, customer.id, authUser.id);
     }
 
     return jsonResponse(200, {
@@ -424,6 +432,28 @@ async function upsertByLookup({ supabaseUrl, serviceRoleKey, table, lookup, reco
     throw error;
   }
   return savedRecord;
+}
+
+async function readByLookup({ supabaseUrl, serviceRoleKey, table, lookup }) {
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/${table}?select=*&${lookup}&limit=1`, { method: "GET", headers: restHeaders(serviceRoleKey) });
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+
+async function finalizeLeadDemoIdentity(supabaseUrl, serviceRoleKey, leadId, customerId, authUserId) {
+  try {
+    const invitation = await readByLookup({ supabaseUrl, serviceRoleKey, table: "lead_demo_invitations", lookup: `lead_id=eq.${encodeURIComponent(leadId)}&auth_user_id=eq.${encodeURIComponent(authUserId)}` });
+    if (!invitation?.id) return null;
+    const metadata = invitation.metadata && typeof invitation.metadata === "object" ? invitation.metadata : {};
+    return supabaseFetch(`${supabaseUrl}/rest/v1/lead_demo_invitations?id=eq.${encodeURIComponent(invitation.id)}&auth_user_id=eq.${encodeURIComponent(authUserId)}`, {
+      method: "PATCH",
+      headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify({ metadata: { ...metadata, convertedCustomerId: customerId, convertedAt: new Date().toISOString() }, updated_at: new Date().toISOString() }),
+    });
+  } catch (error) {
+    if (["42P01", "PGRST205"].includes(cleanText(error.code))) return null;
+    console.error("Lead demo identity conversion marker failed", { leadId, customerId, code: error.code || "" });
+    return null;
+  }
 }
 
 async function supabaseFetch(url, options) {

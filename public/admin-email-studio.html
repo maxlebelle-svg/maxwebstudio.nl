@@ -900,6 +900,17 @@
             body: "Hallo {{klant_naam}},\n\nEr staan nieuwe downloads klaar voor {{bedrijf_naam}}. Je kunt de nieuwste logo's, social assets, e-mailassets en printbestanden bekijken in je klantomgeving.\n\nMet vriendelijke groet,\nMax Webstudio",
           },
           {
+            id: "lead-demo-uitnodiging",
+            name: "Je website-demo staat klaar",
+            description: "Beveiligde demo-accountuitnodiging voor een lead; nooit customer-onboarding.",
+            type: "Demo",
+            status: "Actief",
+            updatedAt: "2026-07-14",
+            subject: "Je website-demo voor {{bedrijf_naam}} staat klaar",
+            preheader: "Bekijk je persoonlijke website-demo in een beveiligde omgeving.",
+            body: "Hallo {{klant_naam}},\n\nDe website-demo voor {{bedrijf_naam}} staat klaar in je beveiligde persoonlijke omgeving.\n\nGebruik de tijdelijke activatielink om zelf een wachtwoord te kiezen en je demo te bekijken:\n{{login_url}}\n\nJe kunt feedback geven of het ontwerp goedkeuren. Dit is vrijblijvend: je zit nog nergens aan vast.\n\nHulp nodig? Mail info@maxwebstudio.nl.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
             id: "account-aanmaken",
             name: "Account aanmaken",
             description: "Portaaltoegang sturen naar een nieuwe klant of geconverteerde lead.",
@@ -971,6 +982,7 @@
         let recipientDebounceTimer = null;
         let manualRecipientSelection = false;
         let sendInFlight = false;
+        let leadInvitationStatus = "not_invited";
         const legacyTemplateIds = new Set(["wachtwoord-reset"]);
 
         function loadTemplates() {
@@ -1342,6 +1354,7 @@
           highlightedRecipientIndex = recipientResults.findIndex((item) => recipientKey(item) === recipientKey(normalized));
           renderRecipientResults();
           syncManualSendPanel();
+          if (normalized.relationshipType === "lead") loadLeadInvitationStatus(normalized);
         }
 
         async function loadRecipients({ append = false, query = elements.recipientSearch?.value || "" } = {}) {
@@ -1435,7 +1448,27 @@
               ? `Controleer vóór verzenden: ${lead.relationshipType === "lead" ? "Lead" : "Klant"} · ${lead.companyName || lead.contactName || "relatie"} · ${lead.email || "geen e-mail"} · ${activeTemplate()?.name || "template"} · ${renderWithData(activeTemplate()?.subject || "")}.`
               : "Selecteer een lead of klant. Er wordt nooit automatisch verzonden.";
           }
+          if (elements.sendEmail && lead?.relationshipType === "lead" && activeTemplate()?.id === "lead-demo-uitnodiging") {
+            elements.sendEmail.textContent = leadInvitationStatus === "activated" ? "Nieuwe activatielink genereren" : ["planned", "sent", "send_failed", "link_expired"].includes(leadInvitationStatus) ? "Uitnodiging opnieuw versturen" : "Demo-uitnodiging versturen";
+            elements.sendState.textContent = ({ not_invited: "Niet uitgenodigd", planned: "Gepland", sent: "Verzonden", activated: "Geactiveerd", link_expired: "Link verlopen", send_failed: "Verzendfout" })[leadInvitationStatus] || "Niet uitgenodigd";
+          }
           renderPreview();
+        }
+
+        async function loadLeadInvitationStatus(lead) {
+          leadInvitationStatus = "not_invited";
+          const token = getBearer();
+          if (!token || lead?.relationshipType !== "lead") return syncManualSendPanel();
+          try {
+            const response = await fetch(`/.netlify/functions/admin-lead-demo-invitation?leadId=${encodeURIComponent(lead.relationshipId)}`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Uitnodigingsstatus niet beschikbaar.");
+            leadInvitationStatus = data.status || "not_invited";
+            if (data.sender?.warning) setMessage(data.sender.warning, "warning");
+          } catch (error) {
+            setMessage(error.message || "Uitnodigingsstatus kon niet worden geladen.", "warning");
+          }
+          syncManualSendPanel();
         }
 
         function renderEditor() {
@@ -1577,6 +1610,17 @@
           refreshPreviewDataFromLead();
           const active = activeTemplate() || {};
           sendInFlight = true;
+          if (active.id === "lead-demo-uitnodiging") {
+            try {
+              if (lead.relationshipType !== "lead") throw new Error("De demo-uitnodiging is uitsluitend voor leads. Gebruik voor klanten de bestaande accounttemplate.");
+              await sendLeadDemoInvitation({ lead, token });
+            } catch (error) {
+              setMessage(error.message, "error");
+            } finally {
+              sendInFlight = false;
+            }
+            return;
+          }
           if (active.id === "account-aanmaken") {
             try {
               if (lead.relationshipType !== "customer") throw new Error("Accountactivatie kan alleen naar een bestaande klant worden verstuurd.");
@@ -1661,6 +1705,28 @@
           } finally {
             elements.sendEmail.disabled = false;
             elements.sendEmail.textContent = "Mail versturen";
+          }
+        }
+
+        async function sendLeadDemoInvitation({ lead, token }) {
+          elements.sendEmail.disabled = true;
+          const action = leadInvitationStatus === "activated" ? "new_link" : leadInvitationStatus === "not_invited" ? "invite" : "resend";
+          elements.sendEmail.textContent = "Veilig plannen…";
+          try {
+            const response = await fetch("/.netlify/functions/admin-lead-demo-invitation", {
+              method: "POST",
+              headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ leadId: lead.relationshipId, action, actionKey: crypto.randomUUID() }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Demo-uitnodiging kon niet veilig worden gepland.");
+            leadInvitationStatus = data.status || "planned";
+            const message = data.emailSent ? `Demo-uitnodiging verzonden naar ${lead.email}.` : data.status === "send_failed" ? "Uitnodiging opgeslagen, maar verzending is mislukt. Opnieuw versturen is veilig." : "Demo-uitnodiging is duurzaam gepland.";
+            setMessage(message, data.status === "send_failed" ? "error" : "success");
+            if (elements.sendNote) elements.sendNote.textContent = `${message} Er is geen customer aangemaakt.`;
+          } finally {
+            elements.sendEmail.disabled = false;
+            syncManualSendPanel();
           }
         }
 
