@@ -3,7 +3,10 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const html = fs.readFileSync(path.join(__dirname, "..", "public", "admin-email-studio.html"), "utf8");
+const html = [
+  fs.readFileSync(path.join(__dirname, "..", "public", "admin-email-studio.html"), "utf8"),
+  fs.readFileSync(path.join(__dirname, "..", "public", "src", "emailStudioTemplateSelection.js"), "utf8"),
+].join("\n");
 
 test("Email Studio uses one global lead and customer combobox instead of legacy localStorage", () => {
   assert.match(html, /role="combobox"/);

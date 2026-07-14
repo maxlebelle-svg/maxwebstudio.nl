@@ -759,6 +759,7 @@
       </div>
     </main>
 
+    <script src="src/emailStudioTemplateSelection.js"></script>
     <script>
       (() => {
         const storageKey = "maxwebstudioEmailStudioTemplates";
@@ -1433,6 +1434,7 @@
 
         function syncManualSendPanel() {
           const lead = selectedLead();
+          const template = activeTemplate();
           if (elements.recipientEmail) elements.recipientEmail.value = lead?.email || "";
           if (elements.temporaryPassword && !elements.temporaryPassword.value) elements.temporaryPassword.value = "https://maxwebstudio.nl/login.html";
           refreshPreviewDataFromLead();
@@ -1446,9 +1448,11 @@
               : "Nog geen ontvanger gekozen.";
           }
           if (elements.sendNote) {
-            elements.sendNote.textContent = lead
-              ? `Controleer vóór verzenden: ${lead.relationshipType === "lead" ? "Lead" : "Klant"} · ${lead.companyName || lead.contactName || "relatie"} · ${lead.email || "geen e-mail"} · ${activeTemplate()?.name || "template"} · ${renderWithData(activeTemplate()?.subject || "")}.`
-              : "Selecteer een lead of klant. Er wordt nooit automatisch verzonden.";
+            elements.sendNote.textContent = window.EmailStudioTemplateSelection.manualSendSummary({
+              recipient: lead,
+              template,
+              subject: renderWithData(template?.subject || ""),
+            });
           }
           if (elements.sendEmail && lead?.relationshipType === "lead" && activeTemplate()?.id === "lead-demo-uitnodiging") {
             elements.sendEmail.textContent = leadInvitationStatus === "activated" ? "Nieuwe activatielink genereren" : ["planned", "sent", "send_failed", "link_expired"].includes(leadInvitationStatus) ? "Uitnodiging opnieuw versturen" : "Demo-uitnodiging versturen";
@@ -1458,7 +1462,7 @@
             if (lead.relationshipType === "lead") {
               elements.sendEmail.textContent = leadInvitationStatus === "activated" ? "Nieuwe activatielink versturen" : ["planned", "sent", "send_failed", "link_expired"].includes(leadInvitationStatus) ? "Accountuitnodiging opnieuw versturen" : "Accountuitnodiging versturen";
               elements.sendState.textContent = ({ not_invited: "Uitnodiging nog niet verstuurd", planned: "Uitnodiging gepland", sent: "Uitnodiging verzonden", activated: "Account geactiveerd", link_expired: "Link verlopen", send_failed: "Verzendfout" })[leadInvitationStatus] || "Uitnodiging nog niet verstuurd";
-              elements.sendNote.textContent = "Deze lead blijft lead en krijgt alleen demo_user-toegang. Zonder gekoppelde, goedgekeurde demo weigert de server de uitnodiging veilig.";
+              elements.sendNote.textContent += " Deze lead blijft lead en krijgt alleen demo_user-toegang. Zonder gekoppelde, goedgekeurde demo weigert de server de uitnodiging veilig.";
             } else {
               elements.sendEmail.textContent = customerInvitationStatus === "activated" ? "Nieuwe inloglink of wachtwoordherstel versturen" : ["sent", "planned", "send_failed", "link_expired"].includes(customerInvitationStatus) ? "Accountuitnodiging opnieuw versturen" : "Account aanmaken / uitnodigen";
               elements.sendState.textContent = ({ not_invited: "Uitnodiging nog niet verstuurd", planned: "Uitnodiging gepland", sent: "Uitnodiging verzonden", activated: "Account geactiveerd", link_expired: "Link verlopen", send_failed: "Verzendfout" })[customerInvitationStatus] || "Uitnodiging nog niet verstuurd";
@@ -1526,6 +1530,25 @@
               templateKey: payload.template?.id || activeId,
               templateName: payload.template?.name || elements.name.value || "",
             }),
+            getManualSendState: () => {
+              const recipient = selectedLead();
+              const template = activeTemplate();
+              const subject = renderWithData(template?.subject || "");
+              const request = template?.id === "account-aanmaken" && recipient
+                ? window.EmailStudioTemplateSelection.accountInvitationRequest({ recipient, status: recipient.relationshipType === "lead" ? leadInvitationStatus : customerInvitationStatus, actionKey: "generated-at-send" })
+                : null;
+              return {
+                dropdownValue: elements.templateSelect?.value || "",
+                dropdownLabel: elements.templateSelect?.selectedOptions?.[0]?.textContent || "",
+                templateKey: template?.id || "",
+                templateName: template?.name || "",
+                previewTitle: elements.previewSubject?.textContent || "",
+                summary: elements.sendNote?.textContent || "",
+                subject,
+                recipientEmail: recipient?.email || "",
+                request,
+              };
+            },
           };
           elements.previewSubject.textContent = payload.subject;
           elements.previewPreheader.textContent = payload.preheader;
@@ -1558,6 +1581,7 @@
           activeId = id;
           renderTemplateList();
           renderEditor();
+          syncManualSendPanel();
           setMessage(action === "preview" ? "Preview bijgewerkt met voorbeelddata." : "Template geopend.", action === "preview" ? "success" : "");
           if (action === "preview") {
             document.getElementById("preview-heading")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -1739,13 +1763,13 @@
 
         async function sendLeadDemoInvitation({ lead, token, accountOnly = false }) {
           elements.sendEmail.disabled = true;
-          const action = leadInvitationStatus === "activated" ? "new_link" : leadInvitationStatus === "not_invited" ? "invite" : "resend";
+          const request = window.EmailStudioTemplateSelection.accountInvitationRequest({ recipient: lead, status: leadInvitationStatus, actionKey: crypto.randomUUID() });
           elements.sendEmail.textContent = "Veilig plannen…";
           try {
-            const response = await fetch("/.netlify/functions/admin-lead-demo-invitation", {
+            const response = await fetch(request.endpoint, {
               method: "POST",
               headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ leadId: lead.relationshipId, action, actionKey: crypto.randomUUID() }),
+              body: JSON.stringify(request.payload),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Demo-uitnodiging kon niet veilig worden gepland.");
@@ -1762,20 +1786,17 @@
 
         async function sendAccountActivationEmail({ lead, to, token }) {
           elements.sendEmail.disabled = true;
+          const request = window.EmailStudioTemplateSelection.accountInvitationRequest({ recipient: lead, status: customerInvitationStatus, actionKey: crypto.randomUUID() });
           elements.sendEmail.textContent = "Activatielink maken...";
           try {
-            const response = await fetch("/.netlify/functions/admin-customer-welcome-email", {
+            const response = await fetch(request.endpoint, {
               method: "POST",
               headers: {
                 Accept: "application/json",
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({
-                customerId: lead.relationshipId,
-                action: customerInvitationStatus === "activated" ? "new_link" : customerInvitationStatus === "not_invited" ? "invite" : "resend",
-                actionKey: crypto.randomUUID(),
-              }),
+              body: JSON.stringify(request.payload),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || data.success === false) throw new Error(data.error || "Accountmail kon niet worden voorbereid.");
