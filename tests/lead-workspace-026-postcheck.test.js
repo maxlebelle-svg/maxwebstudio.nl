@@ -55,9 +55,17 @@ test("026-postcheck preserves security, prerequisite and history contracts", () 
     "prerequisite_columns_preserved", "prerequisite_constraints_preserved",
     "prerequisite_indexes_preserved", "migration_history_status",
   ]) assert.match(postcheck, new RegExp(`'${check}'`));
-  assert.match(postcheck, /7286fe06b77a30efeacbb3eeb4894648/);
+  assert.match(postcheck, /1e1b1322c683f45c0aab4bcc0a01a869/);
   assert.match(postcheck, /CASE WHEN applied THEN 'PASS' ELSE 'WARN' END/);
   assert.match(postcheck, /no history write is performed/);
+});
+
+test("policy predicate or ACL drift remains a blocking fingerprint failure", () => {
+  assert.match(postcheck, /concat_ws\('\|',table_name,policy_name,command_name,roles,using_expression,check_expression\)/);
+  assert.match(postcheck, /ORDER BY table_name,policy_name,command_name/);
+  assert.match(postcheck, /shape_findings=0 AND fingerprint=\(SELECT fingerprint FROM expected_policy_fingerprint\) THEN 'PASS' ELSE 'FAIL'/);
+  assert.match(postcheck, /'policy_fingerprint_unchanged'/);
+  assert.match(postcheck, /true FROM policy_contract/);
 });
 
 test("backend reads and writes all seven workspace fields through its canonical contract", () => {

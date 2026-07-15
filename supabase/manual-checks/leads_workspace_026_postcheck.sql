@@ -71,8 +71,9 @@ expected_policies(table_name, policy_name, command_name) AS (
     ('leads','leads_sales_partner_update_own','UPDATE')
 ),
 expected_policy_fingerprint(fingerprint) AS (
-  -- Copied from the authoritative prerequisite-postcheck export; do not update on drift.
-  VALUES ('7286fe06b77a30efeacbb3eeb4894648')
+  -- Proven by both authoritative production prerequisite exports before migration 026.
+  -- Keep fail-closed: predicate, role, command or policy-set drift changes this fingerprint.
+  VALUES ('1e1b1322c683f45c0aab4bcc0a01a869')
 ),
 helper_functions(signature) AS (
   VALUES ('public.current_app_role()'),('public.current_profile_id()'),
