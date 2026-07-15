@@ -2,6 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders: sharedCorsHeaders } = require("./_cors");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { resolveActiveDemoPreview } = require("./_demo-preview-source");
+const { injectEditorRuntime, parseEditorContext, requestOrigin, UUID_PATTERN } = require("./_preview-editor-runtime");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return response(204, "", {});
@@ -36,7 +37,28 @@ exports.handler = async (event) => {
     if (!adminCheck.success) return response(403, "Previewlink is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
   }
 
-  const previewPackage = normalizePackage(row.preview_package, row, source);
+  let previewPackage = normalizePackage(row.preview_package, row, source);
+  let editorContext = null;
+  if (cleanText(event.queryStringParameters?.editorMode) === "sections") {
+    const previewVersionId = cleanText(event.queryStringParameters?.previewVersionId);
+    if (!UUID_PATTERN.test(previewVersionId)) return response(400, "Editorcontext is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
+    const versions = await supabaseFetch(`${supabaseUrl}/rest/v1/website_preview_versions?select=id,demo_journey_id,preview_token,generated_package&id=eq.${encodeURIComponent(previewVersionId)}&demo_journey_id=eq.${encodeURIComponent(id)}&limit=1`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+    const previewVersion = versions[0];
+    const versionToken = cleanText(previewVersion?.preview_token);
+    if (!previewVersion?.id || (versionToken && versionToken !== token)) return response(403, "Editorcontext is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
+    const editorSource = source === "manual" || source === "manual_zip" ? "manual_zip" : "factory";
+    if (previewVersion.generated_package?.files?.length) previewPackage = previewVersion.generated_package;
+    editorContext = parseEditorContext(event.queryStringParameters, {
+      filePath,
+      previewVersionId: previewVersion.id,
+      source: editorSource,
+      manifest: previewPackage.meta?.editorManifest,
+    });
+    if (!editorContext) return response(400, "Editorcontext is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
+  }
   if (format === "zip") {
     const previewVersion = previewPackage.version || previewPackage.meta?.version || 1;
     const filename = zipFilenameFor({ businessName: row.business_name || previewPackage.businessName, websiteUrl: row.website_url, version: previewVersion });
@@ -82,11 +104,12 @@ exports.handler = async (event) => {
     };
   }
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
-  const content = file?.path?.endsWith(".html")
+  let content = file?.path?.endsWith(".html")
     ? rewritePreviewHtml(fileContent, id, token, source)
     : file?.path?.endsWith(".css")
       ? rewritePreviewAssetReferences(fileContent, id, token, source)
     : fileContent;
+  if (file?.path?.endsWith(".html") && editorContext) content = injectEditorRuntime(content, editorContext, requestOrigin(event));
   return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
     "Content-Type": contentTypeFor(file?.path),
     "Cache-Control": "no-store",
@@ -338,7 +361,7 @@ function restHeaders(serviceRoleKey) {
 }
 
 function response(statusCode, body, headers = {}) {
-  return { statusCode, headers: { ...corsHeaders(), ...headers }, body: statusCode === 204 ? "" : body };
+  return { statusCode, headers: { ...corsHeaders(), ...previewSecurityHeaders(), ...headers }, body: statusCode === 204 ? "" : body };
 }
 
 function jsonResponse(statusCode, body) {
@@ -347,6 +370,16 @@ function jsonResponse(statusCode, body) {
 
 function corsHeaders() {
   return sharedCorsHeaders({ methods: "GET, OPTIONS" });
+}
+
+function previewSecurityHeaders() {
+  return {
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "no-referrer",
+    "Content-Security-Policy": "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; form-action 'self' mailto:; object-src 'none'; base-uri 'none'",
+  };
 }
 
 function contentTypeFor(path = "") {

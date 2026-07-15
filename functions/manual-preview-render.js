@@ -1,4 +1,5 @@
 const { corsHeaders } = require("./_cors");
+const { injectEditorRuntime, parseEditorContext, requestOrigin } = require("./_preview-editor-runtime");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -24,7 +25,16 @@ exports.handler = async (event) => {
       return { statusCode: 200, isBase64Encoded: true, headers: responseHeaders(contentType(file.path)), body: text(file.content) };
     }
     const raw = file.encoding === "base64" ? Buffer.from(text(file.content), "base64").toString("utf8") : String(file.content || "");
-    const body = /\.html?$/i.test(file.path || "") ? rewriteHtml(raw, versionId, token) : /\.css$/i.test(file.path || "") ? rewriteCss(raw, versionId, token) : raw;
+    const editorContext = parseEditorContext(event.queryStringParameters, {
+      filePath: requestedFile,
+      previewVersionId: version.id,
+      source: "manual_zip",
+      manifest: version.generated_package?.meta?.editorManifest,
+    });
+    if (text(event.queryStringParameters?.editorMode) === "sections" && !editorContext) return response(400, "Editorcontext is niet geldig.", "text/plain; charset=utf-8");
+    const body = /\.html?$/i.test(file.path || "")
+      ? rewriteHtml(raw, versionId, token, editorContext, requestOrigin(event))
+      : /\.css$/i.test(file.path || "") ? rewriteCss(raw, versionId, token) : raw;
     return response(200, body, contentType(file.path));
   } catch (error) {
     console.error("Manual preview render failed", { errorName: error.name || "Error", errorMessage: error.message || "Unknown render error", code: error.code || "MANUAL_PREVIEW_RENDER_FAILED", phase: "render_manual_preview", status: error.status || 500 });
@@ -33,8 +43,10 @@ exports.handler = async (event) => {
 };
 
 function route(versionId, token, file) { return `/.netlify/functions/manual-preview-render?version=${encodeURIComponent(versionId)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(safeFilePath(file))}`; }
-function rewriteHtml(value, id, token) { return rewriteCss(String(value || ""), id, token)
-  .replace(/(src|href)=["'](?!https?:|mailto:|tel:|#|data:|javascript:|\/)([^"']+)["']/gi, (_m, attr, file) => `${attr}="${route(id, token, file)}"`); }
+function rewriteHtml(value, id, token, editorContext = null, origin = "") { const rewritten = rewriteCss(String(value || ""), id, token)
+  .replace(/(src|href)=["'](?!https?:|mailto:|tel:|#|data:|javascript:|\/)([^"']+)["']/gi, (_m, attr, file) => `${attr}="${route(id, token, file)}"`);
+  return injectEditorRuntime(rewritten, editorContext, origin);
+}
 function rewriteCss(value, id, token) { return String(value || "").replace(/url\(["']?(?!https?:|data:|\/)([^"')]+)["']?\)/gi, (_m, file) => `url("${route(id, token, file)}")`); }
 function safeFilePath(value = "") { const clean = text(value).replace(/\\/g, "/").replace(/^\.\//, "").split(/[?#]/)[0]; return clean && !clean.startsWith("/") && !clean.split("/").includes("..") ? clean : ""; }
 function safeEqual(left, right) { if (!left || left.length !== right.length) return false; return require("crypto").timingSafeEqual(Buffer.from(left), Buffer.from(right)); }
@@ -43,7 +55,7 @@ function contentType(path = "") { const lower = text(path).toLowerCase(); if (/\
 function getContext() { const supabaseUrl = text(process.env.SUPABASE_URL).replace(/\/$/, ""); const serviceRoleKey = text(process.env.SUPABASE_SERVICE_ROLE_KEY); return { available: Boolean(supabaseUrl && serviceRoleKey), supabaseUrl, serviceRoleKey }; }
 function headers(key) { return { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" }; }
 async function request(url, options) { const result = await fetch(url, options); const body = await result.json().catch(() => null); if (!result.ok) { const error = new Error(body?.message || "Previewdata kon niet worden geladen."); error.status = result.status; error.code = body?.code || ""; throw error; } return Array.isArray(body) ? body : []; }
-function responseHeaders(type) { return { ...corsHeaders({ methods: "GET, OPTIONS" }), "Content-Type": type, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "SAMEORIGIN", "Content-Security-Policy": "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'none'" }; }
+function responseHeaders(type) { return { ...corsHeaders({ methods: "GET, OPTIONS" }), "Content-Type": type, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "SAMEORIGIN", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; form-action 'self' mailto:; object-src 'none'; base-uri 'none'" }; }
 function response(statusCode, body, type) { return { statusCode, headers: responseHeaders(type), body: statusCode === 204 ? "" : body }; }
 function uuid(value) { const clean = text(value); return uuidPattern.test(clean) ? clean : ""; }
 function text(value = "") { return String(value || "").trim(); }

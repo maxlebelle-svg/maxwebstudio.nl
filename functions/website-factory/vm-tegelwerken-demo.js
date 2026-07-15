@@ -68,7 +68,7 @@ function isVmTegelwerkenJourney(input = {}) {
   return /vmtegelwerken|vm tegelwerken|van meetelen tegelwerken|vanmeetelen/.test(text);
 }
 
-function buildVmTegelwerkenDemo({ version = 1 } = {}) {
+function buildVmTegelwerkenDemo({ version = 1, editorManifest = null } = {}) {
   const generatedAt = new Date().toISOString();
   const pages = [
     "index.html",
@@ -104,7 +104,7 @@ function buildVmTegelwerkenDemo({ version = 1 } = {}) {
     { path: "assets/hero.svg", content: renderHeroSvg() },
     ...imageFiles(),
     { path: "assets-map.json", content: JSON.stringify(renderAssetsMap(), null, 2) },
-    { path: "briefing.json", content: JSON.stringify(renderBriefing({ version, generatedAt, pages }), null, 2) },
+    { path: "briefing.json", content: JSON.stringify({ ...renderBriefing({ version, generatedAt, pages }), editorManifest }, null, 2) },
     { path: "README.md", content: renderReadme(version) },
   ];
   return {
@@ -113,7 +113,7 @@ function buildVmTegelwerkenDemo({ version = 1 } = {}) {
     businessName: company.name,
     packageType: "premium",
     files,
-    meta: renderBriefing({ version, generatedAt, pages }),
+    meta: { ...renderBriefing({ version, generatedAt, pages }), editorManifest },
   };
 }
 
@@ -147,16 +147,16 @@ function renderHome() {
     description: "Van Meetelen Tegelwerken realiseert strak tegelwerk, vloeren, sanitair en badkamerrenovaties in Almere en omgeving.",
     jsonLd,
     body: `
-      <section class="hero" id="home">
-        <img src="${assets.hero}" alt="Marmeren vloer in Almere-Haven door Van Meetelen Tegelwerken">
+      <section class="hero" id="home" data-mws-section-id="home.hero" data-mws-section-type="hero" data-mws-section-label="Hero">
+        <img data-mws-field="image" src="${assets.hero}" alt="Marmeren vloer in Almere-Haven door Van Meetelen Tegelwerken">
         <div class="hero-shade"></div>
         <div class="hero-copy reveal">
-          <span class="eyebrow">Tegelzetter in Almere en omgeving</span>
-          <h1>Tegelwerk dat klopt tot in ieder detail.</h1>
-          <p>Van badkamer en toilet tot woonvloer en keuken. Van Meetelen Tegelwerken realiseert strak en duurzaam tegelwerk met persoonlijke aandacht van voorbereiding tot afwerking.</p>
+          <span class="eyebrow" data-mws-field="eyebrow">Tegelzetter in Almere en omgeving</span>
+          <h1 data-mws-field="title">Tegelwerk dat klopt tot in ieder detail.</h1>
+          <p data-mws-field="description">Van badkamer en toilet tot woonvloer en keuken. Van Meetelen Tegelwerken realiseert strak en duurzaam tegelwerk met persoonlijke aandacht van voorbereiding tot afwerking.</p>
           <div class="hero-actions">
-            <a class="button" href="offerte.html">Vraag een vrijblijvende offerte aan</a>
-            <a class="button secondary" href="projecten.html">Bekijk gerealiseerde projecten</a>
+            <a class="button" data-mws-field="primary-cta" href="offerte.html">Vraag een vrijblijvende offerte aan</a>
+            <a class="button secondary" data-mws-field="secondary-cta" href="projecten.html">Bekijk gerealiseerde projecten</a>
           </div>
           <div class="trust-row" aria-label="Feitelijke sterke punten">
             <span>Almere en omgeving</span>
@@ -165,11 +165,11 @@ function renderHome() {
           </div>
         </div>
       </section>
-      <section class="intro section split">
+      <section class="intro section split" data-mws-section-id="home.introduction" data-mws-section-type="text" data-mws-section-label="Introductie">
         <div class="section-copy reveal">
-          <span class="eyebrow">Goed tegelwerk blijft rustig</span>
-          <h2>Mooi op de dag van oplevering. Prettig in gebruik in de jaren daarna.</h2>
-          <p>Een rustige tegelverdeling, nette aansluitingen en een verzorgde afwerking bepalen hoe de ruimte straks aanvoelt. VM Tegelwerken kan meedenken over voorbereiding, tegelwerk, sanitair, afwerking en volledige renovatie.</p>
+          <span class="eyebrow" data-mws-field="eyebrow">Goed tegelwerk blijft rustig</span>
+          <h2 data-mws-field="title">Mooi op de dag van oplevering. Prettig in gebruik in de jaren daarna.</h2>
+          <p data-mws-field="description">Een rustige tegelverdeling, nette aansluitingen en een verzorgde afwerking bepalen hoe de ruimte straks aanvoelt. VM Tegelwerken kan meedenken over voorbereiding, tegelwerk, sanitair, afwerking en volledige renovatie.</p>
         </div>
         <div class="image-stack reveal">
           <img src="${assets.shower}" alt="Detail van douchevloer en afvoer">
@@ -206,12 +206,12 @@ function renderHome() {
 
 function renderServices() {
   return `
-    <section class="services section" id="diensten">
+    <section class="services section" id="diensten" data-mws-section-id="home.services" data-mws-section-type="services" data-mws-section-label="Diensten">
       <div class="section-head reveal">
-        <span class="eyebrow">Diensten</span>
-        <h2>Voor badkamers, toiletten, keukens en vloeren.</h2>
+        <span class="eyebrow" data-mws-field="eyebrow">Diensten</span>
+        <h2 data-mws-field="title">Voor badkamers, toiletten, keukens en vloeren.</h2>
       </div>
-      <div class="service-grid">
+      <div class="service-grid" data-mws-field="items">
         ${services.map(([title, text, image]) => `
           <article class="service-card reveal">
             <img src="${image}" alt="${escapeHtml(title)} door VM Tegelwerken">
@@ -306,12 +306,12 @@ function renderAbout() {
 
 function renderCta() {
   return `
-    <section class="cta section">
+    <section class="cta section" data-mws-section-id="home.contact-cta" data-mws-section-type="cta" data-mws-section-label="Contact en call-to-action">
       <div class="cta-panel reveal">
-        <span class="eyebrow">Offerte aanvragen</span>
-        <h2>Plannen voor nieuw tegelwerk of een renovatie?</h2>
-        <p>Vertel kort om welke ruimte het gaat. Deel uw wensen en eventueel enkele foto's, dan kan Van Meetelen Tegelwerken gericht contact met u opnemen.</p>
-        <div class="hero-actions"><a class="button" href="offerte.html">Start uw aanvraag</a><a class="button secondary dark-button" href="${company.phoneHref}">Bel ${company.phone}</a></div>
+        <span class="eyebrow" data-mws-field="eyebrow">Offerte aanvragen</span>
+        <h2 data-mws-field="title">Plannen voor nieuw tegelwerk of een renovatie?</h2>
+        <p data-mws-field="description">Vertel kort om welke ruimte het gaat. Deel uw wensen en eventueel enkele foto's, dan kan Van Meetelen Tegelwerken gericht contact met u opnemen.</p>
+        <div class="hero-actions" data-mws-field="form"><a class="button" href="offerte.html">Start uw aanvraag</a><a class="button secondary dark-button" href="${company.phoneHref}">Bel ${company.phone}</a></div>
       </div>
     </section>
   `;
@@ -461,7 +461,7 @@ function navLinks() {
 }
 
 function footer() {
-  return `<footer class="site-footer"><div><img src="${assets.logoWhite}" alt="Van Meetelen Tegelwerken logo"><p>De zorgvuldige tegel- en renovatiespecialist voor Almere en omgeving.</p></div><nav>${navLinks()}<a href="privacy.html">Privacy</a></nav><address><a href="${company.phoneHref}">${company.phone}</a><a href="${company.mailHref}">${company.email}</a><span>${company.area}</span><span>${company.hours}</span></address></footer>`;
+  return `<footer class="site-footer" data-mws-section-id="global.footer" data-mws-section-type="footer" data-mws-section-label="Footer"><div><img src="${assets.logoWhite}" alt="Van Meetelen Tegelwerken logo"><p data-mws-field="description">De zorgvuldige tegel- en renovatiespecialist voor Almere en omgeving.</p><strong data-mws-field="business-name">${company.name}</strong></div><nav data-mws-field="navigation">${navLinks()}<a href="privacy.html">Privacy</a></nav><address><a href="${company.phoneHref}">${company.phone}</a><a href="${company.mailHref}">${company.email}</a><span>${company.area}</span><span>${company.hours}</span></address></footer>`;
 }
 
 function renderCss() {

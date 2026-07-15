@@ -5,6 +5,7 @@ const { resolveDemoImageAsset, resolveDemoImageAssetSet } = require("./_demo-ima
 const { loadWebsiteFactoryManifests } = require("./_website-factory-manifests");
 const { resolveFactoryConfig } = require("./website-factory/config-resolver");
 const { buildVmTegelwerkenDemo, isVmTegelwerkenJourney } = require("./website-factory/vm-tegelwerken-demo");
+const { FACTORY_EDITOR_MANIFEST } = require("./_preview-editor-manifest");
 
 const WEBSITE_FACTORY_MANIFESTS = loadWebsiteFactoryManifests();
 
@@ -240,7 +241,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const internalNotes = cleanText(journey.internalNotes || journey.internal_notes);
   const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
   if (isVmTegelwerkenJourney({ businessName, websiteUrl, briefing: combinedBriefing })) {
-    return buildVmTegelwerkenDemo({ version });
+    return buildVmTegelwerkenDemo({ version, editorManifest: FACTORY_EDITOR_MANIFEST });
   }
   const websiteAnalysis = journey.websiteAnalysis && typeof journey.websiteAnalysis === "object" ? journey.websiteAnalysis : null;
   const currentWebsite = normalizeCurrentWebsiteSnapshot(websiteAnalysis?.currentWebsite || journey.currentWebsite || journey.current_website);
@@ -341,6 +342,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     localAssets: siteAssets.map(({ path, kind, service }) => ({ path, kind, service })),
     generatedPages: pages,
     generatedSections: templateSections,
+    editorManifest: FACTORY_EDITOR_MANIFEST,
     template: packageRules.template,
     templateUsed: packageRules.template,
     visualDirection: "premium industry landing page",
@@ -1461,16 +1463,16 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
       <a class="nav-cta" href="#contact">${escapeHtml(cta)}</a>
     </header>
     <main id="top">
-      <section class="hero">
-        <img src="${escapeHtml(heroAsset)}" alt="${escapeHtml(heroImage.alt)}" />
+      <section class="hero" data-mws-section-id="home.hero" data-mws-section-type="hero" data-mws-section-label="Hero">
+        <img data-mws-field="image" src="${escapeHtml(heroAsset)}" alt="${escapeHtml(heroImage.alt)}" />
         <div class="hero-shade"></div>
         <div class="hero-copy">
-          <span class="eyebrow">${escapeHtml(profile.eyebrow || style)}</span>
-          <h1>${escapeHtml(profile.hero)}</h1>
-          <p>${escapeHtml(profile.intro || description)}</p>
+          <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(profile.eyebrow || style)}</span>
+          <h1 data-mws-field="title">${escapeHtml(profile.hero)}</h1>
+          <p data-mws-field="description">${escapeHtml(profile.intro || description)}</p>
           <div class="hero-actions">
-            <a class="button" href="#contact">${escapeHtml(cta)}</a>
-            <a class="button secondary" href="${escapeHtml(phoneHref)}">${escapeHtml(profile.secondaryCta || "Bel direct")}</a>
+            <a class="button" data-mws-field="primary-cta" href="#contact">${escapeHtml(cta)}</a>
+            <a class="button secondary" data-mws-field="secondary-cta" href="${escapeHtml(phoneHref)}">${escapeHtml(profile.secondaryCta || "Bel direct")}</a>
           </div>
           <div class="hero-proof">
             <span><strong>${services.length}</strong> specialisaties</span>
@@ -1486,10 +1488,10 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         <a href="#contact"><strong>${escapeHtml(demoCopy.contactActionTitle)}</strong><span>${escapeHtml(demoCopy.contactActionText)}</span></a>
       </section>
 
-      <section class="section-band services-section" id="diensten">
-        <span class="eyebrow">${escapeHtml(demoCopy.servicesEyebrow)}</span>
-        <h2>${escapeHtml(demoCopy.servicesTitle)}</h2>
-        <div class="service-grid">${serviceTiles}</div>
+      <section class="section-band services-section" id="diensten" data-mws-section-id="home.services" data-mws-section-type="services" data-mws-section-label="Diensten">
+        <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(demoCopy.servicesEyebrow)}</span>
+        <h2 data-mws-field="title">${escapeHtml(demoCopy.servicesTitle)}</h2>
+        <div class="service-grid" data-mws-field="items">${serviceTiles}</div>
       </section>
       ${pricingSection}
 
@@ -1502,11 +1504,11 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         <div class="portfolio-gallery" id="portfolioGallery"></div>
       </section>
 
-      <section class="section-band benefits-section">
+      <section class="section-band benefits-section" data-mws-section-id="home.introduction" data-mws-section-type="text" data-mws-section-label="Introductie">
         <div>
-          <span class="eyebrow">${escapeHtml(demoCopy.benefitsEyebrow)}</span>
-          <h2>${escapeHtml(demoCopy.benefitsTitle)}</h2>
-          <p>${escapeHtml(demoCopy.benefitsText)}</p>
+          <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(demoCopy.benefitsEyebrow)}</span>
+          <h2 data-mws-field="title">${escapeHtml(demoCopy.benefitsTitle)}</h2>
+          <p data-mws-field="description">${escapeHtml(demoCopy.benefitsText)}</p>
         </div>
         <div class="benefit-grid">${benefitCards}</div>
       </section>
@@ -1530,18 +1532,18 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
       </section>
       ${premiumSections}
 
-      <section class="contact-section section-band" id="contact">
+      <section class="contact-section section-band" id="contact" data-mws-section-id="home.contact-cta" data-mws-section-type="cta" data-mws-section-label="Contact en call-to-action">
         <div>
-          <span class="eyebrow">${escapeHtml(demoCopy.contactEyebrow)}</span>
-          <h2>${escapeHtml(demoCopy.contactTitle)}</h2>
-          <p>Liever direct contact? ${escapeHtml(contactLine || "Voeg telefoon en e-mail toe voor directe contactopties.")}</p>
+          <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(demoCopy.contactEyebrow)}</span>
+          <h2 data-mws-field="title">${escapeHtml(demoCopy.contactTitle)}</h2>
+          <p data-mws-field="description">Liever direct contact? ${escapeHtml(contactLine || "Voeg telefoon en e-mail toe voor directe contactopties.")}</p>
           <div class="company-card">
             <strong>${escapeHtml(businessName)}</strong>
             <span>${escapeHtml(contactName)}</span>
             <span>${escapeHtml(websiteLine)}</span>
           </div>
         </div>
-        <form class="preview-form" id="requestForm" action="${emailHref}" method="get">
+        <form class="preview-form" id="requestForm" data-mws-field="form" action="${emailHref}" method="get">
           <label>Naam<input name="naam" placeholder="Uw naam" /></label>
           <label>Telefoonnummer<input name="telefoon" placeholder="Bijv. 06 12345678" /></label>
           <label>E-mailadres<input name="email" placeholder="uw@email.nl" /></label>
@@ -1553,7 +1555,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         </form>
       </section>
     </main>
-    <footer class="site-footer"><div><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(demoCopy.footerLabel)}</span></div><nav>${navLinks}</nav></footer>
+    <footer class="site-footer" data-mws-section-id="global.footer" data-mws-section-type="footer" data-mws-section-label="Footer"><div><strong data-mws-field="business-name">${escapeHtml(businessName)}</strong><span data-mws-field="description">${escapeHtml(demoCopy.footerLabel)}</span></div><nav data-mws-field="navigation">${navLinks}</nav></footer>
     <script src="script.js"></script>
   </body>
 </html>`;

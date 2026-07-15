@@ -20,6 +20,7 @@
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
+    <script src="admin/ui/website-factory-preview-editor.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js"></script>
   </head>
@@ -556,12 +557,21 @@
                       </div>
                       <div class="factory-guided-preview-actions">
                         <span id="factory-guided-preview-url">Nog geen preview-URL</span>
+                        <button id="factory-preview-editor-toggle" type="button" aria-pressed="false">Bewerkmodus</button>
                         <button type="button" data-factory-proxy="demo-journey-open-preview">Preview openen</button>
                         <button type="button" data-factory-proxy="demo-journey-preview-refresh">Opnieuw laden</button>
                         <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Nieuwe build</button>
                       </div>
                     </div>
-                    <div class="factory-guided-preview-main"><div id="factory-guided-preview-slot"></div><div class="factory-guided-version-meta" id="factory-guided-version-meta"></div></div>
+                    <div class="factory-editor-workspace">
+                      <div class="factory-guided-preview-main"><div id="factory-guided-preview-slot"></div><div class="factory-guided-version-meta" id="factory-guided-version-meta"></div></div>
+                      <aside class="factory-section-context" id="factory-section-context" aria-labelledby="factory-section-context-title" aria-live="polite">
+                        <div><small>Websiteonderdeel</small><h3 id="factory-section-context-title">Sectie-instellingen</h3></div>
+                        <p id="factory-section-context-empty">Selecteer een websiteonderdeel om de instellingen te bekijken.</p>
+                        <div id="factory-section-context-details" hidden></div>
+                        <p class="factory-section-context-note" id="factory-section-context-note" hidden>Deze sectie is herkenbaar, maar kan in deze fase nog niet worden bewerkt.</p>
+                      </aside>
+                    </div>
                   </section>
                   <div class="factory-status-overview" id="factory-status-overview" aria-label="Website voortgang"></div>
                   <section class="factory-compact-build" aria-labelledby="factory-compact-build-title"><div class="factory-process-heading"><strong id="factory-compact-build-title">Buildproces</strong><button class="button secondary button-small" type="button" data-factory-proxy="demo-journey-regenerate-preview">Opnieuw proberen</button></div><div id="factory-build-panel-slot"></div></section>
@@ -790,7 +800,7 @@
                     <strong>Genereer een preview om de website hier te controleren.</strong>
                     <span>Dezelfde preview blijft ook beschikbaar via Preview openen, ZIP downloaden en Link kopiëren.</span>
                   </div>
-                  <iframe id="demo-journey-preview-frame" title="Website Factory live preview" loading="lazy" hidden></iframe>
+                  <iframe id="demo-journey-preview-frame" title="Website Factory live preview" loading="lazy" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" hidden></iframe>
                 </div>
               </div>
             </article>
@@ -23203,6 +23213,16 @@
           return appendQueryParam(url, "source", source);
         }
 
+        function editorPreviewVersion(source = activePreviewSource()) {
+          const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
+          const isManual = (version) => version?.metadata?.previewSource === "manual_zip" || version?.generatedPackage?.meta?.previewSource === "manual_zip";
+          const hasEditorManifest = (version) => version?.generatedPackage?.meta?.editorManifest?.version === 1;
+          const supportsEditor = (version) => source === "manual" ? isManual(version) : !isManual(version) && hasEditorManifest(version);
+          const matching = versions.find(supportsEditor);
+          const active = buildHistory.activeVersion || versions[0] || null;
+          return matching || (active && supportsEditor(active) ? active : null);
+        }
+
         function manualPreviewUrlForVersion(version = {}) {
           if (version.previewUrl) return absolutePreviewUrl(version.previewUrl);
           if (!version.id || !version.previewToken) return "";
@@ -24961,11 +24981,19 @@
           }
           if (elements.previewEmpty) elements.previewEmpty.hidden = ready;
           if (elements.previewFrame) {
+            const editorVersion = editorPreviewVersion(source);
+            elements.previewFrame.dataset.previewBaseUrl = ready ? previewUrl : "";
+            elements.previewFrame.dataset.previewVersionId = editorVersion?.id || "";
+            elements.previewFrame.dataset.previewSource = source === "manual" ? "manual_zip" : "factory";
             elements.previewFrame.hidden = !ready;
-            if (ready && elements.previewFrame.src !== previewUrl) {
+            if (ready && elements.previewFrame.dataset.editorActive !== "true" && elements.previewFrame.src !== previewUrl) {
               elements.previewFrame.src = previewUrl;
             }
-            if (!ready) elements.previewFrame.removeAttribute("src");
+            if (!ready) {
+              elements.previewFrame.dataset.editorActive = "false";
+              elements.previewFrame.removeAttribute("src");
+            }
+            window.dispatchEvent(new CustomEvent("factory:preview-context", { detail: { ready, previewUrl, previewVersionId: editorVersion?.id || "", source: elements.previewFrame.dataset.previewSource } }));
           }
         }
 
