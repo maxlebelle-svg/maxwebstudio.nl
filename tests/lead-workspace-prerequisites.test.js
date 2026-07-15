@@ -6,6 +6,7 @@ const path = require("node:path");
 const prerequisite = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/20260715093000_reconcile_lead_workspace_prerequisites.sql"), "utf8");
 const workspace = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/026_sales_workspace_normalized_fields.sql"), "utf8");
 const preflight = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_production_preflight.sql"), "utf8");
+const summaryPreflight = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_production_preflight_summary.sql"), "utf8");
 const api = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const leadsApi = require("../functions/admin-leads");
 
@@ -52,6 +53,38 @@ test("read-only productiepreflight dekt schema, data, assignment en timeline", (
   }
   const executable = preflight.replace(/--.*$/gm, "");
   assert.doesNotMatch(executable, /\b(insert|update|delete|alter|create|drop|truncate|grant|revoke)\b/i);
+});
+
+test("samengevoegde productiepreflight levert exact één exporteerbare controletabel", () => {
+  assert.match(summaryPreflight, /^--[^\n]*\n--[^\n]*\n\nBEGIN READ ONLY;/);
+  assert.match(summaryPreflight, /ROLLBACK;\s*$/);
+  assert.match(summaryPreflight, /SELECT check_name, status, finding_count, details, stop_condition/);
+  assert.match(summaryPreflight, /'overall_readiness'/);
+  assert.match(summaryPreflight, /status = 'FAIL' AND stop_condition/);
+  assert.match(summaryPreflight, /CASE WHEN count\(\*\) FILTER \(WHERE status = 'FAIL' AND stop_condition\) = 0 THEN 'PASS' ELSE 'FAIL' END/);
+  assert.equal((summaryPreflight.match(/\nSELECT check_name, status, finding_count, details, stop_condition/g) || []).length, 1);
+});
+
+test("samengevoegde productiepreflight bevat alle verplichte controles en blijft read-only", () => {
+  for (const checkName of [
+    "required_tables_exist", "leads_column_types_compatible", "leads_rls_enabled", "leads_policies_exist",
+    "service_role_required_privileges", "anon_authenticated_privileges_not_too_broad", "unknown_lifecycle_values",
+    "unknown_call_outcome_values", "unknown_next_action_types", "unknown_acquisition_channel_values",
+    "invalid_uuid_strings", "orphaned_owner_id", "orphaned_assigned_to", "orphaned_assigned_user_id", "orphaned_created_by",
+    "orphaned_closed_by_user_id", "assignment_conflicts", "invalid_metadata_timestamps",
+    "invalid_next_action_timestamps", "nullable_field_distribution", "unexpected_leads_constraints",
+    "unvalidated_constraints", "missing_required_indexes", "duplicate_leads_indexes",
+    "duplicate_timeline_idempotency_keys", "total_leads", "total_customer_timeline_events",
+  ]) assert.match(summaryPreflight, new RegExp(`'${checkName}'`));
+
+  const executable = summaryPreflight.replace(/--.*$/gm, "");
+  assert.doesNotMatch(executable, /^\s*(insert|update|delete|alter|create|drop|truncate|grant|revoke|call|do)\b/im);
+  assert.doesNotMatch(executable, /\bselect\s+.*\binto\b/i);
+  assert.doesNotMatch(executable, /pg_(advisory|terminate|cancel)|dblink|lo_(create|import|export|unlink)/i);
+  assert.doesNotMatch(summaryPreflight, /THEN\s+'(?!PASS|WARN|FAIL)[A-Z_]+'\s+ELSE/);
+  for (const match of summaryPreflight.matchAll(/query_to_xml\('([^']+)'/g)) {
+    assert.match(match[1], /^SELECT\b/);
+  }
 });
 
 test("API heeft afzonderlijke selectcontracten voor legacy, prerequisites en workspace", () => {
