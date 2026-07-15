@@ -7,6 +7,7 @@ const prerequisite = fs.readFileSync(path.resolve(__dirname, "../supabase/migrat
 const workspace = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/026_sales_workspace_normalized_fields.sql"), "utf8");
 const preflight = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_production_preflight.sql"), "utf8");
 const summaryPreflight = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_production_preflight_summary.sql"), "utf8");
+const privilegeDiagnosis = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_privilege_diagnosis.sql"), "utf8");
 const api = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const leadsApi = require("../functions/admin-leads");
 
@@ -85,6 +86,34 @@ test("samengevoegde productiepreflight bevat alle verplichte controles en blijft
   for (const match of summaryPreflight.matchAll(/query_to_xml\('([^']+)'/g)) {
     assert.match(match[1], /^SELECT\b/);
   }
+});
+
+test("privilegediagnose levert één read-only export met het vereiste bewijscontract", () => {
+  assert.match(privilegeDiagnosis, /^--[^\n]*\n--[^\n]*\n\nBEGIN READ ONLY;/);
+  assert.match(privilegeDiagnosis, /ROLLBACK;\s*$/);
+  assert.equal((privilegeDiagnosis.match(/\nSELECT\n  object_type,/g) || []).length, 1);
+  for (const column of [
+    "object_type", "schema_name", "object_name", "grantee", "privilege_type", "source",
+    "rls_enabled", "policy_name", "policy_command", "assessment", "reason", "blocking",
+  ]) assert.match(privilegeDiagnosis, new RegExp(`\\b${column}\\b`));
+  for (const role of ["anon", "authenticated", "service_role"]) assert.match(privilegeDiagnosis, new RegExp(`'${role}'`));
+  for (const object of ["leads", "customer_timeline_events"]) assert.match(privilegeDiagnosis, new RegExp(`'${object}'`));
+
+  const executable = privilegeDiagnosis.replace(/--.*$/gm, "");
+  assert.doesNotMatch(executable, /^\s*(insert|update|delete|alter|create|drop|truncate|grant|revoke|call|do)\b/im);
+  assert.doesNotMatch(executable, /\bselect\s+.*\binto\b/i);
+});
+
+test("privilegediagnose scheidt RLS-acties van niet-row-scoped grants", () => {
+  for (const assessment of ["EXPECTED", "REVIEW", "DANGEROUS"]) {
+    assert.match(privilegeDiagnosis, new RegExp(`'${assessment}'`));
+  }
+  assert.match(privilegeDiagnosis, /p\.privilege_type IN \('TRUNCATE', 'REFERENCES', 'TRIGGER'\) THEN 'DANGEROUS'/);
+  assert.match(privilegeDiagnosis, /NOT policies\.has_policy THEN 'EXPECTED'/);
+  assert.match(privilegeDiagnosis, /policies\.has_unconditional_policy THEN 'DANGEROUS'/);
+  assert.match(privilegeDiagnosis, /No effective table or column grant; the action is denied before RLS/);
+  assert.match(privilegeDiagnosis, /RLS is enabled and no applicable policy exists; default deny applies/);
+  assert.match(privilegeDiagnosis, /SECURITY DEFINER executes with owner rights/);
 });
 
 test("API heeft afzonderlijke selectcontracten voor legacy, prerequisites en workspace", () => {
