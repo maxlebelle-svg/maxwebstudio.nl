@@ -40,12 +40,53 @@ test("leadselectie en detailpaneel blijven onderdeel van dezelfde workspace", ()
 test("eigenaar wijzigen gebruikt de bestaande expliciete assignmentactie", () => {
   assert.match(apiSource, /payload\.action === "assign"/);
   assert.match(apiSource, /assigned_user_email: assignment\.email/);
+  assert.match(apiSource, /validateLeadAssignee/);
+  assert.match(apiSource, /Gebruik de expliciete toewijzingsactie/);
+  assert.match(apiSource, /if \(leadAssignmentInput\(payload\)\) \{\s+const assignment = await validateLeadAssignee/);
+});
+
+test("assignment valideert een actieve interne medewerker server-side", async () => {
+  const previousFetch = global.fetch;
+  global.fetch = async () => new Response(JSON.stringify([{
+    id: "22222222-2222-4222-8222-222222222222",
+    auth_user_id: "33333333-3333-4333-8333-333333333333",
+    email: "sales@example.test",
+    name: "Sales",
+    role: "sales_partner",
+    status: "active",
+    archived_at: null,
+  }]), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    const assignee = await leadsApi._test.validateLeadAssignee({
+      assignment: { id: "33333333-3333-4333-8333-333333333333" },
+      admin: { role: "admin" },
+      supabaseUrl: "https://example.test",
+      serviceRoleKey: "test-only",
+    });
+    assert.equal(assignee.email, "sales@example.test");
+    await assert.rejects(() => leadsApi._test.validateLeadAssignee({
+      assignment: { id: "33333333-3333-4333-8333-333333333333" },
+      admin: { role: "sales_partner", id: "11111111-1111-4111-8111-111111111111" },
+      supabaseUrl: "https://example.test",
+      serviceRoleKey: "test-only",
+    }), /alleen aan jezelf/);
+  } finally {
+    global.fetch = previousFetch;
+  }
 });
 
 test("voicemailstatus staat los van pipelinefase", () => {
   const lead = model.normalizeLead({ leadStatus: "follow_up", lastCallOutcome: "voicemail_left" });
   assert.equal(lead.pipelineStage, "contacted");
   assert.equal(lead.callDisposition, "voicemail");
+});
+
+test("belstatus schrijft het bestaande canonieke contactresultaat en geen parallelle kolom", () => {
+  const record = leadsApi._test.leadPayload({ callDisposition: "voicemail" }, { role: "admin" }, { update: true, existingLead: { metadata: {} } });
+  assert.equal(record.last_call_outcome, "voicemail_left");
+  assert.equal(record.metadata.lastCallOutcome, "voicemail_left");
+  assert.equal(Object.hasOwn(record, "call_disposition"), false);
+  assert.equal(leadsApi._test.mapLead({ last_call_outcome: "callback_requested", metadata: {} }).callDisposition, "callback");
 });
 
 test("terugbelactie vereist datum en tijd in de beveiligde API", () => {
@@ -58,6 +99,7 @@ test("actie voltooien wist de actieve actie en schrijft een tijdlijngebeurtenis"
   assert.match(apiSource, /eventType = "next_action_completed"/);
   assert.match(apiSource, /insertLeadTimelineEvent/);
   assert.match(apiSource, /hasLeadTimelineIdempotencyKey/);
+  assert.match(apiSource, /rest\/v1\/customer_timeline_events\?\$\{timelineQuery\.toString\(\)\}/);
   assert.match(apiSource, /next_action_completed_at/);
 });
 
@@ -95,6 +137,15 @@ test("lege staat en foutstatus hebben Nederlandse toegankelijke tekst", () => {
   assert.match(salesHtml, /aria-live="polite"/);
 });
 
+test("trage of verlopen API-sessies en filters hebben veilige fallbacks", () => {
+  assert.match(salesHtml, /controller\.abort\(\), 15000/);
+  assert.match(salesHtml, /De leadserver reageert te traag/);
+  assert.match(salesHtml, /Je adminsessie is verlopen/);
+  assert.match(salesHtml, /sales-workspace-filter-clear/);
+  assert.match(salesHtml, /control\.value = ""/);
+  assert.match(salesHtml, /event\.key === "Escape".*is-lead-detail-open/);
+});
+
 test("API weigert toegang zonder geldige adminrol via de gedeelde guard", () => {
   assert.match(apiSource, /verifyAdmin/);
   assert.match(apiSource, /allowedRoles: staffRoles/);
@@ -107,11 +158,15 @@ test("workspace gebruikt geen hardcoded medewerkers of productiemockdata", () =>
 });
 
 test("migratiedraft is achterwaarts compatibel, geïndexeerd en RLS-neutraal", () => {
+  assert.match(migration, /begin;/);
+  assert.match(migration, /lock_timeout/);
+  assert.match(migration, /prerequisite migrations are missing columns/);
   assert.match(migration, /where pipeline_stage is null/);
-  assert.match(migration, /where call_disposition is null/);
   assert.match(migration, /where interest_level is null/);
   assert.match(migration, /create index if not exists leads_active_owner_idx/);
-  assert.match(migration, /Existing RLS remains enabled/);
+  assert.match(migration, /customer_timeline_events_lead_idempotency_uidx/);
+  assert.doesNotMatch(migration, /add column if not exists call_disposition/);
+  assert.match(migration, /Existing RLS and table-level grants remain unchanged/);
   assert.doesNotMatch(migration, /disable row level security/i);
 });
 

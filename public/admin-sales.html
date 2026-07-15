@@ -19692,6 +19692,7 @@
           <label for="sales-filter-priority">Prioriteit<select id="sales-filter-priority"><option value="">Alle prioriteiten</option><option value="high">Hoog</option><option value="normal">Normaal</option><option value="low">Laag</option></select></label>
           <label for="sales-filter-source">Bron<input id="sales-filter-source" type="search" placeholder="Bijv. Google Maps" /></label>
           <label for="sales-filter-next-action">Volgende actie<select id="sales-filter-next-action"><option value="">Alle acties</option><option value="today">Vandaag of achterstallig</option><option value="planned">Actie gepland</option></select></label>
+          <button class="button secondary" id="sales-workspace-filter-clear" type="button">Filters wissen</button>
         `);
         shell.querySelector("#sales-workspace-filter-panel").append(filters);
         shell.querySelector("#sales-workspace-list-slot").replaceWith(list);
@@ -20052,22 +20053,35 @@
       async function leadApiRequest(method = "GET", payload = null, options = {}) {
         const token = getLeadApiBearer();
         if (!token) throw new Error("Adminsessie ontbreekt. Log opnieuw in om leads te synchroniseren.");
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 15000);
         const url = options.id
           ? `${productionLeadsEndpoint}?id=${encodeURIComponent(options.id)}`
           : productionLeadsEndpoint;
-        const response = await fetch(url, {
-          method,
-          headers: {
-            Accept: "application/json",
-            ...(payload ? { "Content-Type": "application/json" } : {}),
-            Authorization: `Bearer ${token}`,
-            "X-MWS-Developer-Mode": developerModeActive() ? "true" : "false",
-          },
-          body: payload ? JSON.stringify(payload) : undefined,
-        });
+        let response;
+        try {
+          response = await fetch(url, {
+            method,
+            headers: {
+              Accept: "application/json",
+              ...(payload ? { "Content-Type": "application/json" } : {}),
+              Authorization: `Bearer ${token}`,
+              "X-MWS-Developer-Mode": developerModeActive() ? "true" : "false",
+            },
+            body: payload ? JSON.stringify(payload) : undefined,
+            signal: controller.signal,
+          });
+        } catch (error) {
+          if (error?.name === "AbortError") throw new Error("De leadserver reageert te traag. Probeer het opnieuw; er is niets lokaal gewijzigd.");
+          throw error;
+        } finally {
+          window.clearTimeout(timeout);
+        }
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.success === false) {
-          const error = new Error(data.error || "Lead API gaf geen geldige response.");
+          const error = new Error(response.status === 401
+            ? "Je adminsessie is verlopen. Log opnieuw in."
+            : data.error || "Lead API gaf geen geldige response.");
           error.status = response.status;
           error.setupRequired = Boolean(data.setupRequired);
           error.diagnostics = data.diagnostics || {};
@@ -24609,6 +24623,12 @@
             if (panel) panel.hidden = !salesWorkspaceFilterOpen;
             toggle?.setAttribute("aria-expanded", String(salesWorkspaceFilterOpen));
           }
+          if (event.target.closest("#sales-workspace-filter-clear")) {
+            document.querySelectorAll("#sales-workspace-filter-panel input, #sales-workspace-filter-panel select").forEach((control) => { control.value = ""; });
+            activeSalesWorkspaceView = "all";
+            salesWorkspacePage = 1;
+            renderLeadfinderList();
+          }
           if (event.target.closest("#sales-workspace-sort")) {
             const current = leadfinderSortModes.indexOf(leadfinderSortMode);
             leadfinderSortMode = leadfinderSortModes[(current + 1) % leadfinderSortModes.length];
@@ -24618,6 +24638,9 @@
           }
         });
         leadfinderElements.backToList?.addEventListener("click", () => closeLeadfinderDetail());
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && leadfinderElements.section?.classList.contains("is-lead-detail-open")) closeLeadfinderDetail();
+        });
         window.addEventListener("popstate", () => {
           if (!restoreLeadfinderDetailFromUrl({ tab: activeSalesDetailTab })) {
             closeLeadfinderDetail({ updateUrl: false });
