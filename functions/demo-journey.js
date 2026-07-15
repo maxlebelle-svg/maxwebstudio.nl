@@ -558,7 +558,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
     const files = sanitizeManualPreviewFiles(payload.files || []);
     if (!files.length) return jsonResponse(400, { success: false, error: "ZIP bevat geen bruikbare websitebestanden." });
-    if (!files.some((file) => file.path.endsWith("index.html"))) return jsonResponse(400, { success: false, error: "ZIP moet een index.html bevatten." });
+    if (!files.some((file) => file.path.endsWith("index.html"))) return jsonResponse(400, { success: false, error: "Deze ZIP bevat geen index.html." });
     const previewToken = cleanText(current.preview_token) || crypto.randomBytes(16).toString("hex");
     const currentPreviewUrl = cleanText(current.preview_url);
     const previewUrl = isDemoPreviewUrl(currentPreviewUrl) ? currentPreviewUrl : previewUrlForJourney(current.id, previewToken);
@@ -947,8 +947,8 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
   if (options.create) {
     record.created_by = admin.id;
     record.created_at = now;
-    if (!record.business_name && !record.contact_name && !record.email) {
-      const error = new Error("Vul minimaal bedrijfsnaam, contactpersoon of e-mailadres in.");
+    if (!record.business_name && !record.website_url && !record.contact_name && !record.email) {
+      const error = new Error("Vul minimaal een bedrijfsnaam of website-URL in.");
       error.status = 400;
       throw error;
     }

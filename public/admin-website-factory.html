@@ -486,9 +486,9 @@
           <section class="factory-guided-shell" id="factory-guided-shell" aria-label="Website Factory werkruimte">
             <header class="factory-guided-header">
               <div>
-                <p class="section-kicker">Website Factory</p>
-                <h2>Website Factory Control Center</h2>
-                <p>Bouw, verbeter en publiceer professionele websites in enkele duidelijke stappen.</p>
+                <p class="section-kicker">Website Factory <span class="factory-context-pill" id="factory-guided-company">Nieuw project</span></p>
+                <h2>Live AI build workspace</h2>
+                <p>Werk aan de website terwijl de actieve previewversie in beeld blijft.</p>
               </div>
               <div class="factory-guided-primary-actions">
                 <button class="button primary" id="factory-primary-save-demo" type="button">Opslaan in Demo Sites</button>
@@ -507,42 +507,75 @@
                 </details>
               </div>
             </header>
+            <nav class="factory-workspace-tabs" aria-label="Website Factory onderdelen">
+              <button class="is-active" type="button" data-factory-tab="overview">Overzicht</button>
+              <button type="button" data-factory-tab="research">Research</button>
+              <button type="button" data-factory-tab="branding">Branding</button>
+              <button type="button" data-factory-tab="content">Content</button>
+              <button type="button" data-factory-tab="images">Afbeeldingen</button>
+              <button type="button" data-factory-tab="structure">Structuur</button>
+              <button type="button" data-factory-tab="seo">SEO</button>
+              <button type="button" data-factory-tab="build">Build</button>
+              <button type="button" data-factory-tab="preview">Preview</button>
+            </nav>
             <div class="factory-customer-publication-status" id="factory-customer-publication-status" hidden></div>
 
-            <div class="factory-status-overview" id="factory-status-overview" aria-label="Website voortgang"></div>
-
             <section class="factory-guided-preview-workspace" aria-labelledby="factory-preview-workspace-title">
-              <aside class="factory-guided-preview-sidebar">
-                <h3 id="factory-preview-workspace-title">Preview</h3>
-                <div class="factory-guided-control-group">
-                  <strong>Apparaat</strong>
+              <div class="factory-guided-preview-toolbar">
+                <div><small>Preview</small><h3 id="factory-preview-workspace-title">Live preview</h3></div>
+                <div class="factory-guided-device-controls" aria-label="Previewapparaat">
                   <button class="is-active" type="button" data-guided-preview-mode="desktop">Desktop</button>
                   <button type="button" data-guided-preview-mode="tablet">Tablet</button>
                   <button type="button" data-guided-preview-mode="mobile">Mobiel</button>
                 </div>
-                <div class="factory-guided-control-group">
-                  <strong>Preview acties</strong>
+                <div class="factory-guided-preview-actions">
+                  <span id="factory-guided-preview-url">Nog geen preview-URL</span>
+                  <button type="button" data-factory-proxy="demo-journey-open-preview">Preview openen</button>
                   <button type="button" data-factory-proxy="demo-journey-preview-refresh">Preview vernieuwen</button>
                   <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Opnieuw genereren</button>
                 </div>
-                <div class="factory-guided-control-group">
-                  <strong>Factory opties</strong>
-                  <button type="button" data-factory-action="version">Factory-versie kiezen</button>
-                  <button type="button" data-manual-zip-upload>ZIP uploaden</button>
-                  <button type="button" id="factory-process-manual-zip" disabled>ZIP verwerken</button>
-                  <button type="button" data-factory-source-choice="manual">Handmatige ZIP gebruiken</button>
-                </div>
-              </aside>
+              </div>
               <div class="factory-guided-preview-main">
                 <div id="factory-guided-preview-slot"></div>
                 <div class="factory-guided-version-meta" id="factory-guided-version-meta"></div>
               </div>
             </section>
 
+            <section class="factory-quick-build" id="factory-quick-build" aria-labelledby="factory-quick-build-title">
+              <div><p class="section-kicker">Quick Build</p><h3 id="factory-quick-build-title">Genereer een eerste demo</h3><p>Een bedrijfsnaam of geldige website-URL is voldoende. De uitgebreide briefing blijft optioneel.</p></div>
+              <div class="factory-quick-build-fields">
+                <label>Bedrijfsnaam<input id="factory-quick-business" type="text" autocomplete="organization" placeholder="Bijv. Fuellinq" /></label>
+                <label>Website-URL<input id="factory-quick-website" type="url" inputmode="url" placeholder="https://voorbeeld.nl" /></label>
+                <label>Plaats (optioneel)<input id="factory-quick-place" type="text" autocomplete="address-level2" /></label>
+                <label>Wensen (optioneel)<input id="factory-quick-wishes" type="text" /></label>
+              </div>
+              <div class="factory-quick-build-actions">
+                <button class="button primary" id="factory-quick-generate" type="button">Genereer eerste demo</button>
+                <button class="button secondary" type="button" data-manual-zip-upload>ZIP uploaden</button>
+                <button class="button secondary" id="factory-process-manual-zip" type="button" disabled>ZIP verwerken</button>
+                <button class="button secondary" type="button" data-factory-tab="briefing">Briefing openen</button>
+                <span id="factory-quick-build-message" role="status" aria-live="polite"></span>
+              </div>
+            </section>
+
+            <div class="factory-status-overview" id="factory-status-overview" aria-label="Website voortgang"></div>
+
+            <section class="factory-images-workspace" id="factory-images-workspace" aria-labelledby="factory-images-title">
+              <article class="factory-image-summary">
+                <div class="factory-image-ring" id="factory-image-ring"><strong>0</strong><span>totaal nodig</span></div>
+                <div><p class="section-kicker">Afbeeldingen</p><h3 id="factory-images-title">Afbeeldingenoverzicht</h3><ul id="factory-image-counts"></ul></div>
+                <button class="button secondary" type="button" data-factory-tab="images">Naar afbeeldingenworkspace</button>
+              </article>
+              <article class="factory-missing-images"><h3>Ontbrekende afbeeldingen</h3><div id="factory-missing-image-list"></div></article>
+              <aside class="factory-image-actions"><h3>Snelle acties</h3><button class="button factory-ai-action" id="factory-generate-images" type="button">Beelden genereren</button><button class="button secondary" type="button" data-factory-proxy="demo-intake-photo-upload">Eigen afbeeldingen uploaden</button><a class="button secondary" href="admin-ai-content-library.html">Uit Content Library kiezen</a><a class="button secondary" href="admin-assets.html">Brand Center openen</a><p id="factory-image-job-status" role="status" aria-live="polite"></p></aside>
+              <footer class="factory-image-warning"><span id="factory-image-warning-copy">Afbeeldingen worden uit de echte projectdata bepaald.</span><button class="button secondary" type="button">Voorlopig doorgaan</button><button class="button factory-ai-action" id="factory-generate-images-footer" type="button">Beelden genereren</button></footer>
+            </section>
+
             <section class="factory-process-strip" aria-labelledby="factory-process-title">
               <div class="factory-process-heading"><strong id="factory-process-title">Proces stappen</strong><span id="factory-process-next">Volgende stap wordt bepaald…</span></div>
               <div class="factory-process-steps" id="factory-process-steps"></div>
             </section>
+            <div class="factory-briefing-mode" role="group" aria-label="Briefingmodus"><button class="is-active" type="button" data-briefing-mode="guided">Begeleide briefing</button><button type="button" data-briefing-mode="expert">Expertmodus</button><span>Begeleid toont maximaal zes kernvragen; ingevulde expertgegevens blijven behouden.</span></div>
           </section>
           <div class="admin-section-heading factory-command-heading factory-control-heading">
             <div>
@@ -21202,6 +21235,7 @@
         let websiteIntelligencePackage = null;
         let intakeExpandedQuestions = new Set();
         let intakeActiveQuestionKey = "";
+        let intakeMode = "guided";
         let previewSource = "factory";
         let manualPreview = null;
         let manualZipUploading = false;
@@ -21232,6 +21266,7 @@
           { key: "exampleWebsites", label: "Voorbeeldsites", type: "text", wide: true, placeholder: "Plak links of beschrijf stijlen die de klant mooi vindt." },
           { key: "internalRemark", label: "Interne intake-notitie", type: "text", wide: true, placeholder: "Commerciële context, bezwaren, budget, timing of afspraken." },
         ];
+        const guidedIntakeKeys = new Set(["branch", "goal", "style", "cta", "services", "photoStatus"]);
 
         function initElements() {
           Object.assign(elements, {
@@ -22039,9 +22074,10 @@
         }
 
         function firstOpenQuestionKey() {
-          const missingRequired = intakeQuestions.find((question) => question.required && !questionHasValue(question));
+          const visibleQuestions = intakeMode === "expert" ? intakeQuestions : intakeQuestions.filter((question) => guidedIntakeKeys.has(question.key));
+          const missingRequired = visibleQuestions.find((question) => question.required && !questionHasValue(question));
           if (missingRequired) return missingRequired.key;
-          return intakeQuestions.find((question) => !questionHasValue(question))?.key || intakeQuestions[0]?.key || "";
+          return visibleQuestions.find((question) => !questionHasValue(question))?.key || visibleQuestions[0]?.key || "";
         }
 
         function activeQuestionKey() {
@@ -22596,7 +22632,8 @@
             ["Conversie", questionHasValue(intakeQuestions.find((item) => item.key === "goal")) && questionHasValue(intakeQuestions.find((item) => item.key === "cta")) ? 90 : 50],
             ["Techniek", journey?.previewUrl ? 100 : journey?.id ? 65 : 35],
           ];
-          elements.intakeFields.innerHTML = intakeQuestions.map((question, index) => {
+          const visibleQuestions = intakeMode === "expert" ? intakeQuestions : intakeQuestions.filter((question) => guidedIntakeKeys.has(question.key));
+          elements.intakeFields.innerHTML = visibleQuestions.map((question, index) => {
             const value = normalizeIntakeValue(intakeState[question.key]);
             const hasValue = questionHasValue(question);
             const isActive = question.key === activeKey;
@@ -22668,6 +22705,7 @@
             completed,
             percent,
             complete: missing.length === 0,
+            buildReady: Boolean(String(elements.business?.value || "").trim() || knownWebsiteUrl()),
             missing: missing.map((question) => question.label),
           };
         }
@@ -22932,10 +22970,18 @@
 
         function validateIntakeOrWarn(target = elements.message) {
           const intake = collectIntake();
-          if (intake.complete) return true;
-          setMessage(target, `Maak eerst de klantintake compleet. Mist: ${intake.missing.join(", ")}.`, "warning");
+          if (intake.buildReady) return true;
+          setMessage(target, "Vul minimaal een bedrijfsnaam of geldige website-URL in.", "warning");
           return false;
         }
+
+        window.addEventListener("factory:briefing-mode", (event) => {
+          intakeMode = event.detail?.mode === "expert" ? "expert" : "guided";
+          intakeActiveQuestionKey = "";
+          intakeExpandedQuestions = new Set();
+          renderIntakeFields();
+          renderIntake();
+        });
 
         function handleIntakeInput(event) {
           const field = event.target.closest("[data-intake-key]");
@@ -24249,7 +24295,7 @@
             try {
               const parsed = await parseWebsiteZip(file);
               if (!parsed.files.some((item) => item.path.endsWith("index.html"))) {
-                throw new Error("ZIP moet een index.html bevatten.");
+                throw new Error("Deze ZIP bevat geen index.html.");
               }
               setMessage(elements.message, "2/5 Controleren · 3/5 Uitpakken · 4/5 Preview bouwen...", "info");
               const zipBase64 = uint8ToBase64(new Uint8Array(await file.arrayBuffer()));
@@ -25553,7 +25599,18 @@
         const text = (selector, fallback = "-") => document.querySelector(selector)?.textContent?.trim() || fallback;
         const value = (selector, fallback = "") => document.querySelector(selector)?.value?.trim() || fallback;
         const hasPreview = () => Boolean(document.getElementById("demo-journey-preview-frame")?.getAttribute("src"));
+        const safe = (input = "") => String(input || "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
         const classForState = (state = "") => /fout|mislukt|error/i.test(state) ? "is-error" : /klaar|compleet|voltooid|opgeslagen|goedgekeurd/i.test(state) ? "is-complete" : /bezig|concept|controle|actief/i.test(state) ? "is-active" : "is-waiting";
+
+        function imageState() {
+          const uploaded = document.querySelectorAll("#demo-intake-assets .demo-intake-asset").length;
+          const scanned = document.querySelectorAll("#factory-media-review > div.is-ready").length;
+          const photoCopy = text('[data-intake-question="photoStatus"] .factory-field-summary strong', "");
+          const needsImages = !uploaded && !scanned && !/eigen foto|website pakken|beschikbaar/i.test(photoCopy);
+          const required = Math.max(uploaded + scanned, needsImages ? 3 : 1);
+          const available = Math.min(required, uploaded + scanned);
+          return { required, available, uploaded, scanned, missing: Math.max(0, required - available), generated: 0 };
+        }
 
         function guidedState() {
           const intakeScore = Number.parseInt(text("#demo-intake-score", "0"), 10) || 0;
@@ -25561,13 +25618,13 @@
           const buildState = text("#demo-journey-build-state", "Geen build");
           const previewState = text("#demo-journey-preview-stage-state", "Nog geen preview");
           const feedback = value("#demo-journey-feedback");
-          const briefingReady = Boolean(value("#demo-journey-briefing")) || intakeScore >= 80;
+          const briefingReady = Boolean(value("#demo-journey-briefing")) || document.querySelectorAll("#demo-intake-fields .factory-smart-field.is-complete").length >= 4;
           const researchReady = Boolean(document.querySelector("#factory-intelligence-stats .demo-kv-row, #factory-intelligence-stats > *"));
           const scanReady = !/niet|geen|crm/i.test(scanSummary) || researchReady;
           const buildReady = !/geen|start|wacht/i.test(buildState);
           const previewReady = hasPreview() || !/geen|nog/i.test(previewState);
           const saved = /opgeslagen/i.test(previewState) || /bijwerken/i.test(text("#demo-journey-save-demo-site", ""));
-          return { intakeScore, scanSummary, buildState, previewState, feedback, briefingReady, researchReady, scanReady, buildReady, previewReady, saved };
+          return { intakeScore, scanSummary, buildState, previewState, feedback, briefingReady, researchReady, scanReady, buildReady, previewReady, saved, images: imageState() };
         }
 
         function renderGuidedStatus() {
@@ -25575,17 +25632,41 @@
           if (!target) return;
           const state = guidedState();
           const cards = [
-            ["Briefing", state.briefingReady ? "Compleet" : "Aandacht nodig", `${state.intakeScore}% ingevuld`, "✓"],
-            ["Research", state.researchReady ? "Compleet" : "Nog nodig", state.researchReady ? "Bronnen geanalyseerd" : "Start na de briefing", "⌕"],
-            ["Website scan", state.scanReady ? "Voltooid" : "Niet gestart", value("#demo-journey-website", "Geen website"), "✓"],
-            ["Build status", state.buildState, text("#factory-cockpit-package", "Websitepakket"), "‹/›"],
-            ["Preview", state.previewReady ? "Klaar" : "Nog niet beschikbaar", state.previewReady ? "Desktop, tablet en mobiel" : "Maak eerst een build", "▣"],
-            ["Feedback", state.feedback ? "Open" : "Geen", state.feedback ? "Feedback vraagt aandacht" : "0 open punten", "☵"],
+            ["Briefing", state.briefingReady ? "Compleet" : "Aandacht nodig", `${state.intakeScore}% ingevuld`, "✓", "briefing"],
+            ["Research", state.researchReady ? "Compleet" : "Nog nodig", state.researchReady ? "Bronnen geanalyseerd" : "Start na de briefing", "⌕", "research"],
+            ["Afbeeldingen", state.images.missing ? "Aandacht nodig" : "Klaar", state.images.missing ? `${state.images.missing} ontbreken` : `${state.images.available} beschikbaar`, "▧", "images"],
+            ["Content", value("#demo-journey-briefing") ? "Automatisch ingevuld" : "Aandacht nodig", value("#demo-journey-briefing") ? "Websiteplan beschikbaar" : "Nog geen websiteplan", "✎", "content"],
+            ["Structuur", state.researchReady ? "Automatisch ingevuld" : "Niet gestart", state.researchReady ? "Afgeleid uit research" : "Wacht op brondata", "⌘", "structure"],
+            ["SEO", state.scanReady ? "Automatisch ingevuld" : "Niet gestart", value("#demo-journey-website", "Geen website"), "⌕", "seo"],
+            ["Buildstatus", state.buildState, text("#factory-cockpit-package", "Websitepakket"), "‹/›", "build"],
           ];
           const signature = JSON.stringify(cards);
           if (target.dataset.signature === signature) return;
           target.dataset.signature = signature;
-          target.innerHTML = cards.map(([title, status, detail, icon]) => `<article class="factory-status-tile ${classForState(status)}"><span class="factory-status-tile-icon" aria-hidden="true">${icon}</span><span><strong>${title}</strong><b>${status}</b></span><small>${detail}</small></article>`).join("");
+          target.innerHTML = cards.map(([title, status, detail, icon, tab]) => `<button type="button" class="factory-status-tile ${classForState(status)}" data-factory-tab="${tab}"><span class="factory-status-tile-icon" aria-hidden="true">${icon}</span><span><strong>${safe(title)}</strong><b>${safe(status)}</b></span><small>${safe(detail)}</small></button>`).join("");
+        }
+
+        function renderImageWorkspace() {
+          const state = imageState();
+          const ring = document.getElementById("factory-image-ring");
+          if (ring) {
+            ring.style.setProperty("--factory-image-progress", `${state.required ? Math.round((state.available / state.required) * 360) : 0}deg`);
+            ring.innerHTML = `<strong>${state.required}</strong><span>totaal nodig</span>`;
+          }
+          const counts = document.getElementById("factory-image-counts");
+          if (counts) counts.innerHTML = [["Beschikbaar", state.available], ["Ontbrekend", state.missing], ["AI-gegenereerd", state.generated], ["Geüpload", state.uploaded]].map(([label, count]) => `<li><span>${safe(label)}</span><strong>${count}</strong></li>`).join("");
+          const missing = document.getElementById("factory-missing-image-list");
+          const placeholders = [
+            ["Hero-afbeelding", "16:9", "Sterk openingsbeeld passend bij bedrijf en branche"],
+            ["Over-mij-afbeelding", "4:3", "Betrouwbaar beeld voor de persoonlijke sectie"],
+            ["Dienstenbeeld", "4:3", "Relevant beeld bij het belangrijkste aanbod"],
+          ].slice(0, state.missing);
+          if (missing) missing.innerHTML = placeholders.length ? placeholders.map(([title, ratio, description], index) => `<button type="button" class="factory-missing-image-card" data-image-slot="${index}"><span>${safe(ratio)}</span><strong>${safe(title)}</strong><small>${safe(description)}</small><em>Bron nog kiezen</em></button>`).join("") : "<p>Alle benodigde beelden zijn beschikbaar.</p>";
+          const generateLabel = state.missing ? `${state.missing} beeld${state.missing === 1 ? "" : "en"} genereren` : "Geen beelden nodig";
+          ["factory-generate-images", "factory-generate-images-footer"].forEach((id) => { const button = document.getElementById(id); if (button) { button.textContent = generateLabel; button.disabled = !state.missing; } });
+          const warning = document.getElementById("factory-image-warning-copy");
+          if (warning) warning.textContent = state.missing ? `Er ontbreken nog ${state.missing} afbeeldingen. Je kunt doorgaan met tijdelijke conceptbeelden of ze nu aanvullen.` : "Alle benodigde afbeeldingen zijn beschikbaar.";
+          document.getElementById("factory-images-workspace")?.toggleAttribute("data-complete", !state.missing);
         }
 
         function renderGuidedProcess() {
@@ -25659,6 +25740,12 @@
           renderGuidedVersionMeta();
           syncPrimaryAction();
           syncGuidedZipProcess();
+          renderImageWorkspace();
+          const company = document.getElementById("factory-guided-company");
+          if (company) company.textContent = value("#demo-journey-business", "Nieuw project") || "Nieuw project";
+          const previewUrl = document.getElementById("factory-guided-preview-url");
+          if (previewUrl) previewUrl.textContent = document.getElementById("demo-journey-preview-frame")?.getAttribute("src") || "Nog geen preview-URL";
+          document.getElementById("factory-quick-build")?.toggleAttribute("hidden", hasPreview());
         }
 
         function proxyClick(id) {
@@ -25666,6 +25753,45 @@
           if (!target || target.disabled) return;
           target.click();
           document.getElementById("factory-more-menu")?.removeAttribute("open");
+        }
+
+        function activateFactoryTab(name = "overview") {
+          document.querySelectorAll(".factory-workspace-tabs [data-factory-tab]").forEach((button) => button.classList.toggle("is-active", button.dataset.factoryTab === name));
+          const targets = {
+            overview: "factory-guided-preview-workspace", preview: "factory-guided-preview-workspace", research: "factory-intelligence-stats",
+            branding: "demo-intake-logo-upload", content: "demo-journey-briefing", images: "factory-images-workspace",
+            structure: "demo-intake-fields", seo: "factory-intelligence-stats", build: "demo-journey-build-history", briefing: "demo-journey-intake",
+          };
+          document.getElementById(targets[name] || targets.overview)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        async function runQuickBuild() {
+          const business = value("#factory-quick-business");
+          const website = value("#factory-quick-website");
+          const message = document.getElementById("factory-quick-build-message");
+          let validUrl = false;
+          if (website) { try { validUrl = ["http:", "https:"].includes(new URL(website).protocol); } catch { validUrl = false; } }
+          if (!business && !validUrl) { if (message) message.textContent = "Vul een bedrijfsnaam of geldige website-URL in."; return; }
+          const copy = (sourceId, targetId) => { const source = document.getElementById(sourceId); const target = document.getElementById(targetId); if (!source || !target || !source.value) return; target.value = source.value; target.dispatchEvent(new Event("input", { bubbles: true })); };
+          copy("factory-quick-business", "demo-journey-business"); copy("factory-quick-website", "demo-journey-website");
+          const wishes = value("#factory-quick-wishes");
+          const place = value("#factory-quick-place");
+          if (wishes || place) { const notes = document.getElementById("demo-journey-notes"); notes.value = [notes.value, place ? `Plaats: ${place}` : "", wishes].filter(Boolean).join("\n"); notes.dispatchEvent(new Event("input", { bubbles: true })); }
+          if (message) message.textContent = "Project opslaan en eerste demo voorbereiden…";
+          proxyClick("demo-journey-save");
+          const startedAt = Date.now();
+          const waitForJourney = window.setInterval(() => {
+            if (Date.now() - startedAt > 10000) { window.clearInterval(waitForJourney); if (message) message.textContent = "Opslaan duurt langer dan verwacht. Probeer opnieuw."; return; }
+            const saveMessage = text("#demo-journey-message", "");
+            if (/opgeslagen|bijgewerkt|volgende stap/i.test(saveMessage)) { window.clearInterval(waitForJourney); proxyClick("demo-journey-generate-preview"); if (message) message.textContent = "Eerste demo wordt gegenereerd."; }
+          }, 250);
+        }
+
+        function requestImageGeneration() {
+          const status = document.getElementById("factory-image-job-status");
+          const missing = imageState().missing;
+          if (!missing) return;
+          if (status) status.textContent = "AI-afbeeldingen zijn nog niet geconfigureerd. Upload een afbeelding of kies uit de bibliotheek.";
         }
 
         function initGuidedFactory() {
@@ -25676,7 +25802,16 @@
           document.getElementById("factory-primary-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
           document.getElementById("factory-process-manual-zip")?.addEventListener("click", () => proxyClick("demo-journey-process-manual-zip"));
           document.querySelectorAll("[data-factory-proxy]").forEach((button) => button.addEventListener("click", () => proxyClick(button.dataset.factoryProxy)));
+          document.getElementById("factory-quick-generate")?.addEventListener("click", runQuickBuild);
+          ["factory-generate-images", "factory-generate-images-footer"].forEach((id) => document.getElementById(id)?.addEventListener("click", requestImageGeneration));
+          document.querySelectorAll("[data-briefing-mode]").forEach((button) => button.addEventListener("click", () => {
+            document.querySelectorAll("[data-briefing-mode]").forEach((item) => item.classList.toggle("is-active", item === button));
+            window.dispatchEvent(new CustomEvent("factory:briefing-mode", { detail: { mode: button.dataset.briefingMode } }));
+            document.getElementById("demo-journey-intake")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }));
           document.getElementById("factory-guided-shell")?.addEventListener("click", (event) => {
+            const tab = event.target.closest("[data-factory-tab]");
+            if (tab) activateFactoryTab(tab.dataset.factoryTab);
             const uploadButton = event.target.closest("[data-manual-zip-upload]");
             if (!uploadButton) return;
             event.preventDefault();
