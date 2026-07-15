@@ -8,6 +8,8 @@ const workspace = fs.readFileSync(path.resolve(__dirname, "../supabase/migration
 const preflight = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_production_preflight.sql"), "utf8");
 const summaryPreflight = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_production_preflight_summary.sql"), "utf8");
 const privilegeDiagnosis = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_privilege_diagnosis.sql"), "utf8");
+const privilegeHardening = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/20260715120000_harden_lead_workspace_privileges.sql"), "utf8");
+const privilegeHardeningPostcheck = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_privilege_hardening_postcheck.sql"), "utf8");
 const api = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const leadsApi = require("../functions/admin-leads");
 
@@ -114,6 +116,48 @@ test("privilegediagnose scheidt RLS-acties van niet-row-scoped grants", () => {
   assert.match(privilegeDiagnosis, /No effective table or column grant; the action is denied before RLS/);
   assert.match(privilegeDiagnosis, /RLS is enabled and no applicable policy exists; default deny applies/);
   assert.match(privilegeDiagnosis, /SECURITY DEFINER executes with owner rights/);
+});
+
+test("privilegehardening trekt uitsluitend bewezen browserrisico's in", () => {
+  assert.match(privilegeHardening, /revoke truncate, references, trigger on table public\.leads from anon, authenticated;/i);
+  assert.match(privilegeHardening, /revoke truncate, references, trigger on table public\.customer_timeline_events from anon, authenticated;/i);
+  for (const signature of [
+    "current_app_role\\(\\)", "current_profile_id\\(\\)", "has_app_role\\(text\\[\\]\\)",
+    "is_admin_role\\(\\)", "is_staff_role\\(\\)", "owns_commercial_record\\(uuid\\)",
+  ]) {
+    assert.match(privilegeHardening, new RegExp(`revoke execute on function public\\.${signature} from public, anon;`, "i"));
+    assert.match(privilegeHardening, new RegExp(`grant execute on function public\\.${signature} to authenticated, service_role;`, "i"));
+  }
+  assert.doesNotMatch(privilegeHardening, /revoke\s+(select|insert|update|delete)\b/i);
+  assert.doesNotMatch(privilegeHardening, /revoke\s+create\s+on\s+schema/i);
+  assert.doesNotMatch(privilegeHardening, /\b(create|alter|drop)\s+policy\b/i);
+  assert.doesNotMatch(privilegeHardening, /^\s*(insert|update|delete|truncate)\b/im);
+});
+
+test("privilegehardening is transactioneel, idempotent en fail-closed", () => {
+  assert.match(privilegeHardening, /begin;/i);
+  assert.match(privilegeHardening, /commit;/i);
+  assert.match(privilegeHardening, /lock_timeout = '5s'/);
+  assert.match(privilegeHardening, /statement_timeout = '2min'/);
+  assert.match(privilegeHardening, /browser role has CREATE on schema public/);
+  assert.match(privilegeHardening, /RLS is not enabled on every target table/);
+  assert.match(privilegeHardening, /SECURITY DEFINER with a fixed safe search_path/);
+  assert.match(privilegeHardening, /application rollback needs no/);
+});
+
+test("privilegehardening-nacontrole levert één read-only bewijsresultset", () => {
+  assert.match(privilegeHardeningPostcheck, /^--[^\n]*\n--[^\n]*\n\nBEGIN READ ONLY;/);
+  assert.match(privilegeHardeningPostcheck, /ROLLBACK;\s*$/);
+  assert.equal((privilegeHardeningPostcheck.match(/\nSELECT check_name, status, finding_count, details, blocking/g) || []).length, 1);
+  for (const check of [
+    "browser_table_privileges_removed", "browser_schema_create_absent", "required_schema_usage_present",
+    "security_definer_helpers_safe", "helper_execute_acl", "authenticated_leads_flow_privileges",
+    "service_role_privileges_preserved", "target_rls_enabled", "target_policies_preserved", "overall_readiness",
+  ]) assert.match(privilegeHardeningPostcheck, new RegExp(`'${check}'`));
+
+  const executable = privilegeHardeningPostcheck.replace(/--.*$/gm, "");
+  assert.doesNotMatch(executable, /^\s*(insert|update|delete|alter|create|drop|truncate|grant|revoke|call|do)\b/im);
+  assert.doesNotMatch(executable, /\bselect\s+.*\binto\b/i);
 });
 
 test("API heeft afzonderlijke selectcontracten voor legacy, prerequisites en workspace", () => {
