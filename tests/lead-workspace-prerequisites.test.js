@@ -10,6 +10,7 @@ const summaryPreflight = fs.readFileSync(path.resolve(__dirname, "../supabase/ma
 const privilegeDiagnosis = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_privilege_diagnosis.sql"), "utf8");
 const privilegeHardening = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/20260715120000_harden_lead_workspace_privileges.sql"), "utf8");
 const privilegeHardeningPostcheck = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_privilege_hardening_postcheck.sql"), "utf8");
+const authoritativeCatalogSnapshot = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_authoritative_catalog_snapshot.sql"), "utf8");
 const api = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const leadsApi = require("../functions/admin-leads");
 
@@ -158,6 +159,61 @@ test("privilegehardening-nacontrole levert één read-only bewijsresultset", () 
   const executable = privilegeHardeningPostcheck.replace(/--.*$/gm, "");
   assert.doesNotMatch(executable, /^\s*(insert|update|delete|alter|create|drop|truncate|grant|revoke|call|do)\b/im);
   assert.doesNotMatch(executable, /\bselect\s+.*\binto\b/i);
+});
+
+test("authoritative catalog snapshot is read-only en levert exact één resultset", () => {
+  assert.match(authoritativeCatalogSnapshot, /^--[^\n]*\n--[^\n]*\n\nBEGIN READ ONLY;/);
+  assert.match(authoritativeCatalogSnapshot, /ROLLBACK;\s*$/);
+  assert.equal((authoritativeCatalogSnapshot.match(/\nSELECT\n  i\.database_name,/g) || []).length, 1);
+  const executable = authoritativeCatalogSnapshot.replace(/--.*$/gm, "");
+  assert.doesNotMatch(executable, /^\s*(insert|update|delete|alter|create|drop|truncate|grant|revoke|call|do)\b/im);
+  assert.doesNotMatch(executable, /\bselect\s+.*\binto\b/i);
+  for (const unsafe of ["pg_advisory", "pg_terminate", "pg_cancel", "dblink", "lo_create", "lo_import", "lo_export", "lo_unlink"]) {
+    assert.doesNotMatch(executable, new RegExp(unsafe, "i"));
+  }
+});
+
+test("authoritative catalog snapshot draagt volledige database-identiteit op iedere rij", () => {
+  for (const expression of [
+    "current_database\\(\\)", "current_user", "session_user", "current_role", "inet_server_addr\\(\\)",
+    "inet_server_port\\(\\)", "current_setting\\('server_version'\\)",
+    "current_setting\\('transaction_read_only'\\)", "current_setting\\('search_path'\\)", "clock_timestamp\\(\\)",
+  ]) assert.match(authoritativeCatalogSnapshot, new RegExp(expression));
+  for (const column of [
+    "database_name", "current_user_name", "session_user_name", "current_role_name", "server_address",
+    "server_port", "postgres_version", "transaction_read_only", "search_path", "captured_at_utc",
+    "category", "schema_name", "object_name", "object_identity", "attribute_name", "attribute_value",
+    "source_catalog", "visibility_status",
+  ]) assert.match(authoritativeCatalogSnapshot, new RegExp(`\\b${column}\\b`));
+});
+
+test("authoritative catalog snapshot gebruikt primaire catalogi en fail-closed zichtbaarheidsstatussen", () => {
+  for (const catalog of [
+    "pg_class", "pg_namespace", "pg_proc", "pg_get_function_identity_arguments", "pg_get_functiondef",
+    "pg_policies", "pg_policy", "pg_roles", "aclexplode", "pg_get_userbyid", "information_schema.role_table_grants",
+  ]) assert.match(authoritativeCatalogSnapshot, new RegExp(catalog.replace(".", "\\.")));
+  for (const status of ["OBJECT_ABSENT", "OBJECT_PRESENT", "OBJECT_NOT_VISIBLE", "ROLE_NOT_VISIBLE", "CATALOG_INCONSISTENT"]) {
+    assert.match(authoritativeCatalogSnapshot, new RegExp(`'${status}'`));
+  }
+  assert.match(authoritativeCatalogSnapshot, /'identity_summary'/);
+  assert.match(authoritativeCatalogSnapshot, /'overall_catalog_consistency'/);
+  assert.match(authoritativeCatalogSnapshot, /catalog_fingerprint_md5/);
+  assert.match(authoritativeCatalogSnapshot, /WHEN \(SELECT server_address FROM identity_context\) IS NULL THEN 'WARN'/);
+});
+
+test("authoritative catalog snapshot inventariseert targets, ACL-bronnen en migrationcontext", () => {
+  for (const object of [
+    "leads", "customer_timeline_events", "current_profile_id", "current_app_role", "has_app_role",
+    "is_admin_role", "is_staff_role", "owns_commercial_record",
+  ]) assert.match(authoritativeCatalogSnapshot, new RegExp(`'${object}'`));
+  for (const category of [
+    "table_count", "policy", "policy_comparison", "function_acl", "function_effective_execute",
+    "table_acl", "table_effective_privilege", "table_grant_comparison", "schema_acl",
+    "schema_effective_privilege", "migration_context", "wrong_schema_table",
+  ]) assert.match(authoritativeCatalogSnapshot, new RegExp(`'${category}'`));
+  for (const source of ["explicit", "via_PUBLIC", "via_role_membership_or_owner", "none"]) {
+    assert.match(authoritativeCatalogSnapshot, new RegExp(`'${source}'`));
+  }
 });
 
 test("API heeft afzonderlijke selectcontracten voor legacy, prerequisites en workspace", () => {
