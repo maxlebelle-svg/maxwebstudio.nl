@@ -43,6 +43,17 @@
   const FAVORITE_WRITE_ROLES = new Set(["super_admin", "admin", "sales_manager", "sales_partner"]);
 
   const asText = (value) => String(value || "").trim();
+
+  function createFilterState(initial = {}) {
+    return { favoritesOnly: Boolean(initial.favoritesOnly) };
+  }
+
+  function setFavoritesOnly(state, value) {
+    if (!state || typeof state !== "object") throw new TypeError("Filterstate ontbreekt.");
+    state.favoritesOnly = Boolean(value);
+    return state.favoritesOnly;
+  }
+
   const dayKey = (value) => {
     const date = value ? new Date(value) : new Date();
     if (Number.isNaN(date.getTime())) return "";
@@ -173,5 +184,5 @@
     }
   }
 
-  return Object.freeze({ PIPELINE_STAGES, SMART_VIEWS, normalizeLead, isArchivedLead, isLostLead, isWonLead, needsActionToday, matchesSmartView, matchesFilters, smartViewCounts, kpiCounts, paginate, canToggleFavorite, toggleFavoriteOptimistically, dayKey });
+  return Object.freeze({ PIPELINE_STAGES, SMART_VIEWS, createFilterState, setFavoritesOnly, normalizeLead, isArchivedLead, isLostLead, isWonLead, needsActionToday, matchesSmartView, matchesFilters, smartViewCounts, kpiCounts, paginate, canToggleFavorite, toggleFavoriteOptimistically, dayKey });
 });

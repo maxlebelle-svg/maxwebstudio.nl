@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leads Workspace favorietenfilter</title>
+    <link rel="stylesheet" href="/public/admin/styles/sales-workspace.css" />
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { margin: 0; min-height: 100vh; background: #071426; color: #edf6ff; }
+      main { width: min(1040px, calc(100% - 32px)); margin: 32px auto; }
+      .harness-heading { margin-bottom: 18px; }
+      .harness-heading p { color: #91a8c3; }
+      .sales-workspace-shell { min-height: 520px; }
+      .sales-workspace-list-column { min-width: 0; }
+      .sales-workspace-toolbar { justify-content: flex-end; }
+      .harness-list { display: grid; gap: 10px; padding: 14px; }
+      .harness-lead { padding: 14px; border: 1px solid #294368; border-radius: 12px; background: #0c1d37; }
+      .harness-empty { color: #91a8c3; }
+      @media (max-width: 700px) {
+        main { width: min(100% - 20px, 1040px); margin: 10px auto; }
+        .sales-workspace-shell { grid-template-columns: 1fr; }
+        .sales-workspace-views { border-right: 0; border-bottom: 1px solid #294368; }
+      }
+    </style>
+    <script src="/public/src/sales-workspace-model.js"></script>
+  </head>
+  <body>
+    <main>
+      <header class="harness-heading">
+        <p>Lokale regressietest</p>
+        <h1>Leads Workspace</h1>
+      </header>
+      <div class="sales-workspace-shell" id="sales-workspace-shell">
+        <aside class="sales-workspace-views" aria-label="Slimme weergaven">
+          <div class="sales-workspace-column-title"><span>Slimme weergaven</span></div>
+          <nav id="sales-smart-views">
+            <button class="sales-smart-view is-active" type="button" data-sales-view="all" aria-pressed="true"><span>Alle leads</span><b>4</b></button>
+            <button class="sales-smart-view" type="button" data-sales-view="demos" aria-pressed="false"><span>Demo’s</span><b>2</b></button>
+            <button class="sales-smart-view" type="button" data-sales-view="interested" aria-pressed="false"><span>Geïnteresseerd</span><b>2</b></button>
+          </nav>
+        </aside>
+        <section class="sales-workspace-list-column" aria-label="Leadwerkvoorraad">
+          <div class="sales-workspace-toolbar">
+            <button class="button secondary" id="sales-workspace-filter-toggle" type="button" aria-expanded="false">Filters</button>
+          </div>
+          <div class="sales-workspace-filter-panel" id="sales-workspace-filter-panel" hidden>
+            <div class="leadfinder-filters">
+              <label class="sales-favorite-filter" for="sales-filter-favorites"><input id="sales-filter-favorites" type="checkbox" /> <span>Alleen favorieten</span></label>
+              <button class="button secondary" id="sales-workspace-filter-clear" type="button">Filters wissen</button>
+            </div>
+          </div>
+          <div class="sales-workspace-filter-chips" id="sales-workspace-filter-chips" hidden aria-label="Actieve filters"></div>
+          <div class="sales-workspace-results"><strong id="sales-workspace-result-count">4 leads</strong><span id="sales-workspace-active-view">Alle leads</span></div>
+          <div class="harness-list" id="leadfinder-list" aria-label="Leadfinder bedrijven"></div>
+        </section>
+      </div>
+    </main>
+    <script>
+      const leads = [
+        { id: "demo-favorite", companyName: "Favoriete demo", pipelineStage: "demo_in_progress", interestLevel: "interested", isFavorite: true },
+        { id: "demo-regular", companyName: "Gewone demo", pipelineStage: "demo_planned", interestLevel: "unsure", isFavorite: false },
+        { id: "interested-favorite", companyName: "Favoriete geïnteresseerde", pipelineStage: "contacted", interestLevel: "interested", isFavorite: true },
+        { id: "interested-regular", companyName: "Gewone geïnteresseerde", pipelineStage: "contacted", interestLevel: "interested", isFavorite: false },
+      ];
+      const salesWorkspaceFilterState = window.MaxSalesWorkspaceModel.createFilterState();
+      let activeSalesWorkspaceView = "all";
+      let salesWorkspaceFilterOpen = false;
+
+      function setSalesWorkspaceFavoritesOnly(value) {
+        window.MaxSalesWorkspaceModel.setFavoritesOnly(salesWorkspaceFilterState, value);
+        document.getElementById("sales-filter-favorites").checked = salesWorkspaceFilterState.favoritesOnly;
+      }
+
+      function render() {
+        document.getElementById("sales-filter-favorites").checked = salesWorkspaceFilterState.favoritesOnly;
+        const filtered = leads.filter((lead) => window.MaxSalesWorkspaceModel.matchesFilters(lead, {
+          smartView: activeSalesWorkspaceView,
+          favoritesOnly: salesWorkspaceFilterState.favoritesOnly,
+        }));
+        document.querySelectorAll("[data-sales-view]").forEach((button) => {
+          const active = button.dataset.salesView === activeSalesWorkspaceView;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+        const chipHost = document.getElementById("sales-workspace-filter-chips");
+        chipHost.hidden = !salesWorkspaceFilterState.favoritesOnly;
+        chipHost.innerHTML = salesWorkspaceFilterState.favoritesOnly
+          ? '<button class="sales-filter-chip" type="button" data-sales-remove-filter="favorites"><span>Alleen favorieten</span><b aria-hidden="true">×</b></button>'
+          : "";
+        document.getElementById("sales-workspace-result-count").textContent = `${filtered.length} lead${filtered.length === 1 ? "" : "s"}`;
+        document.getElementById("sales-workspace-active-view").textContent = window.MaxSalesWorkspaceModel.SMART_VIEWS.find((view) => view.value === activeSalesWorkspaceView)?.label || "Alle leads";
+        document.getElementById("leadfinder-list").innerHTML = filtered.length
+          ? filtered.map((lead) => `<article class="harness-lead"><strong>${lead.companyName}</strong><span>${lead.isFavorite ? " ★ Favoriet" : ""}</span></article>`).join("")
+          : '<p class="harness-empty">Geen leads gevonden</p>';
+      }
+
+      document.getElementById("sales-workspace-filter-toggle").addEventListener("click", () => {
+        salesWorkspaceFilterOpen = !salesWorkspaceFilterOpen;
+        document.getElementById("sales-workspace-filter-panel").hidden = !salesWorkspaceFilterOpen;
+        document.getElementById("sales-workspace-filter-toggle").setAttribute("aria-expanded", String(salesWorkspaceFilterOpen));
+      });
+      document.getElementById("sales-filter-favorites").addEventListener("change", (event) => {
+        setSalesWorkspaceFavoritesOnly(event.currentTarget.checked);
+        render();
+      });
+      document.getElementById("sales-smart-views").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-sales-view]");
+        if (!button) return;
+        activeSalesWorkspaceView = button.dataset.salesView;
+        render();
+      });
+      document.getElementById("sales-workspace-filter-clear").addEventListener("click", () => {
+        setSalesWorkspaceFavoritesOnly(false);
+        activeSalesWorkspaceView = "all";
+        render();
+      });
+      document.getElementById("sales-workspace-filter-chips").addEventListener("click", (event) => {
+        if (!event.target.closest('[data-sales-remove-filter="favorites"]')) return;
+        setSalesWorkspaceFavoritesOnly(false);
+        render();
+      });
+      window.salesWorkspaceFilterHarness = {
+        getState: () => ({ favoritesOnly: salesWorkspaceFilterState.favoritesOnly, activeView: activeSalesWorkspaceView, filterOpen: salesWorkspaceFilterOpen }),
+      };
+      render();
+    </script>
+  </body>
+</html>

@@ -19,7 +19,7 @@
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
-    <script src="src/sales-workspace-model.js?v=20260715-sales-workspace"></script>
+    <script src="src/sales-workspace-model.js?v=20260715-favorites-filter"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
@@ -19587,6 +19587,7 @@
       let salesWorkspacePage = 1;
       const salesWorkspacePageSize = 25;
       let salesWorkspaceFilterOpen = false;
+      const salesWorkspaceFilterState = window.MaxSalesWorkspaceModel?.createFilterState() || { favoritesOnly: false };
       const selectedSalesLeadIds = new Set();
       const favoriteLeadWriteIds = new Set();
       const favoriteLeadErrorIds = new Set();
@@ -19744,6 +19745,7 @@
         if (activeViewLabel) activeViewLabel.textContent = activeView?.label || "Alle leads";
         const resultCount = document.getElementById("sales-workspace-result-count");
         if (resultCount && pagination) resultCount.textContent = `${pagination.total} lead${pagination.total === 1 ? "" : "s"}`;
+        syncSalesWorkspaceFilterControls();
         renderSalesWorkspaceFilterChips();
         renderSalesWorkspaceBulkBar();
         renderSalesWorkspacePagination(pagination);
@@ -19752,11 +19754,25 @@
       function renderSalesWorkspaceFilterChips() {
         const target = document.getElementById("sales-workspace-filter-chips");
         if (!target) return;
-        const favoritesOnly = Boolean(document.getElementById("sales-filter-favorites")?.checked);
+        const favoritesOnly = salesWorkspaceFilterState.favoritesOnly;
         target.hidden = !favoritesOnly;
         target.innerHTML = favoritesOnly
           ? '<button class="sales-filter-chip" type="button" data-sales-remove-filter="favorites"><span>Alleen favorieten</span><b aria-hidden="true">×</b><span class="sr-only">Favorietenfilter verwijderen</span></button>'
           : "";
+      }
+
+      function setSalesWorkspaceFavoritesOnly(value) {
+        if (window.MaxSalesWorkspaceModel?.setFavoritesOnly) {
+          window.MaxSalesWorkspaceModel.setFavoritesOnly(salesWorkspaceFilterState, value);
+        } else {
+          salesWorkspaceFilterState.favoritesOnly = Boolean(value);
+        }
+        syncSalesWorkspaceFilterControls();
+      }
+
+      function syncSalesWorkspaceFilterControls() {
+        const favoriteFilter = document.getElementById("sales-filter-favorites");
+        if (favoriteFilter) favoriteFilter.checked = salesWorkspaceFilterState.favoritesOnly;
       }
 
       function renderSalesWorkspaceBulkBar() {
@@ -22869,7 +22885,7 @@
           priority: document.getElementById("sales-filter-priority")?.value || "",
           source: document.getElementById("sales-filter-source")?.value || "",
           nextAction: document.getElementById("sales-filter-next-action")?.value || "",
-          favoritesOnly: Boolean(document.getElementById("sales-filter-favorites")?.checked),
+          favoritesOnly: salesWorkspaceFilterState.favoritesOnly,
         };
 
         const baseLeads = getLeadfinderLeads();
@@ -24648,8 +24664,15 @@
           element?.addEventListener("input", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
           element?.addEventListener("change", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
         });
+        const favoriteFilter = document.getElementById("sales-filter-favorites");
+        favoriteFilter?.addEventListener("change", (event) => {
+          setSalesWorkspaceFavoritesOnly(event.currentTarget.checked);
+          salesWorkspacePage = 1;
+          renderLeadfinderList();
+        });
         document.querySelectorAll("#sales-workspace-filter-panel input, #sales-workspace-filter-panel select").forEach((element) => {
           if ([leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].includes(element)) return;
+          if (element === favoriteFilter) return;
           element.addEventListener("input", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
           element.addEventListener("change", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
         });
@@ -24738,17 +24761,17 @@
           }
           if (event.target.closest("#sales-workspace-filter-clear")) {
             document.querySelectorAll("#sales-workspace-filter-panel input, #sales-workspace-filter-panel select").forEach((control) => {
-              if (control instanceof HTMLInputElement && control.type === "checkbox") control.checked = false;
+              if (control instanceof HTMLInputElement && control.type === "checkbox") return;
               else control.value = "";
             });
+            setSalesWorkspaceFavoritesOnly(false);
             activeSalesWorkspaceView = "all";
             salesWorkspacePage = 1;
             renderLeadfinderList();
           }
           const removableFilter = event.target.closest("[data-sales-remove-filter]");
           if (removableFilter?.dataset.salesRemoveFilter === "favorites") {
-            const favoriteFilter = document.getElementById("sales-filter-favorites");
-            if (favoriteFilter) favoriteFilter.checked = false;
+            setSalesWorkspaceFavoritesOnly(false);
             salesWorkspacePage = 1;
             renderLeadfinderList();
           }

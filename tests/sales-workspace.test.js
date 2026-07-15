@@ -9,6 +9,7 @@ const salesHtml = fs.readFileSync(path.resolve(__dirname, "../public/admin-sales
 const salesCss = fs.readFileSync(path.resolve(__dirname, "../public/admin/styles/sales-workspace.css"), "utf8");
 const apiSource = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const migration = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/026_sales_workspace_normalized_fields.sql"), "utf8");
+const favoritesFilterHarness = fs.readFileSync(path.resolve(__dirname, "fixtures/sales-workspace-favorites-filter.html"), "utf8");
 
 const now = new Date("2026-07-15T12:00:00+02:00");
 const fixtures = [
@@ -49,6 +50,29 @@ test("favorietenfilter combineert met een slimme weergave", () => {
   assert.equal(model.matchesFilters(fixtures[0], { favoritesOnly: true, smartView: "interested" }, now), true);
   assert.equal(model.matchesFilters(fixtures[2], { favoritesOnly: true, smartView: "interested" }, now), false);
   assert.equal(model.matchesFilters({ ...fixtures[2], isFavorite: true }, { favoritesOnly: true, smartView: "interested" }, now), true);
+});
+
+test("canonieke favorietenfilterstate blijft stabiel tijdens render- en viewwissels", () => {
+  const state = model.createFilterState();
+  assert.equal(state.favoritesOnly, false);
+  assert.equal(model.setFavoritesOnly(state, true), true);
+  assert.equal(state.favoritesOnly, true);
+  assert.equal(model.matchesFilters(fixtures[0], { ...state, smartView: "interested" }, now), true);
+  assert.equal(model.matchesFilters(fixtures[3], { ...state, smartView: "interested" }, now), false);
+  assert.equal(model.matchesFilters({ ...fixtures[3], isFavorite: true }, { ...state, smartView: "demos" }, now), false);
+  assert.equal(state.favoritesOnly, true);
+  assert.equal(model.createFilterState().favoritesOnly, false);
+});
+
+test("favorietenfilter toont alleen favorieten en ondersteunt lege en gecombineerde staten", () => {
+  const favoritesOnly = model.createFilterState({ favoritesOnly: true });
+  const onlyFavorites = fixtures.filter((lead) => model.matchesFilters(lead, favoritesOnly, now));
+  const noFavorites = fixtures.map((lead) => ({ ...lead, isFavorite: false })).filter((lead) => model.matchesFilters(lead, favoritesOnly, now));
+  const demoFavorite = { id: "demo", pipelineStage: "demo_in_progress", interestLevel: "interested", isFavorite: true };
+  assert.deepEqual(onlyFavorites.map(({ id }) => id), ["1"]);
+  assert.deepEqual(noFavorites, []);
+  assert.equal(model.matchesFilters(demoFavorite, { ...favoritesOnly, smartView: "demos" }, now), true);
+  assert.equal(model.matchesFilters(demoFavorite, { ...favoritesOnly, smartView: "interested" }, now), true);
 });
 
 test("optimistische favoriettoggle bevestigt opslag en rolt terug bij API-fout", async () => {
@@ -163,6 +187,31 @@ test("lijst, detail en favorietenfilter delen dezelfde status en veilige API-rou
   assert.match(salesHtml, /favoriteLeadWriteIds\.has\(lead\.id\)/);
   assert.match(salesHtml, /favoriteButton[\s\S]+event\.stopPropagation\(\)/);
   assert.doesNotMatch(salesHtml, /queueLeadOffline\("update", \{ id: lead\.id, isFavorite/);
+});
+
+test("favorietencheckbox gebruikt één centrale state en wordt niet door renders of views gereset", () => {
+  assert.equal((salesHtml.match(/id="sales-filter-favorites"/g) || []).length, 1);
+  assert.match(salesHtml, /const salesWorkspaceFilterState = [^;]+favoritesOnly: false/);
+  assert.match(salesHtml, /favoriteFilter\?\.addEventListener\("change", \(event\) => \{\s+setSalesWorkspaceFavoritesOnly\(event\.currentTarget\.checked\)/);
+  assert.match(salesHtml, /function syncSalesWorkspaceFilterControls\(\)[\s\S]+favoriteFilter\.checked = salesWorkspaceFilterState\.favoritesOnly/);
+  assert.match(salesHtml, /favoritesOnly: salesWorkspaceFilterState\.favoritesOnly/);
+  assert.match(salesHtml, /function renderSalesWorkspaceFilterChips\(\)[\s\S]+const favoritesOnly = salesWorkspaceFilterState\.favoritesOnly/);
+  assert.match(salesHtml, /if \(element === favoriteFilter\) return;/);
+  assert.match(salesHtml, /data-sales-remove-filter="favorites"[\s\S]+setSalesWorkspaceFavoritesOnly\(false\)/);
+  assert.match(salesHtml, /#sales-workspace-filter-clear[\s\S]+setSalesWorkspaceFavoritesOnly\(false\)/);
+  assert.doesNotMatch(salesHtml, /favoritesOnly: Boolean\(document\.getElementById\("sales-filter-favorites"\)\?\.checked\)/);
+  const setViewBody = salesHtml.match(/function setSalesWorkspaceView[\s\S]+?\n      \}/)?.[0] || "";
+  assert.doesNotMatch(setViewBody, /setSalesWorkspaceFavoritesOnly|favoritesOnly/);
+});
+
+test("lokale browserfixture gebruikt dezelfde canonieke filterstate op alle viewports", () => {
+  assert.match(favoritesFilterHarness, /MaxSalesWorkspaceModel\.createFilterState\(\)/);
+  assert.match(favoritesFilterHarness, /MaxSalesWorkspaceModel\.setFavoritesOnly\(salesWorkspaceFilterState, value\)/);
+  assert.match(favoritesFilterHarness, /favoritesOnly: salesWorkspaceFilterState\.favoritesOnly/);
+  assert.equal((favoritesFilterHarness.match(/id="sales-filter-favorites"/g) || []).length, 1);
+  assert.match(favoritesFilterHarness, /data-sales-view="demos"/);
+  assert.match(favoritesFilterHarness, /data-sales-view="interested"/);
+  assert.match(favoritesFilterHarness, /data-sales-remove-filter="favorites"/);
 });
 
 test("assignment, timeline, filters, bulkacties en responsive drawer blijven intact", () => {
