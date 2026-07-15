@@ -311,3 +311,78 @@ test("paginering begrenst de werkvoorraad standaard op 25", () => {
   assert.equal(page.pages, 3);
   assert.equal(page.records[0].id, "25");
 });
+
+test("premium leadrijen blijven compact maar tonen eigenaar, actie en geselecteerde acties", () => {
+  assert.match(salesHtml, /class="sales-lead-row-facts"/);
+  assert.match(salesHtml, /<small>Eigenaar<\/small>/);
+  assert.match(salesHtml, /<small>Volgende actie<\/small>/);
+  assert.match(salesCss, /\.lead-card\.is-selected[\s\S]+min-height: 148px/);
+  assert.match(salesCss, /\.lead-card\.is-selected \.lead-card-actions \{ display: flex/);
+  assert.match(salesCss, /min-height: 112px/);
+});
+
+test("detailcover gebruikt Google Places, opgeslagen beelden en een foutbestendige merkfallback", () => {
+  assert.match(salesHtml, /googlePhotoUrlFromPlace\(place\), \.\.\.storedPhotoCandidates/);
+  assert.match(salesHtml, /meta\.websiteImageUrl/);
+  assert.match(salesHtml, /meta\.websiteScreenshotUrl/);
+  assert.match(salesHtml, /function normalizeSafeImageUrl/);
+  assert.match(salesHtml, /\["https:", "http:"\]\.includes\(url\.protocol\)/);
+  assert.match(salesHtml, /function bindBusinessCoverFallback/);
+  assert.match(salesHtml, /image\.addEventListener\("error", showCandidate\)/);
+  assert.match(salesHtml, /is-brand-fallback/);
+  assert.doesNotMatch(salesHtml, /new window\.google\.maps\.StreetViewService|maps\/api\/streetview/);
+});
+
+test("Google detailcover toont bedrijfscontext, score en dezelfde favorietenknop", () => {
+  assert.match(salesHtml, /sales-google-business-overlay/);
+  assert.match(salesHtml, /sales-business-category/);
+  assert.match(salesHtml, /sales-business-cover-actions/);
+  assert.match(salesHtml, /favoriteSlot\.prepend\(leadfinderElements\.detailFavorite\)/);
+  assert.match(salesHtml, /lead-score-ring/);
+  assert.equal((salesHtml.match(/id="sales-lead-favorite"/g) || []).length, 1);
+});
+
+test("premium overzicht hergebruikt bestaande acties en toont contact, assignment, advies en activiteit", () => {
+  for (const id of ["sales-action-demo-now", "sales-action-call", "sales-action-website", "sales-action-mail", "sales-action-maps", "sales-action-note", "sales-action-followup"]) {
+    assert.equal((salesHtml.match(new RegExp(`id="${id}"`, "g")) || []).length, 1, `${id} moet uniek blijven`);
+  }
+  assert.match(salesHtml, /id="sales-lead-contact-list"/);
+  assert.match(salesHtml, /id="sales-lead-owner-assignment"/);
+  assert.match(salesHtml, /id="sales-next-action"/);
+  assert.match(salesHtml, /id="sales-recent-activity-grid"/);
+  assert.match(salesHtml, /function getSalesNextAction/);
+});
+
+test("assignment geeft dirty, loading, success en error feedback zonder API-contractwijziging", () => {
+  assert.match(salesHtml, /setLeadOwnerAssignmentMessage\("Nog niet opgeslagen\.", "warning"\)/);
+  assert.match(salesHtml, /button\.setAttribute\("aria-busy", "true"\)/);
+  assert.match(salesHtml, /button\.textContent = "Opslaan…"/);
+  assert.match(salesHtml, /Opgeslagen op naam van/);
+  assert.match(salesHtml, /Medewerker kon niet worden opgeslagen/);
+  assert.match(apiSource, /payload\.action === "assign"/);
+});
+
+test("detailtabs zijn premium, gekoppeld aan panelen en toetsenbordtoegankelijk gemarkeerd", () => {
+  assert.match(salesHtml, /role="tablist"/);
+  assert.equal((salesHtml.match(/role="tab"/g) || []).length, 4);
+  assert.equal((salesHtml.match(/role="tabpanel"/g) || []).length, 4);
+  assert.match(salesHtml, /button\.setAttribute\("aria-selected", active \? "true" : "false"\)/);
+  assert.match(salesHtml, /\["ArrowLeft", "ArrowRight", "Home", "End"\]\.includes\(event\.key\)/);
+  assert.match(salesCss, /\.sales-detail-tab\.is-active[\s\S]+border-color: #3d91ff/);
+});
+
+test("premium responsive contract behoudt desktopkolommen en mobiele detaildrawer", () => {
+  assert.match(salesCss, /minmax\(500px, \.95fr\) minmax\(470px, 1\.05fr\)/);
+  assert.match(salesCss, /@media \(max-width: 1050px\)[\s\S]+grid-template-columns: 155px minmax\(0, 1fr\)/);
+  assert.match(salesCss, /@media \(max-width: 520px\)[\s\S]+width: 100% !important[\s\S]+height: 100dvh/);
+  assert.match(salesCss, /sales-premium-action-bar[\s\S]+repeat\(2, minmax\(0, 1fr\)\)/);
+});
+
+test("dynamische premium inhoud blijft escaped en externe acties blijven afgeschermd", () => {
+  assert.match(salesHtml, /escapeHtml\(data\.name\)/);
+  assert.match(salesHtml, /escapeHtml\(data\.category\)/);
+  assert.match(salesHtml, /escapeHtml\(nextAction\.label\)/);
+  assert.match(salesHtml, /rel="noopener"/);
+  assert.match(salesHtml, /aria-disabled/);
+  assert.doesNotMatch(salesHtml, /GOOGLE_MAPS_API_KEY\s*=\s*["'][^"']+/);
+});

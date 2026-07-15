@@ -373,14 +373,15 @@
                 </div>
               </div>
 
-              <nav class="sales-detail-tabs" aria-label="Lead details">
-                <button class="sales-detail-tab is-active" type="button" data-sales-detail-tab="overview">Overzicht</button>
-                <button class="sales-detail-tab" type="button" data-sales-detail-tab="notes">Belscript</button>
-                <button class="sales-detail-tab" type="button" data-sales-detail-tab="analysis">Website-analyse</button>
-                <button class="sales-detail-tab" type="button" data-sales-detail-tab="actions">Acties</button>
+              <nav class="sales-detail-tabs" role="tablist" aria-label="Lead details">
+                <button class="sales-detail-tab is-active" id="sales-tab-overview" role="tab" aria-controls="sales-panel-overview" aria-selected="true" type="button" data-sales-detail-tab="overview">Overzicht</button>
+                <button class="sales-detail-tab" id="sales-tab-notes" role="tab" aria-controls="sales-panel-notes" aria-selected="false" type="button" data-sales-detail-tab="notes">Belscript</button>
+                <button class="sales-detail-tab" id="sales-tab-analysis" role="tab" aria-controls="sales-panel-analysis" aria-selected="false" type="button" data-sales-detail-tab="analysis">Website-analyse</button>
+                <button class="sales-detail-tab" id="sales-tab-actions" role="tab" aria-controls="sales-panel-actions" aria-selected="false" type="button" data-sales-detail-tab="actions">Acties</button>
               </nav>
 
-              <section class="sales-detail-panel sales-lead-summary-card" data-sales-detail-panel="overview" aria-label="Lead samenvatting">
+              <section class="sales-detail-panel sales-lead-summary-card" id="sales-panel-overview" role="tabpanel" aria-labelledby="sales-tab-overview" data-sales-detail-panel="overview" aria-label="Lead samenvatting">
+                <div class="sales-lead-business-preview" id="sales-lead-business-preview" aria-label="Bedrijfsprofiel"></div>
                 <div class="sales-detail-card-heading">
                   <div>
                     <span>Lead overzicht</span>
@@ -393,7 +394,16 @@
                   </div>
                 </div>
                 <div class="settings-status-list sales-detail-compact-list" id="leadfinder-detail-list"></div>
-                <div class="sales-lead-business-preview" id="sales-lead-business-preview" aria-label="Google Maps bedrijfskaart"></div>
+                <div class="sales-premium-action-bar sales-quick-actions" aria-label="Primaire leadacties">
+                  <button class="button primary sales-action-demo-now" id="sales-action-demo-now" type="button" disabled>Maak demo</button>
+                  <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
+                  <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website</a>
+                  <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">E-mail</a>
+                  <a class="button secondary is-disabled" id="sales-action-maps" href="#" target="_blank" rel="noopener" aria-disabled="true">Maps</a>
+                  <button class="button secondary" id="sales-action-note" type="button" disabled>Notitie</button>
+                  <button class="button secondary" id="sales-action-followup" type="button" disabled>Opvolgen</button>
+                </div>
+                <div class="sales-contact-list sales-premium-contact-list" id="sales-lead-contact-list"></div>
                 <div class="sales-lead-owner-assignment" id="sales-lead-owner-assignment" hidden>
                   <label for="sales-lead-owner-select">
                     <span>Lead toewijzen aan</span>
@@ -402,9 +412,17 @@
                   <button class="button primary" id="sales-lead-owner-save" type="button">Medewerker opslaan</button>
                   <p class="admin-form-message" id="sales-lead-owner-message" role="status"></p>
                 </div>
+                <article class="sales-next-action-card" id="sales-next-action" aria-live="polite">
+                  <span>Volgende stap</span><strong>Selecteer een lead</strong>
+                  <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
+                </article>
+                <article class="sales-premium-activity-card">
+                  <div class="sales-timeline-heading"><strong>Recente activiteiten</strong><span id="sales-recent-activity-count">0 acties</span></div>
+                  <div class="sales-recent-activity-grid" id="sales-recent-activity-grid"></div>
+                </article>
               </section>
 
-              <section class="sales-detail-panel sales-workflow-card" data-sales-detail-panel="notes" aria-label="Notities en opvolging">
+              <section class="sales-detail-panel sales-workflow-card" id="sales-panel-notes" role="tabpanel" aria-labelledby="sales-tab-notes" data-sales-detail-panel="notes" aria-label="Notities en opvolging">
                 <div class="sales-detail-card-heading">
                   <div>
                     <span>Belscript</span>
@@ -525,22 +543,12 @@
                 </div>
               </section>
 
-              <section class="sales-detail-panel sales-contact-actions-card" data-sales-detail-panel="actions" aria-label="Contact en acties">
+              <section class="sales-detail-panel sales-contact-actions-card" id="sales-panel-actions" role="tabpanel" aria-labelledby="sales-tab-actions" data-sales-detail-panel="actions" aria-label="Contact en acties">
                 <div class="sales-detail-card-heading">
                   <div>
                     <span>Contact</span>
                     <strong>Acties</strong>
                   </div>
-                </div>
-                <div class="sales-contact-list" id="sales-lead-contact-list"></div>
-                <div class="sales-quick-actions" aria-label="Snelle salesacties">
-                  <button class="button primary sales-action-demo-now" id="sales-action-demo-now" type="button" disabled>Maak demo site nu</button>
-                  <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
-                  <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website bekijken</a>
-                  <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">Mail sturen</a>
-                  <a class="button secondary is-disabled" id="sales-action-maps" href="#" target="_blank" rel="noopener" aria-disabled="true">Google Maps</a>
-                  <button class="button secondary" id="sales-action-note" type="button" disabled>Notitie opslaan</button>
-                  <button class="button secondary" id="sales-action-followup" type="button" disabled>Follow-up plannen</button>
                 </div>
                 <div class="sales-workflow-actions sales-safe-lead-actions">
                   <button class="button secondary" id="leadfinder-archive" type="button" disabled>Archiveren</button>
@@ -549,7 +557,7 @@
                 </div>
               </section>
 
-              <details class="lead-analysis-card sales-detail-wide-card" id="lead-website-analysis-card" data-sales-detail-panel="analysis" open>
+              <details class="lead-analysis-card sales-detail-wide-card" id="sales-panel-analysis" role="tabpanel" aria-labelledby="sales-tab-analysis" data-sales-detail-panel="analysis" open>
                 <summary>
                   <span>
                     <strong>Website-analyse</strong>
@@ -20772,11 +20780,25 @@
       }
 
       async function saveSelectedLeadOwnerAssignment() {
-        await saveLeadOwnerAssignmentForLead(
-          selectedLeadFinderLead(),
-          leadfinderElements.ownerAssignmentSelect?.value || "",
-          setLeadOwnerAssignmentMessage
-        );
+        const button = leadfinderElements.ownerAssignmentSave;
+        if (button) {
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          button.textContent = "Opslaan…";
+        }
+        try {
+          await saveLeadOwnerAssignmentForLead(
+            selectedLeadFinderLead(),
+            leadfinderElements.ownerAssignmentSelect?.value || "",
+            setLeadOwnerAssignmentMessage
+          );
+        } finally {
+          if (button) {
+            button.disabled = !selectedLeadFinderId;
+            button.removeAttribute("aria-busy");
+            button.textContent = "Medewerker opslaan";
+          }
+        }
       }
 
       function leadHasOwnershipData(lead = {}) {
@@ -21210,6 +21232,15 @@
         const phone = place?.formatted_phone_number || place?.international_phone_number || lead.phone || "";
         const website = place?.website || lead.websiteUrl || "";
         const mapsUrl = place?.url || lead.googleMapsUrl || meta.googleMapsUrl || (lead.companyName ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([lead.companyName, lead.region].filter(Boolean).join(" "))}` : "");
+        const storedPhotoCandidates = [
+          meta.googlePhotoUrl,
+          lead.googlePhotoUrl,
+          meta.websiteImageUrl,
+          meta.websiteScreenshotUrl,
+          lead.imageUrl,
+          meta.imageUrl,
+          meta.photoUrl,
+        ];
         return {
           name: place?.name || lead.companyName || "Geen lead geselecteerd",
           category,
@@ -21219,13 +21250,53 @@
           mapsUrl,
           rating,
           ratingTotal,
-          photoUrl: googlePhotoUrlFromPlace(place) || meta.googlePhotoUrl || meta.photoUrl || "",
+          photoCandidates: [googlePhotoUrlFromPlace(place), ...storedPhotoCandidates]
+            .map(normalizeSafeImageUrl)
+            .filter((url, index, urls) => url && urls.indexOf(url) === index),
         };
+      }
+
+      function normalizeSafeImageUrl(value = "") {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        try {
+          const url = new URL(raw, window.location.origin);
+          return ["https:", "http:"].includes(url.protocol) ? url.href : "";
+        } catch {
+          return "";
+        }
+      }
+
+      function bindBusinessCoverFallback(target, candidates = []) {
+        const image = target?.querySelector("[data-sales-business-photo]");
+        if (!image || !candidates.length) return;
+        const cover = image.closest(".sales-google-business-cover");
+        let index = 0;
+        const showCandidate = () => {
+          const next = candidates[index++];
+          if (!next) {
+            image.remove();
+            cover?.classList.remove("is-loading");
+            cover?.classList.add("is-brand-fallback");
+            return;
+          }
+          image.src = next;
+        };
+        image.addEventListener("load", () => {
+          cover?.classList.remove("is-loading");
+          cover?.classList.add("is-photo-ready");
+        }, { once: true });
+        image.addEventListener("error", showCandidate);
+        showCandidate();
       }
 
       function renderLeadBusinessPreview(lead) {
         const target = leadfinderElements.businessPreview;
         if (!target) return;
+        const headingFavoriteSlot = target.closest(".sales-lead-summary-card")?.querySelector(".sales-detail-heading-actions");
+        if (headingFavoriteSlot && leadfinderElements.detailFavorite && target.contains(leadfinderElements.detailFavorite)) {
+          headingFavoriteSlot.prepend(leadfinderElements.detailFavorite);
+        }
         if (!lead?.id) {
           target.innerHTML = `
             <div class="sales-business-empty">
@@ -21238,28 +21309,28 @@
         const data = leadGoogleBusinessData(lead);
         const websiteHref = normalizeExternalUrl(data.website);
         const ratingLabel = data.rating ? `${Number(data.rating).toLocaleString("nl-NL")} (${data.ratingTotal || 0})` : "Geen rating";
-        const safePhotoUrl = String(data.photoUrl || "").replace(/'/g, "%27");
+        const score = Math.max(0, Math.min(100, Number(lead.leadScore || 0)));
         target.innerHTML = `
           <article class="sales-google-business-card">
-            <div class="sales-google-business-photo" ${safePhotoUrl ? `style="background-image: linear-gradient(180deg, rgba(2, 10, 20, 0.02), rgba(2, 10, 20, 0.74)), url('${escapeHtml(safePhotoUrl)}');"` : ""}>
-              ${safePhotoUrl ? "" : `<span>${escapeHtml(leadInitials(lead))}</span>`}
-            </div>
-            <div class="sales-google-business-body">
-              <strong>${escapeHtml(data.name)}</strong>
-              <span>${escapeHtml(ratingLabel)} · ${escapeHtml(data.category)}</span>
-              <small>${escapeHtml(data.address || "Adres nog niet bekend")}</small>
-              <div class="sales-google-business-actions">
-                ${data.mapsUrl ? `<a href="${escapeHtml(data.mapsUrl)}" target="_blank" rel="noopener">Route</a>` : `<span>Route</span>`}
-                <button type="button" data-sales-business-action="copy">Delen</button>
-                ${websiteHref ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener">Website</a>` : `<span>Website</span>`}
+            <div class="sales-google-business-cover ${data.photoCandidates.length ? "is-loading" : "is-brand-fallback"}">
+              ${data.photoCandidates.length ? '<img data-sales-business-photo alt="" loading="eager" decoding="async" />' : ""}
+              <div class="sales-google-business-brand" aria-hidden="true"><span>${escapeHtml(leadInitials(lead))}</span></div>
+              <div class="sales-google-business-overlay">
+                <div>
+                  <span class="sales-business-category">${escapeHtml(data.category)}</span>
+                  <strong>${escapeHtml(data.name)}</strong>
+                  <span>${escapeHtml(ratingLabel)} · ${escapeHtml(data.address || "Adres nog niet bekend")}</span>
+                </div>
+                <div class="sales-business-cover-actions">
+                  <div class="lead-score-ring ${scoreClass(score)}" style="--score:${score * 3.6}deg"><strong>${escapeHtml(score)}</strong></div>
+                </div>
               </div>
-              <dl>
-                <div><dt>Telefoon</dt><dd>${escapeHtml(data.phone || "Geen telefoon bekend")}</dd></div>
-                <div><dt>Website</dt><dd>${websiteHref ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener">${escapeHtml(cleanDisplayUrl(websiteHref))}</a>` : "Geen website bekend"}</dd></div>
-              </dl>
             </div>
           </article>
         `;
+        const favoriteSlot = target.querySelector(".sales-business-cover-actions");
+        if (favoriteSlot && leadfinderElements.detailFavorite) favoriteSlot.prepend(leadfinderElements.detailFavorite);
+        bindBusinessCoverFallback(target, data.photoCandidates);
       }
 
       function renderGoogleTransferList(place) {
@@ -23477,6 +23548,7 @@
             const ownerOptions = canAssignOwner ? uniqueSalesEmployeeOptions() : [];
             const currentOwnerValue = employeeOptionFromValue(getLeadOwnerValue(lead))?.value || getLeadOwnerValue(lead);
             const followUpBadge = getFollowUpBadge(lead);
+            const nextAction = getSalesNextAction(lead);
             const score = Math.max(0, Math.min(100, Number(lead.leadScore || 0)));
             const ringStyle = `--score:${score * 3.6}deg`;
             const websiteUrl = normalizeExternalUrl(lead.websiteUrl);
@@ -23497,6 +23569,10 @@
                     <div class="lead-meta-line">
                       <span>${escapeHtml(lead.industry || "Branche onbekend")}</span>
                       <span>${escapeHtml(lead.region || lead.address || "Adres onbekend")}</span>
+                    </div>
+                    <div class="sales-lead-row-facts">
+                      <span><small>Eigenaar</small><strong>${escapeHtml(getLeadOwnerLabel(lead))}</strong></span>
+                      <span><small>Volgende actie</small><strong>${escapeHtml(nextAction.label)}</strong></span>
                     </div>
                     <div class="lead-contact-grid">
                       <a href="${escapeHtml(phoneHref || "#")}" aria-disabled="${phoneHref ? "false" : "true"}"><span aria-hidden="true">☎</span>${escapeHtml(lead.phone || "-")}</a>
@@ -24804,6 +24880,19 @@
             activeSalesDetailTab = button.dataset.salesDetailTab || "overview";
             renderLeadfinderDetail();
           });
+          button.addEventListener("keydown", (event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            const tabs = [...document.querySelectorAll("[data-sales-detail-tab]")];
+            const currentIndex = tabs.indexOf(button);
+            const nextIndex = event.key === "Home"
+              ? 0
+              : event.key === "End"
+                ? tabs.length - 1
+                : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+            event.preventDefault();
+            tabs[nextIndex]?.focus();
+            tabs[nextIndex]?.click();
+          });
         });
         const rememberSalesNoteInput = () => {
           const lead = selectedLeadFinderLead();
@@ -24891,6 +24980,9 @@
         });
         leadfinderElements.detailCallStatus?.addEventListener("change", updateSelectedLeadStatusFromControl);
         leadfinderElements.ownerAssignmentSave?.addEventListener("click", saveSelectedLeadOwnerAssignment);
+        leadfinderElements.ownerAssignmentSelect?.addEventListener("change", () => {
+          setLeadOwnerAssignmentMessage("Nog niet opgeslagen.", "warning");
+        });
         leadfinderElements.businessPreview?.addEventListener("click", async (event) => {
           const action = event.target.closest("[data-sales-business-action]")?.dataset.salesBusinessAction;
           if (action !== "copy") return;
