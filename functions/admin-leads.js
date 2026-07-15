@@ -741,6 +741,14 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
   const hasLastCallOutcome = Object.prototype.hasOwnProperty.call(payload, "lastCallOutcome") || Object.prototype.hasOwnProperty.call(payload, "last_call_outcome") || hasCallDisposition;
   const hasInterestLevel = Object.prototype.hasOwnProperty.call(payload, "interestLevel") || Object.prototype.hasOwnProperty.call(payload, "interest_level");
   const hasPriority = Object.prototype.hasOwnProperty.call(payload, "priority");
+  const hasIsFavorite = Object.prototype.hasOwnProperty.call(payload, "isFavorite") || Object.prototype.hasOwnProperty.call(payload, "is_favorite");
+  const isFavoriteInput = Object.prototype.hasOwnProperty.call(payload, "isFavorite") ? payload.isFavorite : payload.is_favorite;
+  if (hasIsFavorite && typeof isFavoriteInput !== "boolean") {
+    throw Object.assign(new Error("Favorietstatus moet true of false zijn."), { status: 400 });
+  }
+  const isFavorite = hasIsFavorite
+    ? isFavoriteInput
+    : Boolean(options.existingLead?.is_favorite ?? options.existingLead?.isFavorite ?? existingMeta.isFavorite ?? false);
   const pipelineStage = cleanText(payload.pipelineStage || payload.pipeline_stage || options.existingLead?.pipeline_stage || options.existingLead?.pipelineStage || existingMeta.pipelineStage || existingMeta.pipeline_stage || "new").toLowerCase();
   const callDisposition = cleanText(payload.callDisposition || payload.call_disposition || options.existingLead?.call_disposition || options.existingLead?.callDisposition || existingMeta.callDisposition || existingMeta.call_disposition || "not_called").toLowerCase();
   const lastCallOutcome = cleanText(payload.lastCallOutcome || payload.last_call_outcome || (hasCallDisposition ? callOutcomeByDisposition.get(callDisposition) : "") || options.existingLead?.last_call_outcome || options.existingLead?.lastCallOutcome || existingMeta.lastCallOutcome || existingMeta.last_call_outcome).toLowerCase();
@@ -768,6 +776,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     last_call_outcome: lastCallOutcome || null,
     interest_level: interestLevel,
     priority,
+    is_favorite: isFavorite,
     notes: cleanText(payload.notes || payload.message),
     assigned_to: assignment.id,
     assigned_user_id: firstUuid(assignment.userId, assignment.id),
@@ -806,6 +815,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       lastCallOutcome,
       interestLevel,
       priority,
+      isFavorite,
       region: cleanText(payload.region),
       industry: cleanText(payload.industry),
       websiteStatus: cleanText(payload.websiteStatus),
@@ -895,6 +905,10 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     if (!hasLastCallOutcome) delete record.last_call_outcome;
     if (!hasInterestLevel) delete record.interest_level;
     if (!hasPriority) delete record.priority;
+    if (!hasIsFavorite) {
+      delete record.is_favorite;
+      delete record.metadata.isFavorite;
+    }
     const hasAssignment = leadAssignmentInput(payload) || Boolean(assignment.id || assignment.email || assignment.name);
     Object.keys(record).forEach((key) => {
       if (record[key] === "" && !["email", "phone", "website", "notes"].includes(key)) delete record[key];

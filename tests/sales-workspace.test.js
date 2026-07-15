@@ -6,16 +6,70 @@ const path = require("node:path");
 const model = require("../public/src/sales-workspace-model");
 const leadsApi = require("../functions/admin-leads");
 const salesHtml = fs.readFileSync(path.resolve(__dirname, "../public/admin-sales.html"), "utf8");
+const salesCss = fs.readFileSync(path.resolve(__dirname, "../public/admin/styles/sales-workspace.css"), "utf8");
 const apiSource = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const migration = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/026_sales_workspace_normalized_fields.sql"), "utf8");
 
 const now = new Date("2026-07-15T12:00:00+02:00");
 const fixtures = [
-  { id: "1", companyName: "SolarFast", region: "Breda", industry: "Zonnepanelen", leadStatus: "new", leadScore: 92, nextActionAt: "2026-07-15T10:30:00+02:00", assignedUserEmail: "lisanne@example.test", acquisitionChannel: "outbound_sales" },
+  { id: "1", companyName: "SolarFast", region: "Breda", industry: "Zonnepanelen", leadStatus: "new", leadScore: 92, interestLevel: "hot", isFavorite: true, nextActionAt: "2026-07-15T10:30:00+02:00", assignedUserEmail: "lisanne@example.test", acquisitionChannel: "outbound_sales" },
   { id: "2", companyName: "Studio Noord", leadStatus: "follow_up", lastCallOutcome: "voicemail_left", leadScore: 64, nextActionAt: "2026-07-16T09:00:00+02:00" },
   { id: "3", companyName: "Bouwkracht", pipelineStage: "awaiting_payment", callDisposition: "callback", interestLevel: "interested", priority: "high", nextActionAt: "2026-07-14T09:00:00+02:00" },
   { id: "4", companyName: "Klant BV", pipelineStage: "customer", callDisposition: "called", interestLevel: "hot", priority: "normal" },
 ];
+
+const requiredSmartViews = [
+  ["all", "Alle leads"], ["today", "Vandaag actie"], ["new", "Nieuwe leads"],
+  ["interested", "Geïnteresseerd"], ["callback", "Terugbellen"], ["voicemail", "Voicemails"],
+  ["not_interested", "Niet geïnteresseerd"], ["demos", "Demo’s"], ["payment", "Wacht op betaling"],
+  ["won", "Gewonnen"], ["lost", "Verloren"], ["archived", "Gearchiveerd"],
+];
+
+test("alle vereiste slimme weergaven hebben exact het Nederlandse label", () => {
+  const views = new Map(model.SMART_VIEWS.map(({ value, label }) => [value, label]));
+  requiredSmartViews.forEach(([value, label]) => assert.equal(views.get(value), label));
+});
+
+test("canonieke interesse-, winst-, verlies- en archiefweergaven blijven gescheiden", () => {
+  const interested = { pipelineStage: "interested", interestLevel: "interested" };
+  const archivedInterested = { ...interested, archivedAt: "2026-07-15T10:00:00Z" };
+  const lostInterested = { pipelineStage: "closed", interestLevel: "hot", lostAt: "2026-07-15T10:00:00Z" };
+  assert.equal(model.matchesSmartView(interested, "interested", now), true);
+  assert.equal(model.matchesSmartView(archivedInterested, "interested", now), false);
+  assert.equal(model.matchesSmartView(lostInterested, "interested", now), false);
+  assert.equal(model.matchesSmartView({ interestLevel: "not_interested" }, "not_interested", now), true);
+  assert.equal(model.matchesSmartView({ pipelineStage: "customer" }, "won", now), true);
+  assert.equal(model.matchesSmartView({ pipelineStage: "approved", leadStatus: "won", wonAt: "2026-07-15T10:00:00Z" }, "won", now), true);
+  assert.equal(model.matchesSmartView({ pipelineStage: "closed" }, "lost", now), false);
+  assert.equal(model.matchesSmartView({ pipelineStage: "closed", lostReason: "budget" }, "lost", now), true);
+  assert.equal(model.matchesSmartView({ archivedAt: "2026-07-15T10:00:00Z" }, "archived", now), true);
+});
+
+test("favorietenfilter combineert met een slimme weergave", () => {
+  assert.equal(model.matchesFilters(fixtures[0], { favoritesOnly: true, smartView: "interested" }, now), true);
+  assert.equal(model.matchesFilters(fixtures[2], { favoritesOnly: true, smartView: "interested" }, now), false);
+  assert.equal(model.matchesFilters({ ...fixtures[2], isFavorite: true }, { favoritesOnly: true, smartView: "interested" }, now), true);
+});
+
+test("optimistische favoriettoggle bevestigt opslag en rolt terug bij API-fout", async () => {
+  const lead = { id: "favorite-1", isFavorite: false };
+  const states = [];
+  const result = await model.toggleFavoriteOptimistically(lead, async (isFavorite) => ({ isFavorite }), (isFavorite) => states.push(isFavorite));
+  assert.equal(result.isFavorite, true);
+  assert.deepEqual(states, [true]);
+
+  const rollbackStates = [];
+  await assert.rejects(
+    () => model.toggleFavoriteOptimistically({ ...lead }, async () => { throw new Error("API offline"); }, (isFavorite) => rollbackStates.push(isFavorite)),
+    /API offline/,
+  );
+  assert.deepEqual(rollbackStates, [true, false]);
+});
+
+test("alleen bestaande mutatierollen krijgen een favorietschrijfknop", () => {
+  ["super_admin", "admin", "sales_manager", "sales_partner"].forEach((role) => assert.equal(model.canToggleFavorite(role), true));
+  ["support", "designer", "developer", "authenticated", ""].forEach((role) => assert.equal(model.canToggleFavorite(role), false));
+});
 
 test("slimme weergaven zijn overlappend en hebben live aantallen", () => {
   const counts = model.smartViewCounts(fixtures, now);
@@ -87,6 +141,37 @@ test("belstatus schrijft het bestaande canonieke contactresultaat en geen parall
   assert.equal(record.metadata.lastCallOutcome, "voicemail_left");
   assert.equal(Object.hasOwn(record, "call_disposition"), false);
   assert.equal(leadsApi._test.mapLead({ last_call_outcome: "callback_requested", metadata: {} }).callDisposition, "callback");
+});
+
+test("favoriet schrijft alleen de genormaliseerde allowlistkolom en blijft na reload gemapt", () => {
+  const record = leadsApi._test.leadPayload({ isFavorite: true }, { role: "admin" }, { update: true, existingLead: { metadata: {} } });
+  assert.equal(record.is_favorite, true);
+  assert.equal(record.metadata.isFavorite, true);
+  assert.equal(leadsApi._test.mapLead({ is_favorite: true, metadata: {} }).isFavorite, true);
+  assert.throws(
+    () => leadsApi._test.leadPayload({ isFavorite: "true" }, { role: "admin" }, { update: true, existingLead: { metadata: {} } }),
+    /Favorietstatus moet true of false zijn/,
+  );
+});
+
+test("lijst, detail en favorietenfilter delen dezelfde status en veilige API-route", () => {
+  assert.match(salesHtml, /data-lead-favorite/);
+  assert.match(salesHtml, /id="sales-lead-favorite"/);
+  assert.match(salesHtml, /id="sales-filter-favorites"/);
+  assert.match(salesHtml, /data-sales-remove-filter="favorites"/);
+  assert.match(salesHtml, /leadApiRequest\("PATCH", \{ id: lead\.id, isFavorite \}/);
+  assert.match(salesHtml, /favoriteLeadWriteIds\.has\(lead\.id\)/);
+  assert.match(salesHtml, /favoriteButton[\s\S]+event\.stopPropagation\(\)/);
+  assert.doesNotMatch(salesHtml, /queueLeadOffline\("update", \{ id: lead\.id, isFavorite/);
+});
+
+test("assignment, timeline, filters, bulkacties en responsive drawer blijven intact", () => {
+  assert.match(salesHtml, /renderLeadOwnerAssignment\(lead\)/);
+  assert.match(salesHtml, /renderSalesTimeline/);
+  assert.match(salesHtml, /sales-workspace-filter-toggle/);
+  assert.match(salesHtml, /applySalesWorkspaceBulkAction/);
+  assert.match(salesCss, /@media \(max-width: 1050px\)[\s\S]+translateX\(105%\)/);
+  assert.match(salesCss, /is-lead-detail-open[\s\S]+translateX\(0\)/);
 });
 
 test("terugbelactie vereist datum en tijd in de beveiligde API", () => {

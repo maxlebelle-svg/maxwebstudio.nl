@@ -387,7 +387,10 @@
                     <strong id="sales-lead-summary-title">Geen lead geselecteerd</strong>
                     <small id="leadfinder-detail-subtitle">Selecteer een lead om opvolging te beheren.</small>
                   </div>
-                  <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
+                  <div class="sales-detail-heading-actions">
+                    <button class="sales-favorite-button sales-favorite-button-detail" id="sales-lead-favorite" type="button" aria-label="Geen lead geselecteerd" aria-pressed="false" disabled><span aria-hidden="true">☆</span></button>
+                    <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
+                  </div>
                 </div>
                 <div class="settings-status-list sales-detail-compact-list" id="leadfinder-detail-list"></div>
                 <div class="sales-lead-business-preview" id="sales-lead-business-preview" aria-label="Google Maps bedrijfskaart"></div>
@@ -19496,6 +19499,7 @@
         detailTitle: document.getElementById("sales-lead-summary-title"),
         detailSubtitle: document.getElementById("leadfinder-detail-subtitle"),
         detailState: document.getElementById("leadfinder-detail-state"),
+        detailFavorite: document.getElementById("sales-lead-favorite"),
         detailList: document.getElementById("leadfinder-detail-list"),
         businessPreview: document.getElementById("sales-lead-business-preview"),
         ownerAssignment: document.getElementById("sales-lead-owner-assignment"),
@@ -19584,6 +19588,8 @@
       const salesWorkspacePageSize = 25;
       let salesWorkspaceFilterOpen = false;
       const selectedSalesLeadIds = new Set();
+      const favoriteLeadWriteIds = new Set();
+      const favoriteLeadErrorIds = new Set();
       const leadfinderSortStorageKey = "maxwebstudioLeadfinderSortMode";
       const leadfinderSortModes = ["newest", "oldest", "updated_desc", "score_desc", "score_asc", "name_asc"];
       let leadfinderSortMode = localStorage.getItem(leadfinderSortStorageKey) || "newest";
@@ -19668,6 +19674,7 @@
               <button class="button secondary sales-sort-button" id="sales-workspace-sort" type="button">Sorteren</button>
             </div>
             <div class="sales-workspace-filter-panel" id="sales-workspace-filter-panel" hidden></div>
+            <div class="sales-workspace-filter-chips" id="sales-workspace-filter-chips" hidden aria-label="Actieve filters"></div>
             <div class="sales-workspace-results"><strong id="sales-workspace-result-count">0 leads</strong><span id="sales-workspace-active-view">Alle leads</span></div>
             <div class="sales-workspace-bulk" id="sales-workspace-bulk" hidden></div>
             <div id="sales-workspace-list-slot"></div>
@@ -19692,6 +19699,7 @@
           <label for="sales-filter-priority">Prioriteit<select id="sales-filter-priority"><option value="">Alle prioriteiten</option><option value="high">Hoog</option><option value="normal">Normaal</option><option value="low">Laag</option></select></label>
           <label for="sales-filter-source">Bron<input id="sales-filter-source" type="search" placeholder="Bijv. Google Maps" /></label>
           <label for="sales-filter-next-action">Volgende actie<select id="sales-filter-next-action"><option value="">Alle acties</option><option value="today">Vandaag of achterstallig</option><option value="planned">Actie gepland</option></select></label>
+          <label class="sales-favorite-filter" for="sales-filter-favorites"><input id="sales-filter-favorites" type="checkbox" /> <span>Alleen favorieten</span></label>
           <button class="button secondary" id="sales-workspace-filter-clear" type="button">Filters wissen</button>
         `);
         shell.querySelector("#sales-workspace-filter-panel").append(filters);
@@ -19736,8 +19744,19 @@
         if (activeViewLabel) activeViewLabel.textContent = activeView?.label || "Alle leads";
         const resultCount = document.getElementById("sales-workspace-result-count");
         if (resultCount && pagination) resultCount.textContent = `${pagination.total} lead${pagination.total === 1 ? "" : "s"}`;
+        renderSalesWorkspaceFilterChips();
         renderSalesWorkspaceBulkBar();
         renderSalesWorkspacePagination(pagination);
+      }
+
+      function renderSalesWorkspaceFilterChips() {
+        const target = document.getElementById("sales-workspace-filter-chips");
+        if (!target) return;
+        const favoritesOnly = Boolean(document.getElementById("sales-filter-favorites")?.checked);
+        target.hidden = !favoritesOnly;
+        target.innerHTML = favoritesOnly
+          ? '<button class="sales-filter-chip" type="button" data-sales-remove-filter="favorites"><span>Alleen favorieten</span><b aria-hidden="true">×</b><span class="sr-only">Favorietenfilter verwijderen</span></button>'
+          : "";
       }
 
       function renderSalesWorkspaceBulkBar() {
@@ -22843,12 +22862,14 @@
         const region = String(leadfinderElements.filterRegion?.value || "").trim().toLowerCase();
         const minScore = Number(leadfinderElements.filterScore?.value || 0);
         const normalizedFilters = {
+          smartView: activeSalesWorkspaceView,
           pipelineStage: document.getElementById("sales-filter-pipeline")?.value || "",
           callDisposition: document.getElementById("sales-filter-call")?.value || "",
           interestLevel: document.getElementById("sales-filter-interest")?.value || "",
           priority: document.getElementById("sales-filter-priority")?.value || "",
           source: document.getElementById("sales-filter-source")?.value || "",
           nextAction: document.getElementById("sales-filter-next-action")?.value || "",
+          favoritesOnly: Boolean(document.getElementById("sales-filter-favorites")?.checked),
         };
 
         const baseLeads = getLeadfinderLeads();
@@ -22871,7 +22892,6 @@
           ].join(" ").toLowerCase();
           return (!query || haystack.includes(query))
             && leadMatchesQuickFilter(lead)
-            && (!window.MaxSalesWorkspaceModel || window.MaxSalesWorkspaceModel.matchesSmartView(lead, activeSalesWorkspaceView))
             && (!websiteStatus || lead.websiteStatus === websiteStatus)
             && (!callStatus || lead.callStatus === callStatus)
             && (!owner || getEmployeeFilterTokens(owner).some((token) => getLeadOwnerFilterValues(lead).has(token)))
@@ -22892,13 +22912,73 @@
           uniqueLeadOwnerEmails: uniqueLeadOwnerEmails(baseLeads),
           detectedEmployees: [...leadfinderEmployeeFilterTokenMap.values()].filter((option, index, all) => all.findIndex((item) => item.value === option.value) === index).map((option) => option.label),
           dataSource: leadfinderSourceStatus?.dataLayer || "local",
-          filters: { query, websiteStatus, callStatus, owner, industry, region, minScore, quickFilter: activeLeadfinderQuickFilter?.type || "" },
+          filters: { query, websiteStatus, callStatus, owner, industry, region, minScore, ...normalizedFilters, quickFilter: activeLeadfinderQuickFilter?.type || "" },
         });
         return sortLeadfinderLeads(filteredLeads);
       }
 
       function selectedLeadFinderLead() {
         return getLeadfinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
+      }
+
+      function canToggleLeadFavorite(lead = {}) {
+        return Boolean(
+          lead?.id
+          && isProductionLead(lead)
+          && window.MaxSalesWorkspaceModel?.canToggleFavorite(getLeadfinderUserContext().role),
+        );
+      }
+
+      function favoriteButtonMarkup(lead = {}, context = "list") {
+        const favorite = Boolean(lead.isFavorite);
+        const loading = favoriteLeadWriteIds.has(lead.id);
+        const failed = favoriteLeadErrorIds.has(lead.id);
+        const writable = canToggleLeadFavorite(lead);
+        const name = lead.companyName || lead.contactName || "deze lead";
+        const label = writable
+          ? `${favorite ? "Verwijder" : "Markeer"} ${name} ${favorite ? "uit" : "als"} favoriet${favorite ? "en" : ""}`
+          : `${name} is ${favorite ? "wel" : "niet"} favoriet; alleen-lezen`;
+        return `<button class="sales-favorite-button sales-favorite-button-${escapeHtml(context)} ${favorite ? "is-favorite" : ""} ${loading ? "is-loading" : ""} ${failed ? "has-error" : ""}" type="button" data-lead-favorite="${escapeHtml(lead.id)}" aria-label="${escapeHtml(label)}" aria-pressed="${favorite}" ${loading ? 'aria-busy="true"' : ""} ${writable && !loading ? "" : "disabled"}><span aria-hidden="true">${favorite ? "★" : "☆"}</span></button>`;
+      }
+
+      function applyFavoriteState(leadId, isFavorite) {
+        const lead = leadfinderDataLayerLeads.find((item) => item.id === leadId) || getLeadfinderLeads().find((item) => item.id === leadId);
+        if (!lead) return;
+        lead.isFavorite = Boolean(isFavorite);
+        if (lead.metadata && typeof lead.metadata === "object") lead.metadata.isFavorite = Boolean(isFavorite);
+      }
+
+      async function toggleLeadFavorite(lead) {
+        if (!canToggleLeadFavorite(lead) || favoriteLeadWriteIds.has(lead.id)) return;
+        const model = window.MaxSalesWorkspaceModel;
+        favoriteLeadWriteIds.add(lead.id);
+        favoriteLeadErrorIds.delete(lead.id);
+        renderLeadfinderList();
+        try {
+          await model.toggleFavoriteOptimistically(
+            lead,
+            async (isFavorite) => {
+              const result = await leadApiRequest("PATCH", { id: lead.id, isFavorite }, { id: lead.id });
+              return result.lead || { isFavorite };
+            },
+            (isFavorite) => {
+              applyFavoriteState(lead.id, isFavorite);
+              renderLeadfinderList();
+            },
+          );
+          setLeadfinderMessage(Boolean(lead.isFavorite) ? "Lead toegevoegd aan favorieten." : "Lead verwijderd uit favorieten.", "success");
+        } catch (error) {
+          favoriteLeadErrorIds.add(lead.id);
+          setLeadfinderMessage(error.message || "Favoriet kon niet worden opgeslagen; de vorige status is hersteld.", "error");
+        } finally {
+          favoriteLeadWriteIds.delete(lead.id);
+          renderLeadfinderList();
+        }
+        if (!favoriteLeadErrorIds.has(lead.id)) {
+          await refreshLeads({ keepSelection: true }).catch(() => {
+            setLeadfinderMessage("Favoriet is centraal opgeslagen; opnieuw laden volgt bij de volgende refresh.", "warning");
+          });
+        }
       }
 
       function setLeadfinderDetailMode(open = Boolean(selectedLeadFinderId)) {
@@ -23395,6 +23475,7 @@
                   <div class="lead-identity">
                     <div class="lead-title-row">
                       <h3>${escapeHtml(lead.companyName || "Naamloos bedrijf")}</h3>
+                      ${favoriteButtonMarkup(lead)}
                       <mark class="status-badge ${leadStatusPillClass(lead.callStatus)}">${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus))}</mark>
                     </div>
                     <div class="lead-meta-line">
@@ -23481,6 +23562,24 @@
         }
         if (leadfinderElements.detailState) {
           leadfinderElements.detailState.textContent = hasLead ? getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus) : "Niet geselecteerd";
+        }
+        if (leadfinderElements.detailFavorite) {
+          const favorite = Boolean(lead?.isFavorite);
+          const loading = Boolean(lead && favoriteLeadWriteIds.has(lead.id));
+          const failed = Boolean(lead && favoriteLeadErrorIds.has(lead.id));
+          const writable = Boolean(lead && canToggleLeadFavorite(lead));
+          const name = lead?.companyName || lead?.contactName || "deze lead";
+          leadfinderElements.detailFavorite.className = `sales-favorite-button sales-favorite-button-detail ${favorite ? "is-favorite" : ""} ${loading ? "is-loading" : ""} ${failed ? "has-error" : ""}`;
+          leadfinderElements.detailFavorite.querySelector("span").textContent = favorite ? "★" : "☆";
+          leadfinderElements.detailFavorite.setAttribute("aria-pressed", String(favorite));
+          leadfinderElements.detailFavorite.setAttribute("aria-label", hasLead
+            ? writable
+              ? `${favorite ? "Verwijder" : "Markeer"} ${name} ${favorite ? "uit favorieten" : "als favoriet"}`
+              : `${name} is ${favorite ? "wel" : "niet"} favoriet; alleen-lezen`
+            : "Geen lead geselecteerd");
+          leadfinderElements.detailFavorite.disabled = !writable || loading;
+          if (loading) leadfinderElements.detailFavorite.setAttribute("aria-busy", "true");
+          else leadfinderElements.detailFavorite.removeAttribute("aria-busy");
         }
         if (leadfinderElements.detailList) {
           renderLeadDetailRows(leadfinderElements.detailList, hasLead ? [
@@ -24154,6 +24253,14 @@
       }
 
       async function handleLeadfinderListClick(event) {
+        const favoriteButton = event.target.closest("[data-lead-favorite]");
+        if (favoriteButton) {
+          event.preventDefault();
+          event.stopPropagation();
+          const lead = getLeadfinderLeads().find((item) => item.id === favoriteButton.dataset.leadFavorite);
+          if (lead) await toggleLeadFavorite(lead);
+          return;
+        }
         if (event.target.closest("[data-sales-select-id]")) return;
         if (event.target.closest("[data-lead-owner-card-select]")) {
           event.stopPropagation();
@@ -24580,6 +24687,12 @@
                 });
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
         leadfinderElements.list.addEventListener("change", handleLeadfinderListChange);
+        leadfinderElements.detailFavorite?.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const lead = selectedLeadFinderLead();
+          if (lead) toggleLeadFavorite(lead);
+        });
         leadfinderElements.list.addEventListener("keydown", (event) => {
           const row = event.target.closest("[data-leadfinder-id]");
           if (row && ["Enter", " "].includes(event.key)) {
@@ -24624,8 +24737,18 @@
             toggle?.setAttribute("aria-expanded", String(salesWorkspaceFilterOpen));
           }
           if (event.target.closest("#sales-workspace-filter-clear")) {
-            document.querySelectorAll("#sales-workspace-filter-panel input, #sales-workspace-filter-panel select").forEach((control) => { control.value = ""; });
+            document.querySelectorAll("#sales-workspace-filter-panel input, #sales-workspace-filter-panel select").forEach((control) => {
+              if (control instanceof HTMLInputElement && control.type === "checkbox") control.checked = false;
+              else control.value = "";
+            });
             activeSalesWorkspaceView = "all";
+            salesWorkspacePage = 1;
+            renderLeadfinderList();
+          }
+          const removableFilter = event.target.closest("[data-sales-remove-filter]");
+          if (removableFilter?.dataset.salesRemoveFilter === "favorites") {
+            const favoriteFilter = document.getElementById("sales-filter-favorites");
+            if (favoriteFilter) favoriteFilter.checked = false;
             salesWorkspacePage = 1;
             renderLeadfinderList();
           }
