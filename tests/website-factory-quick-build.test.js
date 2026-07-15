@@ -5,7 +5,7 @@ const path = require("node:path");
 
 const { normalizeWebsiteInput } = require("../functions/_website-input");
 const { buildWebsitePackage, runQualityCheck } = require("../functions/_website-factory-core");
-const { createBuildJob } = require("../functions/website-factory");
+const { createBuildJob, runBuildJob } = require("../functions/website-factory");
 
 const root = path.join(__dirname, "..");
 const factoryHtml = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
@@ -110,11 +110,114 @@ test("retry reuses an active build job without creating a duplicate", async () =
   }
 });
 
+test("FatTrek production 504 marks the same build retryable without resending its 8 MB package", async () => {
+  const journeyId = "9a735e10-18e7-4b83-8cc7-e2518fa7959d";
+  const jobId = "d9d8944c-37e2-4991-ae06-89348b17fa59";
+  const activeJob = {
+    id: jobId,
+    demo_journey_id: journeyId,
+    status: "quality_check",
+    current_step: "run_quality_check",
+    progress: 70,
+    preview_version: 1,
+    build_logs: [{ step: "quality_check", message: "Quality checker gestart." }],
+  };
+  const journey = {
+    id: journeyId,
+    business_name: "FatTrek",
+    website_url: "https://fattrek.nl",
+    generated_briefing: "Websiteplan - FatTrek\nBranche: outdoor en reizen\nPlaats: Almere",
+    created_by: "admin-id",
+  };
+  const writes = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (method === "GET" && String(url).includes("website_build_jobs")) return mockJson([activeJob]);
+    if (method === "GET" && String(url).includes("demo_journeys")) return mockJson([journey]);
+    if (method === "GET" && String(url).includes("website_preview_versions")) return mockJson([]);
+    if (method === "PATCH" && String(url).includes("website_build_jobs")) {
+      writes.push(body);
+      if (body.status === "deploying") throw Object.assign(new Error("timeout"), { name: "AbortError" });
+      return mockJson(null, 204);
+    }
+    throw new Error(`Unexpected ${method} ${url}`);
+  };
+  try {
+    await assert.rejects(
+      runBuildJob({
+        supabaseUrl: "https://example.supabase.co",
+        serviceRoleKey: "service-role",
+        admin: { id: "admin-id", role: "super_admin" },
+        requestId: "01KXKYGWQGP0X4N6EQ9H4379SA",
+      }, { jobId, generatedBriefing: journey.generated_briefing }),
+      (error) => error.code === "UPSTREAM_TIMEOUT" && error.phase === "patch_build_job_deploying",
+    );
+    const deploying = writes.find((record) => record.status === "deploying");
+    const retryable = writes.find((record) => record.status === "retryable");
+    assert.ok(deploying);
+    assert.equal(Object.hasOwn(deploying, "generated_package"), false);
+    assert.equal(retryable.current_step, "patch_build_job_deploying");
+    assert.match(retryable.error_message, /veilig opnieuw/);
+    assert.equal(writes.filter((record) => record.status === "retryable").length, 1);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("retry restores an already stored preview version without duplicate inserts", async () => {
+  const journeyId = "9a735e10-18e7-4b83-8cc7-e2518fa7959d";
+  const jobId = "d9d8944c-37e2-4991-ae06-89348b17fa59";
+  const versionId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const job = { id: jobId, demo_journey_id: journeyId, status: "retryable", current_step: "create_preview_version", progress: 90, preview_version: 1, build_logs: [] };
+  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "FatTrek briefing", created_by: "admin-id" };
+  const version = { id: versionId, demo_journey_id: journeyId, build_job_id: jobId, version: 1, preview_url: "/.netlify/functions/demo-preview?id=1", preview_token: "safe-token", preview_score: 96, is_active: true, status: "internal" };
+  const methods = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const method = options.method || "GET";
+    methods.push(method);
+    if (method === "GET" && String(url).includes("website_build_jobs")) return mockJson([job]);
+    if (method === "GET" && String(url).includes("website_preview_versions")) return mockJson([version]);
+    if (method === "GET" && String(url).includes("demo_journeys")) return mockJson([journey]);
+    if (method === "PATCH" && String(url).includes("website_build_jobs")) return mockJson(null, 204);
+    if (method === "PATCH" && String(url).includes("demo_journeys")) return mockJson([{ ...journey, preview_url: version.preview_url, demo_status: "interne_preview_klaar" }]);
+    throw new Error(`Unexpected ${method} ${url}`);
+  };
+  try {
+    const result = await runBuildJob({
+      supabaseUrl: "https://example.supabase.co",
+      serviceRoleKey: "service-role",
+      admin: { id: "admin-id", role: "super_admin" },
+    }, { jobId });
+    assert.equal(result.recovered, true);
+    assert.equal(result.previewVersion.id, versionId);
+    assert.equal(result.job.status, "completed");
+    assert.equal(methods.includes("POST"), false);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+function mockJson(value, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => value == null ? "" : JSON.stringify(value),
+  };
+}
+
 test("frontend keeps concrete backend code, phase and request id visible", () => {
   assert.match(factoryHtml, /code === "UPSTREAM_TIMEOUT"/);
   assert.match(factoryHtml, /Fase: \$\{phase\}/);
   assert.match(factoryHtml, /Request-id: \$\{requestId\}/);
   assert.match(demoBackend, /warnings: \[websiteInput\.warning\]\.filter\(Boolean\)/);
+  assert.match(demoBackend, /requestId: cleanText\(requestId\)/);
+  assert.match(factoryHtml, /id="factory-quick-retry"[^>]*>Opnieuw proberen/);
+  assert.match(factoryHtml, /response\.status === 504 \? "UPSTREAM_TIMEOUT"/);
+  assert.match(factoryHtml, /replace\(\/\\s\*Request-id:/);
+  assert.match(factoryHtml, /retryable: "Opnieuw proberen"/);
 });
 
 test("Phase 2A selection mode remains wired and isolated", () => {

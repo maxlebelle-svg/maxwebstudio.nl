@@ -33,7 +33,11 @@ const BUILD_JOB_SUMMARY_FIELDS = [
   "preview_version", "preview_url", "preview_token", "preview_score", "build_logs", "error_message",
   "started_at", "finished_at", "created_by", "created_at",
 ].join(",");
-const ACTIVE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying"]);
+const PREVIEW_RECOVERY_FIELDS = [
+  "id", "demo_journey_id", "build_job_id", "customer_id", "project_id", "website_id", "version", "title",
+  "preview_url", "preview_token", "preview_score", "quality_report", "is_active", "status", "created_by", "created_at",
+].join(",");
+const RESUMABLE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "retryable"]);
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -785,7 +789,7 @@ async function createBuildJob(context, payload = {}) {
     readBuildJobSummaries(context, { demoJourneyId, limit: 25 }),
     readPreviewVersionSummaries(context, demoJourneyId),
   ]);
-  const activeJob = jobs.find((item) => ACTIVE_BUILD_STATUSES.has(item.status));
+  const activeJob = jobs.find((item) => RESUMABLE_BUILD_STATUSES.has(item.status));
   if (activeJob) return { job: activeJob, journey: mapJourney(journey), reusedExisting: true };
   const previewVersion = nextPreviewVersion(previewVersions, jobs);
   const now = new Date().toISOString();
@@ -815,6 +819,10 @@ async function runBuildJob(context, payload = {}) {
       : await createBuildJob(context, payload);
     job = setup.job;
     journey = setup.journey;
+    const persistedPreview = job?.id ? await readPreviewVersionByBuildJobId(context, job.id) : null;
+    if (persistedPreview?.id) {
+      return recoverBuildFromPreview(context, { job, journey, previewVersion: persistedPreview });
+    }
     phase = "validate_journey";
     if (!journey?.id) {
       const error = new Error("Demo-klantreis voor build job ontbreekt.");
@@ -822,9 +830,12 @@ async function runBuildJob(context, payload = {}) {
       throw error;
     }
     assertCanSeeJourney({ id: journey.id, created_by: journey.createdBy, assigned_to: journey.assignedTo, updated_by: journey.updatedBy }, context.admin);
-    const logs = buildLogs(job.buildLogs, { step: "briefing", message: "Briefing gevalideerd." });
-    phase = "patch_build_job_briefing";
-    await patchBuildJob(context, job.id, { status: "briefing", current_step: "briefing", progress: 20, build_logs: logs });
+    const resumeAfterPackage = isPackageResumePoint(job);
+    const logs = buildLogs(job.buildLogs, { step: "briefing", message: resumeAfterPackage ? "Bestaande build wordt veilig hervat." : "Briefing gevalideerd." });
+    if (!resumeAfterPackage) {
+      phase = "patch_build_job_briefing";
+      await patchBuildJob(context, job.id, { status: "briefing", current_step: "briefing", progress: 20, build_logs: logs });
+    }
 
     const briefing = cleanText(payload.generatedBriefing || payload.generated_briefing || journey.generatedBriefing);
     if (!briefing) {
@@ -843,8 +854,10 @@ async function runBuildJob(context, payload = {}) {
       newPackage: packageType,
       previewVersion: job.previewVersion,
     });
-    phase = "patch_build_job_building";
-    await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
+    if (!resumeAfterPackage) {
+      phase = "patch_build_job_building";
+      await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
+    }
     phase = "generate_website_package";
     const generatedPackage = buildWebsitePackage({
       journey: {
@@ -861,8 +874,10 @@ async function runBuildJob(context, payload = {}) {
     });
 
     const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
-    phase = "patch_build_job_quality_check";
-    await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, generated_package: generatedPackage, build_logs: qualityLogs });
+    if (!resumeAfterPackage) {
+      phase = "patch_build_job_quality_check";
+      await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, generated_package: generatedPackage, build_logs: qualityLogs });
+    }
     phase = "run_quality_check";
     const qualityReport = runQualityCheck({ generatedPackage, journey });
     if (!qualityReport.passed) {
@@ -872,7 +887,6 @@ async function runBuildJob(context, payload = {}) {
         progress: 85,
         preview_score: qualityReport.score,
         quality_report: qualityReport,
-        generated_package: generatedPackage,
         error_message: qualityReport.summary,
         finished_at: new Date().toISOString(),
         build_logs: buildLogs(qualityLogs, { step: "quality_failed", message: qualityReport.summary }),
@@ -892,7 +906,6 @@ async function runBuildJob(context, payload = {}) {
       preview_token: token,
       preview_score: qualityReport.score,
       quality_report: qualityReport,
-      generated_package: generatedPackage,
       build_logs: buildLogs(qualityLogs, { step: "deploying", message: "Interne previewversie wordt opgeslagen." }),
     });
 
@@ -936,6 +949,7 @@ async function runBuildJob(context, payload = {}) {
       generatedPackage,
       packageType: generatedPackage.packageType,
       status: "interne_preview_klaar",
+      persistPackage: false,
     });
     const latestZipFilename = zipFilenameFor({
       businessName: updatedJourney.businessName || journey.businessName,
@@ -943,7 +957,7 @@ async function runBuildJob(context, payload = {}) {
       version: job.previewVersion,
     });
     phase = "upsert_project_workspace";
-    await upsertProjectWorkspace(context, {
+    await runOptionalPreviewWrite("upsert_project_workspace", () => upsertProjectWorkspace(context, {
       leadId: updatedJourney.leadId || journey.leadId,
       customerId: updatedJourney.customerId || journey.customerId,
       demoJourneyId: updatedJourney.id || journey.id,
@@ -954,15 +968,15 @@ async function runBuildJob(context, payload = {}) {
       latestZipFilename,
       updatedBy: context.admin.id,
       createdBy: context.admin.id,
-    });
+    }));
     phase = "create_preview_event";
-    await createJourneyEvent(context, {
+    await runOptionalPreviewWrite("create_preview_event", () => createJourneyEvent(context, {
       demoJourneyId: journey.id,
       type: "preview",
       title: "Preview klaar",
       description: `Interne preview V${job.previewVersion} staat klaar voor controle.`,
       visible: false,
-    });
+    }));
     return {
       job: normalizeBuildJob({
         ...jobRecord(job),
@@ -984,7 +998,95 @@ async function runBuildJob(context, payload = {}) {
     error.demoJourneyId = error.demoJourneyId || journey?.id || cleanText(payload.demoJourneyId || payload.demo_journey_id);
     error.leadId = error.leadId || journey?.leadId || cleanText(payload.leadId || payload.lead_id);
     error.packageType = error.packageType || normalizePackageType(payload.packageType || payload.package_type || journey?.packageType);
+    if (job?.id && journey?.id) {
+      const persistedPreview = await readPreviewVersionByBuildJobId(context, job.id).catch(() => null);
+      if (persistedPreview?.id) {
+        return recoverBuildFromPreview(context, { job, journey, previewVersion: persistedPreview });
+      }
+      await markInterruptedBuild(context, job, error, phase);
+    }
     throw error;
+  }
+}
+
+function isPackageResumePoint(job = {}) {
+  if (!["quality_check", "deploying", "retryable"].includes(cleanText(job.status))) return false;
+  return /quality|deploy|preview_version|patch_build_job_deploying/i.test(cleanText(job.currentStep));
+}
+
+async function markInterruptedBuild(context, job, error, phase) {
+  const retryable = Number(error?.status || 500) >= 500 || error?.code === "UPSTREAM_TIMEOUT";
+  const status = retryable ? "retryable" : "failed";
+  const message = retryable
+    ? "De previewbuild is onderbroken en kan veilig opnieuw worden geprobeerd."
+    : "De previewbuild kon niet worden afgerond.";
+  const record = {
+    status,
+    current_step: phase || "failed",
+    progress: Math.max(0, Number(job.progress || 0)),
+    error_message: message,
+    finished_at: retryable ? null : new Date().toISOString(),
+    build_logs: buildLogs(job.buildLogs, { step: status, message, phase: phase || "" }),
+  };
+  await patchBuildJob(context, job.id, record).catch((patchError) => {
+    console.warn("Website Factory build recovery status failed", {
+      phase: "mark_interrupted_build",
+      buildJobId: job.id,
+      status: patchError?.status || 500,
+      code: patchError?.code || "",
+    });
+  });
+}
+
+async function recoverBuildFromPreview(context, { job = {}, journey = {}, previewVersion = {} } = {}) {
+  const completedRecord = {
+    status: "completed",
+    current_step: "completed",
+    progress: 100,
+    preview_url: previewVersion.previewUrl,
+    preview_token: previewVersion.previewToken,
+    preview_score: previewVersion.previewScore,
+    error_message: null,
+    finished_at: new Date().toISOString(),
+    build_logs: buildLogs(job.buildLogs, { step: "recovered", message: `Bestaande preview V${previewVersion.version || job.previewVersion || 1} hersteld.` }),
+  };
+  await patchBuildJob(context, job.id, completedRecord);
+  let updatedJourney = journey;
+  try {
+    updatedJourney = await updateDemoJourneyPreview(context, {
+      demoJourneyId: journey.id,
+      generatedBriefing: journey.generatedBriefing,
+      previewUrl: previewVersion.previewUrl,
+      previewToken: previewVersion.previewToken,
+      status: "interne_preview_klaar",
+      persistPackage: false,
+    });
+  } catch (error) {
+    console.warn("Website Factory preview journey recovery skipped", {
+      phase: "recover_demo_journey_preview",
+      buildJobId: job.id,
+      status: error?.status || 500,
+      code: error?.code || "",
+    });
+  }
+  return {
+    job: normalizeBuildJob({ ...jobRecord(job), ...completedRecord }),
+    journey: updatedJourney,
+    previewVersion: normalizePreviewVersion(previewVersion),
+    recovered: true,
+  };
+}
+
+async function runOptionalPreviewWrite(phase, callback) {
+  try {
+    return await callback();
+  } catch (error) {
+    console.warn("Website Factory optional preview write skipped", {
+      phase,
+      status: error?.status || 500,
+      code: error?.code || "",
+    });
+    return null;
   }
 }
 
@@ -1027,7 +1129,7 @@ function jobRecord(job = {}) {
 
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
   const jobs = await readBuildJobSummaries(context, { demoJourneyId, leadId, limit: 25 });
-  const versions = demoJourneyId ? await readPreviewVersions(context, demoJourneyId) : [];
+  const versions = demoJourneyId ? await readPreviewVersionSummaries(context, demoJourneyId) : [];
   return { jobs, previewVersions: versions, latestJob: jobs[0] || null, activeVersion: versions.find((version) => version.isActive) || versions[0] || null };
 }
 
@@ -1043,7 +1145,7 @@ async function readBuildJobSummaries(context, { demoJourneyId = "", leadId = "",
 }
 
 async function readPreviewVersionSummaries(context, demoJourneyId) {
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=id,version,is_active&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&order=version.desc`, {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=${encodeURIComponent(PREVIEW_RECOVERY_FIELDS)}&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&order=version.desc`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
   });
@@ -1057,19 +1159,15 @@ async function createPreviewVersion(context, payload = {}) {
     error.status = 400;
     throw error;
   }
-  try {
-    await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}`, {
-      method: "PATCH",
-      headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: false }),
-    });
-  } catch (error) {
-    if (!isMissingColumnError(error)) throw error;
+  const buildJobId = cleanText(payload.buildJobId || payload.build_job_id);
+  if (buildJobId) {
+    const existing = await readPreviewVersionByBuildJobId(context, buildJobId);
+    if (existing?.id) return normalizePreviewVersion(existing);
   }
   const record = {
-    id: cleanUuid(payload.id) || randomUUID(),
+    id: cleanUuid(payload.id) || cleanUuid(buildJobId) || randomUUID(),
     demo_journey_id: demoJourneyId,
-    build_job_id: cleanText(payload.buildJobId || payload.build_job_id) || null,
+    build_job_id: buildJobId || null,
     customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
     project_id: cleanUuid(payload.projectId || payload.project_id) || null,
     website_id: cleanUuid(payload.websiteId || payload.website_id) || null,
@@ -1085,7 +1183,22 @@ async function createPreviewVersion(context, payload = {}) {
     created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
     created_at: new Date().toISOString(),
   };
-  await insertPreviewVersion(context, record);
+  try {
+    await insertPreviewVersion(context, record);
+  } catch (error) {
+    const existing = buildJobId ? await readPreviewVersionByBuildJobId(context, buildJobId).catch(() => null) : null;
+    if (existing?.id) return existing;
+    throw error;
+  }
+  try {
+    await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&id=neq.${encodeURIComponent(record.id)}`, {
+      method: "PATCH",
+      headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: false }),
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+  }
   return normalizePreviewVersion(record);
 }
 
@@ -1095,17 +1208,18 @@ async function updateDemoJourneyPreview(context, payload = {}) {
   const existingPackage = existingJourney?.preview_package && typeof existingJourney.preview_package === "object" ? existingJourney.preview_package : {};
   const generatedPackage = payload.generatedPackage || payload.generated_package || {};
   const persistedSource = storedPreviewSource(existingPackage);
+  const includeGeneratedPackage = payload.persistPackage !== false;
   const record = {
     generated_briefing: cleanText(payload.generatedBriefing || payload.generated_briefing),
     preview_url: cleanText(payload.previewUrl || payload.preview_url),
     preview_token: cleanText(payload.previewToken || payload.preview_token),
-    preview_package: {
+    ...(includeGeneratedPackage ? { preview_package: {
       ...generatedPackage,
       ...(existingPackage.manualPreview ? { manualPreview: existingPackage.manualPreview } : {}),
       ...(existingPackage.savedDemoSite ? { savedDemoSite: existingPackage.savedDemoSite } : {}),
       ...(existingPackage.linkedRecords ? { linkedRecords: existingPackage.linkedRecords } : {}),
       ...(persistedSource ? { activePreviewSource: persistedSource } : {}),
-    },
+    } } : {}),
     preview_generated_at: new Date().toISOString(),
     demo_status: cleanText(payload.status || "interne_preview_klaar"),
     updated_by: context.admin.id,
@@ -1147,6 +1261,16 @@ async function readBuildJobById(context, id) {
     headers: restHeaders(context.serviceRoleKey),
   });
   return rows[0] || null;
+}
+
+async function readPreviewVersionByBuildJobId(context, buildJobId) {
+  const id = cleanText(buildJobId);
+  if (!id) return null;
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=${encodeURIComponent(PREVIEW_RECOVERY_FIELDS)}&build_job_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] ? normalizePreviewVersion(rows[0]) : null;
 }
 
 async function readPreviewVersions(context, demoJourneyId) {

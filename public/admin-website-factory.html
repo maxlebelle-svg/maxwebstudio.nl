@@ -525,6 +525,7 @@
                   <button class="button secondary" id="factory-process-manual-zip" type="button" disabled hidden>ZIP verwerken</button>
                   <button class="button secondary" type="button" data-factory-open-panel="content">Briefing openen</button>
                   <span id="factory-quick-build-message" role="status" aria-live="polite"></span>
+                  <button class="button secondary button-small" id="factory-quick-retry" type="button" hidden>Opnieuw proberen</button>
                 </div>
               </section>
               <section class="factory-process-strip" aria-labelledby="factory-process-title">
@@ -21549,7 +21550,7 @@
               diagnostics: data.diagnostics || {},
               details: data.details || normalizedError.details || "",
               hint: data.hint || normalizedError.hint || "",
-              code: data.code || normalizedError.code || data.diagnostics?.code || "",
+              code: data.code || normalizedError.code || data.diagnostics?.code || (response.status === 504 ? "UPSTREAM_TIMEOUT" : ""),
               requestId: response.headers.get("x-nf-request-id") || data.requestId || data.request_id || "",
               stack: data.stack || normalizedError.stack || "",
               demoJourneyId: payload?.demoJourneyId || payload?.demo_journey_id || payload?.id || "",
@@ -21599,13 +21600,13 @@
               : response.status === 403
               ? diagnostics.code === "ROLE_NOT_ALLOWED" ? "Dit account heeft geen actieve adminrol." : "Je hebt geen toegang tot deze klantcontext."
               : response.status >= 500
-              ? [data.userMessage || errorMessage || "De klantcontext kon door een tijdelijke backendfout niet worden geladen.", diagnostics.code ? `Code: ${diagnostics.code}` : "", diagnostics.requestId ? `Request-id: ${diagnostics.requestId}` : ""].filter(Boolean).join(" ")
+              ? [data.userMessage || errorMessage || "De klantcontext kon door een tijdelijke backendfout niet worden geladen.", diagnostics.code && !String(data.userMessage || "").includes(diagnostics.code) ? `Code: ${diagnostics.code}` : ""].filter(Boolean).join(" ")
               : data.userMessage || errorMessage || "De klantcontext kon niet worden geladen.";
             const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : safeMessage);
             error.diagnostics = diagnostics;
             error.label = failureLabel;
             error.status = response.status;
-            error.code = diagnostics.code || "REQUEST_FAILED";
+            error.code = diagnostics.code || (response.status === 504 ? "UPSTREAM_TIMEOUT" : "REQUEST_FAILED");
             error.requestId = diagnostics.requestId;
             throw error;
           }
@@ -24049,6 +24050,7 @@
               ].filter(Boolean).join("\n");
               setMessage(elements.message, message, "error");
               showDeveloperErrorDetails(elements.message, error);
+              await loadJourney().catch(() => null);
               return null;
             }
           });
@@ -24724,7 +24726,7 @@
         function renderMetrics() {
           const jobs = Array.isArray(buildHistory.jobs) ? buildHistory.jobs : [];
           const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
-          const activeBuilds = jobs.filter((job) => !["completed", "failed", "quality_failed"].includes(job.status)).length;
+          const activeBuilds = jobs.filter((job) => !["completed", "failed", "quality_failed", "retryable"].includes(job.status)).length;
           const readyPreviews = versions.filter((version) => version.previewUrl || version.isActive).length || (journey?.previewUrl ? 1 : 0);
           const openFeedback = journey?.feedback ? 1 : 0;
           const readyForLive = journey?.demoStatus === "interne_preview_klaar" || journey?.previewUrl ? 1 : 0;
@@ -24804,6 +24806,7 @@
             deploying: "Preview opslaan",
             completed: "Preview klaar",
             quality_failed: "Aandacht nodig",
+            retryable: "Opnieuw proberen",
             failed: "Mislukt",
           })[status] || "Geen build";
         }
@@ -25703,10 +25706,11 @@
           const briefingReady = Boolean(value("#demo-journey-briefing")) || document.querySelectorAll("#demo-intake-fields .factory-smart-field.is-complete").length >= 4;
           const researchReady = Boolean(document.querySelector("#factory-intelligence-stats .demo-kv-row, #factory-intelligence-stats > *"));
           const scanReady = !/niet|geen|crm/i.test(scanSummary) || researchReady;
-          const buildReady = !/geen|start|wacht/i.test(buildState);
+          const buildBlocked = /mislukt|aandacht|opnieuw proberen|fout/i.test(buildState);
+          const buildReady = !buildBlocked && !/geen|start|wacht/i.test(buildState);
           const previewReady = hasPreview() || !/geen|nog/i.test(previewState);
           const saved = /opgeslagen/i.test(previewState) || /bijwerken/i.test(text("#demo-journey-save-demo-site", ""));
-          return { intakeScore, scanSummary, buildState, previewState, feedback, briefingReady, researchReady, scanReady, buildReady, previewReady, saved, images: imageState() };
+          return { intakeScore, scanSummary, buildState, previewState, feedback, briefingReady, researchReady, scanReady, buildReady, buildBlocked, previewReady, saved, images: imageState() };
         }
 
         function renderGuidedStatus() {
@@ -25765,14 +25769,17 @@
             ["Feedback", Boolean(state.feedback), state.previewReady && !state.feedback, "Ontvangen", "Wachtend"],
             ["Live zetten", /verkocht|definitieve|live/i.test(value("#demo-journey-status")), false, "Voltooid", "Nog niet gestart"],
           ];
-          const activeIndex = Math.max(0, steps.findIndex(([,done,active]) => !done && active));
+          const activeIndex = state.buildBlocked ? 3 : Math.max(0, steps.findIndex(([,done,active]) => !done && active));
           const signature = JSON.stringify(steps);
           if (target.dataset.signature !== signature) {
             target.dataset.signature = signature;
-            target.innerHTML = steps.map(([label, done, active, doneText, waitingText], index) => `<div class="factory-process-step ${done ? "is-complete" : active ? "is-active" : "is-waiting"}"><i>${done ? "✓" : index + 1}</i><span><b>${label}</b><small>${done ? doneText : active ? "Actief" : waitingText}</small></span></div>`).join("");
+            target.innerHTML = steps.map(([label, done, active, doneText, waitingText], index) => {
+              const failed = label === "Build" && state.buildBlocked;
+              return `<div class="factory-process-step ${done ? "is-complete" : failed ? "is-error" : active ? "is-active" : "is-waiting"}"><i>${done ? "✓" : index + 1}</i><span><b>${label}</b><small>${done ? doneText : failed ? state.buildState : active ? "Actief" : waitingText}</small></span></div>`;
+            }).join("");
           }
           const next = document.getElementById("factory-process-next");
-          const nextText = `Volgende stap: ${steps[activeIndex]?.[0] || "Live zetten"}`;
+          const nextText = state.buildBlocked ? "Volgende stap: build opnieuw proberen" : `Volgende stap: ${steps[activeIndex]?.[0] || "Live zetten"}`;
           if (next && next.textContent !== nextText) next.textContent = nextText;
         }
 
@@ -25910,12 +25917,14 @@
           const business = value("#factory-quick-business");
           const website = value("#factory-quick-website");
           const message = document.getElementById("factory-quick-build-message");
+          const retryButton = document.getElementById("factory-quick-retry");
           let validUrl = false;
           if (website) { try { validUrl = ["http:", "https:"].includes(new URL(website).protocol); } catch { validUrl = false; } }
           if (!business && !validUrl) { if (message) message.textContent = "Vul een bedrijfsnaam of geldige website-URL in."; return; }
           const button = document.getElementById("factory-quick-generate");
           if (!window.WebsiteFactoryRuntime?.quickBuild) { if (message) message.textContent = "De Website Factory-runtime is nog niet geladen."; return; }
           if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
+          if (retryButton) retryButton.hidden = true;
           if (message) message.textContent = "Demo-aanvraag opslaan en previewbuild starten…";
           try {
             const result = await window.WebsiteFactoryRuntime.quickBuild({ businessName: business, websiteUrl: website, place: value("#factory-quick-place"), wishes: value("#factory-quick-wishes") });
@@ -25927,12 +25936,15 @@
             if (ready) activateFactoryTab("preview");
           } catch (error) {
             const requestId = error?.requestId || error?.diagnostics?.requestId || "";
-            const phase = error?.diagnostics?.responseJson?.phase || error?.diagnostics?.diagnostics?.phase || "";
+            const responseJson = error?.diagnostics?.responseJson || {};
+            const phase = responseJson.phase || responseJson.diagnostics?.phase || error?.diagnostics?.diagnostics?.phase || "run_build_job";
             const code = error?.code || error?.diagnostics?.code || "";
             const concreteMessage = code === "UPSTREAM_TIMEOUT"
-              ? "De previewbuild duurde te lang bij het opslaan. Probeer opnieuw; de bestaande build wordt veilig hervat."
-              : error?.message || "De previewbuild kon niet worden gestart.";
-            if (message) message.textContent = [concreteMessage, phase ? `Fase: ${phase}.` : "", requestId ? `Request-id: ${requestId}` : ""].filter(Boolean).join(" ");
+              ? "De previewbuild duurde te lang bij het opslaan. Dezelfde build kan veilig opnieuw worden geprobeerd."
+              : responseJson.message || error?.message || "De previewbuild kon niet worden gestart.";
+            const cleanMessage = String(concreteMessage).replace(/\s*Request-id:\s*[A-Z0-9-]+/gi, "").trim();
+            if (message) message.textContent = [cleanMessage, phase ? `Fase: ${phase}.` : "", requestId ? `Request-id: ${requestId}` : ""].filter(Boolean).join(" ");
+            if (retryButton) retryButton.hidden = false;
           } finally {
             if (button) { button.disabled = false; button.setAttribute("aria-busy", "false"); }
           }
@@ -25952,6 +25964,7 @@
           document.getElementById("factory-process-manual-zip")?.addEventListener("click", () => proxyClick("demo-journey-process-manual-zip"));
           document.querySelectorAll("[data-factory-proxy]").forEach((button) => button.addEventListener("click", () => proxyClick(button.dataset.factoryProxy)));
           document.getElementById("factory-quick-generate")?.addEventListener("click", runQuickBuild);
+          document.getElementById("factory-quick-retry")?.addEventListener("click", runQuickBuild);
           ["factory-generate-images", "factory-generate-images-footer"].forEach((id) => document.getElementById(id)?.addEventListener("click", requestImageGeneration));
           document.querySelectorAll("[data-briefing-mode]").forEach((button) => button.addEventListener("click", () => {
             document.querySelectorAll("[data-briefing-mode]").forEach((item) => item.classList.toggle("is-active", item === button));

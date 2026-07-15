@@ -42,6 +42,7 @@ const customerVisibleStatuses = new Set([
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
+  const requestId = cleanText(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"]);
 
   const isClientRequest = event.queryStringParameters?.scope === "customer";
   if (isClientRequest && event.httpMethod === "GET") return readCustomerJourney(event);
@@ -97,6 +98,7 @@ exports.handler = async (event) => {
     return jsonResponse(missing || missingFactory ? 503 : error.status || 500, errorResponse({
       error,
       developerMode,
+      requestId,
       module: responseModule,
       reason: responseReason,
       fallbackMessage: missing
@@ -833,7 +835,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
 
     let buildResult;
     try {
-      buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, {
+      buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin, requestId: cleanText(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"]) }, {
         demoJourneyId: journeyId,
         generatedBriefing: briefing,
         packageType,
@@ -856,13 +858,13 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const journey = buildResult.journey || mapJourney(await readJourneyById({ supabaseUrl, serviceRoleKey, id: journeyId }));
     const previewVersionNumber = buildResult.previewVersion?.version || buildResult.job?.previewVersion || 1;
     const latestZipFilename = zipFilenameFor({ businessName: journey.businessName, websiteUrl: journey.websiteUrl, version: previewVersionNumber });
-    const projectWorkspace = await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, {
+    const projectWorkspace = await optionalPreviewOperation("upsert_project_workspace", () => upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, {
       latestPreviewUrl: buildResult.job?.previewUrl || journey.previewUrl,
       latestPreviewVersion: previewVersionNumber,
       latestZipFilename,
       updatedBy: admin.id,
-    }));
-    const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId });
+    })));
+    const events = await optionalPreviewOperation("read_preview_events", () => readEvents({ supabaseUrl, serviceRoleKey, journeyId }), []);
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId });
     const responseJourney = sanitizeAdminJourney(journey);
     return jsonResponse(200, {
@@ -918,6 +920,19 @@ function workspacePayload(journey = {}, extra = {}) {
     latestPreviewVersion: journey.previewPackage?.version || journey.previewPackage?.meta?.version || null,
     ...extra,
   };
+}
+
+async function optionalPreviewOperation(phase, callback, fallback = null) {
+  try {
+    return await callback();
+  } catch (error) {
+    console.warn("Demo Journey optional preview operation skipped", {
+      phase,
+      status: error?.status || 500,
+      code: error?.code || "",
+    });
+    return fallback;
+  }
 }
 
 function journeyPayload(payload = {}, admin = {}, options = {}) {
@@ -1637,20 +1652,25 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-function errorResponse({ error = {}, developerMode = false, module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
-  const message = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
+function errorResponse({ error = {}, developerMode = false, requestId = "", module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
+  const internalMessage = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
   const isPreviewAction = cleanText(error.action) === "generate_preview" || module === "website_factory";
+  const code = error.code || (Number(error.status) === 504 ? "UPSTREAM_TIMEOUT" : "");
+  const message = isPreviewAction && code === "UPSTREAM_TIMEOUT"
+    ? "De previewbuild duurde te lang bij het opslaan en kan veilig opnieuw worden geprobeerd."
+    : fallbackMessage || internalMessage;
   const previewDetails = [
     error.phase ? `Fase: ${error.phase}` : "",
     reason ? `Reden: ${reason}` : "",
-    error.code ? `Code: ${error.code}` : "",
+    code ? `Code: ${code}` : "",
   ].filter(Boolean).join(" · ");
   const previewUserMessage = [
-    fallbackMessage || "Preview maken is niet gelukt.",
+    message || "Preview maken is niet gelukt.",
     previewDetails,
   ].filter(Boolean).join("\n");
   const body = {
     success: false,
+    requestId: cleanText(requestId),
     module,
     phase: error.phase || "",
     reason,
@@ -1661,7 +1681,7 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
       : isPreviewAction
         ? previewUserMessage
         : "De demo-klantreis kon niet worden opgeslagen. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
-    code: error.code || "",
+    code,
     details: developerMode ? cleanText(error.details) : "",
     hint: developerMode ? cleanText(error.hint) : "",
     setupRequired: Boolean(setupRequired),
@@ -1674,7 +1694,8 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
       leadId: cleanText(error.leadId),
       packageType: cleanText(error.packageType),
       status: error.status || 500,
-      code: error.code || "",
+      code,
+      requestId: cleanText(requestId),
       method: error.method || "",
       url: developerMode ? cleanText(error.url) : "",
       responseText: developerMode ? cleanText(error.responseText) : "",
@@ -1682,6 +1703,7 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
       requestBody: developerMode ? cleanText(error.requestBody) : "",
     },
   };
+  if (developerMode) body.error = internalMessage;
   if (developerMode && error.stack) body.stack = error.stack;
   return body;
 }
