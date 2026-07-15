@@ -6,6 +6,7 @@ const { getBuildHistory, runBuildJob } = require("./website-factory");
 const { createTimelineEvent } = require("./services/timelineService");
 const crypto = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
+const { normalizeWebsiteInput } = require("./_website-input");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
@@ -779,6 +780,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   }
 
   if (action === "generate_preview") {
+    const websiteInput = websiteInputFromPayload(payload);
     const packageType = normalizePackageType(payload.packageType || payload.package_type || current?.preview_package?.meta?.packageType || current?.preview_package?.packageType);
     const sourceJourney = current ? mapJourney(current) : mapJourney({
       id: payload.id,
@@ -884,6 +886,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         newPackage: packageType,
         demoJourneyId: journeyId,
       },
+      websiteInput,
+      warnings: [websiteInput.warning].filter(Boolean),
     });
   }
 
@@ -924,6 +928,7 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
     error.status = 400;
     throw error;
   }
+  const websiteInput = websiteInputFromPayload(payload);
   const record = {
     lead_id: cleanUuid(payload.leadId || payload.lead_id) || null,
     customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
@@ -931,7 +936,7 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
     contact_name: cleanContactName(payload.contactName || payload.contact_name || payload.name),
     email: cleanText(payload.email).toLowerCase(),
     phone: cleanText(payload.phone),
-    website_url: cleanText(payload.websiteUrl || payload.website_url || payload.website),
+    website_url: websiteInput.url,
     demo_status: status,
     generated_briefing: cleanText(payload.generatedBriefing || payload.generated_briefing),
     preview_url: cleanText(payload.previewUrl || payload.preview_url),
@@ -1818,14 +1823,15 @@ function cleanText(value = "") {
 
 function buildQuickFactoryBriefing(journey = {}) {
   const businessName = cleanText(journey.businessName || journey.business_name);
-  const websiteUrl = cleanText(journey.websiteUrl || journey.website_url);
-  const validWebsite = /^https?:\/\/[^\s]+$/i.test(websiteUrl);
-  if (!businessName && !validWebsite) return "";
+  const websiteInput = normalizeWebsiteInput(journey.websiteUrl || journey.website_url, {
+    intent: journey.websiteUrl || journey.website_url ? "existing" : "none",
+  });
+  if (!businessName && !websiteInput.url) return "";
   return [
     "Websiteplan - eerste demo",
     "",
     `Klant: ${businessName || "Nog te bepalen"}`,
-    `Website/huidige URL: ${validWebsite ? websiteUrl : "Nog niet ingevuld"}`,
+    `Website/huidige URL: ${websiteInput.url || "Geen bestaande website"}`,
     "",
     "Doel",
     "Maak een professionele eerste website-preview met een duidelijke homepage, aanbod, contactmogelijkheid en call-to-action.",
@@ -1833,6 +1839,16 @@ function buildQuickFactoryBriefing(journey = {}) {
     "Werkwijze",
     "Gebruik de beschikbare klant- en websitegegevens. Ontbrekende optionele briefinggegevens mogen de eerste preview niet blokkeren.",
   ].join("\n");
+}
+
+function websiteInputFromPayload(payload = {}) {
+  const raw = payload.websiteUrl || payload.website_url || payload.website || "";
+  const intent = cleanText(payload.websiteIntent || payload.website_intent)
+    || (cleanText(raw) ? "existing" : "none");
+  return normalizeWebsiteInput(raw, {
+    intent,
+    explicitNoWebsite: Boolean(payload.noWebsite || payload.no_website || payload.hasWebsite === false || payload.has_website === false),
+  });
 }
 
 function cleanContactName(value = "") {

@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { normalizeWebsiteInput } = require("./_website-input");
 const fs = require("fs");
 const path = require("path");
 const { resolveDemoImageAsset, resolveDemoImageAssetSet } = require("./_demo-image-assets");
@@ -966,10 +967,8 @@ function slugifySite(value = "") {
 }
 
 function normalizeSiteUrl(websiteUrl = "", businessName = "") {
-  const value = cleanText(websiteUrl);
-  if (/^https?:\/\//i.test(value)) return value.replace(/\/$/, "");
-  if (value && /^[a-z0-9.-]+\.[a-z]{2,}/i.test(value)) return `https://${value}`.replace(/\/$/, "");
-  return `https://${slugifySite(businessName)}.nl`;
+  const website = normalizeWebsiteInput(websiteUrl, { intent: websiteUrl ? "existing" : "none" });
+  return website.url || `https://preview.maxwebstudio.nl/${slugifySite(businessName)}`;
 }
 
 function buildSeoTitle({ businessName, industryProfile = {}, industry = "", currentWebsite = {}, services = [] } = {}) {

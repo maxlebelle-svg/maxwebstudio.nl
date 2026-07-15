@@ -28,6 +28,12 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}
 const previewReadyService = createPreviewReadyService();
 const websiteLiveRepository = createWebsiteLiveRepository();
 const websiteLiveService = createWebsiteLiveService({ websiteRepository: websiteLiveRepository });
+const BUILD_JOB_SUMMARY_FIELDS = [
+  "id", "demo_journey_id", "lead_id", "customer_id", "status", "current_step", "progress",
+  "preview_version", "preview_url", "preview_token", "preview_score", "build_logs", "error_message",
+  "started_at", "finished_at", "created_by", "created_at",
+].join(",");
+const ACTIVE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying"]);
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -775,8 +781,13 @@ async function createBuildJob(context, payload = {}) {
     throw error;
   }
   assertCanSeeJourney(journey, context.admin);
-  const history = await getBuildHistory(context, { demoJourneyId });
-  const previewVersion = nextPreviewVersion(history.previewVersions, history.jobs);
+  const [jobs, previewVersions] = await Promise.all([
+    readBuildJobSummaries(context, { demoJourneyId, limit: 25 }),
+    readPreviewVersionSummaries(context, demoJourneyId),
+  ]);
+  const activeJob = jobs.find((item) => ACTIVE_BUILD_STATUSES.has(item.status));
+  if (activeJob) return { job: activeJob, journey: mapJourney(journey), reusedExisting: true };
+  const previewVersion = nextPreviewVersion(previewVersions, jobs);
   const now = new Date().toISOString();
   const rows = await insertBuildJob(context, {
     demo_journey_id: demoJourneyId,
@@ -855,7 +866,7 @@ async function runBuildJob(context, payload = {}) {
     phase = "run_quality_check";
     const qualityReport = runQualityCheck({ generatedPackage, journey });
     if (!qualityReport.passed) {
-      const failed = await patchBuildJob(context, job.id, {
+      const failedRecord = {
         status: "quality_failed",
         current_step: "quality_check",
         progress: 85,
@@ -865,8 +876,9 @@ async function runBuildJob(context, payload = {}) {
         error_message: qualityReport.summary,
         finished_at: new Date().toISOString(),
         build_logs: buildLogs(qualityLogs, { step: "quality_failed", message: qualityReport.summary }),
-      });
-      return { job: normalizeBuildJob(failed[0] || {}), journey, previewVersion: null };
+      };
+      await patchBuildJob(context, job.id, failedRecord);
+      return { job: normalizeBuildJob({ ...jobRecord(job), ...failedRecord }), journey, previewVersion: null };
     }
 
     const token = makePreviewToken();
@@ -898,7 +910,7 @@ async function runBuildJob(context, payload = {}) {
       createdBy: context.admin.id,
     });
     phase = "patch_build_job_completed";
-    const completedRows = await patchBuildJob(context, job.id, {
+    const completedRecord = {
       status: "completed",
       current_step: "completed",
       progress: 100,
@@ -913,7 +925,8 @@ async function runBuildJob(context, payload = {}) {
         newPackage: generatedPackage.packageType,
         previewVersion: job.previewVersion,
       }),
-    });
+    };
+    await patchBuildJob(context, job.id, completedRecord);
     phase = "update_demo_journey_preview";
     const updatedJourney = await updateDemoJourneyPreview(context, {
       demoJourneyId: journey.id,
@@ -950,11 +963,24 @@ async function runBuildJob(context, payload = {}) {
       description: `Interne preview V${job.previewVersion} staat klaar voor controle.`,
       visible: false,
     });
-    return { job: normalizeBuildJob(completedRows[0] || {}), journey: updatedJourney, previewVersion };
+    return {
+      job: normalizeBuildJob({
+        ...jobRecord(job),
+        ...completedRecord,
+        generated_package: generatedPackage,
+        quality_report: qualityReport,
+        preview_url: previewUrl,
+        preview_token: token,
+        preview_score: qualityReport.score,
+      }),
+      journey: updatedJourney,
+      previewVersion,
+    };
   } catch (error) {
     error.module = "website_factory";
     error.reason = isMissingFactoryTableError(error) ? "missing_website_factory_tables" : "website_factory_build_failed";
-    error.phase = error.phase || phase;
+    if (error.phase && error.phase !== phase) error.upstreamPhase = error.phase;
+    error.phase = phase;
     error.demoJourneyId = error.demoJourneyId || journey?.id || cleanText(payload.demoJourneyId || payload.demo_journey_id);
     error.leadId = error.leadId || journey?.leadId || cleanText(payload.leadId || payload.lead_id);
     error.packageType = error.packageType || normalizePackageType(payload.packageType || payload.package_type || journey?.packageType);
@@ -963,28 +989,65 @@ async function runBuildJob(context, payload = {}) {
 }
 
 async function failBuild(context, job, message, logs = []) {
-  const rows = await patchBuildJob(context, job.id, {
+  const failedRecord = {
     status: "failed",
     current_step: "failed",
     progress: Math.max(Number(job.progress || 0), 20),
     error_message: message,
     finished_at: new Date().toISOString(),
     build_logs: buildLogs(logs, { step: "failed", message }),
-  });
-  return { job: normalizeBuildJob(rows[0] || {}), journey: null, previewVersion: null };
+  };
+  await patchBuildJob(context, job.id, failedRecord);
+  return { job: normalizeBuildJob({ ...jobRecord(job), ...failedRecord }), journey: null, previewVersion: null };
+}
+
+function jobRecord(job = {}) {
+  return {
+    id: job.id,
+    demo_journey_id: job.demoJourneyId,
+    lead_id: job.leadId || null,
+    customer_id: job.customerId || null,
+    status: job.status,
+    current_step: job.currentStep,
+    progress: job.progress,
+    preview_version: job.previewVersion,
+    preview_url: job.previewUrl,
+    preview_token: job.previewToken,
+    preview_score: job.previewScore,
+    quality_report: job.qualityReport,
+    generated_package: job.generatedPackage,
+    build_logs: job.buildLogs,
+    error_message: job.errorMessage,
+    started_at: job.startedAt,
+    finished_at: job.finishedAt || null,
+    created_by: job.createdBy,
+    created_at: job.createdAt,
+  };
 }
 
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
-  const query = new URLSearchParams({ select: "*", order: "created_at.desc", limit: "25" });
+  const jobs = await readBuildJobSummaries(context, { demoJourneyId, leadId, limit: 25 });
+  const versions = demoJourneyId ? await readPreviewVersions(context, demoJourneyId) : [];
+  return { jobs, previewVersions: versions, latestJob: jobs[0] || null, activeVersion: versions.find((version) => version.isActive) || versions[0] || null };
+}
+
+async function readBuildJobSummaries(context, { demoJourneyId = "", leadId = "", limit = 25 } = {}) {
+  const query = new URLSearchParams({ select: BUILD_JOB_SUMMARY_FIELDS, order: "created_at.desc", limit: String(limit) });
   if (demoJourneyId) query.set("demo_journey_id", `eq.${demoJourneyId}`);
   if (leadId && cleanUuid(leadId)) query.set("lead_id", `eq.${cleanUuid(leadId)}`);
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
   });
-  const jobs = rows.map(normalizeBuildJob);
-  const versions = demoJourneyId ? await readPreviewVersions(context, demoJourneyId) : [];
-  return { jobs, previewVersions: versions, latestJob: jobs[0] || null, activeVersion: versions.find((version) => version.isActive) || versions[0] || null };
+  return rows.map(normalizeBuildJob);
+}
+
+async function readPreviewVersionSummaries(context, demoJourneyId) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=id,version,is_active&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&order=version.desc`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows.map(normalizePreviewVersion);
 }
 
 async function createPreviewVersion(context, payload = {}) {
@@ -1003,7 +1066,8 @@ async function createPreviewVersion(context, payload = {}) {
   } catch (error) {
     if (!isMissingColumnError(error)) throw error;
   }
-  const rows = await insertPreviewVersion(context, {
+  const record = {
+    id: cleanUuid(payload.id) || randomUUID(),
     demo_journey_id: demoJourneyId,
     build_job_id: cleanText(payload.buildJobId || payload.build_job_id) || null,
     customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
@@ -1019,8 +1083,10 @@ async function createPreviewVersion(context, payload = {}) {
     is_active: true,
     status: "internal",
     created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
-  });
-  return normalizePreviewVersion(rows[0] || {});
+    created_at: new Date().toISOString(),
+  };
+  await insertPreviewVersion(context, record);
+  return normalizePreviewVersion(record);
 }
 
 async function updateDemoJourneyPreview(context, payload = {}) {
@@ -1076,7 +1142,7 @@ async function readJourney(context, id) {
 }
 
 async function readBuildJobById(context, id) {
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?select=*&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?select=${encodeURIComponent(BUILD_JOB_SUMMARY_FIELDS)}&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
   });
@@ -1131,7 +1197,7 @@ async function insertPreviewVersion(context, record) {
 function patchBuildJobRecord(context, id, record) {
   return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
-    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
     body: JSON.stringify(record),
   });
 }
@@ -1147,7 +1213,7 @@ function insertBuildJobRecord(context, record) {
 function insertPreviewVersionRecord(context, record) {
   return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions`, {
     method: "POST",
-    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
     body: JSON.stringify(record),
   });
 }
@@ -1174,7 +1240,7 @@ async function createJourneyEvent(context, payload = {}) {
 
 async function supabaseFetch(url, options) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4000);
+  const timer = setTimeout(() => controller.abort(), 8000);
   let response;
   try {
     response = await fetch(url, { ...options, signal: controller.signal });

@@ -23833,6 +23833,7 @@
             email: elements.email?.value || "",
             phone: elements.phone?.value || "",
             websiteUrl: elements.website?.value || "",
+            websiteIntent: elements.website?.value ? "existing" : "none",
             packageType: currentPackageType(),
             demoStatus: elements.status?.value || "aanvraag_ontvangen",
             generatedBriefing: elements.briefing?.value || "",
@@ -24066,7 +24067,7 @@
             throw error;
           }
           if (businessName && elements.business) elements.business.value = businessName;
-          if (validWebsite && elements.website) elements.website.value = websiteUrl;
+          if (elements.website) elements.website.value = websiteUrl;
           const notes = [elements.notes?.value || "", input.place ? `Plaats: ${String(input.place).trim()}` : "", String(input.wishes || "").trim()].filter(Boolean).join("\n");
           if (elements.notes) elements.notes.value = notes;
           const savedJourney = journey?.id ? journey : await saveJourney();
@@ -25920,11 +25921,18 @@
             const result = await window.WebsiteFactoryRuntime.quickBuild({ businessName: business, websiteUrl: website, place: value("#factory-quick-place"), wishes: value("#factory-quick-wishes") });
             const version = result?.previewVersion?.version || result?.buildJob?.previewVersion || result?.buildStatus?.previewVersion || "";
             const ready = Boolean(result?.preview?.url || result?.buildJob?.previewUrl || result?.buildStatus?.previewUrl || window.WebsiteFactoryRuntime?.getState?.().hasPreview);
-            if (message) message.textContent = ready ? `Preview klaar${version ? ` als versie ${version}` : ""}.` : `Previewbuild gestart${version ? ` voor versie ${version}` : ""}.`;
+            const warning = Array.isArray(result?.warnings) ? result.warnings.filter(Boolean)[0] : "";
+            if (message) message.textContent = [ready ? `Preview klaar${version ? ` als versie ${version}` : ""}.` : `Previewbuild gestart${version ? ` voor versie ${version}` : ""}.`, warning].filter(Boolean).join(" ");
             syncFactoryMode(ready);
             if (ready) activateFactoryTab("preview");
           } catch (error) {
-            if (message) message.textContent = error?.message || "De previewbuild kon niet worden gestart.";
+            const requestId = error?.requestId || error?.diagnostics?.requestId || "";
+            const phase = error?.diagnostics?.responseJson?.phase || error?.diagnostics?.diagnostics?.phase || "";
+            const code = error?.code || error?.diagnostics?.code || "";
+            const concreteMessage = code === "UPSTREAM_TIMEOUT"
+              ? "De previewbuild duurde te lang bij het opslaan. Probeer opnieuw; de bestaande build wordt veilig hervat."
+              : error?.message || "De previewbuild kon niet worden gestart.";
+            if (message) message.textContent = [concreteMessage, phase ? `Fase: ${phase}.` : "", requestId ? `Request-id: ${requestId}` : ""].filter(Boolean).join(" ");
           } finally {
             if (button) { button.disabled = false; button.setAttribute("aria-busy", "false"); }
           }
