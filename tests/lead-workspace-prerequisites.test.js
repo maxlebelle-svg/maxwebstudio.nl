@@ -11,6 +11,8 @@ const privilegeDiagnosis = fs.readFileSync(path.resolve(__dirname, "../supabase/
 const privilegeHardening = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/20260715120000_harden_lead_workspace_privileges.sql"), "utf8");
 const privilegeHardeningPostcheck = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_privilege_hardening_postcheck.sql"), "utf8");
 const authoritativeCatalogSnapshot = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_authoritative_catalog_snapshot.sql"), "utf8");
+const prerequisitePrecheck = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_prerequisite_precheck.sql"), "utf8");
+const prerequisitePostcheck = fs.readFileSync(path.resolve(__dirname, "../supabase/manual-checks/leads_workspace_prerequisite_postcheck.sql"), "utf8");
 const api = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const leadsApi = require("../functions/admin-leads");
 
@@ -44,6 +46,42 @@ test("prerequisite is transactioneel, fail-closed en zonder destructieve datamut
   assert.doesNotMatch(prerequisite, /\bdrop\s+column\b/i);
   assert.doesNotMatch(prerequisite, /alter column [a-z_]+ set not null/i);
   assert.doesNotMatch(prerequisite, /lead_score/i);
+  assert.doesNotMatch(prerequisite, /\b(create|alter|drop)\s+policy\b/i);
+  assert.doesNotMatch(prerequisite, /^\s*(grant|revoke)\b/im);
+  assert.doesNotMatch(prerequisite, /026_sales_workspace_normalized_fields\.sql\s*;\s*$/im);
+});
+
+test("prerequisite precheck is read-only, single-result en fail-closed op de gezaghebbende baseline", () => {
+  assert.match(prerequisitePrecheck, /BEGIN READ ONLY;/);
+  assert.match(prerequisitePrecheck, /ROLLBACK;\s*$/);
+  assert.equal((prerequisitePrecheck.match(/\nSELECT check_name, status, finding_count, details, blocking/g) || []).length, 1);
+  for (const evidence of [
+    "yxxahurphdbblkuxoeje", "authoritative_row_counts",
+    "policy_contract_and_fingerprint", "privilege_hardening_active", "legacy_columns_compatible",
+    "unknown_lifecycle_values", "invalid_metadata_values", "assignment_conflicts", "invalid_metadata_timestamps",
+    "invalid_or_orphaned_uuid_references", "prerequisite_not_already_applied", "overall_readiness",
+  ]) assert.match(prerequisitePrecheck, new RegExp(evidence));
+  assert.ok(prerequisitePrecheck.includes("'leads=' || (SELECT count(*) FROM lead_rows) || '/12"));
+  assert.ok(prerequisitePrecheck.includes("customer_timeline_events=' || (SELECT row_count FROM timeline_total) || '/37"));
+  const executable = prerequisitePrecheck.replace(/--.*$/gm, "");
+  assert.doesNotMatch(executable, /^\s*(insert|update|delete|alter|create|drop|truncate|grant|revoke|call|do)\b/im);
+});
+
+test("prerequisite postcheck bewijst schema, data en security in één read-only resultset", () => {
+  assert.match(prerequisitePostcheck, /BEGIN READ ONLY;/);
+  assert.match(prerequisitePostcheck, /ROLLBACK;\s*$/);
+  assert.equal((prerequisitePostcheck.match(/\nSELECT check_name,status,finding_count,details,blocking/g) || []).length, 1);
+  for (const check of [
+    "prerequisite_column_types", "validated_check_constraints", "validated_auth_foreign_keys",
+    "prerequisite_indexes", "target_rls_enabled", "policy_contract_and_fingerprint",
+    "privilege_hardening_preserved", "required_application_privileges", "unknown_values",
+    "valid_timestamps", "assignment_consistency", "no_orphaned_uuid_references",
+    "migration_history_status", "overall_readiness",
+  ]) assert.match(prerequisitePostcheck, new RegExp(`'${check}'`));
+  assert.match(prerequisitePostcheck, /CASE WHEN applied THEN 'PASS' ELSE 'WARN' END/);
+  assert.match(prerequisitePostcheck, /SQL Editor does not automatically register migration history/);
+  const executable = prerequisitePostcheck.replace(/--.*$/gm, "");
+  assert.doesNotMatch(executable, /^\s*(insert|update|delete|alter|create|drop|truncate|grant|revoke|call|do)\b/im);
 });
 
 test("read-only productiepreflight dekt schema, data, assignment en timeline", () => {

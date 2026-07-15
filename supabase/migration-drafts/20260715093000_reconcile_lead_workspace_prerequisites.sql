@@ -1,5 +1,10 @@
 -- PREREQUISITE MIGRATION: run before 026_sales_workspace_normalized_fields.sql.
 -- DRAFT ONLY: do not apply without the production read-only preflight, backup and explicit approval.
+-- MANUAL SQL EDITOR ROUTE: select project yxxahurphdbblkuxoeje, run
+-- leads_workspace_prerequisite_precheck.sql, and continue only when overall_readiness=PASS.
+-- Then run this complete file as one SQL Editor action and immediately run
+-- leads_workspace_prerequisite_postcheck.sql. Stop on any error or blocking FAIL.
+-- Do not run migration 026, another draft, a CLI migration command, push or deploy in this step.
 -- Reconciles the already-designed lifecycle, assignment, calling, follow-up and attribution fields.
 -- It does not add pipeline_stage, interest_level, priority or other workspace-normalization columns.
 
