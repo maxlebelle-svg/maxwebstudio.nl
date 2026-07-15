@@ -4,6 +4,8 @@
 create schema auth;
 create table auth.users (id uuid primary key);
 insert into auth.users values ('11111111-1111-4111-8111-111111111111');
+create function auth.uid() returns uuid language sql stable as 'select ''11111111-1111-4111-8111-111111111111''::uuid';
+create function auth.role() returns text language sql stable as 'select current_user::text';
 
 revoke create on schema public from public, anon, authenticated;
 grant usage on schema public to anon, authenticated, service_role;
@@ -28,6 +30,13 @@ create table public.customer_timeline_events (
   metadata jsonb not null default '{}'::jsonb
 );
 
+create table public.profiles (
+  auth_user_id uuid primary key references auth.users(id),
+  role text not null,
+  status text not null
+);
+insert into public.profiles values ('11111111-1111-4111-8111-111111111111', 'super_admin', 'active');
+
 insert into public.leads (id, owner_id, created_by, assigned_to, lead_status, status, external_source, external_source_id)
 select
   format('00000000-0000-4000-8000-%s', lpad(i::text, 12, '0'))::uuid,
@@ -46,12 +55,21 @@ from generate_series(1, 37) i;
 alter table public.leads enable row level security;
 alter table public.customer_timeline_events enable row level security;
 
-create policy leads_admin_manage on public.leads for all using (true) with check (true);
-create policy leads_sales_manager_read_update on public.leads for all using (true) with check (true);
-create policy leads_sales_partner_insert_own on public.leads for insert with check (true);
-create policy leads_sales_partner_select_own on public.leads for select using (true);
-create policy leads_sales_partner_update_own on public.leads for update using (true) with check (true);
-create policy customer_timeline_events_service_role_all on public.customer_timeline_events for all using (true) with check (true);
+create policy leads_admin_manage on public.leads for all
+  using (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role in ('super_admin','admin') and p.status in ('active','invited')))
+  with check (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role in ('super_admin','admin') and p.status in ('active','invited')));
+create policy leads_sales_manager_read_update on public.leads for all
+  using (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role='sales_manager' and p.status in ('active','invited')))
+  with check (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role='sales_manager' and p.status in ('active','invited')));
+create policy leads_sales_partner_insert_own on public.leads for insert
+  with check (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role='sales_partner' and p.status in ('active','invited')) and auth.uid() in (owner_id,created_by,assigned_to));
+create policy leads_sales_partner_select_own on public.leads for select
+  using (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role='sales_partner' and p.status in ('active','invited')) and auth.uid() in (owner_id,created_by,assigned_to));
+create policy leads_sales_partner_update_own on public.leads for update
+  using (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role='sales_partner' and p.status in ('active','invited')) and auth.uid() in (owner_id,created_by,assigned_to))
+  with check (exists (select 1 from public.profiles p where p.auth_user_id=auth.uid() and p.role='sales_partner' and p.status in ('active','invited')) and auth.uid() in (owner_id,created_by,assigned_to));
+create policy customer_timeline_events_service_role_all on public.customer_timeline_events for all
+  using (auth.role()='service_role') with check (auth.role()='service_role');
 
 grant select, insert, update on public.leads to authenticated;
 grant select, insert, update on public.leads to service_role;
