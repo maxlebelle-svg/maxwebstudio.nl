@@ -1,3 +1,4 @@
+-- WORKSPACE NORMALIZATION MIGRATION: run after 20260715093000_reconcile_lead_workspace_prerequisites.sql.
 -- DRAFT ONLY: do not apply to production without an explicit rollout decision.
 -- Adds orthogonal Sales Workspace state without replacing lifecycle, calling or attribution fields.
 -- Prerequisite migrations must already provide the canonical lifecycle, calling, assignment and timeline fields.
