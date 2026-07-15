@@ -14,10 +14,12 @@
     <link rel="stylesheet" href="styles.css?v=20260707-sales-actions-demo" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css?v=20260709-briefing-system" />
     <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
+    <link rel="stylesheet" href="admin/styles/sales-workspace.css?v=20260715-sales-workspace" />
     <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
+    <script src="src/sales-workspace-model.js?v=20260715-sales-workspace"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
@@ -302,12 +304,12 @@
         <section class="admin-section" id="leadfinder">
           <div class="admin-section-heading">
             <div>
-              <p class="section-kicker">Sales cockpit</p>
+            <p class="section-kicker">Sales workspace</p>
               <h2>Leads</h2>
-              <p class="admin-section-intro">Beheer en volg alle potentiële klanten vanuit één premium salesoverzicht.</p>
+              <p class="admin-section-intro">Overzicht en beheer van al je leads</p>
             </div>
             <div class="sales-cockpit-actions">
-              <a class="button primary" href="admin-lead-generator.html#leadfinder-form">Nieuwe lead</a>
+              <a class="button primary" href="admin-lead-generator.html#leadfinder-form">+ Nieuwe lead</a>
               <a class="button secondary" href="admin-lead-generator.html">Lead Generator</a>
               <a class="button secondary" href="#leadfinder-detail">Sales workflow</a>
               <button class="button secondary" id="leadfinder-focus-search" type="button">Snel zoeken</button>
@@ -19577,6 +19579,11 @@
       let leadfinderSourceStatus = null;
       let leadfinderLastDiagnostics = null;
       let activeLeadfinderQuickFilter = null;
+      let activeSalesWorkspaceView = "all";
+      let salesWorkspacePage = 1;
+      const salesWorkspacePageSize = 25;
+      let salesWorkspaceFilterOpen = false;
+      const selectedSalesLeadIds = new Set();
       const leadfinderSortStorageKey = "maxwebstudioLeadfinderSortMode";
       const leadfinderSortModes = ["newest", "oldest", "updated_desc", "score_desc", "score_asc", "name_asc"];
       let leadfinderSortMode = localStorage.getItem(leadfinderSortStorageKey) || "newest";
@@ -19595,12 +19602,7 @@
       let googlePlacesResults = [];
       let googlePlacesPlace = null;
       let googlePlacesReady = false;
-      // TODO: replace this small Sales fallback with live user/team management once profiles are loaded server-side on this page.
-      const SALES_EMPLOYEE_FILTER_FALLBACKS = [
-        { value: "max@maxwebstudio.nl", label: "Max Le Belle", aliases: ["max le belle"] },
-        { value: "lisanne@maxwebstudio.nl", label: "Lisanne", aliases: ["lisanne", "lisanne post"] },
-        { value: "renzo@maxwebstudio.nl", label: "Renzo", aliases: ["renzo"] },
-      ];
+      const SALES_EMPLOYEE_FILTER_FALLBACKS = [];
       const LEGACY_LEAD_IMPORT_KEYS = [
         "maxwebstudioLeads",
         "maxwebstudioSalesLeads",
@@ -19634,6 +19636,177 @@
           select.appendChild(element);
         });
         select.value = selected;
+      }
+
+      function initializeSalesWorkspaceLayout() {
+        const section = leadfinderElements.section;
+        if (!section || document.getElementById("sales-workspace-shell")) return;
+        section.classList.add("sales-workspace-section");
+        const heading = section.querySelector(":scope > .admin-section-heading");
+        const filters = section.querySelector(":scope > .leadfinder-filters");
+        const list = leadfinderElements.list;
+        const detail = leadfinderElements.detail;
+        if (!heading || !filters || !list || !detail) return;
+
+        const kpis = document.createElement("div");
+        kpis.id = "sales-workspace-kpis";
+        kpis.className = "sales-workspace-kpis";
+        kpis.setAttribute("aria-label", "Sales kerncijfers");
+
+        const shell = document.createElement("div");
+        shell.id = "sales-workspace-shell";
+        shell.className = "sales-workspace-shell";
+        shell.innerHTML = `
+          <aside class="sales-workspace-views" aria-label="Slimme weergaven">
+            <div class="sales-workspace-column-title"><span>Slimme weergaven</span></div>
+            <nav id="sales-smart-views"></nav>
+          </aside>
+          <section class="sales-workspace-list-column" aria-label="Leadwerkvoorraad">
+            <div class="sales-workspace-toolbar">
+              <div class="sales-search-wrap" id="sales-workspace-search-wrap"></div>
+              <button class="button secondary" id="sales-workspace-filter-toggle" type="button" aria-expanded="false">Filters</button>
+              <button class="button secondary sales-sort-button" id="sales-workspace-sort" type="button">Sorteren</button>
+            </div>
+            <div class="sales-workspace-filter-panel" id="sales-workspace-filter-panel" hidden></div>
+            <div class="sales-workspace-results"><strong id="sales-workspace-result-count">0 leads</strong><span id="sales-workspace-active-view">Alle leads</span></div>
+            <div class="sales-workspace-bulk" id="sales-workspace-bulk" hidden></div>
+            <div id="sales-workspace-list-slot"></div>
+            <footer class="sales-workspace-pagination" id="sales-workspace-pagination"></footer>
+          </section>
+          <aside class="sales-workspace-detail-column" id="sales-workspace-detail-column" aria-label="Lead detail"></aside>
+        `;
+        heading.insertAdjacentElement("afterend", kpis);
+        kpis.insertAdjacentElement("afterend", shell);
+        const search = leadfinderElements.search;
+        if (search) {
+          search.placeholder = "Zoek bedrijf, contact, e-mail, telefoon, website, plaats of branche";
+          search.setAttribute("aria-label", "Leads zoeken");
+          shell.querySelector("#sales-workspace-search-wrap").append(search);
+        }
+        filters.querySelector("label:first-child")?.remove();
+        const model = window.MaxSalesWorkspaceModel;
+        filters.insertAdjacentHTML("beforeend", `
+          <label for="sales-filter-pipeline">Pipelinefase<select id="sales-filter-pipeline"><option value="">Alle fasen</option>${(model?.PIPELINE_STAGES || []).map((item) => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join("")}</select></label>
+          <label for="sales-filter-call">Belstatus<select id="sales-filter-call"><option value="">Alle belstatussen</option><option value="not_called">Nog bellen</option><option value="called">Gebeld</option><option value="no_answer">Geen gehoor</option><option value="voicemail">Voicemail</option><option value="callback">Terugbellen</option><option value="invalid_number">Ongeldig nummer</option><option value="busy">Bezet</option></select></label>
+          <label for="sales-filter-interest">Interesse<select id="sales-filter-interest"><option value="">Alle interesse</option><option value="hot">Zeer geïnteresseerd</option><option value="interested">Geïnteresseerd</option><option value="unsure">Twijfelt</option><option value="not_interested">Niet geïnteresseerd</option></select></label>
+          <label for="sales-filter-priority">Prioriteit<select id="sales-filter-priority"><option value="">Alle prioriteiten</option><option value="high">Hoog</option><option value="normal">Normaal</option><option value="low">Laag</option></select></label>
+          <label for="sales-filter-source">Bron<input id="sales-filter-source" type="search" placeholder="Bijv. Google Maps" /></label>
+          <label for="sales-filter-next-action">Volgende actie<select id="sales-filter-next-action"><option value="">Alle acties</option><option value="today">Vandaag of achterstallig</option><option value="planned">Actie gepland</option></select></label>
+        `);
+        shell.querySelector("#sales-workspace-filter-panel").append(filters);
+        shell.querySelector("#sales-workspace-list-slot").replaceWith(list);
+        shell.querySelector("#sales-workspace-detail-column").append(detail);
+        const summary = detail.querySelector('[data-sales-detail-panel="overview"]');
+        if (summary && !document.getElementById("sales-pipeline-visual")) {
+          summary.insertAdjacentHTML("beforeend", '<div class="sales-pipeline-visual" id="sales-pipeline-visual" aria-label="Commerciële pipeline"></div>');
+        }
+        renderSalesWorkspaceChrome(getLeadfinderLeads());
+      }
+
+      function renderSalesWorkspaceChrome(leads = [], pagination = null) {
+        const model = window.MaxSalesWorkspaceModel;
+        if (!model) return;
+        const counts = model.smartViewCounts(leads);
+        const smartViews = document.getElementById("sales-smart-views");
+        if (smartViews) {
+          smartViews.innerHTML = model.SMART_VIEWS.map((view) => `
+            <button class="sales-smart-view ${view.value === activeSalesWorkspaceView ? "is-active" : ""}" type="button" data-sales-view="${escapeHtml(view.value)}" aria-pressed="${view.value === activeSalesWorkspaceView}">
+              <span>${escapeHtml(view.label)}</span><b>${escapeHtml(counts[view.value] || 0)}</b>
+            </button>
+          `).join("");
+        }
+        const kpiValues = model.kpiCounts(leads);
+        const kpiDefinitions = [
+          ["new", "Nieuwe leads", kpiValues.new, "Nieuwe werkvoorraad", "+"] ,
+          ["callback", "Vandaag terugbellen", kpiValues.callback, "Vandaag", "☎"],
+          ["voicemail", "Voicemails", kpiValues.voicemail, "Onbeantwoord", "◉"],
+          ["demos", "Demo’s actief", kpiValues.demos, "In uitvoering", "◇"],
+          ["payment", "Wacht op betaling", kpiValues.payment, "Opvolging nodig", "€"],
+          ["customers", "Nieuwe klanten", kpiValues.customers, "Totaal in beeld", "✓"],
+        ];
+        const kpis = document.getElementById("sales-workspace-kpis");
+        if (kpis) kpis.innerHTML = kpiDefinitions.map(([view, label, value, caption, icon]) => `
+          <button class="sales-workspace-kpi ${view === activeSalesWorkspaceView ? "is-active" : ""}" type="button" data-sales-view="${view}" aria-pressed="${view === activeSalesWorkspaceView}">
+            <i aria-hidden="true">${icon}</i><span>${label}</span><strong>${value}</strong><small>${caption}</small>
+          </button>
+        `).join("");
+        const activeView = model.SMART_VIEWS.find((view) => view.value === activeSalesWorkspaceView);
+        const activeViewLabel = document.getElementById("sales-workspace-active-view");
+        if (activeViewLabel) activeViewLabel.textContent = activeView?.label || "Alle leads";
+        const resultCount = document.getElementById("sales-workspace-result-count");
+        if (resultCount && pagination) resultCount.textContent = `${pagination.total} lead${pagination.total === 1 ? "" : "s"}`;
+        renderSalesWorkspaceBulkBar();
+        renderSalesWorkspacePagination(pagination);
+      }
+
+      function renderSalesWorkspaceBulkBar() {
+        const target = document.getElementById("sales-workspace-bulk");
+        if (!target) return;
+        target.hidden = selectedSalesLeadIds.size === 0;
+        if (!selectedSalesLeadIds.size) return;
+        target.innerHTML = `<strong>${selectedSalesLeadIds.size} geselecteerd</strong><select id="sales-bulk-operation" aria-label="Bulkactie"><option value="priority">Prioriteit wijzigen</option><option value="call_disposition">Belstatus wijzigen</option><option value="interest_level">Interesse wijzigen</option><option value="owner">Eigenaar wijzigen</option><option value="archive">Archiveren</option></select><button class="button primary" id="sales-bulk-apply" type="button">Toepassen</button><button class="button secondary" id="sales-bulk-clear" type="button">Selectie wissen</button>`;
+      }
+
+      async function applySalesWorkspaceBulkAction() {
+        const operation = document.getElementById("sales-bulk-operation")?.value || "";
+        const choices = {
+          priority: ["high", "normal", "low"],
+          call_disposition: ["not_called", "called", "no_answer", "voicemail", "callback", "invalid_number", "busy"],
+          interest_level: ["hot", "interested", "unsure", "not_interested"],
+        };
+        let value = "";
+        let ownerEmail = "";
+        let ownerName = "";
+        if (operation === "owner") {
+          const employees = uniqueSalesEmployeeOptions();
+          const requested = window.prompt(`Kies eigenaar:\n${employees.map((item, index) => `${index + 1}. ${item.label}`).join("\n")}`);
+          const employee = employees[Number(requested) - 1];
+          if (!employee) return;
+          value = employee.authUserId || employee.value;
+          ownerEmail = employee.email || (String(employee.value).includes("@") ? employee.value : "");
+          ownerName = employee.label;
+        } else if (operation !== "archive") {
+          const requested = window.prompt(`Kies waarde: ${choices[operation].join(", ")}`);
+          if (!choices[operation].includes(requested)) return;
+          value = requested;
+        } else if (!window.confirm(`${selectedSalesLeadIds.size} leads archiveren?`)) {
+          return;
+        }
+        const result = await leadApiRequest("PATCH", { action: "bulk_update", ids: [...selectedSalesLeadIds], operation, value, ownerEmail, ownerName });
+        selectedSalesLeadIds.clear();
+        setLeadfinderMessage(`${result.updated || 0} leads bijgewerkt${result.failed ? `, ${result.failed} mislukt` : ""}.`, result.failed ? "warning" : "success");
+        await refreshLeads({ keepSelection: true });
+      }
+
+      function renderSalesWorkspacePagination(pagination) {
+        const target = document.getElementById("sales-workspace-pagination");
+        if (!target || !pagination) return;
+        const from = pagination.total ? (pagination.page - 1) * pagination.pageSize + 1 : 0;
+        const to = Math.min(pagination.page * pagination.pageSize, pagination.total);
+        target.innerHTML = `<span>${from}–${to} van ${pagination.total}</span><div><button type="button" data-sales-page="prev" ${pagination.page <= 1 ? "disabled" : ""} aria-label="Vorige pagina">←</button><button type="button" data-sales-page="next" ${pagination.page >= pagination.pages ? "disabled" : ""} aria-label="Volgende pagina">→</button></div>`;
+      }
+
+      function setSalesWorkspaceView(view = "all") {
+        if (!window.MaxSalesWorkspaceModel?.SMART_VIEWS.some((item) => item.value === view)) return;
+        activeSalesWorkspaceView = view;
+        salesWorkspacePage = 1;
+        activeLeadfinderQuickFilter = null;
+        renderLeadfinderList();
+      }
+
+      function renderSalesPipelineVisual(lead) {
+        const target = document.getElementById("sales-pipeline-visual");
+        const model = window.MaxSalesWorkspaceModel;
+        if (!target || !model) return;
+        if (!lead) {
+          target.innerHTML = '<p class="sales-timeline-empty">Selecteer een lead om de pipeline te bekijken.</p>';
+          return;
+        }
+        const normalized = model.normalizeLead(lead);
+        const currentIndex = model.PIPELINE_STAGES.findIndex((stage) => stage.value === normalized.pipelineStage);
+        target.innerHTML = `<div class="sales-timeline-heading"><strong>Pipeline</strong><span>Wijziging na bevestiging</span></div><div class="sales-pipeline-steps">${model.PIPELINE_STAGES.map((stage, index) => `
+          <button type="button" data-pipeline-stage="${stage.value}" class="${index < currentIndex ? "is-complete" : index === currentIndex ? "is-current" : ""}" aria-label="Pipeline wijzigen naar ${escapeHtml(stage.label)}" aria-current="${index === currentIndex ? "step" : "false"}"><i aria-hidden="true"></i><span>${escapeHtml(stage.label)}</span></button>
+        `).join("")}</div>`;
       }
 
       function setLeadfinderMessage(message, type = "success") {
@@ -21384,6 +21557,7 @@
 
       function getSalesNextAction(lead = {}) {
         if (!lead?.id) return { label: "Selecteer een lead", button: "Kies lead", action: "" };
+        if (lead.nextActionAt) return { label: `${lead.nextActionNote || "Geplande opvolgactie"} · ${formatLeadDate(lead.nextActionAt)}`, button: "Actie voltooien", action: "complete_next_action" };
         if (isLeadWon(lead)) return { label: "Omzetten naar klant", button: "Omzetten naar klant", action: "customer" };
         if (lead.callStatus === "quote_sent") return { label: "Offerte opvolgen", button: "Follow-up plannen", action: "followup" };
         if (lead.callStatus === "quote_ready" || lead.callStatus === "qualified" || lead.callStatus === "interesse") {
@@ -22632,6 +22806,13 @@
       }
 
       function handleLeadfinderListChange(event) {
+        const selection = event.target.closest("[data-sales-select-id]");
+        if (selection) {
+          if (selection.checked) selectedSalesLeadIds.add(selection.dataset.salesSelectId);
+          else selectedSalesLeadIds.delete(selection.dataset.salesSelectId);
+          renderSalesWorkspaceBulkBar();
+          return;
+        }
         const sortSelect = event.target.closest("[data-leadfinder-sort]");
         if (!sortSelect) return;
         leadfinderSortMode = leadfinderSortModes.includes(sortSelect.value) ? sortSelect.value : "newest";
@@ -22647,6 +22828,14 @@
         const industry = String(leadfinderElements.filterIndustry?.value || "").trim().toLowerCase();
         const region = String(leadfinderElements.filterRegion?.value || "").trim().toLowerCase();
         const minScore = Number(leadfinderElements.filterScore?.value || 0);
+        const normalizedFilters = {
+          pipelineStage: document.getElementById("sales-filter-pipeline")?.value || "",
+          callDisposition: document.getElementById("sales-filter-call")?.value || "",
+          interestLevel: document.getElementById("sales-filter-interest")?.value || "",
+          priority: document.getElementById("sales-filter-priority")?.value || "",
+          source: document.getElementById("sales-filter-source")?.value || "",
+          nextAction: document.getElementById("sales-filter-next-action")?.value || "",
+        };
 
         const baseLeads = getLeadfinderLeads();
         document.querySelectorAll("[data-lead-outcome-count]").forEach((element) => {
@@ -22668,12 +22857,14 @@
           ].join(" ").toLowerCase();
           return (!query || haystack.includes(query))
             && leadMatchesQuickFilter(lead)
+            && (!window.MaxSalesWorkspaceModel || window.MaxSalesWorkspaceModel.matchesSmartView(lead, activeSalesWorkspaceView))
             && (!websiteStatus || lead.websiteStatus === websiteStatus)
             && (!callStatus || lead.callStatus === callStatus)
             && (!owner || getEmployeeFilterTokens(owner).some((token) => getLeadOwnerFilterValues(lead).has(token)))
             && (!industry || String(lead.industry).toLowerCase().includes(industry))
             && (!region || String(lead.region).toLowerCase().includes(region))
-            && (!minScore || lead.leadScore >= minScore);
+            && (!minScore || lead.leadScore >= minScore)
+            && (!window.MaxSalesWorkspaceModel || window.MaxSalesWorkspaceModel.matchesFilters(lead, normalizedFilters));
         });
         const context = getLeadfinderUserContext();
         logLeadfinderDiagnostic("Leadfinder frontend filters toegepast", {
@@ -23112,9 +23303,15 @@
 
               function renderLeadfinderList() {
                 const allLeads = getLeadfinderLeads();
-                const leads = getFilteredLeadfinderLeads();
-                renderLeadfinderMetrics(leads);
-                renderSalesCockpit(leads);
+                const filteredLeads = getFilteredLeadfinderLeads();
+                const pagination = window.MaxSalesWorkspaceModel
+                  ? window.MaxSalesWorkspaceModel.paginate(filteredLeads, salesWorkspacePage, salesWorkspacePageSize)
+                  : { records: filteredLeads, page: 1, pageSize: filteredLeads.length || 25, pages: 1, total: filteredLeads.length };
+                salesWorkspacePage = pagination.page;
+                const leads = pagination.records;
+                renderLeadfinderMetrics(filteredLeads);
+                renderSalesCockpit(filteredLeads);
+                renderSalesWorkspaceChrome(allLeads, pagination);
                 renderRecentSalesActivity();
                 populateLeadfinderOwnerFilter(allLeads);
                 updateLeadfinderQuickFilterBar(leads.length);
@@ -23157,7 +23354,7 @@
         leadfinderElements.list.innerHTML = `
           ${warningHtml}
           <div class="lead-card-toolbar">
-            <strong>${escapeHtml(leads.length)} lead${leads.length === 1 ? "" : "s"} gevonden</strong>
+                    <strong>${escapeHtml(pagination.total)} lead${pagination.total === 1 ? "" : "s"} gevonden</strong>
             <label class="lead-card-sort-control">
               <span>Sorteer op</span>
               <select data-leadfinder-sort aria-label="Leads sorteren">
@@ -23177,8 +23374,9 @@
             const phoneHref = lead.phone ? `tel:${String(lead.phone).replace(/\s+/g, "")}` : "";
             const mapsUrl = lead.googleMapsUrl || (lead.companyName ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([lead.companyName, lead.region].filter(Boolean).join(" "))}` : "");
             return `
-              <article class="lead-card ${selectedLeadFinderId === lead.id ? "is-selected" : ""}" role="listitem" data-leadfinder-id="${escapeHtml(lead.id)}">
+              <article class="lead-card ${selectedLeadFinderId === lead.id ? "is-selected" : ""}" role="listitem" tabindex="0" data-leadfinder-id="${escapeHtml(lead.id)}">
                 <div class="lead-card-main">
+                  <label class="sales-lead-select" aria-label="${escapeHtml(lead.companyName || "Lead")} selecteren"><input type="checkbox" data-sales-select-id="${escapeHtml(lead.id)}" ${selectedSalesLeadIds.has(lead.id) ? "checked" : ""} /></label>
                   <div class="lead-avatar" aria-hidden="true">${escapeHtml(leadInitials(lead))}</div>
                   <div class="lead-identity">
                     <div class="lead-title-row">
@@ -23294,6 +23492,7 @@
           ] : [["Geen lead geselecteerd", "Klik op Bekijken in de lijst."]]);
         }
         renderLeadBusinessPreview(lead);
+        renderSalesPipelineVisual(lead);
         renderLeadOwnerAssignment(lead);
         if (leadfinderElements.contactList) {
           renderLeadDetailRows(leadfinderElements.contactList, hasLead ? [
@@ -23941,6 +24140,7 @@
       }
 
       async function handleLeadfinderListClick(event) {
+        if (event.target.closest("[data-sales-select-id]")) return;
         if (event.target.closest("[data-lead-owner-card-select]")) {
           event.stopPropagation();
           return;
@@ -24145,6 +24345,18 @@
       async function runSalesCockpitAction(action) {
         const lead = selectedLeadFinderLead();
         if (!lead) return;
+        if (action === "complete_next_action") {
+          const idempotencyKey = `next-action:${lead.id}:${lead.nextActionAt || "open"}`.replace(/[^a-zA-Z0-9:_-]/g, "-");
+          try {
+            const result = await leadApiRequest("PATCH", { id: lead.id, action: "complete_next_action", idempotencyKey }, { id: lead.id });
+            selectedLeadFinderId = result.lead?.id || lead.id;
+            setLeadfinderMessage(result.duplicate ? "Deze actie was al voltooid." : "Actie voltooid en aan de tijdlijn toegevoegd.", "success");
+            await refreshLeads({ keepSelection: true });
+          } catch (error) {
+            setLeadfinderMessage(error.message || "Actie kon niet worden voltooid.", "error");
+          }
+          return;
+        }
         if (action === "call") {
           if (lead.phone) window.location.href = `tel:${String(lead.phone).replace(/\s+/g, "")}`;
           await markSelectedLeadStatus("contact_planned", "Belactie gestart. Lead staat op contact gepland.");
@@ -24270,7 +24482,7 @@
         hydrateWebsiteAnalysisState();
         hydrateLeadNotesState();
         hydrateLeadNoteDraftState();
-        ensureLeadFinderDemoData();
+        initializeSalesWorkspaceLayout();
         await loadLeadfinderDataLayer();
         populateLeadfinderOwnerFilter();
         const requestedOwner = new URLSearchParams(window.location.search).get("owner") || "";
@@ -24306,9 +24518,19 @@
           resetLeadfinderForm();
           setLeadfinderMessage("Formulier leeggemaakt.", "success");
         });
-        [leadfinderElements.search, leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
-          element?.addEventListener("input", renderLeadfinderList);
-          element?.addEventListener("change", renderLeadfinderList);
+        let searchDebounceTimer = null;
+        leadfinderElements.search?.addEventListener("input", () => {
+          window.clearTimeout(searchDebounceTimer);
+          searchDebounceTimer = window.setTimeout(() => { salesWorkspacePage = 1; renderLeadfinderList(); }, 220);
+        });
+        [leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
+          element?.addEventListener("input", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
+          element?.addEventListener("change", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
+        });
+        document.querySelectorAll("#sales-workspace-filter-panel input, #sales-workspace-filter-panel select").forEach((element) => {
+          if ([leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].includes(element)) return;
+          element.addEventListener("input", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
+          element.addEventListener("change", () => { salesWorkspacePage = 1; renderLeadfinderList(); });
         });
         [leadfinderElements.ownerView, leadfinderElements.filterOwner].forEach((element) => {
           element?.addEventListener("change", () => syncLeadfinderOwnerDashboardFilter(element));
@@ -24344,6 +24566,57 @@
                 });
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
         leadfinderElements.list.addEventListener("change", handleLeadfinderListChange);
+        leadfinderElements.list.addEventListener("keydown", (event) => {
+          const row = event.target.closest("[data-leadfinder-id]");
+          if (row && ["Enter", " "].includes(event.key)) {
+            event.preventDefault();
+            openLeadfinderDetail(row.dataset.leadfinderId);
+          }
+        });
+        leadfinderElements.section?.addEventListener("click", (event) => {
+          if (event.target.closest("#sales-bulk-clear")) {
+            selectedSalesLeadIds.clear();
+            renderLeadfinderList();
+            return;
+          }
+          if (event.target.closest("#sales-bulk-apply")) {
+            event.target.closest("#sales-bulk-apply").disabled = true;
+            applySalesWorkspaceBulkAction().catch((error) => setLeadfinderMessage(error.message || "Bulkactie kon niet worden uitgevoerd.", "error"));
+            return;
+          }
+          const pipelineButton = event.target.closest("[data-pipeline-stage]");
+          if (pipelineButton) {
+            const lead = selectedLeadFinderLead();
+            const stage = pipelineButton.dataset.pipelineStage;
+            const config = window.MaxSalesWorkspaceModel?.PIPELINE_STAGES.find((item) => item.value === stage);
+            if (lead && config && window.confirm(`Pipelinefase wijzigen naar ${config.label}?`)) {
+              pipelineButton.disabled = true;
+              updateLeadfinderLead(lead, { pipelineStage: stage }, `Pipelinefase gewijzigd naar ${config.label}.`).catch((error) => setLeadfinderMessage(error.message || "Pipelinefase kon niet worden gewijzigd.", "error"));
+            }
+          }
+          const viewButton = event.target.closest("[data-sales-view]");
+          if (viewButton) setSalesWorkspaceView(viewButton.dataset.salesView);
+          const pageButton = event.target.closest("[data-sales-page]");
+          if (pageButton && !pageButton.disabled) {
+            salesWorkspacePage += pageButton.dataset.salesPage === "next" ? 1 : -1;
+            renderLeadfinderList();
+            leadfinderElements.list?.focus({ preventScroll: true });
+          }
+          if (event.target.closest("#sales-workspace-filter-toggle")) {
+            salesWorkspaceFilterOpen = !salesWorkspaceFilterOpen;
+            const panel = document.getElementById("sales-workspace-filter-panel");
+            const toggle = document.getElementById("sales-workspace-filter-toggle");
+            if (panel) panel.hidden = !salesWorkspaceFilterOpen;
+            toggle?.setAttribute("aria-expanded", String(salesWorkspaceFilterOpen));
+          }
+          if (event.target.closest("#sales-workspace-sort")) {
+            const current = leadfinderSortModes.indexOf(leadfinderSortMode);
+            leadfinderSortMode = leadfinderSortModes[(current + 1) % leadfinderSortModes.length];
+            localStorage.setItem(leadfinderSortStorageKey, leadfinderSortMode);
+            event.target.closest("#sales-workspace-sort").textContent = leadSortLabel(leadfinderSortMode);
+            renderLeadfinderList();
+          }
+        });
         leadfinderElements.backToList?.addEventListener("click", () => closeLeadfinderDetail());
         window.addEventListener("popstate", () => {
           if (!restoreLeadfinderDetailFromUrl({ tab: activeSalesDetailTab })) {

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sales Workspace visuele testfixture</title>
+  <link rel="stylesheet" href="../../public/styles.css" />
+  <link rel="stylesheet" href="../../public/admin/styles/premium-design-system.css" />
+  <link rel="stylesheet" href="../../public/admin/styles/admin-sidebar-system.css" />
+  <link rel="stylesheet" href="../../public/admin/styles/sales-workspace.css" />
+  <style>
+    body { margin: 0; background: #071326; color: #edf5ff; font-family: Inter, system-ui, sans-serif; }
+    .fixture-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+    .fixture-sidebar { position: sticky; top: 0; height: 100vh; padding: 1rem; background: #08182d; border-right: 1px solid #1b3658; }
+    .fixture-logo { display: flex; align-items: center; gap: .65rem; margin-bottom: 1.5rem; font-weight: 900; }
+    .fixture-logo i { display: grid; width: 34px; height: 34px; place-items: center; color: white; background: #2778ed; border-radius: 10px; font-style: normal; }
+    .fixture-sidebar nav { display: grid; gap: .28rem; }
+    .fixture-sidebar a { padding: .7rem .75rem; color: #859bb9; text-decoration: none; border-radius: 9px; font-size: .76rem; }
+    .fixture-sidebar a.active { color: white; background: #142d50; }
+    .fixture-main { min-width: 0; padding: 1.1rem 1.25rem 2rem; }
+    .fixture-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.15rem; }
+    .fixture-topbar span { color: #849bbd; font-size: .72rem; }
+    .fixture-profile { display: flex; align-items: center; gap: .55rem; }
+    .fixture-avatar { display: grid; width: 32px; height: 32px; place-items: center; background: #1f559e; border-radius: 50%; }
+    .sales-workspace-section { padding: 0 !important; }
+    .sales-workspace-section > .admin-section-heading { display: flex; justify-content: space-between; }
+    .sales-workspace-section h2 { margin: .15rem 0; font-size: 1.8rem; }
+    .sales-workspace-section p { margin: 0; color: #879dbb; }
+    .section-kicker { color: #4a92ff !important; font-size: .65rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .lead-card-main { display: flex; align-items: center; gap: .6rem; }
+    .lead-identity { min-width: 0; flex: 1; }
+    .lead-title-row { display: flex; align-items: center; gap: .45rem; }
+    .lead-title-row h3 { margin: 0; }
+    .lead-meta-line,.lead-owner-row { display: flex; gap: .45rem; margin-top: .22rem; }
+    .lead-avatar { display: grid; place-items: center; border-radius: 10px; background: #173963; color: #9bc4ff; font-weight: 800; }
+    .lead-score-ring { display: grid; place-items: center; border-radius: 50%; background: #18375d; border: 3px solid #337ddc; }
+    .lead-score-ring strong { font-size: .72rem; }
+    .status-badge { padding: .18rem .4rem; border-radius: 999px; color: #a7c9fa; background: rgba(53,126,220,.18); }
+    .leadfinder-detail-card section { padding: .85rem; margin-top: .65rem; background: rgba(13,33,61,.74); border: 1px solid #1e416b; border-radius: 12px; }
+    .sales-lead-detail-toolbar,.sales-detail-card-heading,.sales-timeline-heading { display: flex; justify-content: space-between; gap: .75rem; }
+    .sales-detail-tabs { display: flex; gap: .35rem; margin-top: .7rem; }
+    .sales-detail-tab { padding: .48rem .6rem; color: #8197b6; background: transparent; border: 0; border-radius: 7px; }
+    .sales-detail-tab.is-active { color: white; background: #173a67; }
+    .fixture-detail-list { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; margin-top: .7rem; }
+    .fixture-detail-list div { display: grid; gap: .1rem; }
+    .fixture-detail-list span { color: #7f96b6; font-size: .58rem; text-transform: uppercase; }
+    .fixture-detail-list strong { font-size: .72rem; }
+    .fixture-actions { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .7rem; }
+    .fixture-actions button { padding: .45rem .58rem; color: #dce9fb; background: #142f54; border: 1px solid #285384; border-radius: 8px; }
+    .fixture-empty { display: grid; min-height: 460px; place-items: center; text-align: center; color: #8499b8; }
+    .fixture-empty b { display: block; color: #d8e6f8; margin-bottom: .3rem; }
+    .fixture-note { position: fixed; right: 12px; bottom: 10px; z-index: 2000; padding: .35rem .55rem; color: #8ca3c3; background: rgba(4,13,28,.88); border: 1px solid #1d3c63; border-radius: 7px; font-size: .58rem; }
+    @media(max-width:800px){.fixture-shell{grid-template-columns:72px minmax(0,1fr)}.fixture-sidebar{padding:.7rem}.fixture-sidebar a{font-size:0;padding:.65rem}.fixture-sidebar a::first-letter{font-size:.8rem}.fixture-logo span{display:none}.fixture-main{padding:.7rem}.sales-workspace-kpis{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+<div class="fixture-shell">
+  <aside class="fixture-sidebar"><div class="fixture-logo"><i>M</i><span>Max Webstudio</span></div><nav><a href="#">⌂ Dashboard</a><a class="active" href="#">↗ Leads</a><a href="#">◎ Klanten</a><a href="#">◇ Projecten</a><a href="#">▣ Websites</a><a href="#">§ Offertes</a><a href="#">€ Facturen</a></nav></aside>
+  <main class="fixture-main">
+    <header class="fixture-topbar"><span>Sales / Leads</span><div class="fixture-profile"><span>Max Le Belle</span><div class="fixture-avatar">ML</div></div></header>
+    <section class="admin-section sales-workspace-section is-lead-detail-open" id="leadfinder">
+      <div class="admin-section-heading"><div><p class="section-kicker">Sales workspace</p><h2>Leads</h2><p>Overzicht en beheer van al je leads</p></div><button class="button primary">+ Nieuwe lead</button></div>
+      <div class="sales-workspace-kpis" id="kpis"></div>
+      <div class="sales-workspace-shell" id="sales-workspace-shell">
+        <aside class="sales-workspace-views"><div class="sales-workspace-column-title">Slimme weergaven</div><nav id="views"></nav></aside>
+        <section class="sales-workspace-list-column"><div class="sales-workspace-toolbar"><div class="sales-search-wrap"><input id="search" type="search" placeholder="Zoek bedrijf, contact, e-mail, telefoon, website, plaats of branche" /></div><button class="button secondary" id="filters">Filters</button><button class="button secondary sales-sort-button">Sorteren</button></div><div class="sales-workspace-filter-panel" id="filter-panel" hidden><div class="leadfinder-filters"><label>Eigenaar<select><option>Alle medewerkers</option><option>Lisanne</option><option>Renzo</option></select></label><label>Pipelinefase<select><option>Alle fasen</option><option>Demo gepland</option></select></label><label>Belstatus<select><option>Alle belstatussen</option><option>Terugbellen</option></select></label><label>Prioriteit<select><option>Alle prioriteiten</option><option>Hoog</option></select></label></div></div><div class="sales-workspace-results"><strong id="result-count"></strong><span id="view-label">Alle leads</span></div><div class="admin-table leadfinder-table" id="leadfinder-list"></div><footer class="sales-workspace-pagination"><span>1–8 van 248</span><div><button disabled>←</button><button>→</button></div></footer></section>
+        <aside class="sales-workspace-detail-column" id="detail"></aside>
+      </div>
+    </section>
+  </main>
+</div>
+<span class="fixture-note">Geïsoleerde visuele testfixture · geen productiegegevens</span>
+<script src="../../public/src/sales-workspace-model.js"></script>
+<script>
+const leads=[
+ {id:'1',companyName:'SolarFast',industry:'Zonnepanelen',region:'Breda',leadScore:92,pipelineStage:'demo_planned',callDisposition:'callback',interestLevel:'hot',priority:'high',assignedUserName:'Lisanne',nextActionAt:'2026-07-16T10:30:00',source:'Google Maps'},
+ {id:'2',companyName:'Van Dijk Installatie',industry:'Installatietechniek',region:'Tilburg',leadScore:86,pipelineStage:'interested',callDisposition:'voicemail',interestLevel:'hot',priority:'high',assignedUserName:'Renzo',source:'Koude acquisitie'},
+ {id:'3',companyName:'Studio Noord',industry:'Interieurontwerp',region:'Rotterdam',leadScore:78,pipelineStage:'demo_in_progress',callDisposition:'called',interestLevel:'interested',priority:'normal',assignedUserName:'Max',source:'Referral'},
+ {id:'4',companyName:'De Groene Tuin',industry:'Hovenier',region:'Eindhoven',leadScore:74,pipelineStage:'awaiting_feedback',callDisposition:'callback',interestLevel:'interested',priority:'normal',assignedUserName:'Lisanne',source:'Websiteformulier'},
+ {id:'5',companyName:'Bouwkracht BV',industry:'Bouwbedrijf',region:'Utrecht',leadScore:69,pipelineStage:'awaiting_payment',callDisposition:'called',interestLevel:'unsure',priority:'high',assignedUserName:'Renzo',source:'LinkedIn'},
+ {id:'6',companyName:'Fysio Vitaal',industry:'Fysiotherapie',region:'Amsterdam',leadScore:63,pipelineStage:'new',callDisposition:'not_called',interestLevel:'unsure',priority:'normal',assignedUserName:'Lisanne',source:'Google Ads'},
+ {id:'7',companyName:'Kapsalon Maison',industry:'Kapsalon',region:'Den Bosch',leadScore:58,pipelineStage:'contacted',callDisposition:'no_answer',interestLevel:'unsure',priority:'low',assignedUserName:'Max',source:'Google Maps'},
+ {id:'8',companyName:'Jansen Finance',industry:'Financieel advies',region:'Breda',leadScore:81,pipelineStage:'customer',callDisposition:'called',interestLevel:'hot',priority:'normal',assignedUserName:'Lisanne',source:'Referral'}
+];
+const M=window.MaxSalesWorkspaceModel; let active='all', selected=leads[0];
+function render(){const counts=M.smartViewCounts(leads,new Date('2026-07-15T12:00:00'));views.innerHTML=M.SMART_VIEWS.map(v=>`<button class="sales-smart-view ${active===v.value?'is-active':''}" data-view="${v.value}"><span>${v.label}</span><b>${counts[v.value]}</b></button>`).join('');const K=M.kpiCounts(leads);const ks=[['new','Nieuwe leads',K.new,'Nieuwe werkvoorraad','+'],['callback','Vandaag terugbellen',K.callback,'Vandaag','☎'],['voicemail','Voicemails',K.voicemail,'Onbeantwoord','◉'],['demos','Demo’s actief',K.demos,'In uitvoering','◇'],['payment','Wacht op betaling',K.payment,'Opvolging nodig','€'],['customers','Nieuwe klanten',K.customers,'Totaal in beeld','✓']];kpis.innerHTML=ks.map(k=>`<button class="sales-workspace-kpi ${active===k[0]?'is-active':''}" data-view="${k[0]}"><i>${k[4]}</i><span>${k[1]}</span><strong>${k[2]}</strong><small>${k[3]}</small></button>`).join('');let list=leads.filter(l=>M.matchesSmartView(l,active,new Date('2026-07-15T12:00:00'))&&(!search.value||Object.values(l).join(' ').toLowerCase().includes(search.value.toLowerCase())));result_count.textContent=`${list.length} leads`;view_label.textContent=M.SMART_VIEWS.find(v=>v.value===active)?.label||'Alle leads';leadfinder_list.innerHTML=list.length?list.map(l=>`<article class="lead-card ${selected?.id===l.id?'is-selected':''}" data-id="${l.id}"><div class="lead-card-main"><label class="sales-lead-select"><input type="checkbox" aria-label="${l.companyName} selecteren"></label><div class="lead-avatar">${l.companyName.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="lead-identity"><div class="lead-title-row"><h3>${l.companyName}</h3><mark class="status-badge">${M.PIPELINE_STAGES.find(s=>s.value===l.pipelineStage)?.label}</mark></div><div class="lead-meta-line"><span>${l.industry}</span><span>· ${l.source}</span></div><div class="lead-owner-row"><span>${l.assignedUserName}</span><span>· ${l.region}</span></div></div></div><div class="lead-score-panel"><div class="lead-score-ring"><strong>${l.leadScore}</strong></div></div></article>`).join(''):`<div class="fixture-empty"><div><b>Geen leads gevonden</b><span>Pas je zoekopdracht of filters aan.</span></div></div>`;renderDetail();}
+function renderDetail(){if(!selected){detail.innerHTML='<div class="fixture-empty"><div><b>Selecteer een lead</b><span>De details verschijnen hier.</span></div></div>';return}const n=M.normalizeLead(selected),idx=M.PIPELINE_STAGES.findIndex(s=>s.value===n.pipelineStage);detail.innerHTML=`<article class="leadfinder-detail-card"><div class="sales-lead-detail-toolbar"><button class="button secondary" id="drawer-close">Terug</button><div><span>Lead detail</span><strong>${selected.companyName}</strong></div></div><nav class="sales-detail-tabs"><button class="sales-detail-tab is-active">Overzicht</button><button class="sales-detail-tab">Belscript</button><button class="sales-detail-tab">Analyse</button><button class="sales-detail-tab">Acties</button></nav><section><div class="sales-detail-card-heading"><div><span>Lead overzicht</span><strong>${selected.companyName}</strong></div><mark class="status-badge">Score ${selected.leadScore}</mark></div><div class="fixture-detail-list"><div><span>Eigenaar</span><strong>${selected.assignedUserName}</strong></div><div><span>Volgende actie</span><strong>Morgen 10:30</strong></div><div><span>Branche</span><strong>${selected.industry}</strong></div><div><span>Bron</span><strong>${selected.source}</strong></div><div><span>Telefoon</span><strong>+31 6 12 34 56 78</strong></div><div><span>E-mail</span><strong>contact@voorbeeld.nl</strong></div></div><div class="fixture-actions"><button>Bellen</button><button>E-mail</button><button>WhatsApp</button><button>Notitie</button></div><div class="sales-pipeline-visual"><div class="sales-timeline-heading"><strong>Pipeline</strong><span>Wijziging na bevestiging</span></div><div class="sales-pipeline-steps">${M.PIPELINE_STAGES.map((s,i)=>`<button class="${i<idx?'is-complete':i===idx?'is-current':''}"><i></i><span>${s.label}</span></button>`).join('')}</div></div></section><section><div class="sales-timeline-heading"><strong>Volgende actie</strong><span>Morgen 10:30</span></div><p>Bel terug en bespreek de demo-opzet.</p><button class="button primary">Actie voltooien</button></section><section><div class="sales-timeline-heading"><strong>Tijdlijn</strong><span>5 gebeurtenissen</span></div><p>Vandaag 14:20 · Lisanne · Terugbelafspraak gepland</p><p>Gisteren 16:05 · Lisanne · Voicemail achtergelaten</p><p>14 juli 09:42 · Systeem · Lead toegewezen</p></section></article>`;}
+document.addEventListener('click',e=>{const v=e.target.closest('[data-view]');if(v){active=v.dataset.view;render()}const row=e.target.closest('[data-id]');if(row){selected=leads.find(l=>l.id===row.dataset.id);document.getElementById('leadfinder').classList.add('is-lead-detail-open');render()}if(e.target.id==='filters'){filter_panel.hidden=!filter_panel.hidden}if(e.target.id==='drawer-close'){document.getElementById('leadfinder').classList.remove('is-lead-detail-open')}});search.addEventListener('input',render);const result_count=document.getElementById('result-count'),view_label=document.getElementById('view-label'),leadfinder_list=document.getElementById('leadfinder-list'),filter_panel=document.getElementById('filter-panel');render();
+</script>
+</body>
+</html>

@@ -11,6 +11,10 @@ const {
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
 const acquisitionChannels = new Set(["website", "email", "outbound_sales", "referral", "phone", "social", "partner", "manual", "import", "other"]);
+const pipelineStages = new Set(["new", "contacted", "interested", "demo_planned", "demo_in_progress", "demo_sent", "awaiting_feedback", "approved", "awaiting_payment", "customer", "closed"]);
+const callDispositions = new Set(["not_called", "called", "no_answer", "voicemail", "callback", "invalid_number", "busy"]);
+const interestLevels = new Set(["hot", "interested", "unsure", "not_interested"]);
+const leadPriorities = new Set(["high", "normal", "low"]);
 const allowedStatuses = new Set([
   "lead",
   "bellen",
@@ -256,6 +260,7 @@ async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
 
 async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   const payload = parsePayload(event.body);
+  if (payload.action === "bulk_update") return bulkUpdateLeads({ payload, supabaseUrl, serviceRoleKey, admin });
   const id = cleanText(payload.id || event.queryStringParameters?.id);
   if (!id) return jsonResponse(400, { success: false, error: "Lead id ontbreekt." });
   const existingLead = await assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id });
@@ -285,6 +290,52 @@ async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   const lead = mapLead(rows[0] || { id, ...modernRecord });
   await insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId: lead.id, admin, eventType: "lead_updated", title: "Lead bijgewerkt", metadata: { status: lead.leadStatus } });
   return jsonResponse(200, { success: true, lead, updated: true });
+}
+
+async function bulkUpdateLeads({ payload = {}, supabaseUrl, serviceRoleKey, admin }) {
+  const ids = [...new Set((Array.isArray(payload.ids) ? payload.ids : []).map(cleanText).filter(Boolean))].slice(0, 100);
+  const operation = cleanText(payload.operation);
+  const value = cleanText(payload.value);
+  if (!ids.length) return jsonResponse(400, { success: false, error: "Selecteer minimaal één lead." });
+  if (!["owner", "call_disposition", "interest_level", "priority", "archive"].includes(operation)) {
+    return jsonResponse(400, { success: false, error: "Kies een geldige bulkactie." });
+  }
+  if (operation === "owner" && !managerRoles.has(normalizeRole(admin.role))) {
+    return jsonResponse(403, { success: false, error: "Alleen een salesmanager of beheerder mag eigenaren in bulk wijzigen." });
+  }
+  const results = [];
+  for (const id of ids) {
+    try {
+      const existingLead = await assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id });
+      if (operation === "owner") {
+        const response = await assignLead({ payload: { assignedTo: value, assignedUserId: value, assignedUserEmail: payload.ownerEmail, assignedUserName: payload.ownerName }, existingLead, supabaseUrl, serviceRoleKey, admin, id });
+        const body = parsePayload(response.body, true);
+        if (response.statusCode >= 400) throw Object.assign(new Error(body.error || "Toewijzing mislukt."), { status: response.statusCode });
+      } else {
+        const changes = operation === "archive"
+          ? { pipelineStage: "closed", metadata: { archivedAt: new Date().toISOString() } }
+          : ({ call_disposition: { callDisposition: value }, interest_level: { interestLevel: value }, priority: { priority: value } })[operation];
+        const record = leadPayload(changes, admin, { update: true, existingLead });
+        record.metadata = { ...(existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {}), ...(record.metadata || {}) };
+        if (operation === "archive") record.archived_at = record.metadata.archivedAt;
+        await trySchemaAttempts([
+          () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record }),
+          () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: { metadata: record.metadata, updated_at: record.updated_at } }),
+        ]);
+        await insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId: id, admin, eventType: "lead_bulk_updated", title: "Lead via bulkactie bijgewerkt", metadata: { operation, value } });
+      }
+      results.push({ id, success: true });
+    } catch (error) {
+      results.push({ id, success: false, error: error.message || "Bijwerken mislukt." });
+    }
+  }
+  return jsonResponse(results.some((result) => result.success) ? 200 : 409, {
+    success: results.every((result) => result.success),
+    partial: results.some((result) => result.success) && results.some((result) => !result.success),
+    results,
+    updated: results.filter((result) => result.success).length,
+    failed: results.filter((result) => !result.success).length,
+  });
 }
 
 async function insertLeadRecord({ supabaseUrl, serviceRoleKey, record }) {
@@ -351,7 +402,7 @@ async function assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id }) {
 
 async function readLeadRows({ supabaseUrl, serviceRoleKey, id = "" }) {
   const selects = [
-    "id,company_name,contact_name,email,phone,website,status,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,acquisition_channel,sourced_by_user_id,closed_by_user_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes,is_demo,environment,metadata,created_at,updated_at",
+    "id,company_name,contact_name,email,phone,website,status,lead_status,pipeline_stage,call_disposition,interest_level,priority,is_favorite,archived_at,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,acquisition_channel,sourced_by_user_id,closed_by_user_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,next_action_completed_at,next_action_completed_by,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company_name,contact_name,email,phone,website,status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company,name,email,phone,source,status,converted_customer_id,notes,is_demo,environment,metadata,created_at,updated_at,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes",
@@ -617,7 +668,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
   const existingMeta = options.existingLead?.metadata && typeof options.existingLead.metadata === "object" ? options.existingLead.metadata : {};
   const assignment = resolveLeadAssignment(payload, admin, options);
   const identifiers = normalizedLeadIdentifiers(payload);
-  const lifecycleStatus = normalizeLifecycleStatus(payload.leadStatus || payload.lead_status || payload.status || payload.callStatus || "new");
+  const lifecycleStatus = normalizeLifecycleStatus(payload.leadStatus || payload.lead_status || payload.status || payload.callStatus || options.existingLead?.lead_status || options.existingLead?.leadStatus || existingMeta.leadStatus || existingMeta.lead_status || "new");
   const ownerAuthUserId = firstCleanText(payload.ownerAuthUserId, payload.owner_id, existingMeta.ownerAuthUserId, existingMeta.owner_auth_user_id, options.create ? admin.id : "");
   const ownerProfileId = firstCleanText(payload.ownerProfileId, payload.owner_profile_id, existingMeta.ownerProfileId, existingMeta.owner_profile_id);
   const ownerEmail = firstCleanText(payload.ownerEmail, payload.owner_email, existingMeta.ownerEmail, existingMeta.owner_email, payload.createdByEmail, options.create ? admin.email : "").toLowerCase();
@@ -646,6 +697,18 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
   const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
   const hasLeadScore = Object.prototype.hasOwnProperty.call(payload, "leadScore") || Object.prototype.hasOwnProperty.call(payload, "score") || Object.prototype.hasOwnProperty.call(payload, "lead_score");
   const hasFollowUpDate = Object.prototype.hasOwnProperty.call(payload, "followUpDate") || Object.prototype.hasOwnProperty.call(payload, "follow_up_date");
+  const hasPipelineStage = Object.prototype.hasOwnProperty.call(payload, "pipelineStage") || Object.prototype.hasOwnProperty.call(payload, "pipeline_stage");
+  const hasCallDisposition = Object.prototype.hasOwnProperty.call(payload, "callDisposition") || Object.prototype.hasOwnProperty.call(payload, "call_disposition");
+  const hasInterestLevel = Object.prototype.hasOwnProperty.call(payload, "interestLevel") || Object.prototype.hasOwnProperty.call(payload, "interest_level");
+  const hasPriority = Object.prototype.hasOwnProperty.call(payload, "priority");
+  const pipelineStage = cleanText(payload.pipelineStage || payload.pipeline_stage || options.existingLead?.pipeline_stage || options.existingLead?.pipelineStage || existingMeta.pipelineStage || existingMeta.pipeline_stage || "new").toLowerCase();
+  const callDisposition = cleanText(payload.callDisposition || payload.call_disposition || options.existingLead?.call_disposition || options.existingLead?.callDisposition || existingMeta.callDisposition || existingMeta.call_disposition || "not_called").toLowerCase();
+  const interestLevel = cleanText(payload.interestLevel || payload.interest_level || options.existingLead?.interest_level || options.existingLead?.interestLevel || existingMeta.interestLevel || existingMeta.interest_level || "unsure").toLowerCase();
+  const priority = cleanText(payload.priority || options.existingLead?.priority || existingMeta.priority || "normal").toLowerCase();
+  if (!pipelineStages.has(pipelineStage)) throw Object.assign(new Error("Kies een geldige pipelinefase."), { status: 400 });
+  if (!callDispositions.has(callDisposition)) throw Object.assign(new Error("Kies een geldige belstatus."), { status: 400 });
+  if (!interestLevels.has(interestLevel)) throw Object.assign(new Error("Kies een geldige interesse."), { status: 400 });
+  if (!leadPriorities.has(priority)) throw Object.assign(new Error("Kies een geldige prioriteit."), { status: 400 });
   const status = cleanText(hasStatus ? (payload.status || payload.callStatus) : "nieuw").toLowerCase();
   if (status && !allowedStatuses.has(status)) {
     const error = new Error("Ongeldige leadstatus.");
@@ -660,6 +723,10 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     website: cleanText(payload.websiteUrl || payload.website),
     status: status || "nieuw",
     lead_status: lifecycleStatus,
+    pipeline_stage: pipelineStage,
+    call_disposition: callDisposition,
+    interest_level: interestLevel,
+    priority,
     notes: cleanText(payload.notes || payload.message),
     assigned_to: assignment.id,
     assigned_user_id: firstUuid(assignment.userId, assignment.id),
@@ -674,7 +741,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     normalized_company_name: identifiers.normalizedCompanyName || normalizeCompanyName(payload.companyName || payload.company_name || payload.company || payload.businessName),
     normalized_domain: identifiers.normalizedDomain || normalizeDomain(payload.websiteUrl || payload.website),
     normalized_phone: identifiers.normalizedPhone || normalizePhone(payload.phone),
-    external_source: cleanText(payload.externalSource || payload.external_source || payload.source || "admin-dashboard-leadfinder"),
+    external_source: cleanText(payload.externalSource || payload.external_source || payload.source || options.existingLead?.external_source || options.existingLead?.externalSource || existingMeta.externalSource || existingMeta.external_source || "admin-dashboard-leadfinder"),
     external_source_id: identifiers.externalSourceId,
     acquisition_channel: acquisitionChannel || null,
     sourced_by_user_id: sourcedByUserId,
@@ -694,13 +761,17 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       source: cleanText(payload.source || "admin-dashboard-leadfinder"),
       leadStatus: lifecycleStatus,
       lead_status: lifecycleStatus,
+      pipelineStage,
+      callDisposition,
+      interestLevel,
+      priority,
       region: cleanText(payload.region),
       industry: cleanText(payload.industry),
       websiteStatus: cleanText(payload.websiteStatus),
       leadScore: analysisScore ?? Number(payload.leadScore || payload.score || 60),
       followUpDate: cleanText(payload.followUpDate),
       googlePlaceId: cleanText(payload.googlePlaceId),
-      externalSource: cleanText(payload.externalSource || payload.external_source || payload.source || "admin-dashboard-leadfinder"),
+      externalSource: cleanText(payload.externalSource || payload.external_source || payload.source || options.existingLead?.external_source || options.existingLead?.externalSource || existingMeta.externalSource || existingMeta.external_source || "admin-dashboard-leadfinder"),
       externalSourceId: identifiers.externalSourceId,
       acquisitionChannel,
       sourcedByUserId: sourcedByUserId || "",
@@ -778,6 +849,10 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     if (record[key] === "" || record[key] === undefined) delete record[key];
   });
   if (options.update) {
+    if (!hasPipelineStage) delete record.pipeline_stage;
+    if (!hasCallDisposition) delete record.call_disposition;
+    if (!hasInterestLevel) delete record.interest_level;
+    if (!hasPriority) delete record.priority;
     const hasAssignment = leadAssignmentInput(payload) || Boolean(assignment.id || assignment.email || assignment.name);
     Object.keys(record).forEach((key) => {
       if (record[key] === "" && !["email", "phone", "website", "notes"].includes(key)) delete record[key];
@@ -1007,6 +1082,12 @@ async function reviewLead({ payload = {}, existingLead = {}, supabaseUrl, servic
     ...existingMeta,
     leadStatus,
     lead_status: leadStatus,
+    pipelineStage: cleanText(row.pipeline_stage || meta.pipelineStage || meta.pipeline_stage),
+    callDisposition: cleanText(row.call_disposition || meta.callDisposition || meta.call_disposition),
+    interestLevel: cleanText(row.interest_level || meta.interestLevel || meta.interest_level),
+    priority: cleanText(row.priority || meta.priority),
+    isFavorite: Boolean(row.is_favorite ?? meta.isFavorite ?? false),
+    archivedAt: cleanText(row.archived_at || meta.archivedAt || meta.archived_at),
     reviewedAt: now,
     reviewedBy: admin.id,
     reviewedByEmail: admin.email,
@@ -1093,6 +1174,10 @@ async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, servic
 
 async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUrl, serviceRoleKey, admin, id }) {
   const now = new Date().toISOString();
+  const idempotencyKey = cleanText(payload.idempotencyKey || payload.idempotency_key);
+  if (idempotencyKey && await hasLeadTimelineIdempotencyKey({ supabaseUrl, serviceRoleKey, leadId: id, idempotencyKey })) {
+    return jsonResponse(200, { success: true, lead: mapLead(existingLead), updated: false, duplicate: true, idempotencyKey });
+  }
   const lead = mapLead(existingLead);
   const existingMeta = existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {};
   const action = cleanText(payload.action);
@@ -1119,6 +1204,8 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
   let lostReason = cleanText(payload.lostReason || payload.lost_reason || lead.lostReason);
   let lostNote = cleanText(payload.lostNote || payload.lost_note || payload.note || lead.lostNote);
   let nextActionCreatedAutomatically = Boolean(payload.nextActionCreatedAutomatically ?? payload.next_action_created_automatically ?? false);
+  let nextActionCompletedAt = cleanText(lead.nextActionCompletedAt);
+  let nextActionCompletedBy = cleanText(lead.nextActionCompletedBy);
 
   if (action === "call_started") {
     eventType = "call_started";
@@ -1150,6 +1237,8 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     eventType = "next_action_scheduled";
     title = "Volgende actie gepland";
     nextStatus = normalizeLifecycleStatus(payload.leadStatus || payload.lead_status || lead.leadStatus || "follow_up");
+    nextActionCompletedAt = "";
+    nextActionCompletedBy = "";
   }
 
   if (action === "complete_next_action") {
@@ -1160,6 +1249,8 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     nextActionNote = "";
     nextActionAssignedUserId = null;
     nextActionCreatedAutomatically = false;
+    nextActionCompletedAt = now;
+    nextActionCompletedBy = admin.id;
   }
 
   if (action === "demo_requested") {
@@ -1218,6 +1309,8 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     nextActionNote,
     nextActionAssignedUserId: nextActionAssignedUserId || "",
     nextActionCreatedAutomatically,
+    nextActionCompletedAt,
+    nextActionCompletedBy,
     appointmentAt,
     appointmentType,
     appointmentLocation,
@@ -1246,6 +1339,8 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
     next_action_note: nextActionNote || null,
     next_action_assigned_user_id: nextActionAssignedUserId || null,
     next_action_created_automatically: nextActionCreatedAutomatically,
+    next_action_completed_at: nextActionCompletedAt || null,
+    next_action_completed_by: firstUuid(nextActionCompletedBy),
     appointment_at: appointmentAt || null,
     appointment_type: appointmentType || null,
     appointment_location: appointmentLocation || null,
@@ -1287,9 +1382,28 @@ async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUr
       occurredAt: now,
       appointmentAt,
       lostReason,
+      idempotencyKey,
     },
   });
   return jsonResponse(200, { success: true, lead: updatedLead, updated: true, action, eventType });
+}
+
+async function hasLeadTimelineIdempotencyKey({ supabaseUrl, serviceRoleKey, leadId, idempotencyKey }) {
+  if (!leadId || !idempotencyKey || !/^[a-zA-Z0-9:_-]{8,160}$/.test(idempotencyKey)) return false;
+  const query = new URLSearchParams({
+    select: "id",
+    entity_type: "eq.leads",
+    entity_id: `eq.${leadId}`,
+    "metadata->>idempotencyKey": `eq.${idempotencyKey}`,
+    limit: "1",
+  });
+  try {
+    const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/activity_logs?${query.toString()}`, { method: "GET", headers: restHeaders(serviceRoleKey) });
+    return Boolean(rows?.length);
+  } catch (error) {
+    if (isMissingTableError(error) || isMissingColumnError(error)) return false;
+    throw error;
+  }
 }
 
 async function insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId, admin = {}, eventType = "", title = "", metadata = {} }) {
@@ -1453,6 +1567,8 @@ function mapLead(row = {}) {
     nextActionNote: cleanText(row.next_action_note || meta.nextActionNote || meta.next_action_note),
     nextActionAssignedUserId: cleanText(row.next_action_assigned_user_id || meta.nextActionAssignedUserId || meta.next_action_assigned_user_id),
     nextActionCreatedAutomatically: Boolean(row.next_action_created_automatically ?? meta.nextActionCreatedAutomatically ?? meta.next_action_created_automatically),
+    nextActionCompletedAt: cleanText(row.next_action_completed_at || meta.nextActionCompletedAt || meta.next_action_completed_at),
+    nextActionCompletedBy: cleanText(row.next_action_completed_by || meta.nextActionCompletedBy || meta.next_action_completed_by),
     appointmentAt: cleanText(row.appointment_at || meta.appointmentAt || meta.appointment_at),
     appointmentType: cleanText(row.appointment_type || meta.appointmentType || meta.appointment_type),
     appointmentLocation: cleanText(row.appointment_location || meta.appointmentLocation || meta.appointment_location),
