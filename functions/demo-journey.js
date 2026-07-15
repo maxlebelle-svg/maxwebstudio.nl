@@ -799,8 +799,12 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       created_by: admin.id,
       updated_by: admin.id,
     });
-    const briefing = cleanText(payload.generatedBriefing || sourceJourney.generatedBriefing);
-    if (!briefing) return jsonResponse(400, { success: false, error: "Maak of vul eerst een websiteplan in." });
+    const briefing = cleanText(payload.generatedBriefing || sourceJourney.generatedBriefing) || buildQuickFactoryBriefing(sourceJourney);
+    if (!briefing) return jsonResponse(400, {
+      success: false,
+      code: "FACTORY_IDENTITY_REQUIRED",
+      error: "Vul minimaal een bedrijfsnaam of geldige website-URL in.",
+    });
 
     let journeyId = cleanText(sourceJourney.id);
     if (!journeyId) {
@@ -889,10 +893,12 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     ? await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: targetId, record })
     : await insertJourneySafe({ supabaseUrl, serviceRoleKey, record });
   const journey = mapJourney(rows[0] || {});
-  const projectWorkspace = await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, { updatedBy: admin.id, createdBy: admin.id }));
-  await createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current: current ? mapJourney(current) : null, admin });
-  const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: journey.id });
-  const buildHistory = journey?.id ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: journey.id }) : { latestJob: null };
+  const [projectWorkspace, events, buildHistory] = await Promise.all([
+    upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, { updatedBy: admin.id, createdBy: admin.id })),
+    createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current: current ? mapJourney(current) : null, admin })
+      .then(() => readEvents({ supabaseUrl, serviceRoleKey, journeyId: journey.id })),
+    journey?.id ? readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: journey.id }) : Promise.resolve({ latestJob: null }),
+  ]);
   const responseJourney = sanitizeAdminJourney(journey);
   return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, reusedExisting: Boolean(targetId && !payload.id), events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace });
 }
@@ -1545,7 +1551,26 @@ function canAdminMutateJourney(journey = {}, admin = {}) {
 }
 
 async function supabaseFetch(url, options) {
-  const response = await fetch(url, options);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  let response;
+  try {
+    response = await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeout = new Error("Demo Journey database request timed out.");
+      timeout.name = "UpstreamTimeoutError";
+      timeout.status = 504;
+      timeout.code = "UPSTREAM_TIMEOUT";
+      timeout.phase = "persist_demo_journey";
+      timeout.url = url;
+      timeout.method = options?.method || "GET";
+      throw timeout;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
   const text = await response.text();
   let data = null;
   if (text) {
@@ -1789,6 +1814,25 @@ function normalizeRole(value = "") {
 
 function cleanText(value = "") {
   return String(value || "").trim();
+}
+
+function buildQuickFactoryBriefing(journey = {}) {
+  const businessName = cleanText(journey.businessName || journey.business_name);
+  const websiteUrl = cleanText(journey.websiteUrl || journey.website_url);
+  const validWebsite = /^https?:\/\/[^\s]+$/i.test(websiteUrl);
+  if (!businessName && !validWebsite) return "";
+  return [
+    "Websiteplan - eerste demo",
+    "",
+    `Klant: ${businessName || "Nog te bepalen"}`,
+    `Website/huidige URL: ${validWebsite ? websiteUrl : "Nog niet ingevuld"}`,
+    "",
+    "Doel",
+    "Maak een professionele eerste website-preview met een duidelijke homepage, aanbod, contactmogelijkheid en call-to-action.",
+    "",
+    "Werkwijze",
+    "Gebruik de beschikbare klant- en websitegegevens. Ontbrekende optionele briefinggegevens mogen de eerste preview niet blokkeren.",
+  ].join("\n");
 }
 
 function cleanContactName(value = "") {

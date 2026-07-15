@@ -19,14 +19,19 @@ test("guided Factory exposes one primary action and a technical overflow menu", 
 
 test("guided preview reuses the existing preview engine and controls", () => {
   assert.match(factory, /id="factory-guided-preview-slot"/);
-  assert.match(factory, /slot\.appendChild\(preview\)/);
+  assert.match(factory, /move\("\.factory-control-preview", "factory-guided-preview-slot"\)/);
   assert.match(factory, /data-guided-preview-mode="desktop"/);
   assert.match(factory, /data-guided-preview-mode="tablet"/);
   assert.match(factory, /data-guided-preview-mode="mobile"/);
   assert.match(factory, /id="demo-journey-preview-frame"/);
 });
 
-test("Factory 2.0 keeps the active website preview above the editing workspaces", () => {
+test("Factory 2.0 exposes distinct Builder and Preview Workspace modes", () => {
+  assert.match(factory, /id="factory-builder-mode"[^>]*data-factory-mode="builder"/);
+  assert.match(factory, /id="factory-workspace-mode"[^>]*data-factory-mode="workspace"/);
+  assert.match(factory, /function syncFactoryMode\(/);
+  assert.match(factory, /builder\.hidden = ready/);
+  assert.match(factory, /workspace\.hidden = !ready/);
   const previewWorkspace = factory.indexOf('class="factory-guided-preview-workspace"');
   const imageWorkspace = factory.indexOf('id="factory-images-workspace"');
   const legacyControls = factory.indexOf('class="factory-control-center"');
@@ -37,10 +42,15 @@ test("Factory 2.0 keeps the active website preview above the editing workspaces"
   assert.match(factory, /data-factory-proxy="demo-journey-open-preview"/);
 });
 
-test("workspace navigation and image counts are real-state driven", () => {
-  for (const tab of ["overview", "research", "branding", "content", "images", "structure", "seo", "build", "preview"]) {
+test("workspace navigation uses real tab panels and image counts are state driven", () => {
+  for (const tab of ["preview", "research", "content", "images", "seo", "mail", "project", "timeline"]) {
     assert.match(factory, new RegExp(`data-factory-tab="${tab}"`));
+    assert.match(factory, new RegExp(`data-factory-panel="${tab}"`));
   }
+  assert.match(factory, /role="tablist"/);
+  assert.match(factory, /role="tabpanel"/);
+  assert.match(factory, /panel\.hidden = !active/);
+  assert.doesNotMatch(factory, /function activateFactoryTab[\s\S]{0,1200}scrollIntoView/);
   assert.match(factory, /function imageState\(\)/);
   assert.match(factory, /#demo-intake-assets \.demo-intake-asset/);
   assert.match(factory, /#factory-media-review > div\.is-ready/);
@@ -55,6 +65,12 @@ test("Quick Build accepts a business name or valid website without requiring the
   assert.match(factory, /buildReady: Boolean\(String\(elements\.business/);
   assert.match(factory, /if \(intake\.buildReady\) return true/);
   assert.match(factory, /const guidedIntakeKeys = new Set\(\["branch", "goal", "style", "cta", "services", "photoStatus"\]\)/);
+  assert.match(factory, /await window\.WebsiteFactoryRuntime\.quickBuild/);
+  assert.match(factory, /const savedJourney = journey\?\.id \? journey : await saveJourney\(\)/);
+  assert.match(factory, /const result = await generatePreview\(currentPackageType\(\)\)/);
+  assert.doesNotMatch(factory, /const waitForJourney = window\.setInterval/);
+  assert.match(backend, /buildQuickFactoryBriefing\(sourceJourney\)/);
+  assert.match(backend, /code: "FACTORY_IDENTITY_REQUIRED"/);
 });
 
 test("image generation never fakes a provider result in production", () => {
@@ -67,9 +83,28 @@ test("status cards and process steps are derived from current Factory state", ()
   assert.match(factory, /function guidedState\(\)/);
   assert.match(factory, /function renderGuidedStatus\(\)/);
   assert.match(factory, /function renderGuidedProcess\(\)/);
-  for (const label of ["Briefing", "Research", "Afbeeldingen", "Content", "Structuur", "SEO", "Buildstatus", "Live zetten"]) {
+  for (const label of ["Briefing", "Research", "Afbeeldingen", "Content", "SEO", "Mail", "Project", "Preview", "Timeline", "Live zetten"]) {
     assert.match(factory, new RegExp(label));
   }
+});
+
+test("legacy components are moved before the duplicate Control Center layout is retired", () => {
+  for (const mapping of [
+    ['.factory-sources-panel', 'factory-research-panel-slot'],
+    ['.factory-output-panel', 'factory-content-panel-slot'],
+    ['.demo-status-card .factory-card', 'factory-build-panel-slot'],
+    ['.project-workspace-card', 'factory-project-panel-slot'],
+    ['.customer-timeline', 'factory-timeline-panel-slot'],
+  ]) assert.ok(factory.includes(`move("${mapping[0]}", "${mapping[1]}")`), `missing component move for ${mapping[0]}`);
+  assert.match(factory, /factory-control-center"\)\?\.classList\.add\("factory-legacy-layout-retired"\)/);
+  assert.match(styles, /\.factory-legacy-layout-retired\{display:none!important\}/);
+});
+
+test("Demo Journey requests have a bounded upstream timeout with a concrete code", () => {
+  assert.match(backend, /setTimeout\(\(\) => controller\.abort\(\), 8000\)/);
+  assert.match(backend, /timeout\.status = 504/);
+  assert.match(backend, /timeout\.code = "UPSTREAM_TIMEOUT"/);
+  assert.match(backend, /timeout\.phase = "persist_demo_journey"/);
 });
 
 test("Demo Sites save persists all available relation keys on the same journey", () => {
