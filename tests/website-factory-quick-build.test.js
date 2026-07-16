@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const { normalizeWebsiteInput } = require("../functions/_website-input");
-const { buildWebsitePackage, runQualityCheck } = require("../functions/_website-factory-core");
+const { buildWebsitePackage, runQualityCheck, validateGeneratedPackage } = require("../functions/_website-factory-core");
 const { extractHeroContext, prepareHeroEditorPackage } = require("../functions/_preview-editor-hero");
 const { extractImageContext, prepareImageEditorPackage } = require("../functions/_preview-editor-image");
 const { createBuildJob, getBuildHistory, runBuildJob, sanitizeBuildResult, _private } = require("../functions/website-factory");
@@ -212,6 +212,66 @@ test("retry reuses an active build job without creating a duplicate", async () =
   } finally {
     global.fetch = previousFetch;
   }
+});
+
+test("building job with a persisted package resumes at quality check without rebuilding", async () => {
+  const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const generatedPackage = buildQuick().generatedPackage;
+  generatedPackage.meta.recoveryMarker = "persisted-before-timeout";
+  const job = {
+    id: jobId,
+    demo_journey_id: journeyId,
+    status: "building",
+    current_step: "generate_website_package",
+    progress: 45,
+    preview_version: 1,
+    generated_package: generatedPackage,
+    build_logs: [],
+  };
+  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "Outdoor", created_by: "admin-id" };
+  const jobWrites = [];
+  const previewWrites = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (method === "GET" && target.includes("website_build_jobs")) return mockJson([job]);
+    if (method === "GET" && target.includes("demo_journeys")) return mockJson([journey]);
+    if (method === "GET" && target.includes("website_preview_versions")) return mockJson([]);
+    if (method === "PATCH" && target.includes("website_build_jobs")) { jobWrites.push(body); return mockJson(null, 204); }
+    if (method === "POST" && target.includes("website_preview_versions")) { previewWrites.push(body); return mockJson(null, 201); }
+    if (method === "PATCH" && target.includes("website_preview_versions")) return mockJson(null, 204);
+    if (method === "PATCH" && target.includes("demo_journeys")) return mockJson([{ ...journey, ...body }]);
+    return mockJson({ message: "optional table unavailable" }, 500);
+  };
+  try {
+    const result = await runBuildJob({
+      supabaseUrl: "https://example.supabase.co",
+      serviceRoleKey: "service-role",
+      admin: { id: "admin-id", role: "super_admin" },
+      requestId: "REQ-PERSISTED-PACKAGE",
+    }, { jobId });
+    assert.equal(result.job.status, "completed");
+    assert.equal(previewWrites.length, 1);
+    assert.equal(previewWrites[0].generated_package.meta.recoveryMarker, "persisted-before-timeout");
+    assert.equal(jobWrites.filter((record) => Object.hasOwn(record, "generated_package")).length, 0);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("render validation rejects missing entry, CSS, JavaScript and referenced assets", () => {
+  const complete = buildQuick().generatedPackage;
+  assert.equal(validateGeneratedPackage(complete).passed, true);
+  const broken = structuredClone(complete);
+  broken.files = broken.files.filter((file) => !["styles.css", "script.js", "assets/logo.svg"].includes(file.path));
+  const validation = validateGeneratedPackage(broken);
+  assert.equal(validation.passed, false);
+  assert.equal(validation.cssExists, false);
+  assert.equal(validation.criticalJsExists, false);
+  assert.ok(validation.missing.includes("assets/logo.svg"));
 });
 
 test("FatTrek production 504 marks the same build retryable without resending its 8 MB package", async () => {
@@ -536,6 +596,28 @@ test("normalized server state never reports briefing as next while a build runs"
   });
   assert.equal(retryable.state, "build_retryable");
   assert.equal(retryable.retryable, true);
+
+  const published = _private.deriveFactoryServerState({
+    latestJob: { id: "job", status: "completed", currentStep: "completed", progress: 100 },
+    activeVersion: { id: "version", renderable: true, publishedToPortal: true, feedbackCount: 2 },
+  });
+  assert.equal(published.state, "published");
+  assert.equal(published.feedbackCount, 2);
+
+  const approved = _private.deriveFactoryServerState({
+    latestJob: { id: "job", status: "completed", currentStep: "completed", progress: 100 },
+    activeVersion: { id: "version", renderable: true, status: "approved", approvedAt: "2026-07-16T15:00:00.000Z" },
+  });
+  assert.equal(approved.state, "approved");
+});
+
+test("new customer feedback is preview-owned while journey feedback stays legacy-only", () => {
+  assert.match(demoBackend, /async function readCustomerPreviewVersion/);
+  assert.match(demoBackend, /await patchCustomerPreviewVersion\(/);
+  assert.match(demoBackend, /feedback_items: previewReview\.feedbackItems/);
+  assert.match(demoBackend, /const record = \{\s*demo_status: nextStatus,/);
+  assert.doesNotMatch(demoBackend, /const record = \{\s*feedback: feedback \|\| current\.feedback/);
+  assert.match(factoryHtml, /feedback: Number\(pipeline\.feedbackCount \|\| 0\) > 0/);
 });
 
 test("Quick Build response is compact and never returns package bytes", () => {

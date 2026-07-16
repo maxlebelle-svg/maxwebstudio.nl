@@ -659,6 +659,53 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
     industryId,
     packageChecks: buildPackageChecks({ packageId, generatedPackage, html, files }),
     industryChecks: buildIndustryChecks({ industryId, generatedPackage, html }),
+    renderValidation: validateGeneratedPackage(generatedPackage),
+  };
+}
+
+function validateGeneratedPackage(generatedPackage = {}) {
+  const files = Array.isArray(generatedPackage.files) ? generatedPackage.files : [];
+  const filePaths = new Set(files.map((file) => cleanText(file?.path).replace(/^\.\//, "")).filter(Boolean));
+  const entryFile = cleanText(generatedPackage.entryFile || generatedPackage.meta?.entryFile || "index.html").replace(/^\.\//, "");
+  const entry = files.find((file) => cleanText(file?.path).replace(/^\.\//, "") === entryFile);
+  const html = cleanText(entry?.content);
+  const normalizeReference = (value = "", sourcePath = entryFile) => {
+    const raw = cleanText(value).split(/[?#]/)[0];
+    if (!raw || /^(?:[a-z]+:|\/\/|#)/i.test(raw)) return "";
+    const segments = raw.startsWith("/") ? [] : sourcePath.split("/").slice(0, -1);
+    raw.replace(/^\//, "").split("/").forEach((segment) => {
+      if (!segment || segment === ".") return;
+      if (segment === "..") segments.pop();
+      else segments.push(segment);
+    });
+    return segments.join("/");
+  };
+  const htmlReferences = [...html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+)["']/gi)]
+    .map((match) => normalizeReference(match[1]))
+    .filter(Boolean);
+  const cssReferences = files.filter((file) => /\.css$/i.test(cleanText(file?.path))).flatMap((file) =>
+    [...String(file?.content || "").matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)]
+      .map((match) => normalizeReference(match[1], cleanText(file?.path)))
+      .filter(Boolean));
+  const references = [...htmlReferences, ...cssReferences];
+  const cssFiles = [...filePaths].filter((path) => /\.css$/i.test(path));
+  const scriptFiles = [...filePaths].filter((path) => /\.m?js$/i.test(path));
+  const missingReferences = [...new Set(references.filter((path) => !filePaths.has(path)))];
+  const missing = [
+    ...(!entry || !html ? [entryFile || "index.html"] : []),
+    ...(cssFiles.length ? [] : ["*.css"]),
+    ...(scriptFiles.length ? [] : ["*.js"]),
+    ...missingReferences,
+  ];
+  return {
+    passed: missing.length === 0,
+    entryFile,
+    entryExists: Boolean(entry && html),
+    cssExists: cssFiles.length > 0,
+    criticalJsExists: scriptFiles.length > 0,
+    criticalAssetsExist: missingReferences.length === 0,
+    referencedAssetCount: references.length,
+    missing: [...new Set(missing)],
   };
 }
 
@@ -771,6 +818,7 @@ function normalizePreviewVersion(row = {}) {
   const renderable = typeof metadata.renderable === "boolean" ? metadata.renderable : Boolean(previewStored && previewUrl && previewToken && entryFile);
   const editorManifestAvailable = typeof metadata.editorManifestAvailable === "boolean" ? metadata.editorManifestAvailable : Number(packageMeta.editorManifest?.version || 0) === 1;
   const sectionMarkersAvailable = typeof metadata.sectionMarkersAvailable === "boolean" ? metadata.sectionMarkersAvailable : editorManifestAvailable;
+  const feedbackItems = Array.isArray(row.feedback_items) ? row.feedback_items : [];
   return {
     id: cleanText(row.id),
     demoJourneyId: cleanText(row.demo_journey_id),
@@ -785,6 +833,7 @@ function normalizePreviewVersion(row = {}) {
     qualityReport: row.quality_report && typeof row.quality_report === "object" ? row.quality_report : null,
     generatedPackage,
     metadata,
+    status: cleanText(row.status || "internal"),
     entryFile,
     previewStored,
     renderable,
@@ -792,6 +841,11 @@ function normalizePreviewVersion(row = {}) {
     sectionMarkersAvailable,
     editorAvailable: renderable && editorManifestAvailable && sectionMarkersAvailable,
     availability: !previewStored ? "missing_version" : !renderable ? "source_unavailable" : editorManifestAvailable && sectionMarkersAvailable ? "editable" : "legacy_read_only",
+    feedbackItems,
+    feedbackCount: feedbackItems.length,
+    approvedAt: cleanText(row.approved_at),
+    publishedToPortal: Boolean(row.published_to_portal),
+    publishedAt: cleanText(row.published_at),
     isActive: row.is_active !== false,
     createdAt: cleanText(row.created_at),
     createdBy: cleanText(row.created_by),
@@ -1765,4 +1819,5 @@ module.exports = {
   normalizePreviewVersion,
   previewUrlFor,
   runQualityCheck,
+  validateGeneratedPackage,
 };

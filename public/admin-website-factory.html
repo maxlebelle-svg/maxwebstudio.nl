@@ -23450,6 +23450,9 @@
           const previewStored = authoritative ? authoritative.previewStored === true : Boolean(activeVersion?.id);
           const previewRenderable = authoritative ? authoritative.previewRenderable === true : previewStored && activeVersion?.renderable === true;
           const previewEditable = authoritative ? authoritative.previewEditable === true : previewRenderable && activeVersion?.editorAvailable === true;
+          const published = authoritative ? authoritative.published === true : previewRenderable && activeVersion?.publishedToPortal === true;
+          const approved = authoritative ? authoritative.approved === true : previewRenderable && (activeVersion?.status === "approved" || Boolean(activeVersion?.approvedAt));
+          const feedbackCount = authoritative ? Number(authoritative.feedbackCount || 0) : Number(activeVersion?.feedbackCount || 0);
           const hasBuildContext = Boolean(latestJob?.id || previewStored);
           const briefingReady = authoritative ? authoritative.briefingReady === true : hasBuildContext || Boolean(currentJourney?.generatedBriefing);
           const researchReady = authoritative ? authoritative.researchReady === true : hasBuildContext || Boolean(currentJourney?.previewPackage?.websiteIntelligence || currentJourney?.previewPackage?.websiteIntelligencePackage);
@@ -23463,7 +23466,11 @@
                 ? "build_retryable"
                 : buildFailed
                   ? "build_failed"
-                  : previewEditable
+                  : approved
+                    ? "approved"
+                    : published
+                      ? "published"
+                      : previewEditable
                     ? "preview_editable"
                     : previewRenderable
                       ? "preview_renderable"
@@ -23476,7 +23483,11 @@
               ? "Build opnieuw proberen"
               : buildFailed
                 ? "Buildfout oplossen"
-                : previewRenderable
+                : approved
+                  ? "Preview goedgekeurd"
+                  : published
+                    ? "Preview gepubliceerd"
+                    : previewRenderable
                   ? previewEditable ? "Preview bewerken" : "Preview controleren"
                   : previewStored
                     ? "Previewbron herstellen"
@@ -23494,6 +23505,9 @@
             previewStored,
             previewRenderable,
             previewEditable,
+            published,
+            approved,
+            feedbackCount,
             retryable: buildRetryable,
             jobStatus,
             currentStep: String(latestJob?.currentStep || ""),
@@ -24893,7 +24907,7 @@
           const capability = previewCapabilityState();
           const activeBuilds = jobs.filter((job) => !["completed", "failed", "quality_failed", "retryable"].includes(job.status)).length;
           const readyPreviews = versions.filter((version) => version.renderable).length || (capability.renderable ? 1 : 0);
-          const openFeedback = journey?.feedback ? 1 : 0;
+          const openFeedback = Number(buildHistory?.activeVersion?.feedbackCount || 0);
           const readyForLive = capability.renderable ? 1 : 0;
           if (elements.liveBuilds) elements.liveBuilds.textContent = String(activeBuilds);
           if (elements.livePreviews) elements.livePreviews.textContent = String(readyPreviews);
@@ -24904,7 +24918,7 @@
           elements.metrics.innerHTML = [
             ["Status", statusLabel(status), "Demo voortgang"],
             ["Preview", capability.renderable ? capability.editorAvailable ? "Klaar en bewerkbaar" : "Klaar, alleen bekijken" : capability.buildCompleted ? "Bron ontbreekt" : "Nog leeg", "Previewstatus"],
-            ["Feedback", journey?.feedback ? "Ontvangen" : "Nog geen", "Klantreactie"],
+            ["Feedback", openFeedback ? "Ontvangen" : "Nog geen", "Klantreactie"],
             ["Opvolging", journey?.followUpAt ? formatDate(journey.followUpAt) : "Nog plannen", "Volgende stap"],
           ].map(([label, value, helper]) => `
             <article class="admin-card metric-card">
@@ -25917,7 +25931,7 @@
             scanSummary: pipeline.scanReady ? "Voltooid" : "Niet gestart",
             buildState,
             previewState,
-            feedback: String(currentJourney.feedback || ""),
+            feedback: Number(pipeline.feedbackCount || 0) > 0,
             briefingReady: Boolean(pipeline.briefingReady),
             researchReady: Boolean(pipeline.researchReady),
             scanReady: Boolean(pipeline.scanReady),

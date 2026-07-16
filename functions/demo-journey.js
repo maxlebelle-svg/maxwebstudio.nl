@@ -147,9 +147,16 @@ async function readCustomerJourney(event) {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
   });
-  const journey = rows[0] ? sanitizeCustomerJourney(mapJourney(rows[0])) : null;
+  const mappedJourney = rows[0] ? mapJourney(rows[0]) : null;
+  const activePreview = mappedJourney?.id ? await readCustomerPreviewVersion({
+    supabaseUrl,
+    serviceRoleKey,
+    journeyId: mappedJourney.id,
+    customerIds,
+  }) : null;
+  const journey = mappedJourney ? sanitizeCustomerJourney(mappedJourney, activePreview) : null;
   const events = journey?.id ? await readEvents({ supabaseUrl, serviceRoleKey, journeyId: journey.id, customerOnly: true }) : [];
-  return jsonResponse(200, { success: true, journey, events });
+  return jsonResponse(200, { success: true, journey, previewVersion: sanitizeCustomerPreviewVersion(activePreview), events });
 }
 
 async function saveCustomerFeedback(event) {
@@ -196,34 +203,50 @@ async function saveCustomerFeedback(event) {
   });
   const current = rows[0];
   if (!current?.id) return jsonResponse(404, { success: false, error: "Demo-preview niet gevonden." });
+  const activePreview = await readCustomerPreviewVersion({
+    supabaseUrl,
+    serviceRoleKey,
+    journeyId: current.id,
+    customerIds,
+    previewVersionId: cleanText(payload.previewVersionId || payload.preview_version_id),
+  });
+  if (!activePreview?.id) return jsonResponse(409, {
+    success: false,
+    code: "ACTIVE_PREVIEW_REQUIRED",
+    error: "De actieve previewversie kon niet veilig worden vastgesteld.",
+  });
   const feedbackAllowedStatuses = new Set(["interne_preview_klaar", "preview_ready", "preview_verstuurd", "feedback_ontvangen", "aanpassingen_bezig", "definitieve_versie_klaar"]);
   if (!feedbackAllowedStatuses.has(normalizeStatus(current.demo_status))) {
     return jsonResponse(400, { success: false, error: "Feedback kan worden verstuurd zodra de preview beschikbaar is." });
   }
 
-  const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+  const previewPackage = { previewReview: { feedbackItems: Array.isArray(activePreview.feedback_items) ? activePreview.feedback_items : [] } };
   const now = new Date().toISOString();
   const review = buildPreviewReviewState({ previewPackage, payload, feedback, structuredFeedback, action, actorId: user.id, now });
   const nextStatus = action === "approve_preview" ? "definitieve_versie_klaar" : action === "preview_opened" ? normalizeStatus(current.demo_status) : "feedback_ontvangen";
   const record = {
-    feedback: feedback || current.feedback || "",
     demo_status: nextStatus,
-    approval_status: action === "approve_preview" ? "customer_approved" : current.approval_status || "pending",
-    preview_approved_by: action === "approve_preview" ? user.id : current.preview_approved_by || null,
-    preview_approved_at: action === "approve_preview" ? now : current.preview_approved_at || null,
-    preview_package: {
-      ...previewPackage,
-      previewReview: action === "preview_opened" ? { ...review, previewOpenedAt: now, status: review.status || "waiting_for_customer" } : review,
-      approvals: {
-        ...(previewPackage.approvals || {}),
-        approvalStatus: action === "approve_preview" ? "customer_approved" : previewPackage.approvals?.approvalStatus || "pending",
-        customerApprovedBy: action === "approve_preview" ? user.id : previewPackage.approvals?.customerApprovedBy || "",
-        customerApprovedAt: action === "approve_preview" ? now : previewPackage.approvals?.customerApprovedAt || "",
-      },
-    },
     updated_by: user.id,
     updated_at: now,
   };
+  const previewReview = action === "preview_opened" ? { ...review, previewOpenedAt: now, status: review.status || "waiting_for_customer" } : review;
+  await patchCustomerPreviewVersion({
+    supabaseUrl,
+    serviceRoleKey,
+    id: activePreview.id,
+    record: {
+      feedback_items: previewReview.feedbackItems || [],
+      status: action === "approve_preview" ? "approved" : action === "preview_opened" ? activePreview.status || "ready_for_review" : "feedback_received",
+      approved_at: action === "approve_preview" ? now : activePreview.approved_at || null,
+      approved_by_auth_user_id: action === "approve_preview" ? user.id : activePreview.approved_by_auth_user_id || null,
+      approval_metadata: {
+        ...(activePreview.approval_metadata && typeof activePreview.approval_metadata === "object" ? activePreview.approval_metadata : {}),
+        previewReview,
+        latestComment: feedback,
+      },
+      updated_at: now,
+    },
+  });
   const updatedRows = await patchJourneySafe({
     supabaseUrl,
     serviceRoleKey,
@@ -280,8 +303,36 @@ async function saveCustomerFeedback(event) {
   });
   return jsonResponse(200, {
     success: true,
-    journey: sanitizeCustomerJourney(mapJourney(updatedRows[0] || current)),
+    journey: sanitizeCustomerJourney(mapJourney(updatedRows[0] || current), { ...activePreview, feedback_items: previewReview.feedbackItems || [], approval_metadata: { previewReview, latestComment: feedback } }),
+    previewVersion: sanitizeCustomerPreviewVersion({ ...activePreview, feedback_items: previewReview.feedbackItems || [], status: action === "approve_preview" ? "approved" : action === "preview_opened" ? activePreview.status : "feedback_received", approval_metadata: { previewReview, latestComment: feedback } }),
     events: await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id, customerOnly: true }),
+  });
+}
+
+async function readCustomerPreviewVersion({ supabaseUrl, serviceRoleKey, journeyId, customerIds = [], previewVersionId = "" }) {
+  const params = new URLSearchParams({
+    select: "*",
+    demo_journey_id: `eq.${journeyId}`,
+    order: "version.desc",
+    limit: "25",
+  });
+  if (previewVersionId) params.set("id", `eq.${previewVersionId}`);
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/website_preview_versions?${params.toString()}`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  const allowed = rows.filter((row) => !cleanText(row.customer_id) || customerIds.includes(cleanText(row.customer_id)));
+  return allowed.find((row) => row.published_to_portal === true && row.is_active !== false)
+    || allowed.find((row) => row.published_to_portal === true)
+    || allowed.find((row) => row.is_active !== false)
+    || null;
+}
+
+async function patchCustomerPreviewVersion({ supabaseUrl, serviceRoleKey, id, record = {} }) {
+  return supabaseFetch(`${supabaseUrl}/rest/v1/website_preview_versions?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { ...restHeaders(serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
+    body: JSON.stringify(record),
   });
 }
 
@@ -1406,19 +1457,35 @@ function customerTimelineDescription(status = "") {
   })[normalizeStatus(status)] || "";
 }
 
-function sanitizeCustomerJourney(journey = {}) {
+function sanitizeCustomerJourney(journey = {}, previewVersion = null) {
   const previewVisibleStatuses = new Set(["interne_preview_klaar", "preview_ready", "preview_verstuurd", "feedback_ontvangen", "aanpassingen_bezig", "definitieve_versie_klaar"]);
-  const review = journey.previewPackage?.previewReview || {};
+  const previewReview = previewVersion?.approval_metadata?.previewReview;
+  const review = previewReview && typeof previewReview === "object" ? previewReview : journey.previewPackage?.previewReview || {};
+  const latestComment = cleanText(previewVersion?.approval_metadata?.latestComment || review.latestComment);
   return {
     id: journey.id,
     businessName: journey.businessName,
     contactName: journey.contactName,
     demoStatus: journey.demoStatus,
     previewUrl: previewVisibleStatuses.has(journey.demoStatus) ? journey.previewUrl : "",
-    feedback: journey.feedback,
+    feedback: latestComment,
     previewReview: sanitizePreviewReview(review),
     followUpAt: journey.followUpAt,
     updatedAt: journey.updatedAt,
+  };
+}
+
+function sanitizeCustomerPreviewVersion(row = null) {
+  if (!row || typeof row !== "object") return null;
+  return {
+    id: cleanText(row.id),
+    version: Number(row.version || 1),
+    status: cleanText(row.status || "internal"),
+    previewUrl: cleanText(row.preview_url),
+    isActive: row.is_active !== false,
+    publishedToPortal: Boolean(row.published_to_portal),
+    feedbackCount: Array.isArray(row.feedback_items) ? row.feedback_items.length : 0,
+    approvedAt: cleanText(row.approved_at),
   };
 }
 
