@@ -12,6 +12,7 @@ const DEMO_IMAGE_ROLES = Object.freeze([
   "review",
   "background",
 ]);
+const HOLISTIC_CANONICAL_IMAGE = "natuur-coaching.png";
 
 const roleLabels = Object.freeze({
   hero: "hero",
@@ -79,16 +80,7 @@ const demoImageGroups = Object.freeze([
   group("dierenarts", "Dierenarts", ["dierenarts-demo"], ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"]),
   group("schoonheidssalon", "Schoonheidssalon", ["schoonheidssalon-demo"], ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"]),
   customGroup("holistisch", "Holistische praktijk", ["holistisch-demo"], ["holistisch", "spiritueel", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"], {
-    hero: "natuur-coaching.png",
-    service: "ontspanning-sessie.png",
-    team: "intake-gesprek.png",
-    project: "behandelruimte.png",
-    contact: "thee-wachtruimte.png",
-    "service-alt": "meditatie-moment.png",
-    "project-alt": "ademwerk-groep.png",
-    detail: "wellness-details.png",
-    review: "journaling-begeleiding.png",
-    background: "sessie-voorbereiden.png",
+    ...Object.fromEntries(DEMO_IMAGE_ROLES.map((role) => [role, HOLISTIC_CANONICAL_IMAGE])),
   }),
   group("makelaar", "Makelaar", ["makelaar-demo"], ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"]),
   group("hotel", "Hotel", ["hotel-demo"], ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"]),

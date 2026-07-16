@@ -932,8 +932,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       preview: {
         url: buildResult.job?.previewUrl || journey.previewUrl,
         zipUrl: buildResult.job?.previewUrl ? appendQueryParam(buildResult.job.previewUrl, "format", "zip") : "",
-        fileCount: Array.isArray(buildResult.job?.generatedPackage?.files) ? buildResult.job.generatedPackage.files.length : 0,
-        entryFile: cleanText(buildResult.job?.generatedPackage?.entryFile || buildResult.job?.generatedPackage?.meta?.entryFile || "index.html"),
+        fileCount: Number(responseBuild.job?.fileCount || responseBuild.previewVersion?.fileCount || 0),
+        entryFile: cleanText(responseBuild.job?.entryFile || responseBuild.previewVersion?.entryFile || "index.html"),
       },
       packageUpgrade: {
         previousPackage: normalizePackageType(payload.previousPackage || payload.previous_package || sourceJourney.previewPackage?.meta?.packageType || ""),

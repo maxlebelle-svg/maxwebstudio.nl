@@ -1362,13 +1362,31 @@ function jobRecord(job = {}) {
 function sanitizeBuildJob(job = null) {
   if (!job || typeof job !== "object") return job;
   const { generatedPackage, ...safe } = job;
-  return safe;
+  return { ...safe, ...compactPackageMetadata(generatedPackage) };
 }
 
 function sanitizePreviewVersion(version = null) {
   if (!version || typeof version !== "object") return version;
   const { generatedPackage, ...safe } = version;
-  return safe;
+  return { ...safe, ...compactPackageMetadata(generatedPackage) };
+}
+
+function compactPackageMetadata(generatedPackage = null) {
+  if (!generatedPackage || typeof generatedPackage !== "object") return {};
+  const files = Array.isArray(generatedPackage.files) ? generatedPackage.files : [];
+  const intelligence = generatedPackage.meta?.industryIntelligence || {};
+  const selection = generatedPackage.meta?.industryImageSelection || {};
+  return {
+    fileCount: files.length,
+    entryFile: cleanText(generatedPackage.entryFile || generatedPackage.meta?.entryFile || "index.html"),
+    industryIntelligence: {
+      industry: cleanText(intelligence.industry),
+      subcategory: cleanText(intelligence.subcategory),
+      confidence: Number(intelligence.confidence || 0),
+      fallbackUsed: intelligence.fallback?.used === true,
+      imageGroup: cleanText(selection.groupSlug),
+    },
+  };
 }
 
 function sanitizeBuildResult(result = {}) {

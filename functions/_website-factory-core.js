@@ -10,6 +10,7 @@ const { buildVmTegelwerkenDemo, isVmTegelwerkenJourney } = require("./website-fa
 const { FACTORY_EDITOR_MANIFEST } = require("./_preview-editor-manifest");
 
 const WEBSITE_FACTORY_MANIFESTS = loadWebsiteFactoryManifests();
+const HOLISTIC_CANONICAL_ASSET_PATH = "assets/demo-images/library/holistisch/natuur-coaching.png";
 
 const BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "completed", "quality_failed", "failed"]);
 const PACKAGE_RULES = {
@@ -1228,7 +1229,9 @@ function packageDemoImageAsset(assetItem = {}, role = "image", projectSlug = "we
   const sourcePath = path.join(__dirname, "..", "public", src.replace(/^\//, ""));
   if (!fs.existsSync(sourcePath)) return { ...assetItem, path: assetItem.path || src, originalSrc: src };
   const extension = path.extname(sourcePath) || ".png";
-  const fileName = `${slugifySite(assetItem.slug || `${projectSlug}-${role}`)}${extension}`;
+  const fileName = src.includes("/library/holistisch/")
+    ? `holistisch-${slugifySite(path.basename(sourcePath, extension))}${extension}`
+    : `${slugifySite(assetItem.slug || `${projectSlug}-${role}`)}${extension}`;
   const localPath = `assets/${fileName}`;
   return {
     ...assetItem,
@@ -1241,9 +1244,16 @@ function packageDemoImageAsset(assetItem = {}, role = "image", projectSlug = "we
 }
 
 function hydrateMissingDemoImageAssets(generatedPackage = {}) {
-  const files = Array.isArray(generatedPackage.files) ? generatedPackage.files : [];
+  const initialValidation = validateGeneratedPackage(generatedPackage);
+  const holisticMissing = (initialValidation.missing || []).filter((missingPath) =>
+    cleanText(missingPath).replace(/^\.\//, "").replace(/^\//, "").startsWith("assets/demo-images/library/holistisch/"));
+  const replacements = new Map(holisticMissing
+    .filter((missingPath) => cleanText(missingPath).replace(/^\.\//, "").replace(/^\//, "") !== HOLISTIC_CANONICAL_ASSET_PATH)
+    .map((missingPath) => [cleanText(missingPath).replace(/^\.\//, "").replace(/^\//, ""), HOLISTIC_CANONICAL_ASSET_PATH]));
+  const repairedPackage = replacements.size ? replacePackageAssetReferences(generatedPackage, replacements) : generatedPackage;
+  const files = Array.isArray(repairedPackage.files) ? repairedPackage.files : [];
   const knownPaths = new Set(files.map((file) => cleanText(file?.path).replace(/^\.\//, "")));
-  const validation = validateGeneratedPackage(generatedPackage);
+  const validation = validateGeneratedPackage(repairedPackage);
   const hydrated = [];
   for (const missingPath of validation.missing || []) {
     const normalizedPath = cleanText(missingPath).replace(/^\.\//, "").replace(/^\//, "");
@@ -1259,12 +1269,25 @@ function hydrateMissingDemoImageAssets(generatedPackage = {}) {
     });
     knownPaths.add(normalizedPath);
   }
-  if (!hydrated.length) return { generatedPackage, changed: false, hydratedPaths: [] };
+  if (!hydrated.length && !replacements.size) return { generatedPackage, changed: false, hydratedPaths: [] };
   return {
-    generatedPackage: { ...generatedPackage, files: uniqueFilesByPath([...files, ...hydrated]) },
+    generatedPackage: { ...repairedPackage, files: uniqueFilesByPath([...files, ...hydrated]) },
     changed: true,
     hydratedPaths: hydrated.map((file) => file.path),
   };
+}
+
+function replacePackageAssetReferences(value, replacements) {
+  if (typeof value === "string") {
+    let output = value;
+    for (const [from, to] of replacements) {
+      output = output.replaceAll(`/${from}`, `/${to}`).replaceAll(from, to);
+    }
+    return output;
+  }
+  if (Array.isArray(value)) return value.map((item) => replacePackageAssetReferences(item, replacements));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replacePackageAssetReferences(item, replacements)]));
 }
 
 function renderLogoSvg({ businessName, colors }) {

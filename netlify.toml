@@ -9,12 +9,14 @@
   included_files = [
     "public/assets/demo-images/library/bouwbedrijf/**",
     "public/assets/demo-images/library/financieel-adviseur/**",
+    "public/assets/demo-images/library/holistisch/natuur-coaching.png",
   ]
 
 [functions."demo-journey"]
   included_files = [
     "public/assets/demo-images/library/bouwbedrijf/**",
     "public/assets/demo-images/library/financieel-adviseur/**",
+    "public/assets/demo-images/library/holistisch/natuur-coaching.png",
   ]
 
 [functions."admin-preview-image-assets"]

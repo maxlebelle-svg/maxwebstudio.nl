@@ -103,6 +103,137 @@ test("a persisted All4home package hydrates only its missing demo-image files", 
   assert.equal(generatedPackage.files.length, 3);
 });
 
+function persistedHeelJeZelfPackage() {
+  const briefing = [
+    "Branche: Energetisch",
+    "Klantintake: zakelijke dienstverlening",
+    "Doel: Maak een website die vertrouwen opbouwt.",
+  ].join("\n");
+  const generatedPackage = buildWebsitePackage({
+    journey: { businessName: "Heel je Zelf", websiteUrl: "http://heeljezelf.today/Home/", packageType: "starter" },
+    briefing,
+    version: 1,
+  });
+  generatedPackage.meta.recoveryMarker = "production-package-was-reused";
+  const canonicalLocalPath = "assets/holistisch-natuur-coaching.png";
+  const productionCanonicalPath = "/assets/demo-images/library/holistisch/natuur-coaching.png";
+  const serialized = JSON.stringify({
+    ...generatedPackage,
+    files: generatedPackage.files.filter((file) => file.path !== canonicalLocalPath),
+  }).replaceAll(canonicalLocalPath, productionCanonicalPath);
+  const persisted = JSON.parse(serialized);
+  const entry = persisted.files.find((file) => file.path === "index.html");
+  entry.content += [
+    "intake-gesprek.png",
+    "ontspanning-sessie.png",
+    "meditatie-moment.png",
+    "behandelruimte.png",
+    "ademwerk-groep.png",
+  ].map((fileName) => `<img src="/assets/demo-images/library/holistisch/${fileName}" alt="">`).join("");
+  return { briefing, persisted };
+}
+
+test("Heel je Zelf repairs six missing holistic references to one compact canonical asset", () => {
+  const { persisted } = persistedHeelJeZelfPackage();
+  const before = validateGeneratedPackage(persisted);
+  assert.deepEqual(before.missing.filter((file) => file.includes("/holistisch/")).sort(), [
+    "assets/demo-images/library/holistisch/ademwerk-groep.png",
+    "assets/demo-images/library/holistisch/behandelruimte.png",
+    "assets/demo-images/library/holistisch/intake-gesprek.png",
+    "assets/demo-images/library/holistisch/meditatie-moment.png",
+    "assets/demo-images/library/holistisch/natuur-coaching.png",
+    "assets/demo-images/library/holistisch/ontspanning-sessie.png",
+  ]);
+  const repaired = hydrateMissingDemoImageAssets(persisted);
+  assert.equal(repaired.changed, true);
+  assert.deepEqual(repaired.hydratedPaths, ["assets/demo-images/library/holistisch/natuur-coaching.png"]);
+  assert.equal(validateGeneratedPackage(repaired.generatedPackage).passed, true);
+  assert.equal(repaired.generatedPackage.meta.recoveryMarker, "production-package-was-reused");
+  assert.ok(Buffer.byteLength(JSON.stringify(repaired.generatedPackage)) < 4_000_000);
+  assert.doesNotMatch(JSON.stringify(repaired.generatedPackage.meta), /bouwbedrijf|timmerwerk|installatiebedrijf/);
+});
+
+test("Heel je Zelf ambiguous asset write retries the same job and creates one renderable preview", async () => {
+  const journeyId = "3fb7fce4-834d-4669-9c6c-6fc70782b87c";
+  const jobId = "8df40602-ab70-497f-8b64-114071d6f958";
+  const { briefing, persisted } = persistedHeelJeZelfPackage();
+  const journey = { id: journeyId, business_name: "Heel je Zelf", website_url: "http://heeljezelf.today/Home/", generated_briefing: briefing, created_by: "admin-id" };
+  const storedJob = {
+    id: jobId, demo_journey_id: journeyId, status: "failed", current_step: "render_check", progress: 5,
+    preview_version: 1, generated_package: persisted, quality_report: { passed: true, score: 96 }, build_logs: [],
+  };
+  let failAssetWrite = true;
+  let latePersistedPackage = null;
+  let previewInserted = false;
+  const previewWrites = [];
+  const buildPosts = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (method === "GET" && target.includes("website_build_jobs")) return mockJson([storedJob]);
+    if (method === "GET" && target.includes("demo_journeys")) return mockJson([journey]);
+    if (method === "GET" && target.includes("website_preview_versions")) return mockJson(previewInserted ? [{
+      id: jobId, demo_journey_id: journeyId, build_job_id: jobId, version: 1,
+      preview_url: storedJob.preview_url, preview_token: storedJob.preview_token,
+      entry_file: "index.html", metadata: { renderable: true, editorManifestAvailable: true }, is_active: true,
+    }] : []);
+    if (method === "POST" && target.includes("website_build_jobs")) { buildPosts.push(body); return mockJson([storedJob], 201); }
+    if (method === "PATCH" && target.includes("website_build_jobs")) {
+      if (body.generated_package && failAssetWrite) {
+        latePersistedPackage = body.generated_package;
+        throw Object.assign(new Error("ambiguous write"), { name: "AbortError" });
+      }
+      Object.assign(storedJob, body);
+      return mockJson(null, 204);
+    }
+    if (method === "POST" && target.includes("website_preview_versions")) {
+      previewInserted = true;
+      previewWrites.push(body);
+      return mockJson(null, 201);
+    }
+    if (method === "PATCH" && target.includes("website_preview_versions")) return mockJson(null, 204);
+    if (method === "PATCH" && target.includes("demo_journeys")) return mockJson([{ ...journey, ...body }]);
+    return mockJson({ message: "optional table unavailable" }, 500);
+  };
+  try {
+    await assert.rejects(
+      runBuildJob({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" }, requestId: "REQ-HEEL-FIRST" }, { jobId }),
+      (error) => error.code === "UPSTREAM_TIMEOUT" && error.phase === "repair_generated_package_assets",
+    );
+    assert.ok(latePersistedPackage);
+    failAssetWrite = false;
+    Object.assign(storedJob, {
+      status: "retryable",
+      current_step: "repair_generated_package_assets",
+      generated_package: latePersistedPackage,
+      quality_report: { passed: true, score: 96 },
+    });
+    const result = await runBuildJob({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" }, requestId: "REQ-HEEL-RETRY" }, { jobId });
+    assert.equal(result.job.status, "completed");
+    assert.equal(result.previewVersion.id, jobId);
+    assert.equal(result.previewVersion.renderable, true);
+    assert.equal(previewWrites.length, 1);
+    assert.equal(buildPosts.length, 0);
+    assert.equal(previewWrites[0].generated_package.meta.recoveryMarker, "production-package-was-reused");
+    assert.equal(validateGeneratedPackage(previewWrites[0].generated_package).passed, true);
+    assert.equal(previewWrites[0].generated_package.meta.industryIntelligence.industry, "holistisch");
+    assert.equal(previewWrites[0].generated_package.meta.industryIntelligence.subcategory, "energetische-praktijk");
+    assert.equal(previewWrites[0].generated_package.meta.industryImageSelection.groupSlug, "holistisch");
+    assert.doesNotMatch(JSON.stringify(previewWrites[0].generated_package.meta), /bouwbedrijf|timmerwerk|installatiebedrijf/);
+    const response = sanitizeBuildResult(result);
+    assert.equal(response.job.fileCount, previewWrites[0].generated_package.files.length);
+    assert.equal(response.job.entryFile, "index.html");
+    assert.equal(response.job.industryIntelligence.industry, "holistisch");
+    assert.equal(Object.hasOwn(response.job, "generatedPackage"), false);
+    assert.equal(Object.hasOwn(response.previewVersion, "generatedPackage"), false);
+    assert.ok(Buffer.byteLength(JSON.stringify(response)) < 10_000);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 test("standard and VM builds keep valid explicit Hero write capabilities", async () => {
   const standard = buildQuick().generatedPackage;
   const vm = buildWebsitePackage({ journey: { businessName: "VM Tegelwerken", websiteUrl: "https://vmtegelwerken.nl" }, briefing: "Tegelwerken", version: 1 });
