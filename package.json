@@ -1,0 +1,7 @@
+{
+  "name": "maxwebstudio-netlify-functions",
+  "private": true,
+  "dependencies": {
+    "parse5": "7.2.1"
+  }
+}

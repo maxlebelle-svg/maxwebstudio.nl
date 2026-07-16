@@ -5,6 +5,7 @@
 !.env.local.example
 !.env.p0.example
 supabase/.temp/
+node_modules/
 
 # macOS
 .DS_Store

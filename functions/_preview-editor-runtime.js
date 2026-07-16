@@ -66,8 +66,8 @@ function editorRuntime(config) {
   const sectionIdPattern = /^[a-z0-9][a-z0-9._-]{2,79}$/;
   const sectionTypePattern = /^[a-z][a-z0-9_-]{1,39}$/;
   const fieldPattern = /^[a-z][a-z0-9_-]{1,39}$/;
-  const outgoingTypes = new Set(["READY", "SECTION_LIST", "SECTION_HOVERED", "SECTION_SELECTED", "SECTION_DESELECTED", "PREVIEW_ERROR"]);
-  const incomingTypes = new Set(["DESELECT"]);
+  const outgoingTypes = new Set(["READY", "SECTION_LIST", "SECTION_HOVERED", "SECTION_SELECTED", "SECTION_DESELECTED", "PREVIEW_PATCHED", "PREVIEW_RESET", "PREVIEW_ERROR"]);
+  const incomingTypes = new Set(["DESELECT", "SELECT_SECTION", "APPLY_HERO_PATCH", "RESET_HERO_PATCH"]);
   const clean = (value, max) => String(value || "").trim().slice(0, max);
   const byteLength = (value) => {
     try { return new TextEncoder().encode(JSON.stringify(value)).length; } catch { return Number.POSITIVE_INFINITY; }
@@ -90,15 +90,16 @@ function editorRuntime(config) {
       if (config.source === "factory" && (!manifestSection || manifestSection.type !== type)) return null;
       const fields = [...new Set(Array.from(node.querySelectorAll("[data-mws-field]"))
         .map((field) => clean(field.dataset.mwsField, 40)).filter((field) => fieldPattern.test(field)))].slice(0, 30);
+      const writeCapabilities = Array.isArray(manifestSection?.editor?.capabilities) ? manifestSection.editor.capabilities : [];
       const descriptor = {
         id,
         type,
         label: clean(manifestSection?.label || node.dataset.mwsSectionLabel || type, 100),
         page: clean(config.pagePath, 160),
         fields,
-        capabilities: fields.map((field) => `read:${field}`),
+        capabilities: [...fields.map((field) => `read:${field}`), ...writeCapabilities].slice(0, 30),
         source: config.source,
-        editable: fields.length > 0,
+        editable: writeCapabilities.length > 0,
       };
       return { node, descriptor };
     }).filter(Boolean);
@@ -126,6 +127,16 @@ function editorRuntime(config) {
       selected = null;
       if (!hovered) label.hidden = true;
       post("SECTION_DESELECTED", { page: clean(config.pagePath, 160) });
+    };
+    const selectSection = (sectionId) => {
+      const entry = entries.find((item) => item.descriptor.id === sectionId);
+      if (!entry) return false;
+      selected?.classList.remove("mws-editor-selected");
+      selected = entry.node;
+      selected.classList.add("mws-editor-selected");
+      positionLabel(selected, entry.descriptor);
+      post("SECTION_SELECTED", { section: entry.descriptor });
+      return true;
     };
     document.addEventListener("mouseover", (event) => {
       const node = event.target.closest?.("[data-mws-section-id][data-mws-section-type]");
@@ -156,11 +167,63 @@ function editorRuntime(config) {
     }, true);
     document.addEventListener("submit", (event) => { event.preventDefault(); event.stopPropagation(); }, true);
     document.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); deselect(); } }, true);
+    const originalHero = new Map();
+    const heroEntry = entries.find((entry) => entry.descriptor.id === "home.hero" && entry.descriptor.type === "hero");
+    const heroDefinitions = heroEntry?.descriptor.capabilities.some((item) => item.startsWith("write:"))
+      ? manifestSections.get("home.hero")?.editor?.fields || [] : [];
+    const safeLink = (value) => {
+      const link = clean(value, 2048);
+      if (!link || /[\u0000-\u001f\u007f]/.test(link) || /^\/\//.test(link)) return false;
+      if (link.startsWith("#")) return /^#[^\s#]*$/.test(link);
+      if (link.startsWith("/")) return !/[\s\\]/.test(link);
+      if (/^https:\/\//i.test(link)) { try { const url = new URL(link); return url.protocol === "https:" && Boolean(url.hostname); } catch { return false; } }
+      if (/^mailto:/i.test(link)) return /^mailto:[^\s@]+@[^\s@]+(?:\?[^\s]*)?$/i.test(link) && !/%0[ad]/i.test(link);
+      if (/^tel:/i.test(link)) return /^tel:\+?[0-9().\s-]{3,40}$/i.test(link);
+      return false;
+    };
+    const heroFieldNode = (definition) => {
+      const matches = Array.from(heroEntry?.node.querySelectorAll(`[data-mws-field="${definition.nodeField}"]`) || []);
+      return matches.length === 1 ? matches[0] : null;
+    };
+    for (const definition of heroDefinitions) {
+      const node = heroFieldNode(definition);
+      if (!node) continue;
+      originalHero.set(definition.key, definition.target === "href" ? node.getAttribute("href") || "" : node.textContent || "");
+    }
+    const applyHeroPatch = (payload) => {
+      if (!heroEntry || payload?.sectionId !== "home.hero" || payload?.sectionType !== "hero" || !payload.patch || typeof payload.patch !== "object" || Array.isArray(payload.patch)) return false;
+      const entriesToApply = Object.entries(payload.patch);
+      if (!entriesToApply.length) return false;
+      for (const [key, value] of entriesToApply) {
+        const definition = heroDefinitions.find((item) => item.key === key);
+        if (!definition || typeof value !== "string" || value.length > definition.maxLength || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value) || (definition.required && !value.trim()) || (definition.format === "safe_link" && value.trim() && !safeLink(value))) return false;
+        const node = heroFieldNode(definition);
+        if (!node) return false;
+      }
+      for (const [key, value] of entriesToApply) {
+        const definition = heroDefinitions.find((item) => item.key === key);
+        const node = heroFieldNode(definition);
+        if (definition.target === "href") node.setAttribute("href", value.trim()); else node.textContent = value.trim();
+      }
+      post("PREVIEW_PATCHED", { sectionId: "home.hero", sectionType: "hero", fields: entriesToApply.map(([key]) => key) });
+      return true;
+    };
+    const resetHeroPatch = () => {
+      for (const definition of heroDefinitions) {
+        const node = heroFieldNode(definition);
+        if (!node || !originalHero.has(definition.key)) continue;
+        if (definition.target === "href") node.setAttribute("href", originalHero.get(definition.key)); else node.textContent = originalHero.get(definition.key);
+      }
+      post("PREVIEW_RESET", { sectionId: "home.hero", sectionType: "hero" });
+    };
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (event.source !== window.parent || event.origin !== config.origin || byteLength(data) > config.maxMessageBytes || !data || typeof data !== "object") return;
       if (data.protocol !== config.protocol || data.nonce !== config.nonce || data.previewVersionId !== config.previewVersionId || !incomingTypes.has(data.type)) return;
       if (data.type === "DESELECT") deselect();
+      if (data.type === "SELECT_SECTION" && (!data.payload || !sectionIdPattern.test(clean(data.payload.sectionId, 80)) || !selectSection(clean(data.payload.sectionId, 80)))) post("PREVIEW_ERROR", { code: "SECTION_SELECT_FAILED", message: "De gekozen sectie kon niet opnieuw worden geselecteerd." });
+      if (data.type === "APPLY_HERO_PATCH" && !applyHeroPatch(data.payload)) post("PREVIEW_ERROR", { code: "HERO_PATCH_REJECTED", message: "De tijdelijke Hero-wijziging is geweigerd." });
+      if (data.type === "RESET_HERO_PATCH") resetHeroPatch();
     });
     const sections = entries.map((entry) => entry.descriptor);
     post("READY", { source: config.source, page: config.pagePath, readOnly: sections.length === 0, reason: sections.length ? "" : "missing_explicit_editor_markers" });

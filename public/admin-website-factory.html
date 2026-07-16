@@ -25052,6 +25052,10 @@
             elements.previewFrame.dataset.previewBaseUrl = ready ? previewUrl : "";
             elements.previewFrame.dataset.previewVersionId = editorVersion?.id || "";
             elements.previewFrame.dataset.previewSource = source === "manual" ? "manual_zip" : "factory";
+            elements.previewFrame.dataset.demoJourneyId = editorVersion?.demoJourneyId || journey?.id || "";
+            elements.previewFrame.dataset.customerId = editorVersion?.customerId || journey?.customerId || "";
+            elements.previewFrame.dataset.projectId = editorVersion?.projectId || journey?.projectId || "";
+            elements.previewFrame.dataset.websiteId = editorVersion?.websiteId || journey?.websiteId || "";
             elements.previewFrame.dataset.editorAvailability = source === "manual" ? (ready ? "manual_read_only" : "source_unavailable") : capability.availability;
             elements.previewFrame.dataset.editorAvailable = capability.editorAvailable ? "true" : "false";
             elements.previewFrame.hidden = !ready;
@@ -25469,6 +25473,18 @@
             event.preventDefault();
             event.stopPropagation();
             await uploadManualZipFile(pendingManualZipFile);
+          });
+          window.addEventListener("factory:hero-version-saved", (event) => {
+            const version = event.detail?.previewVersion;
+            if (!version?.id) return;
+            const previous = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
+            buildHistory.previewVersions = [
+              { ...version, isActive: true },
+              ...previous.filter((item) => item.id !== version.id).map((item) => ({ ...item, isActive: false })),
+            ];
+            buildHistory.activeVersion = { ...version, isActive: true };
+            renderJourney();
+            setMessage(elements.message, "Nieuwe conceptpreview opgeslagen. De klantversie is niet gewijzigd.", "success");
           });
           elements.previewSourceControls?.forEach((button) => {
             button.addEventListener("click", (event) => {

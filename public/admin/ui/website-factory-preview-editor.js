@@ -4,7 +4,7 @@
   const PROTOCOL = "mws:factory-editor:v1";
   const MAX_MESSAGE_BYTES = 64 * 1024;
   const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const MESSAGE_TYPES = new Set(["READY", "SECTION_LIST", "SECTION_HOVERED", "SECTION_SELECTED", "SECTION_DESELECTED", "PREVIEW_ERROR"]);
+  const MESSAGE_TYPES = new Set(["READY", "SECTION_LIST", "SECTION_HOVERED", "SECTION_SELECTED", "SECTION_DESELECTED", "PREVIEW_PATCHED", "PREVIEW_RESET", "PREVIEW_ERROR"]);
 
   function byteLength(value) {
     try {
@@ -37,6 +37,8 @@
     if (type === "SECTION_LIST") return Array.isArray(payload.sections) && payload.sections.length <= 100 && payload.sections.every(validSection);
     if (type === "SECTION_HOVERED" || type === "SECTION_SELECTED") return validSection(payload.section);
     if (type === "SECTION_DESELECTED") return typeof payload.page === "string" && payload.page.length <= 160;
+    if (type === "PREVIEW_PATCHED") return payload.sectionId === "home.hero" && payload.sectionType === "hero" && Array.isArray(payload.fields) && payload.fields.length <= 7 && payload.fields.every((field) => typeof field === "string" && field.length <= 40);
+    if (type === "PREVIEW_RESET") return payload.sectionId === "home.hero" && payload.sectionType === "hero";
     if (type === "PREVIEW_ERROR") return typeof payload.code === "string" && payload.code.length <= 80 && typeof payload.message === "string" && payload.message.length <= 180;
     return false;
   }
@@ -78,6 +80,43 @@
     return "Bewerkmodus is beschikbaar zodra een concrete bewerkbare previewversie is geladen.";
   }
 
+  function sessionToken(storage = globalScope.localStorage) {
+    for (const key of ["mws_admin_supabase_session", "maxwebstudioCurrentSession", "maxwebstudioSupabaseAuthSession"]) {
+      try {
+        const value = JSON.parse(storage?.getItem(key) || "null");
+        const token = value?.accessToken || value?.access_token || value?.session?.access_token || "";
+        if (token) return token;
+      } catch {}
+    }
+    return "";
+  }
+
+  function safeHeroLink(value = "") {
+    const link = String(value || "").trim();
+    if (!link || /[\u0000-\u001f\u007f]/.test(link) || /^\/\//.test(link)) return false;
+    if (link.startsWith("#")) return /^#[^\s#]*$/.test(link);
+    if (link.startsWith("/")) return !/[\s\\]/.test(link);
+    if (/^https:\/\//i.test(link)) { try { const url = new URL(link); return url.protocol === "https:" && Boolean(url.hostname); } catch { return false; } }
+    if (/^mailto:/i.test(link)) return /^mailto:[^\s@]+@[^\s@]+(?:\?[^\s]*)?$/i.test(link) && !/%0[ad]/i.test(link);
+    if (/^tel:/i.test(link)) return /^tel:\+?[0-9().\s-]{3,40}$/i.test(link);
+    return false;
+  }
+
+  function validateHeroDraft(schema = {}, values = {}) {
+    const errors = {};
+    for (const field of schema.fields || []) {
+      const value = typeof values[field.key] === "string" ? values[field.key] : "";
+      if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)) errors[field.key] = `${field.label} bevat ongeldige tekens.`;
+      else if (value.trim().length > Number(field.maxLength || 0)) errors[field.key] = `${field.label} is langer dan toegestaan.`;
+      else if (field.required && !value.trim()) errors[field.key] = `${field.label} is verplicht.`;
+      else if (field.format === "safe_link" && value.trim() && !safeHeroLink(value)) errors[field.key] = `${field.label} bevat geen veilige link.`;
+    }
+    for (const prefix of ["primary", "secondary"]) {
+      if (String(values[`${prefix}CtaText`] || "").trim() && !String(values[`${prefix}CtaLink`] || "").trim()) errors[`${prefix}CtaLink`] = "Vul een veilige knoplink in.";
+    }
+    return errors;
+  }
+
   function init() {
     const frame = document.getElementById("demo-journey-preview-frame");
     const toggle = document.getElementById("factory-preview-editor-toggle");
@@ -91,7 +130,7 @@
     const workspace = document.querySelector(".factory-guided-preview-workspace");
     if (!frame || !toggle || !empty || !details || !note || !workspace || !globalScope.crypto?.getRandomValues) return;
 
-    const state = { enabled: false, nonce: "", previewVersionId: "", origin: globalScope.location.origin, frameWindow: null, sections: [] };
+    const state = { enabled: false, nonce: "", previewVersionId: "", origin: globalScope.location.origin, frameWindow: null, sections: [], selectedSection: null, hero: null, savedValues: null, draftValues: null, idempotencyKey: "", saving: false, pendingSelection: "", successMessage: "" };
     const resetPanel = (message = "Selecteer een websiteonderdeel om de instellingen te bekijken.") => {
       empty.textContent = message;
       empty.hidden = false;
@@ -154,7 +193,7 @@
       row.append(term, description);
       list.appendChild(row);
     };
-    const renderSection = (section) => {
+    const renderReadOnlySection = (section) => {
       const list = document.createElement("dl");
       addDetail(list, "Sectienaam", section.label);
       addDetail(list, "Sectietype", section.type);
@@ -167,11 +206,192 @@
       details.replaceChildren(list);
       details.hidden = false;
       empty.hidden = true;
-      note.hidden = section.editable;
+      note.hidden = false;
     };
-    const postToPreview = (type) => {
+    const scopeParams = () => ({
+      previewVersionId: frame.dataset.previewVersionId || "",
+      demoJourneyId: frame.dataset.demoJourneyId || "",
+      customerId: frame.dataset.customerId || "",
+      projectId: frame.dataset.projectId || "",
+      websiteId: frame.dataset.websiteId || "",
+    });
+    const editorRequest = async (method, payload = {}) => {
+      const token = sessionToken();
+      if (!token) throw Object.assign(new Error("Log opnieuw in om de Hero te bewerken."), { code: "AUTH_REQUIRED" });
+      const options = { method, headers: { Accept: "application/json", Authorization: `Bearer ${token}` } };
+      let url = "/.netlify/functions/admin-preview-editor";
+      if (method === "GET") url += `?${new URLSearchParams(payload).toString()}`;
+      else { options.headers["Content-Type"] = "application/json"; options.body = JSON.stringify(payload); }
+      const response = await fetch(url, options);
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.success) {
+        const error = new Error(body.message || body.error || "De Hero-editor kon de wijziging niet verwerken.");
+        error.code = body.code || "PREVIEW_EDITOR_FAILED";
+        error.phase = body.phase || "preview_editor";
+        error.requestId = body.requestId || "";
+        error.status = response.status;
+        throw error;
+      }
+      return body;
+    };
+    const requestMessage = (error) => {
+      const base = error?.code === "EDIT_CONFLICT" ? "Deze preview is ondertussen gewijzigd. Laad de nieuwste versie voordat je opnieuw opslaat." : error?.message || "De Hero-editor kon de wijziging niet verwerken.";
+      return error?.requestId && !base.includes(error.requestId) ? `${base} Request-id: ${error.requestId}` : base;
+    };
+    const previewAssetUrl = (path = "") => {
+      try {
+        const url = new URL(frame.dataset.previewBaseUrl || "", state.origin);
+        url.searchParams.delete("editorMode");
+        url.searchParams.delete("editorSession");
+        url.searchParams.set("file", path);
+        return url.toString();
+      } catch { return ""; }
+    };
+    const changedPatch = () => Object.fromEntries(Object.entries(state.draftValues || {}).filter(([key, value]) => value !== state.savedValues?.[key]));
+    const renderHeroEditor = (message = "") => {
+      const hero = state.hero;
+      if (!hero) return;
+      const errors = validateHeroDraft(hero.schema, state.draftValues || {});
+      const dirty = Object.keys(changedPatch()).length > 0;
+      const form = document.createElement("form");
+      form.className = "factory-hero-editor";
+      form.addEventListener("submit", (event) => event.preventDefault());
+      const header = document.createElement("div");
+      header.className = "factory-hero-editor-header";
+      const heading = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = "Hero";
+      const meta = document.createElement("small");
+      meta.textContent = `${hero.page} · ${hero.sectionId} · bron V${hero.sourceVersion}`;
+      heading.append(title, meta);
+      const badge = document.createElement("span");
+      badge.className = `status-badge ${message && /fout|gewijzigd|ongeldig/i.test(message) ? "status-error" : dirty ? "status-warning" : "status-active"}`;
+      badge.textContent = state.saving ? "Opslaan" : dirty ? "Niet opgeslagen" : "Opgeslagen";
+      header.append(heading, badge);
+      form.appendChild(header);
+      const fields = document.createElement("div");
+      fields.className = "factory-hero-fields";
+      for (const field of hero.schema.fields || []) {
+        if (field.conditional && !Object.prototype.hasOwnProperty.call(hero.values, field.key)) continue;
+        const label = document.createElement("label");
+        label.textContent = field.label;
+        const control = field.multiline ? document.createElement("textarea") : document.createElement("input");
+        if (control instanceof HTMLTextAreaElement) control.rows = field.key === "subtitle" ? 4 : 3;
+        else control.type = "text";
+        control.name = field.key;
+        control.maxLength = Number(field.maxLength || 2048);
+        control.value = state.draftValues?.[field.key] || "";
+        control.disabled = state.saving;
+        control.addEventListener("input", () => {
+          state.draftValues[field.key] = control.value;
+          state.idempotencyKey = "";
+          renderHeroEditor();
+          const nextControl = details.querySelector(`[name="${field.key}"]`);
+          nextControl?.focus();
+          if (typeof nextControl?.setSelectionRange === "function") nextControl.setSelectionRange(control.selectionStart ?? nextControl.value.length, control.selectionEnd ?? nextControl.value.length);
+        });
+        label.appendChild(control);
+        if (errors[field.key]) { const error = document.createElement("small"); error.className = "factory-hero-field-error"; error.textContent = errors[field.key]; label.appendChild(error); }
+        fields.appendChild(label);
+      }
+      form.appendChild(fields);
+      const imageCard = document.createElement("div");
+      imageCard.className = "factory-hero-image-readonly";
+      const imageUrl = previewAssetUrl(hero.image?.src || "");
+      if (imageUrl) { const image = document.createElement("img"); image.src = imageUrl; image.alt = hero.image?.alt || "Huidige Hero-afbeelding"; imageCard.appendChild(image); }
+      const imageCopy = document.createElement("p"); imageCopy.textContent = "Afbeeldingen aanpassen volgt in Sprint 2B.3.";
+      imageCard.appendChild(imageCopy);
+      form.appendChild(imageCard);
+      const status = document.createElement("p");
+      status.className = "factory-hero-editor-message";
+      status.setAttribute("role", "status");
+      status.textContent = message || state.successMessage || "";
+      form.appendChild(status);
+      const actions = document.createElement("div");
+      actions.className = "factory-hero-editor-actions";
+      const undo = actionButton("Ongedaan maken", "secondary", !dirty || state.saving, () => {
+        state.draftValues = { ...state.savedValues };
+        state.idempotencyKey = "";
+        state.successMessage = "";
+        postToPreview("RESET_HERO_PATCH", { sectionId: "home.hero", sectionType: "hero" });
+        renderHeroEditor();
+      });
+      const preview = actionButton("Voorbeeld bijwerken", "secondary", !dirty || state.saving || Object.keys(errors).length > 0, () => {
+        postToPreview("APPLY_HERO_PATCH", { sectionId: "home.hero", sectionType: "hero", patch: changedPatch() });
+      });
+      const save = actionButton(state.saving ? "Opslaan…" : "Opslaan als nieuwe versie", "primary", !dirty || state.saving || Object.keys(errors).length > 0, () => saveHero());
+      actions.append(undo, preview, save);
+      form.appendChild(actions);
+      details.replaceChildren(form);
+      details.hidden = false;
+      empty.hidden = true;
+      note.hidden = true;
+    };
+    const actionButton = (label, style, disabled, handler) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `button ${style} button-small`;
+      button.textContent = label;
+      button.disabled = disabled;
+      button.addEventListener("click", handler);
+      return button;
+    };
+    const loadHero = async (section) => {
+      state.selectedSection = section;
+      const requestedVersionId = frame.dataset.previewVersionId || "";
+      resetPanel("Hero-editor wordt veilig geladen…");
+      try {
+        const body = await editorRequest("GET", scopeParams());
+        if (state.selectedSection?.id !== section.id || frame.dataset.previewVersionId !== requestedVersionId) return;
+        state.hero = body.hero;
+        state.savedValues = { ...body.hero.values };
+        state.draftValues = { ...body.hero.values };
+        state.idempotencyKey = "";
+        renderHeroEditor();
+      } catch (error) {
+        resetPanel(requestMessage(error));
+      }
+    };
+    const saveHero = async () => {
+      if (state.saving || !state.hero) return;
+      const patch = changedPatch();
+      if (!Object.keys(patch).length) return;
+      state.saving = true;
+      state.successMessage = "";
+      renderHeroEditor();
+      try {
+        state.idempotencyKey ||= globalScope.crypto.randomUUID?.() || randomNonce(globalScope.crypto);
+        const body = await editorRequest("POST", {
+          action: "save_hero_preview",
+          ...scopeParams(),
+          sectionId: "home.hero",
+          sectionType: "hero",
+          baseContentHash: state.hero.baseContentHash,
+          idempotencyKey: state.idempotencyKey,
+          patch,
+        });
+        state.saving = false;
+        state.pendingSelection = "home.hero";
+        state.successMessage = "Nieuwe conceptpreview opgeslagen. De klantversie is niet gewijzigd.";
+        state.hero = body.hero;
+        state.savedValues = { ...body.hero.values };
+        state.draftValues = { ...body.hero.values };
+        state.idempotencyKey = "";
+        globalScope.dispatchEvent(new CustomEvent("factory:hero-version-saved", { detail: { previewVersion: body.previewVersion, hero: body.hero } }));
+        renderHeroEditor();
+      } catch (error) {
+        state.saving = false;
+        renderHeroEditor(requestMessage(error));
+      }
+    };
+    const renderSection = (section) => {
+      state.selectedSection = section;
+      const writableHero = section.id === "home.hero" && section.type === "hero" && section.capabilities.includes("write:title");
+      if (writableHero) loadHero(section); else renderReadOnlySection(section);
+    };
+    const postToPreview = (type, payload = {}) => {
       if (!state.enabled || !state.frameWindow || !state.nonce || !state.previewVersionId) return;
-      state.frameWindow.postMessage({ protocol: PROTOCOL, type, nonce: state.nonce, previewVersionId: state.previewVersionId, payload: {} }, state.origin);
+      state.frameWindow.postMessage({ protocol: PROTOCOL, type, nonce: state.nonce, previewVersionId: state.previewVersionId, payload }, state.origin);
     };
 
     toggle.addEventListener("click", () => state.enabled ? disable() : enable());
@@ -192,17 +412,27 @@
           frame.dataset.editorAvailable = "false";
           showAvailability("empty_sections");
         }
-        else resetPanel();
+        else {
+          resetPanel();
+          if (state.pendingSelection) {
+            const sectionId = state.pendingSelection;
+            state.pendingSelection = "";
+            postToPreview("SELECT_SECTION", { sectionId });
+          }
+        }
       }
       if (type === "SECTION_SELECTED") renderSection(payload.section);
-      if (type === "SECTION_DESELECTED") resetPanel();
-      if (type === "PREVIEW_ERROR") resetPanel(`Bewerkmodus kon niet starten (${payload.code}).`);
+      if (type === "SECTION_DESELECTED") { state.selectedSection = null; state.hero = null; resetPanel(); }
+      if (type === "PREVIEW_ERROR") state.hero ? renderHeroEditor(`Bewerkmodusfout: ${payload.code}.`) : resetPanel(`Bewerkmodus kon niet starten (${payload.code}).`);
     });
     globalScope.addEventListener("keydown", (event) => { if (state.enabled && event.key === "Escape") { postToPreview("DESELECT"); resetPanel(); } });
     globalScope.addEventListener("factory:preview-context", () => {
       toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "") || frame.dataset.editorAvailable !== "true";
       showAvailability(frame.dataset.editorAvailability || "");
-      if (state.enabled && state.previewVersionId !== frame.dataset.previewVersionId) enable();
+      if (state.enabled && state.previewVersionId !== frame.dataset.previewVersionId) {
+        state.pendingSelection ||= state.selectedSection?.id || "";
+        enable();
+      }
     });
     frame.addEventListener("load", () => { state.frameWindow = frame.contentWindow; });
     toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "") || frame.dataset.editorAvailable !== "true";
@@ -210,7 +440,7 @@
     showAvailability(frame.dataset.editorAvailability || "");
   }
 
-  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorAvailabilityMessage, editorUrl, validPayload, validSection, validateBridgeEvent };
+  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorAvailabilityMessage, editorUrl, safeHeroLink, sessionToken, validateBridgeEvent, validateHeroDraft, validPayload, validSection };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (globalScope?.document) {
     globalScope.WebsiteFactoryPreviewEditor = api;
