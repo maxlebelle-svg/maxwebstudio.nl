@@ -114,10 +114,11 @@ exports.handler = async (event) => {
     };
   }
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
+  const resolvedPreviewVersionId = cleanText(previewVersion?.id || requestedPreviewVersionId);
   let content = file?.path?.endsWith(".html")
-    ? rewritePreviewHtml(fileContent, id, token, source)
+    ? rewritePreviewHtml(fileContent, id, token, source, resolvedPreviewVersionId)
     : file?.path?.endsWith(".css")
-      ? rewritePreviewAssetReferences(fileContent, id, token, source)
+      ? rewritePreviewAssetReferences(fileContent, id, token, source, resolvedPreviewVersionId)
     : fileContent;
   if (file?.path?.endsWith(".html") && editorContext) content = injectEditorRuntime(content, editorContext, requestOrigin(event));
   return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
@@ -188,17 +189,24 @@ function hasRenderablePackage(value = {}) {
   return Boolean(files.length && files.some((file) => cleanText(file?.path) === entryFile));
 }
 
-function rewritePreviewHtml(html = "", id = "", token = "", source = "") {
-  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&source=${encodeURIComponent(source)}&file=${encodeURIComponent(file)}`;
-  return rewritePreviewAssetReferences(String(html || ""), id, token, source)
+function previewAssetUrl(file = "", id = "", token = "", source = "", previewVersionId = "") {
+  const query = new URLSearchParams({ id, token, source });
+  if (previewVersionId) query.set("previewVersionId", previewVersionId);
+  query.set("file", file);
+  return `/.netlify/functions/demo-preview?${query.toString()}`;
+}
+
+function rewritePreviewHtml(html = "", id = "", token = "", source = "", previewVersionId = "") {
+  const assetUrl = (file) => previewAssetUrl(file, id, token, source, previewVersionId);
+  return rewritePreviewAssetReferences(String(html || ""), id, token, source, previewVersionId)
     .replaceAll('href="styles.css"', `href="${assetUrl("styles.css")}"`)
     .replaceAll('src="script.js"', `src="${assetUrl("script.js")}"`)
     .replace(/(src|href)="(?!https?:|mailto:|tel:|#|\/)([^"#?]+\.(css|js|json|svg|png|jpe?g|webp|gif|ico|woff2?|ttf))"/gi, (_match, attribute, file) => `${attribute}="${assetUrl(file)}"`)
     .replace(/href="([^"#?]+\.html)"/g, (_match, file) => `href="${assetUrl(file)}"`);
 }
 
-function rewritePreviewAssetReferences(content = "", id = "", token = "", source = "") {
-  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&source=${encodeURIComponent(source)}&file=${encodeURIComponent(file)}`;
+function rewritePreviewAssetReferences(content = "", id = "", token = "", source = "", previewVersionId = "") {
+  const assetUrl = (file) => previewAssetUrl(file, id, token, source, previewVersionId);
   return String(content || "")
     .replace(/(src|href)="(assets\/[^"]+)"/g, (_match, attribute, file) => `${attribute}="${assetUrl(file)}"`)
     .replace(/url\(["']?(assets\/[^"')]+)["']?\)/g, (_match, file) => `url("${assetUrl(file)}")`);

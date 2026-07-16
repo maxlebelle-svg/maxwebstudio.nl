@@ -16,6 +16,7 @@ const { randomUUID } = require("crypto");
 const {
   buildLogs,
   buildWebsitePackage,
+  editorEnrichmentAvailable,
   isBuildStatus,
   makePreviewToken,
   nextPreviewVersion,
@@ -1124,6 +1125,9 @@ async function repairPreviewVersion(context, previewVersion = {}, fallbackPackag
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
     body: JSON.stringify({ is_active: false, updated_at: new Date().toISOString() }),
   });
+  const editorAvailable = Number(generatedPackage?.meta?.editorManifest?.version || 0) === 1
+    && Boolean(stored.sectionMarkersAvailable)
+    && editorEnrichmentAvailable(generatedPackage?.meta);
   return {
     ...stored,
     generatedPackage,
@@ -1132,8 +1136,8 @@ async function repairPreviewVersion(context, previewVersion = {}, fallbackPackag
     renderable: true,
     editorManifestAvailable: Number(generatedPackage?.meta?.editorManifest?.version || 0) === 1,
     sectionMarkersAvailable: Boolean(stored.sectionMarkersAvailable),
-    editorAvailable: Number(generatedPackage?.meta?.editorManifest?.version || 0) === 1 && Boolean(stored.sectionMarkersAvailable),
-    availability: Number(generatedPackage?.meta?.editorManifest?.version || 0) === 1 && stored.sectionMarkersAvailable ? "editable" : "legacy_read_only",
+    editorAvailable,
+    availability: editorAvailable ? "editable" : Number(generatedPackage?.meta?.editorManifest?.version || 0) === 1 && stored.sectionMarkersAvailable ? "enrichment_read_only" : "legacy_read_only",
     isActive: true,
   };
 }

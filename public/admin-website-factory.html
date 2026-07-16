@@ -23283,7 +23283,7 @@
             versionStored,
             renderable,
             editorAvailable,
-            availability: !versionStored ? "missing_version" : !renderable ? "source_unavailable" : editorAvailable ? "editable" : "legacy_read_only",
+            availability: !versionStored ? "missing_version" : !renderable ? "source_unavailable" : editorAvailable ? "editable" : (version?.availability || "legacy_read_only"),
             version,
           };
         }
@@ -25186,7 +25186,7 @@
             elements.previewFrame.dataset.editorAvailability = source === "manual" ? (ready ? "manual_read_only" : "source_unavailable") : capability.availability;
             elements.previewFrame.dataset.editorAvailable = capability.editorAvailable ? "true" : "false";
             elements.previewFrame.hidden = !ready;
-            if (ready && elements.previewFrame.dataset.editorActive !== "true" && elements.previewFrame.src !== previewUrl) {
+            if (ready && elements.previewFrame.dataset.editorActive !== "true" && elements.previewFrame.getAttribute("src") !== previewUrl) {
               elements.previewFrame.src = previewUrl;
             }
             if (!ready) {

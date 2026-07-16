@@ -157,6 +157,7 @@ test("Factory preview validates the requested version before injecting the runti
     const result = await demoRenderer.handler({ httpMethod: "GET", headers: { host: "maxwebstudio.nl", "x-forwarded-proto": "https" }, queryStringParameters: { id: journeyId, token, source: "factory", editorMode: "sections", editorSession: NONCE, previewVersionId: VERSION_ID } });
     assert.equal(result.statusCode, 200);
     assert.match(result.body, /data-mws-editor-runtime/);
+    assert.match(result.body, new RegExp(`previewVersionId=${VERSION_ID}`));
     assert.equal(result.headers["X-Frame-Options"], "SAMEORIGIN");
     assert.equal(result.headers["Referrer-Policy"], "no-referrer");
     assert.match(result.headers["Content-Security-Policy"], /frame-ancestors 'self'/);
@@ -182,6 +183,7 @@ test("Factory renderer recovers the exact stored preview version when the journe
     const result = await demoRenderer.handler({ httpMethod: "GET", headers: { host: "maxwebstudio.nl", "x-forwarded-proto": "https" }, queryStringParameters: { id: journeyId, token, source: "factory", previewVersionId: VERSION_ID } });
     assert.equal(result.statusCode, 200);
     assert.match(result.body, /Editor Testbedrijf/);
+    assert.match(result.body, new RegExp(`previewVersionId=${VERSION_ID}&amp;file=styles\\.css|previewVersionId=${VERSION_ID}&file=styles\\.css`));
     assert.doesNotMatch(result.body, /Previewbron niet beschikbaar/);
     assert.equal(requested.filter((url) => url.includes("website_preview_versions")).length, 1);
     assert.match(requested.find((url) => url.includes("website_preview_versions")), new RegExp(VERSION_ID));
@@ -225,6 +227,30 @@ test("new preview capability metadata enables editor mode without returning the 
   assert.equal(editable.availability, "editable");
 });
 
+test("editor enrichment failures keep a renderable preview read-only", () => {
+  const readOnly = normalizePreviewVersion({
+    id: VERSION_ID,
+    preview_url: "/preview",
+    preview_token: "token",
+    entry_file: "index.html",
+    package_meta: {
+      editorManifest: { version: 1 },
+      editorEnrichment: {
+        version: 1,
+        stages: {
+          hero: { availability: "read_only", reason: "ERR_MODULE_NOT_FOUND" },
+          text: { availability: "read_only", code: "ERR_MODULE_NOT_FOUND" },
+          image: { availability: "read_only", reason: "ERR_MODULE_NOT_FOUND" },
+        },
+      },
+    },
+  });
+  assert.equal(readOnly.renderable, true);
+  assert.equal(readOnly.editorAvailable, false);
+  assert.equal(readOnly.availability, "enrichment_read_only");
+  assert.equal(parentBridge.editorAvailabilityMessage(readOnly.availability), "De preview is renderbaar, maar de bewerkmodules zijn voor deze versie niet beschikbaar.");
+});
+
 test("completed build, stored preview and editor availability remain separate UI states", () => {
   const factoryHtml = fs.readFileSync(path.join(__dirname, "../public/admin-website-factory.html"), "utf8");
   assert.match(factoryHtml, /Build klaar, previewversie ontbreekt/);
@@ -233,6 +259,12 @@ test("completed build, stored preview and editor availability remain separate UI
   assert.match(factoryHtml, /Preview klaar en bewerkbaar/);
   assert.match(factoryHtml, /data-factory-proxy="factory-quick-retry">Preview opnieuw koppelen/);
   assert.match(factoryHtml, /previewVersionId/);
+  assert.match(factoryHtml, /previewFrame\.getAttribute\("src"\) !== previewUrl/);
+  assert.doesNotMatch(factoryHtml, /previewFrame\.src !== previewUrl/);
+  const parentSource = fs.readFileSync(path.join(__dirname, "../public/admin/ui/website-factory-preview-editor.js"), "utf8");
+  assert.match(parentSource, /available && !state\.enabled\) resetPanel\(\)/);
+  assert.match(parentSource, /frame\.getAttribute\("src"\) !== baseUrl/);
+  assert.doesNotMatch(parentSource, /frame\.src !== baseUrl/);
 });
 
 test("empty SECTION_LIST produces a concrete unavailable state", () => {

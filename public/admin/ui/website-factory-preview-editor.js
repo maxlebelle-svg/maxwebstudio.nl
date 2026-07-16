@@ -74,6 +74,7 @@
 
   function editorAvailabilityMessage(availability = "") {
     if (availability === "legacy_read_only") return "Deze preview is gemaakt vóór de nieuwe bewerkmodus en bevat nog geen bewerkbare secties.";
+    if (availability === "enrichment_read_only") return "De preview is renderbaar, maar de bewerkmodules zijn voor deze versie niet beschikbaar.";
     if (availability === "empty_sections") return "De bewerkbare preview is geladen, maar bevat geen selecteerbare secties.";
     if (availability === "source_unavailable") return "De previewbron is tijdelijk niet renderbaar. Koppel de preview opnieuw of maak een nieuwe build.";
     if (availability === "missing_version") return "De build is afgerond, maar er is geen bruikbare previewversie opgeslagen.";
@@ -202,12 +203,13 @@
     };
     const showAvailability = (availability = "") => {
       const available = frame.dataset.editorAvailable === "true";
-      const actionable = ["legacy_read_only", "empty_sections", "source_unavailable", "missing_version"].includes(availability);
+      const actionable = ["legacy_read_only", "enrichment_read_only", "empty_sections", "source_unavailable", "missing_version"].includes(availability);
       if (unavailableActions) unavailableActions.hidden = available || !actionable;
       if (unavailableMessage) unavailableMessage.textContent = editorAvailabilityMessage(availability);
       if (relink) relink.hidden = !["source_unavailable", "missing_version"].includes(availability);
       if (openNormal) openNormal.disabled = !frame.dataset.previewBaseUrl;
-      if (!available && actionable) resetPanel(editorAvailabilityMessage(availability));
+      if (available && !state.enabled) resetPanel();
+      else if (!available && actionable) resetPanel(editorAvailabilityMessage(availability));
     };
     const setEnabledState = (enabled) => {
       state.enabled = enabled;
@@ -233,7 +235,7 @@
       state.pendingSelection = "";
       resetPanel();
       const baseUrl = frame.dataset.previewBaseUrl || "";
-      if (baseUrl && frame.src !== baseUrl) frame.src = baseUrl;
+      if (baseUrl && frame.getAttribute("src") !== baseUrl) frame.src = baseUrl;
     };
     const enable = () => {
       const baseUrl = frame.dataset.previewBaseUrl || "";

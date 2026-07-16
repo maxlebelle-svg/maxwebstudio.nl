@@ -852,6 +852,8 @@ function normalizePreviewVersion(row = {}) {
   const renderable = typeof metadata.renderable === "boolean" ? metadata.renderable : Boolean(previewStored && previewUrl && previewToken && entryFile);
   const editorManifestAvailable = typeof metadata.editorManifestAvailable === "boolean" ? metadata.editorManifestAvailable : Number(packageMeta.editorManifest?.version || 0) === 1;
   const sectionMarkersAvailable = typeof metadata.sectionMarkersAvailable === "boolean" ? metadata.sectionMarkersAvailable : editorManifestAvailable;
+  const enrichmentAvailable = editorEnrichmentAvailable(packageMeta);
+  const editorAvailable = renderable && editorManifestAvailable && sectionMarkersAvailable && enrichmentAvailable;
   const feedbackItems = Array.isArray(row.feedback_items) ? row.feedback_items : [];
   return {
     id: cleanText(row.id),
@@ -873,8 +875,8 @@ function normalizePreviewVersion(row = {}) {
     renderable,
     editorManifestAvailable,
     sectionMarkersAvailable,
-    editorAvailable: renderable && editorManifestAvailable && sectionMarkersAvailable,
-    availability: !previewStored ? "missing_version" : !renderable ? "source_unavailable" : editorManifestAvailable && sectionMarkersAvailable ? "editable" : "legacy_read_only",
+    editorAvailable,
+    availability: !previewStored ? "missing_version" : !renderable ? "source_unavailable" : editorAvailable ? "editable" : editorManifestAvailable && sectionMarkersAvailable && !enrichmentAvailable ? "enrichment_read_only" : "legacy_read_only",
     feedbackItems,
     feedbackCount: feedbackItems.length,
     approvedAt: cleanText(row.approved_at),
@@ -884,6 +886,13 @@ function normalizePreviewVersion(row = {}) {
     createdAt: cleanText(row.created_at),
     createdBy: cleanText(row.created_by),
   };
+}
+
+function editorEnrichmentAvailable(packageMeta = {}) {
+  const stages = packageMeta?.editorEnrichment?.stages;
+  if (!stages || typeof stages !== "object") return true;
+  const values = Object.values(stages).filter((stage) => stage && typeof stage === "object");
+  return values.length === 0 || values.some((stage) => cleanText(stage.availability) === "editable");
 }
 
 function isBuildStatus(value = "") {
@@ -1278,6 +1287,11 @@ function isCarpentryProfile(profile = {}) {
   return text.includes("carpentry") || text.includes("timmerwerk") || text.includes("maatwerk");
 }
 
+function isHolisticProfile(profile = {}) {
+  const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""}`.toLowerCase();
+  return /holistisch|energetisch|wellness|coach/.test(text);
+}
+
 function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter) {
   const defaults = {
     quickActionTitle: "Afspraak inplannen",
@@ -1322,6 +1336,45 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     subPageIntro: "kan deze pagina later aanvullen met echte cases, foto's en klantreacties.",
     footerLabel: packageRules.label,
   };
+  if (isHolisticProfile(profile)) {
+    return {
+      ...defaults,
+      quickActionTitle: "Kennismaking plannen",
+      quickActionText: "Kies een rustig contactmoment",
+      contactActionTitle: "Persoonlijk contact",
+      contactActionText: "Vertel kort waar u begeleiding bij zoekt",
+      servicesEyebrow: "Begeleiding en sessies",
+      servicesTitle: "Ontdek welke begeleiding bij u past.",
+      portfolioEyebrow: "Aanbod",
+      portfolioTitle: "Rustige, persoonlijke ondersteuning op maat.",
+      portfolioCopy: "Bekijk per vorm van begeleiding wat u kunt verwachten en welke vervolgstap past.",
+      benefitsEyebrow: "Persoonlijke aandacht",
+      benefitsTitle: "Een veilige eerste indruk die rust en vertrouwen geeft.",
+      benefitsText: "De pagina maakt de werkwijze, persoonlijke afstemming en route naar een kennismaking helder zonder harde claims.",
+      sourceEyebrow: "Praktijk helder gepresenteerd",
+      sourceTitle: "Warme inhoud in een rustige, duidelijke structuur.",
+      sourceText: "Deze preview brengt begeleiding, werkwijze en contactmomenten zorgvuldig samen.",
+      premiumEyebrow: "Over de praktijk",
+      premiumTitle: "Laat visie, ervaring en persoonlijke begeleiding samenkomen.",
+      premiumText: "De uitgebreide preview biedt ruimte voor het verhaal achter de praktijk, ervaringen en verdiepende informatie.",
+      offerEyebrow: "Kennismaken",
+      offerTitle: "Een laagdrempelige route naar persoonlijk contact.",
+      offerText: "Bezoekers kunnen rustig ontdekken wat past en vervolgens een kennismaking aanvragen.",
+      processEyebrow: "Zo werkt het",
+      processTitle: "Van eerste contact naar begeleiding die aansluit.",
+      reviewsEyebrow: "Ervaringen",
+      reviewsTitle: "Vertrouwen begint met herkenning en duidelijkheid.",
+      contactEyebrow: "Vrijblijvend kennismaken",
+      contactTitle: "Vertel waar u naar zoekt en ontdek wat bij u past.",
+      projectLabel: "Interesse in",
+      messageLabel: "Waar zoekt u begeleiding bij?",
+      messagePlaceholder: "Vertel kort waar u behoefte aan heeft en welk contactmoment prettig is.",
+      subPageEyebrow: "Persoonlijke begeleiding",
+      subPageText: "presenteert hier extra informatie over sessies, werkwijze en persoonlijke afstemming.",
+      subPageIntro: "kan deze pagina later aanvullen met echte praktijkinformatie en zorgvuldig verzamelde ervaringen.",
+      footerLabel: "Persoonlijke en energetische begeleiding",
+    };
+  }
   if (isCarpentryProfile(profile)) {
     return {
       ...defaults,
@@ -1870,6 +1923,7 @@ module.exports = {
   BUILD_STATUSES,
   buildLogs,
   buildWebsitePackage,
+  editorEnrichmentAvailable,
   isBuildStatus,
   makePreviewToken,
   nextPreviewVersion,

@@ -11,7 +11,12 @@
   included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
 
 [functions."admin-preview-image-assets"]
-  included_files = ["public/assets/demo-images/library/**"]
+  included_files = [
+    "public/assets/demo-images/library/*/hero.png",
+    "public/assets/demo-images/library/holistisch/natuur-coaching.png",
+    "public/assets/demo-images/library/quantumbouw/badkamer-natuursteen.jpg",
+    "public/assets/demo-images/library/rijschool/scooterles-hero.png",
+  ]
 
 [[redirects]]
   from = "/account-activeren"

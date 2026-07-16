@@ -159,6 +159,25 @@ test("new holistic build stores traceable profile and packages no build imagery"
   assert.doesNotMatch(originals, /bouwbedrijf|installatiebedrijf|timmerwerk/);
 });
 
+test("Energetisch remains canonical when generic briefing copy contains vertrouwen opbouwt", () => {
+  const generated = buildWebsitePackage({
+    journey: { businessName: "Heel je Zelf", packageType: "starter" },
+    briefing: [
+      "Branche: Energetisch",
+      "Klantintake: zakelijke dienstverlening",
+      "Doel: Maak een website die vertrouwen opbouwt.",
+    ].join("\n"),
+    version: 2,
+  });
+  assert.equal(generated.meta.industryIntelligence.subcategory, "energetische-praktijk");
+  assert.equal(generated.meta.industryProfile, "energetische-praktijk");
+  assert.equal(generated.meta.industryImageSelection.groupSlug, "holistisch");
+  assert.doesNotMatch(JSON.stringify(generated.meta.demoImageAssets), /bouwbedrijf|timmerwerk|installatiebedrijf/);
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  assert.match(html, /Ontdek welke begeleiding bij u past/);
+  assert.doesNotMatch(html, /Kies uw project|offerte|wat u wilt laten maken/i);
+});
+
 test("new unknown build packages the neutral professional fallback", () => {
   const generated = buildWebsitePackage({ journey: { businessName: "Aster Nova", packageType: "starter" }, briefing: "Doel: contact", version: 1 });
   assert.equal(generated.meta.industryIntelligence.classificationStatus, "neutral");
