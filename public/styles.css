@@ -33676,6 +33676,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   background: rgba(5, 23, 42, 0.82);
   color: inherit;
 }
+.factory-zip-file-input{position:fixed!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;opacity:.01!important;pointer-events:none!important}
 
 #demo-journey-manual-zip-name {
   max-width: 20rem;

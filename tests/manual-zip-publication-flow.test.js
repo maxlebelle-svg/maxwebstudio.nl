@@ -26,7 +26,8 @@ test("both visible ZIP entries use one direct picker binding", () => {
 test("manual upload has one change handler, duplicate guard and explicit states", () => {
   assert.equal((factory.match(/manualZipInput\?\.addEventListener\("change"/g) || []).length, 1);
   assert.match(factory, /id="demo-journey-manual-zip-input" type="file" accept="\.zip,application\/zip"/);
-  assert.doesNotMatch(factory, /id="demo-journey-manual-zip-input"[^>]*hidden/);
+  assert.doesNotMatch(factory, /id="demo-journey-manual-zip-input"[^>]*\shidden(?:\s|=|>)/);
+  assert.ok(factory.indexOf('id="demo-journey-manual-zip-input"') < factory.indexOf('class="factory-builder-mode"'));
   assert.match(factory, /id="demo-journey-manual-zip-name"/);
   assert.match(factory, /id="demo-journey-process-manual-zip"/);
   assert.match(factory, /id="factory-process-manual-zip"/);
