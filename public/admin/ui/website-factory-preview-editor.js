@@ -140,6 +140,22 @@
     return errors;
   }
 
+  function validateImageAlt(schema = {}, value = "") {
+    const alt = String(value || "");
+    if (!alt.trim()) return "Alttekst is verplicht.";
+    if (alt.trim().length > Number(schema.altMaxLength || 0)) return `Alttekst mag maximaal ${schema.altMaxLength} tekens bevatten.`;
+    if (/[\u0000-\u001f\u007f<>]/.test(alt)) return "Alttekst bevat ongeldige tekens.";
+    return "";
+  }
+
+  function formatBytes(value = 0) {
+    const bytes = Number(value || 0);
+    if (!Number.isFinite(bytes) || bytes <= 0) return "—";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+  }
+
   function init() {
     const frame = document.getElementById("demo-journey-preview-frame");
     const toggle = document.getElementById("factory-preview-editor-toggle");
@@ -153,7 +169,30 @@
     const workspace = document.querySelector(".factory-guided-preview-workspace");
     if (!frame || !toggle || !empty || !details || !note || !workspace || !globalScope.crypto?.getRandomValues) return;
 
-    const state = { enabled: false, nonce: "", previewVersionId: "", origin: globalScope.location.origin, frameWindow: null, sections: [], selectedSection: null, hero: null, textSection: null, savedValues: null, draftValues: null, idempotencyKey: "", saving: false, pendingSelection: "", successMessage: "" };
+    const state = {
+      enabled: false, nonce: "", previewVersionId: "", origin: globalScope.location.origin, frameWindow: null, sections: [], selectedSection: null,
+      hero: null, textSection: null, savedValues: null, draftValues: null, idempotencyKey: "", saving: false, pendingSelection: "", successMessage: "",
+      imageSection: null, imageSources: null, selectedImage: null, imageBlobUrl: "", imageAlt: "", imageSavedAlt: "", imageSourceTab: "upload",
+      imageLoading: false, imageMessage: "", imageIdempotencyKey: "", imageUploadRights: false,
+    };
+    const revokeImageBlob = (resetPreview = true) => {
+      if (resetPreview && state.enabled && state.imageBlobUrl) postToPreview("RESET_IMAGE_PATCH", { sectionId: "home.hero", sectionType: "hero", assetSlotId: "home.hero.image" });
+      if (state.imageBlobUrl) globalScope.URL?.revokeObjectURL?.(state.imageBlobUrl);
+      state.imageBlobUrl = "";
+    };
+    const resetImageState = (resetPreview = true) => {
+      revokeImageBlob(resetPreview);
+      state.imageSection = null;
+      state.imageSources = null;
+      state.selectedImage = null;
+      state.imageAlt = "";
+      state.imageSavedAlt = "";
+      state.imageSourceTab = "upload";
+      state.imageLoading = false;
+      state.imageMessage = "";
+      state.imageIdempotencyKey = "";
+      state.imageUploadRights = false;
+    };
     const resetPanel = (message = "Selecteer een websiteonderdeel om de instellingen te bekijken.") => {
       empty.textContent = message;
       empty.hidden = false;
@@ -178,6 +217,7 @@
       frame.dataset.editorActive = enabled ? "true" : "false";
     };
     const disable = () => {
+      resetImageState(true);
       setEnabledState(false);
       state.nonce = "";
       state.previewVersionId = "";
@@ -203,6 +243,7 @@
         showAvailability(frame.dataset.editorAvailability || "missing_version");
         return;
       }
+      resetImageState(true);
       state.selectedSection = null;
       state.hero = null;
       state.textSection = null;
@@ -274,6 +315,26 @@
       }
       return body;
     };
+    const assetRequest = async (method, payload = {}, expectBlob = false) => {
+      const token = sessionToken();
+      if (!token) throw Object.assign(new Error("Log opnieuw in om afbeeldingen te beheren."), { code: "AUTH_REQUIRED" });
+      const options = { method, headers: { Accept: expectBlob ? "image/*" : "application/json", Authorization: `Bearer ${token}` } };
+      let url = "/.netlify/functions/admin-preview-image-assets";
+      if (method === "GET") url += `?${new URLSearchParams(payload).toString()}`;
+      else { options.headers["Content-Type"] = "application/json"; options.body = JSON.stringify(payload); }
+      const response = await fetch(url, options);
+      if (expectBlob && response.ok) return response.blob();
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.success) {
+        const error = new Error(body.message || body.error || "De afbeeldingsbron kon niet worden verwerkt.");
+        error.code = body.code || "PREVIEW_IMAGE_ASSET_FAILED";
+        error.phase = body.phase || "preview_image_assets";
+        error.requestId = body.requestId || "";
+        error.status = response.status;
+        throw error;
+      }
+      return body;
+    };
     const requestMessage = (error) => {
       const base = error?.code === "EDIT_CONFLICT" ? "Deze preview is ondertussen gewijzigd. Laad de nieuwste versie voordat je opnieuw opslaat." : error?.message || "De Hero-editor kon de wijziging niet verwerken.";
       return error?.requestId && !base.includes(error.requestId) ? `${base} Request-id: ${error.requestId}` : base;
@@ -288,6 +349,202 @@
       } catch { return ""; }
     };
     const changedPatch = () => Object.fromEntries(Object.entries(state.draftValues || {}).filter(([key, value]) => value !== state.savedValues?.[key]));
+    const imageDirty = () => Boolean(state.selectedImage && state.imageBlobUrl);
+    const applyImagePreview = () => {
+      if (!imageDirty() || !state.imageSection) return;
+      postToPreview("APPLY_IMAGE_PATCH", {
+        sectionId: "home.hero",
+        sectionType: "hero",
+        assetSlotId: state.imageSection.schema.assetSlotId,
+        blobUrl: state.imageBlobUrl,
+        alt: state.imageAlt,
+        width: Number(state.selectedImage.width),
+        height: Number(state.selectedImage.height),
+      });
+    };
+    const selectImageAsset = async (asset) => {
+      if (!asset?.id || !asset?.sourceType || state.imageLoading) return;
+      state.imageLoading = true;
+      state.imageMessage = "Afbeelding wordt veilig geladen…";
+      renderHeroEditor();
+      try {
+        const blob = await assetRequest("GET", { action: "blob", ...scopeParams(), sourceType: asset.sourceType, assetId: asset.id }, true);
+        revokeImageBlob(true);
+        state.imageBlobUrl = globalScope.URL.createObjectURL(blob);
+        state.selectedImage = { ...asset, sizeBytes: Number(asset.sizeBytes || blob.size), mimeType: asset.mimeType || blob.type };
+        state.imageAlt = state.imageAlt || state.imageSection?.image?.alt || asset.name || "Hero-afbeelding";
+        state.imageIdempotencyKey = "";
+        state.imageMessage = "Tijdelijke preview actief. Sla op om een nieuwe interne versie te maken.";
+        applyImagePreview();
+      } catch (error) {
+        state.imageMessage = requestMessage(error);
+      } finally {
+        state.imageLoading = false;
+        renderHeroEditor();
+      }
+    };
+    const uploadImageFile = async (file) => {
+      if (!file || state.imageLoading) return;
+      if (!state.imageUploadRights) { state.imageMessage = "Bevestig eerst dat deze afbeelding gebruikt mag worden."; renderHeroEditor(); return; }
+      state.imageLoading = true;
+      state.imageMessage = "Upload wordt voorbereid…";
+      renderHeroEditor();
+      try {
+        const prepared = await assetRequest("POST", { action: "prepare_upload", ...scopeParams(), filename: file.name, mimeType: file.type, sizeBytes: file.size, usageRightsConfirmed: true });
+        const uploadResponse = await fetch(prepared.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type, "x-upsert": "false" }, body: file });
+        if (!uploadResponse.ok) throw Object.assign(new Error("De browserupload naar beveiligde opslag is mislukt."), { code: "STORAGE_UPLOAD_FAILED", status: uploadResponse.status });
+        const finalized = await assetRequest("POST", { action: "finalize_upload", ...scopeParams(), uploadId: prepared.uploadId });
+        const asset = finalized.asset;
+        state.imageSources ||= { sources: { upload: [], brandCenter: [], contentLibrary: [], currentWebsite: { assets: [] } } };
+        state.imageSources.sources.upload = [asset, ...(state.imageSources.sources.upload || []).filter((item) => item.id !== asset.id)];
+        state.imageMessage = finalized.duplicate ? "Deze afbeelding bestond al en is veilig hergebruikt." : "Upload gevalideerd en klaar voor de Hero.";
+        state.imageLoading = false;
+        await selectImageAsset(asset);
+      } catch (error) {
+        state.imageMessage = requestMessage(error);
+        state.imageLoading = false;
+        renderHeroEditor();
+      }
+    };
+    const saveImage = async () => {
+      if (state.saving || !state.imageSection || !imageDirty() || Object.keys(changedPatch()).length) return;
+      const altError = validateImageAlt(state.imageSection.schema, state.imageAlt);
+      if (altError) { state.imageMessage = altError; renderHeroEditor(); return; }
+      state.saving = true;
+      state.imageMessage = "Nieuwe interne previewversie wordt opgeslagen…";
+      renderHeroEditor();
+      try {
+        state.imageIdempotencyKey ||= globalScope.crypto.randomUUID?.() || randomNonce(globalScope.crypto);
+        const body = await editorRequest("POST", {
+          action: "save_image_preview",
+          ...scopeParams(),
+          sectionId: "home.hero",
+          sectionType: "hero",
+          baseContentHash: state.imageSection.baseContentHash,
+          idempotencyKey: state.imageIdempotencyKey,
+          patch: { assetSlotId: state.imageSection.schema.assetSlotId, sourceAssetId: state.selectedImage.id, sourceType: state.selectedImage.sourceType, alt: state.imageAlt },
+        });
+        state.saving = false;
+        state.pendingSelection = "home.hero";
+        state.successMessage = "Nieuwe beeldconceptpreview opgeslagen. De klantversie is niet gewijzigd.";
+        revokeImageBlob(false);
+        state.selectedImage = null;
+        state.imageSection = body.imageSection;
+        state.imageAlt = body.imageSection.image?.alt || "";
+        state.imageSavedAlt = state.imageAlt;
+        state.imageIdempotencyKey = "";
+        globalScope.dispatchEvent(new CustomEvent("factory:image-version-saved", { detail: { previewVersion: body.previewVersion, imageSection: body.imageSection } }));
+        renderHeroEditor();
+      } catch (error) {
+        state.saving = false;
+        state.imageMessage = requestMessage(error);
+        renderHeroEditor();
+      }
+    };
+    const renderImageEditor = (form) => {
+      const section = state.imageSection;
+      const card = document.createElement("section");
+      card.className = "factory-hero-image-editor";
+      const heading = document.createElement("div");
+      heading.className = "factory-image-editor-heading";
+      const title = document.createElement("strong");
+      title.textContent = "Hero-afbeelding";
+      const advice = document.createElement("small");
+      advice.textContent = section ? `${section.schema.recommendedWidth} × ${section.schema.recommendedHeight} aanbevolen · ${section.schema.aspectRatio}` : "Dit imageslot is voor deze preview read-only.";
+      heading.append(title, advice);
+      card.appendChild(heading);
+      const current = document.createElement("div");
+      current.className = "factory-image-current";
+      const currentUrl = state.imageBlobUrl || previewAssetUrl(section?.image?.src || state.hero?.image?.src || "");
+      if (currentUrl) { const image = document.createElement("img"); image.src = currentUrl; image.alt = state.imageAlt || section?.image?.alt || "Huidige Hero-afbeelding"; current.appendChild(image); }
+      const currentMeta = document.createElement("div");
+      const currentLabel = document.createElement("strong");
+      currentLabel.textContent = state.selectedImage?.name || "Huidige packageafbeelding";
+      const activeImage = state.selectedImage || section?.image || null;
+      const dimensions = activeImage?.width ? `${activeImage.width} × ${activeImage.height} · ${formatBytes(activeImage.sizeBytes)}` : "Afmetingen nog niet geregistreerd";
+      const imageDetails = [dimensions, activeImage?.mimeType || "", activeImage?.aspectRatio ? `verhouding ${Number(activeImage.aspectRatio).toFixed(2)}:1` : "", state.selectedImage?.source || ""].filter(Boolean);
+      const currentDetails = document.createElement("small");
+      currentDetails.textContent = imageDetails.join(" · ");
+      currentMeta.append(currentLabel, currentDetails);
+      current.appendChild(currentMeta);
+      card.appendChild(current);
+      if (state.selectedImage?.aspectRatio && Math.abs(Number(state.selectedImage.aspectRatio) - (16 / 9)) / (16 / 9) > 0.2) {
+        const ratioWarning = document.createElement("p");
+        ratioWarning.className = "factory-image-ratio-warning";
+        ratioWarning.textContent = "Deze beeldverhouding wijkt sterk af van 16:9. De Hero kan delen van de afbeelding bijsnijden.";
+        card.appendChild(ratioWarning);
+      }
+      if (!section) { const copy = document.createElement("p"); copy.textContent = "Maak een nieuwe bewerkbare Factory-preview om dit imageslot te activeren."; card.appendChild(copy); form.appendChild(card); return; }
+
+      const sourceActions = document.createElement("div");
+      sourceActions.className = "factory-image-source-actions";
+      const sourceDefinitions = [
+        ["upload", "Uploaden", false], ["brandCenter", "Brand Center", false], ["contentLibrary", "Content Library", false],
+        ["currentWebsite", "Huidige website", !state.imageSources?.sources?.currentWebsite?.available], ["ai", "AI genereren", true],
+      ];
+      sourceDefinitions.forEach(([key, label, disabled]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.disabled = disabled || state.imageLoading;
+        button.classList.toggle("is-active", state.imageSourceTab === key);
+        if (key === "ai") button.title = "AI-afbeeldingen zijn nog niet geconfigureerd.";
+        button.addEventListener("click", () => { state.imageSourceTab = key; renderHeroEditor(); });
+        sourceActions.appendChild(button);
+      });
+      card.appendChild(sourceActions);
+
+      if (state.imageSourceTab === "upload") {
+        const rights = document.createElement("label");
+        rights.className = "factory-image-rights";
+        const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = state.imageUploadRights; checkbox.disabled = state.imageLoading;
+        checkbox.addEventListener("change", () => { state.imageUploadRights = checkbox.checked; renderHeroEditor(); });
+        const rightsText = document.createElement("span"); rightsText.textContent = "Ik bevestig dat deze afbeelding gebruikt mag worden.";
+        rights.append(checkbox, rightsText);
+        const drop = document.createElement("button");
+        drop.type = "button"; drop.className = "factory-image-dropzone"; drop.disabled = state.imageLoading; drop.textContent = state.imageLoading ? "Afbeelding controleren…" : "Sleep een JPEG, PNG of WebP hierheen of kies een bestand";
+        const picker = document.createElement("input"); picker.type = "file"; picker.accept = "image/jpeg,image/png,image/webp"; picker.hidden = true;
+        picker.addEventListener("change", () => uploadImageFile(picker.files?.[0]));
+        drop.addEventListener("click", () => picker.click());
+        drop.addEventListener("dragover", (event) => { event.preventDefault(); drop.classList.add("is-dragover"); });
+        drop.addEventListener("dragleave", () => drop.classList.remove("is-dragover"));
+        drop.addEventListener("drop", (event) => { event.preventDefault(); drop.classList.remove("is-dragover"); uploadImageFile(event.dataTransfer?.files?.[0]); });
+        card.append(rights, drop, picker);
+      }
+
+      const sourceValue = state.imageSources?.sources?.[state.imageSourceTab];
+      const assets = Array.isArray(sourceValue) ? sourceValue : Array.isArray(sourceValue?.assets) ? sourceValue.assets : [];
+      if (state.imageSourceTab !== "ai") {
+        const grid = document.createElement("div"); grid.className = "factory-image-asset-grid";
+        assets.forEach((asset) => {
+          const button = document.createElement("button"); button.type = "button"; button.disabled = state.imageLoading; button.classList.toggle("is-selected", state.selectedImage?.id === asset.id);
+          const thumb = document.createElement("div"); thumb.className = "factory-image-asset-thumb"; thumb.textContent = asset.sourceType === "content_library" ? asset.niche || "Library" : asset.source || "Asset";
+          const name = document.createElement("strong"); name.textContent = asset.name;
+          const meta = document.createElement("small"); meta.textContent = `${asset.width || "?"} × ${asset.height || "?"} · ${formatBytes(asset.sizeBytes)}`;
+          button.append(thumb, name, meta); button.addEventListener("click", () => selectImageAsset(asset)); grid.appendChild(button);
+        });
+        if (!assets.length) { const emptyAssets = document.createElement("p"); emptyAssets.textContent = state.imageSourceTab === "currentWebsite" ? state.imageSources?.sources?.currentWebsite?.message || "Geen veilige websitebeelden beschikbaar." : "Geen geschikte afbeeldingen beschikbaar."; grid.appendChild(emptyAssets); }
+        card.appendChild(grid);
+      }
+
+      const altLabel = document.createElement("label"); altLabel.className = "factory-image-alt"; altLabel.textContent = "Alttekst";
+      const altInput = document.createElement("input"); altInput.type = "text"; altInput.maxLength = Number(section.schema.altMaxLength || 180); altInput.value = state.imageAlt; altInput.disabled = !state.selectedImage || state.imageLoading || state.saving;
+      altInput.addEventListener("input", () => { state.imageAlt = altInput.value; state.imageIdempotencyKey = ""; applyImagePreview(); });
+      altLabel.appendChild(altInput);
+      const altError = state.selectedImage ? validateImageAlt(section.schema, state.imageAlt) : "";
+      if (altError) { const error = document.createElement("small"); error.className = "factory-hero-field-error"; error.textContent = altError; altLabel.appendChild(error); }
+      card.appendChild(altLabel);
+      const message = document.createElement("p"); message.className = "factory-hero-editor-message"; message.setAttribute("role", "status"); message.textContent = state.imageMessage || (state.imageSourceTab === "ai" ? state.imageSources?.sources?.ai?.message : "") || ""; card.appendChild(message);
+      const actions = document.createElement("div"); actions.className = "factory-image-editor-actions";
+      actions.append(
+        actionButton("Afbeelding resetten", "secondary", !imageDirty() || state.saving, () => { revokeImageBlob(true); state.selectedImage = null; state.imageAlt = state.imageSavedAlt; state.imageMessage = "Tijdelijke afbeelding teruggezet."; renderHeroEditor(); }),
+        actionButton("Preview bijwerken", "secondary", !imageDirty() || Boolean(altError) || state.saving, applyImagePreview),
+        actionButton(state.saving ? "Opslaan…" : "Beeld opslaan als nieuwe versie", "primary", !imageDirty() || Boolean(altError) || state.saving || Object.keys(changedPatch()).length > 0, saveImage),
+      );
+      card.appendChild(actions);
+      if (imageDirty() && Object.keys(changedPatch()).length) { const warning = document.createElement("p"); warning.className = "factory-image-sync-warning"; warning.textContent = "Sla eerst de Hero-tekst op of maak die wijziging ongedaan. Zo kunnen concepten elkaar niet overschrijven."; card.appendChild(warning); }
+      form.appendChild(card);
+    };
     const renderHeroEditor = (message = "") => {
       const hero = state.hero;
       if (!hero) return;
@@ -335,13 +592,7 @@
         fields.appendChild(label);
       }
       form.appendChild(fields);
-      const imageCard = document.createElement("div");
-      imageCard.className = "factory-hero-image-readonly";
-      const imageUrl = previewAssetUrl(hero.image?.src || "");
-      if (imageUrl) { const image = document.createElement("img"); image.src = imageUrl; image.alt = hero.image?.alt || "Huidige Hero-afbeelding"; imageCard.appendChild(image); }
-      const imageCopy = document.createElement("p"); imageCopy.textContent = "Afbeeldingen aanpassen volgt in Sprint 2B.3.";
-      imageCard.appendChild(imageCopy);
-      form.appendChild(imageCard);
+      renderImageEditor(form);
       const status = document.createElement("p");
       status.className = "factory-hero-editor-message";
       status.setAttribute("role", "status");
@@ -359,7 +610,7 @@
       const preview = actionButton("Voorbeeld bijwerken", "secondary", !dirty || state.saving || Object.keys(errors).length > 0, () => {
         postToPreview("APPLY_HERO_PATCH", { sectionId: "home.hero", sectionType: "hero", patch: changedPatch() });
       });
-      const save = actionButton(state.saving ? "Opslaan…" : "Opslaan als nieuwe versie", "primary", !dirty || state.saving || Object.keys(errors).length > 0, () => saveHero());
+      const save = actionButton(state.saving ? "Opslaan…" : "Opslaan als nieuwe versie", "primary", !dirty || state.saving || Object.keys(errors).length > 0 || imageDirty(), () => saveHero());
       actions.append(undo, preview, save);
       form.appendChild(actions);
       details.replaceChildren(form);
@@ -381,12 +632,23 @@
       const requestedVersionId = frame.dataset.previewVersionId || "";
       resetPanel("Hero-editor wordt veilig geladen…");
       try {
-        const body = await editorRequest("GET", scopeParams());
+        const [heroResult, imageResult, sourceResult] = await Promise.allSettled([
+          editorRequest("GET", scopeParams()),
+          section.capabilities.includes("write:image") ? editorRequest("GET", { ...scopeParams(), editorKind: "image", sectionId: "home.hero", sectionType: "hero" }) : Promise.reject(Object.assign(new Error("Imageslot is read-only."), { code: "IMAGE_WRITE_UNAVAILABLE" })),
+          section.capabilities.includes("write:image") ? assetRequest("GET", scopeParams()) : Promise.resolve(null),
+        ]);
+        if (heroResult.status !== "fulfilled") throw heroResult.reason;
+        const body = heroResult.value;
         if (state.selectedSection?.id !== section.id || frame.dataset.previewVersionId !== requestedVersionId) return;
         state.hero = body.hero;
         state.savedValues = { ...body.hero.values };
         state.draftValues = { ...body.hero.values };
         state.idempotencyKey = "";
+        state.imageSection = imageResult.status === "fulfilled" ? imageResult.value.imageSection : null;
+        state.imageSources = sourceResult.status === "fulfilled" ? sourceResult.value : null;
+        state.imageAlt = state.imageSection?.image?.alt || body.hero.image?.alt || "";
+        state.imageSavedAlt = state.imageAlt;
+        state.imageMessage = imageResult.status === "rejected" && section.capabilities.includes("write:image") ? requestMessage(imageResult.reason) : "";
         renderHeroEditor();
       } catch (error) {
         resetPanel(requestMessage(error));
@@ -564,12 +826,15 @@
       const writableHero = section.id === "home.hero" && section.type === "hero" && section.capabilities.includes("write:title");
       const writableText = section.id === "home.introduction" && section.type === "text" && section.capabilities.includes("write:title") && section.capabilities.includes("write:body");
       if (writableHero) {
+        resetImageState(true);
         state.textSection = null;
         loadHero(section);
       } else if (writableText) {
+        resetImageState(true);
         state.hero = null;
         loadTextSection(section);
       } else {
+        resetImageState(true);
         state.hero = null;
         state.textSection = null;
         renderReadOnlySection(section);
@@ -608,7 +873,7 @@
         }
       }
       if (type === "SECTION_SELECTED") renderSection(payload.section);
-      if (type === "SECTION_DESELECTED") { state.selectedSection = null; state.hero = null; state.textSection = null; resetPanel(); }
+      if (type === "SECTION_DESELECTED") { resetImageState(false); state.selectedSection = null; state.hero = null; state.textSection = null; resetPanel(); }
       if (type === "PREVIEW_ERROR") state.hero ? renderHeroEditor(`Bewerkmodusfout: ${payload.code}.`) : state.textSection ? renderTextEditor(`Bewerkmodusfout: ${payload.code}.`) : resetPanel(`Bewerkmodus kon niet starten (${payload.code}).`);
     });
     globalScope.addEventListener("keydown", (event) => { if (state.enabled && event.key === "Escape") { postToPreview("DESELECT"); resetPanel(); } });
@@ -620,7 +885,7 @@
         enable();
       }
     });
-    frame.addEventListener("load", () => { state.frameWindow = frame.contentWindow; });
+    frame.addEventListener("load", () => { if (state.imageBlobUrl) revokeImageBlob(false); state.frameWindow = frame.contentWindow; });
     toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "") || frame.dataset.editorAvailable !== "true";
     resetPanel();
     showAvailability(frame.dataset.editorAvailability || "");

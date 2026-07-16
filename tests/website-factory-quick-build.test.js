@@ -6,6 +6,7 @@ const path = require("node:path");
 const { normalizeWebsiteInput } = require("../functions/_website-input");
 const { buildWebsitePackage, runQualityCheck } = require("../functions/_website-factory-core");
 const { extractHeroContext, prepareHeroEditorPackage } = require("../functions/_preview-editor-hero");
+const { extractImageContext, prepareImageEditorPackage } = require("../functions/_preview-editor-image");
 const { createBuildJob, getBuildHistory, runBuildJob, sanitizeBuildResult } = require("../functions/website-factory");
 
 const root = path.join(__dirname, "..");
@@ -85,14 +86,18 @@ test("standard and VM builds keep valid explicit Hero write capabilities", async
   }
 });
 
-test("missing optional editor marker falls back to read-only without blocking the build", async () => {
+test("missing image marker makes only the imageslot read-only without blocking Hero text or build", async () => {
   const generatedPackage = buildQuick().generatedPackage;
   const entry = generatedPackage.files.find((file) => file.path === "index.html");
   entry.content = entry.content.replace('data-mws-field="image"', "");
-  const prepared = await prepareHeroEditorPackage(generatedPackage);
+  const imagePrepared = await prepareImageEditorPackage(generatedPackage);
+  const prepared = await prepareHeroEditorPackage(imagePrepared.generatedPackage);
   const hero = prepared.generatedPackage.meta.editorManifest.pages[0].sections.find((section) => section.id === "home.hero");
-  assert.equal(prepared.availability, "read_only");
-  assert.equal(hero.editor, undefined);
+  assert.equal(imagePrepared.availability, "read_only");
+  assert.equal(prepared.availability, "editable");
+  assert.equal(hero.imageEditor, undefined);
+  assert.ok(hero.editor);
+  await assert.rejects(() => extractImageContext(prepared.generatedPackage), { code: "IMAGE_WRITE_UNAVAILABLE" });
   assert.equal(runQualityCheck({ generatedPackage: prepared.generatedPackage, journey: { businessName: "FatTrek" } }).passed, true);
   assert.ok(prepared.generatedPackage.files.some((file) => file.path === "index.html" && /<\/html>/i.test(file.content)));
 });

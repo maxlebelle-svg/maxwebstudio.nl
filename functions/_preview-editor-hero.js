@@ -132,8 +132,6 @@ async function parseHero(html, manifest, pagePath) {
     values[field.key] = field.target === "href" ? attribute(node, "href") : textContent(node).trim();
   }
   const imageNode = findNodes(section, (node) => attribute(node, "data-mws-field") === "image");
-  if (imageNode.length > 1) throw heroError("HERO_FIELD_MARKER_AMBIGUOUS", "De Hero-afbeeldingsmarker komt meerdere keren voor.", 422, "validate_editor_markers");
-  if (imageNode.length !== 1) throw heroError("HERO_WRITE_UNAVAILABLE", "De Hero-afbeeldingsmarker ontbreekt voor veilige bewerking.", 409, "validate_field_markers");
   validateManifestDom(document, manifest, pagePath, heroError);
   const rawSection = html.slice(section.sourceCodeLocation.startOffset, section.sourceCodeLocation.endOffset);
   return {
@@ -141,7 +139,7 @@ async function parseHero(html, manifest, pagePath) {
     values,
     fieldNodes,
     availableFields: HERO_FIELDS.map((field) => field.key),
-    image: { src: attribute(imageNode[0], "src"), alt: attribute(imageNode[0], "alt") },
+    image: imageNode.length === 1 ? { src: attribute(imageNode[0], "src"), alt: attribute(imageNode[0], "alt") } : null,
     contentHash: sha256(rawSection),
   };
 }

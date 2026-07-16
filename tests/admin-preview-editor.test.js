@@ -384,12 +384,15 @@ test("UI retains draft values on save error and reports request id once", () => 
   assert.match(source, /Nieuwe conceptpreview opgeslagen\. De klantversie is niet gewijzigd\./);
 });
 
-test("ZIP sources remain read-only and no image write capability exists", () => {
+test("Factory exposes explicit image writes while ZIP sources remain read-only", () => {
   const runtime = fs.readFileSync(path.join(__dirname, "../functions/_preview-editor-runtime.js"), "utf8");
   const api = fs.readFileSync(path.join(__dirname, "../functions/admin-preview-editor.js"), "utf8");
-  assert.match(api, /previewSource\) !== "website_factory"/);
-  assert.doesNotMatch(runtime, /write:image/);
-  assert.match(fs.readFileSync(path.join(__dirname, "../public/admin/ui/website-factory-preview-editor.js"), "utf8"), /Afbeeldingen aanpassen volgt in Sprint 2B\.3\./);
+  const access = fs.readFileSync(path.join(__dirname, "../functions/_preview-editor-access.js"), "utf8");
+  assert.match(access, /previewSource\) !== "website_factory"/);
+  assert.match(api, /save_image_preview/);
+  assert.match(runtime, /write:image/);
+  assert.match(runtime, /source === "factory" \? validateEditorManifest/);
+  assert.match(fs.readFileSync(path.join(__dirname, "../public/admin/ui/website-factory-preview-editor.js"), "utf8"), /AI-afbeeldingen zijn nog niet geconfigureerd/);
 });
 
 test("client publication remains an explicit independent pointer", () => {

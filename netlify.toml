@@ -10,6 +10,9 @@
 [functions."demo-journey"]
   included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
 
+[functions."admin-preview-image-assets"]
+  included_files = ["public/assets/demo-images/library/**"]
+
 [[redirects]]
   from = "/account-activeren"
   to = "/account-activeren.html"

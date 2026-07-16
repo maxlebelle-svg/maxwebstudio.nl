@@ -67,7 +67,7 @@ function editorRuntime(config) {
   const sectionTypePattern = /^[a-z][a-z0-9_-]{1,39}$/;
   const fieldPattern = /^[a-z][a-z0-9_-]{1,39}$/;
   const outgoingTypes = new Set(["READY", "SECTION_LIST", "SECTION_HOVERED", "SECTION_SELECTED", "SECTION_DESELECTED", "PREVIEW_PATCHED", "PREVIEW_RESET", "PREVIEW_ERROR"]);
-  const incomingTypes = new Set(["DESELECT", "SELECT_SECTION", "APPLY_HERO_PATCH", "RESET_HERO_PATCH", "APPLY_TEXT_SECTION_PATCH", "RESET_TEXT_SECTION_PATCH"]);
+  const incomingTypes = new Set(["DESELECT", "SELECT_SECTION", "APPLY_HERO_PATCH", "RESET_HERO_PATCH", "APPLY_TEXT_SECTION_PATCH", "RESET_TEXT_SECTION_PATCH", "APPLY_IMAGE_PATCH", "RESET_IMAGE_PATCH"]);
   const clean = (value, max) => String(value || "").trim().slice(0, max);
   const byteLength = (value) => {
     try { return new TextEncoder().encode(JSON.stringify(value)).length; } catch { return Number.POSITIVE_INFINITY; }
@@ -90,7 +90,10 @@ function editorRuntime(config) {
       if (config.source === "factory" && (!manifestSection || manifestSection.type !== type)) return null;
       const fields = [...new Set(Array.from(node.querySelectorAll("[data-mws-field]"))
         .map((field) => clean(field.dataset.mwsField, 40)).filter((field) => fieldPattern.test(field)))].slice(0, 30);
-      const writeCapabilities = Array.isArray(manifestSection?.editor?.capabilities) ? manifestSection.editor.capabilities : [];
+      const writeCapabilities = [
+        ...(Array.isArray(manifestSection?.editor?.capabilities) ? manifestSection.editor.capabilities : []),
+        ...(Array.isArray(manifestSection?.imageEditor?.capabilities) ? manifestSection.imageEditor.capabilities : []),
+      ];
       const descriptor = {
         id,
         type,
@@ -216,6 +219,34 @@ function editorRuntime(config) {
       }
       post("PREVIEW_RESET", { sectionId: "home.hero", sectionType: "hero" });
     };
+    const imageDefinition = manifestSections.get("home.hero")?.imageEditor;
+    const heroImageNodes = Array.from(heroEntry?.node.querySelectorAll('[data-mws-field="image"]') || []);
+    const heroImageNode = heroImageNodes.length === 1 && heroImageNodes[0].tagName === "IMG" ? heroImageNodes[0] : null;
+    const originalImage = heroImageNode ? { src: heroImageNode.getAttribute("src") || "", alt: heroImageNode.getAttribute("alt") || "" } : null;
+    const validBlobUrl = (value) => {
+      try {
+        const url = new URL(clean(value, 4096));
+        return url.protocol === "blob:" && url.href.startsWith(`blob:${config.origin}/`);
+      } catch { return false; }
+    };
+    const applyImagePatch = (payload) => {
+      if (!heroImageNode || !imageDefinition || payload?.sectionId !== "home.hero" || payload?.sectionType !== "hero" || payload?.assetSlotId !== imageDefinition.assetSlotId) return false;
+      if (!imageDefinition.capabilities?.includes("write:image") || !imageDefinition.capabilities?.includes("write:image-alt")) return false;
+      if (!validBlobUrl(payload.blobUrl) || typeof payload.alt !== "string" || !payload.alt.trim() || payload.alt.length > Number(imageDefinition.altMaxLength || 0) || /[\u0000-\u001f\u007f<>]/.test(payload.alt)) return false;
+      const width = Number(payload.width);
+      const height = Number(payload.height);
+      if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width <= 0 || height <= 0 || width * height > Number(imageDefinition.maxPixels || 0)) return false;
+      heroImageNode.setAttribute("src", payload.blobUrl);
+      heroImageNode.setAttribute("alt", payload.alt.trim());
+      post("PREVIEW_PATCHED", { sectionId: "home.hero", sectionType: "hero", fields: ["image", "image-alt"], assetSlotId: imageDefinition.assetSlotId });
+      return true;
+    };
+    const resetImagePatch = () => {
+      if (!heroImageNode || !originalImage) return;
+      heroImageNode.setAttribute("src", originalImage.src);
+      heroImageNode.setAttribute("alt", originalImage.alt);
+      post("PREVIEW_RESET", { sectionId: "home.hero", sectionType: "hero", assetSlotId: imageDefinition?.assetSlotId || "" });
+    };
     const textEntry = entries.find((entry) => entry.descriptor.id === "home.introduction" && entry.descriptor.type === "text");
     const textDefinitions = textEntry?.descriptor.capabilities.some((item) => item.startsWith("write:"))
       ? manifestSections.get("home.introduction")?.editor?.fields || [] : [];
@@ -281,6 +312,8 @@ function editorRuntime(config) {
       if (data.type === "RESET_HERO_PATCH") resetHeroPatch();
       if (data.type === "APPLY_TEXT_SECTION_PATCH" && !applyTextPatch(data.payload)) post("PREVIEW_ERROR", { code: "TEXT_PATCH_REJECTED", message: "De tijdelijke tekstwijziging is geweigerd." });
       if (data.type === "RESET_TEXT_SECTION_PATCH") resetTextPatch();
+      if (data.type === "APPLY_IMAGE_PATCH" && !applyImagePatch(data.payload)) post("PREVIEW_ERROR", { code: "IMAGE_PATCH_REJECTED", message: "De tijdelijke afbeeldingswijziging is geweigerd." });
+      if (data.type === "RESET_IMAGE_PATCH") resetImagePatch();
     });
     const sections = entries.map((entry) => entry.descriptor);
     post("READY", { source: config.source, page: config.pagePath, readOnly: sections.length === 0, reason: sections.length ? "" : "missing_explicit_editor_markers" });

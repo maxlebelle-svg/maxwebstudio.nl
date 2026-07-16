@@ -2,17 +2,21 @@ const { createHash, randomBytes, randomUUID } = require("crypto");
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { extractHeroContext, patchHeroPackage } = require("./_preview-editor-hero");
+const { extractImageContext, patchImagePackage } = require("./_preview-editor-image");
 const { extractTextContext, patchTextPackage } = require("./_preview-editor-text");
 const { patchFingerprint } = require("./_preview-editor-section-core");
+const { resolvePreviewScope } = require("./_preview-editor-access");
 const { HERO_SCHEMA_ID, HERO_SECTION_ID, HERO_SECTION_TYPE } = require("./_preview-editor-hero-schema");
+const { IMAGE_SCHEMA_ID, IMAGE_SLOT_ID } = require("./_preview-editor-image-schema");
 const { TEXT_SCHEMA_ID, TEXT_SECTION_ID, TEXT_SECTION_TYPE } = require("./_preview-editor-text-schema");
+const { _private: imageAssets } = require("./admin-preview-image-assets");
 
 const roles = ["super_admin", "admin", "sales_manager"];
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const idempotencyPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{15,160}$/;
 
 const definitions = Object.freeze({
   hero: Object.freeze({
+    kind: "hero",
     action: "save_hero_preview",
     sectionId: HERO_SECTION_ID,
     sectionType: HERO_SECTION_TYPE,
@@ -25,6 +29,7 @@ const definitions = Object.freeze({
     patch: patchHeroPackage,
   }),
   text: Object.freeze({
+    kind: "text",
     action: "save_text_preview",
     sectionId: TEXT_SECTION_ID,
     sectionType: TEXT_SECTION_TYPE,
@@ -35,6 +40,19 @@ const definitions = Object.freeze({
     editorSchemaVersion: TEXT_SCHEMA_ID,
     extract: extractTextContext,
     patch: patchTextPackage,
+  }),
+  image: Object.freeze({
+    kind: "image",
+    action: "save_image_preview",
+    sectionId: HERO_SECTION_ID,
+    sectionType: HERO_SECTION_TYPE,
+    schemaId: IMAGE_SCHEMA_ID,
+    responseKey: "imageSection",
+    titleSuffix: "Beeldconcept",
+    changeSummary: "Interne Hero-afbeeldingswijziging; nog niet gepubliceerd.",
+    editorSchemaVersion: IMAGE_SCHEMA_ID,
+    extract: extractImageContext,
+    patch: patchImagePackage,
   }),
 });
 
@@ -107,7 +125,10 @@ async function saveSectionResponse(context, payload = {}) {
   const active = await readActiveVersion(context, source.version.demo_journey_id);
   if (!active?.id || active.id !== sourceId) throw withContext(editorError("EDIT_CONFLICT", "Deze preview is ondertussen gewijzigd. Laad de nieuwste versie voordat je opnieuw opslaat.", 409, "validate_active_source"), sourceId, sectionId);
 
-  const patched = await definition.patch(source.version.generated_package, patch, text(payload.baseContentHash || payload.base_content_hash));
+  const resolvedAsset = definition.kind === "image"
+    ? await imageAssets.resolveImageAsset(context, source, { sourceType: patch.sourceType, sourceAssetId: patch.sourceAssetId })
+    : null;
+  const patched = await definition.patch(source.version.generated_package, patch, text(payload.baseContentHash || payload.base_content_hash), resolvedAsset);
   const versionNumber = Number(source.version.version || 0) + 1;
   patched.generatedPackage.version = versionNumber;
   patched.generatedPackage.meta = { ...(patched.generatedPackage.meta || {}), version: versionNumber };
@@ -126,6 +147,12 @@ async function saveSectionResponse(context, payload = {}) {
     editorSchemaVersion: definition.editorSchemaVersion,
     actorId: context.admin.id,
     createdAt: now,
+    editedField: definition.kind === "image" ? "image" : "",
+    assetSlotId: definition.kind === "image" ? IMAGE_SLOT_ID : "",
+    sourceAssetId: definition.kind === "image" ? resolvedAsset.id : "",
+    sourceAssetHash: definition.kind === "image" ? patched.asset?.checksum : "",
+    sourceAssetType: definition.kind === "image" ? resolvedAsset.sourceType : "",
+    sourceAssetOrigin: definition.kind === "image" ? resolvedAsset.origin : "",
   });
   const record = {
     id: targetId,
@@ -178,7 +205,7 @@ function resolveDefinition(input = {}, method = "GET") {
   const action = text(input.action);
   let definition;
   if (method === "POST") definition = Object.values(definitions).find((item) => item.action === action);
-  else definition = definitions[text(input.sectionType || input.section_type || "hero")];
+  else definition = definitions[text(input.editorKind || input.editor_kind || input.sectionType || input.section_type || "hero")];
   if (!definition) throw editorError("ACTION_INVALID", "Onbekende preview-editoractie.", 400, "route_action");
   const sectionId = text(input.sectionId || input.section_id || definition.sectionId);
   const sectionType = text(input.sectionType || input.section_type || definition.sectionType);
@@ -206,35 +233,7 @@ async function activateVersion(context, version) {
 }
 
 async function resolveSourceContext(context, input = {}, sectionId = "") {
-  const previewVersionId = uuid(input.previewVersionId || input.preview_version_id);
-  if (!previewVersionId) throw editorError("PREVIEW_VERSION_REQUIRED", "Selecteer eerst een geldige previewversie.", 400, "validate_preview_version");
-  const version = await readVersion(context, previewVersionId);
-  if (!version?.id) throw withContext(editorError("PREVIEW_VERSION_NOT_FOUND", "De previewversie kon niet worden gevonden.", 404, "resolve_preview_version"), previewVersionId, sectionId);
-  if (text(version.metadata?.previewSource) !== "website_factory" || !Array.isArray(version.generated_package?.files)) throw withContext(editorError("SECTION_WRITE_UNAVAILABLE", "Alleen nieuwe Website Factory-previews kunnen worden bewerkt.", 409, "validate_preview_source"), previewVersionId, sectionId);
-  const journey = await readOne(context, "demo_journeys", `select=*&id=eq.${encodeURIComponent(version.demo_journey_id)}&limit=1`);
-  if (!journey?.id) throw withContext(editorError("PREVIEW_SCOPE_INVALID", "De preview hoort niet bij een geldige klantreis.", 409, "resolve_journey"), previewVersionId, sectionId);
-  assertRequestedScope(version, journey, input);
-  await assertStoredRelations(context, version, journey);
-  return { version, journey };
-}
-
-function assertRequestedScope(version, journey, input = {}) {
-  for (const [key, column] of [["customerId", "customer_id"], ["projectId", "project_id"], ["websiteId", "website_id"], ["demoJourneyId", "demo_journey_id"]]) {
-    const stored = text(version[column] || (column === "customer_id" ? journey.customer_id : ""));
-    const requested = uuid(input[key] || input[key.replace(/([A-Z])/g, "_$1").toLowerCase()]);
-    if (stored && (!requested || requested !== stored)) throw editorError("PREVIEW_SCOPE_MISMATCH", "Deze preview hoort niet bij de actieve klantcontext.", 409, "validate_scope");
-    if (!stored && requested && key !== "demoJourneyId") throw editorError("PREVIEW_SCOPE_MISMATCH", "Deze preview heeft geen overeenkomstige relatiecontext.", 409, "validate_scope");
-  }
-}
-
-async function assertStoredRelations(context, version, journey) {
-  if (version.customer_id && journey.customer_id && text(version.customer_id) !== text(journey.customer_id)) throw editorError("PREVIEW_SCOPE_MISMATCH", "De klantcontext van deze preview is inconsistent.", 409, "validate_relations");
-  const customer = version.customer_id ? await readOne(context, "customers", `select=id&id=eq.${encodeURIComponent(version.customer_id)}&limit=1`) : null;
-  if (version.customer_id && !customer?.id) throw editorError("PREVIEW_SCOPE_MISMATCH", "De gekoppelde klant bestaat niet meer.", 409, "validate_relations");
-  const website = version.website_id ? await readOne(context, "websites", `select=id,customer_id&id=eq.${encodeURIComponent(version.website_id)}&limit=1`) : null;
-  if (version.website_id && (!website?.id || text(website.customer_id) !== text(version.customer_id))) throw editorError("PREVIEW_SCOPE_MISMATCH", "De website hoort niet bij deze klant.", 409, "validate_relations");
-  const project = version.project_id ? await readOne(context, "projects", `select=id,customer_id,website_id&id=eq.${encodeURIComponent(version.project_id)}&limit=1`) : null;
-  if (version.project_id && (!project?.id || text(project.customer_id) !== text(version.customer_id) || (version.website_id && project.website_id && text(project.website_id) !== text(version.website_id)))) throw editorError("PREVIEW_SCOPE_MISMATCH", "Het project hoort niet bij deze previewcontext.", 409, "validate_relations");
+  return resolvePreviewScope({ readOne: (table, query) => readOne(context, table, query) }, input, { sectionId });
 }
 
 async function readVersion(context, id) {
@@ -314,6 +313,12 @@ function lineageMetadata(sourceMetadata = {}, values = {}) {
     revisionKind: "section_edit",
     editedSectionId: values.sectionId,
     editedSectionType: values.sectionType,
+    ...(values.editedField ? { editedField: values.editedField } : {}),
+    ...(values.assetSlotId ? { assetSlotId: values.assetSlotId } : {}),
+    ...(values.sourceAssetId ? { sourceAssetId: values.sourceAssetId } : {}),
+    ...(values.sourceAssetHash ? { sourceAssetHash: values.sourceAssetHash } : {}),
+    ...(values.sourceAssetType ? { sourceAssetType: values.sourceAssetType } : {}),
+    ...(values.sourceAssetOrigin ? { sourceAssetOrigin: values.sourceAssetOrigin } : {}),
     baseContentHash: values.baseContentHash,
     contentHash: values.contentHash,
     editPatchHash: values.patchHash,
@@ -404,11 +409,6 @@ function fail(statusCode, code, message, phase, requestId) {
 
 function json(statusCode, body) {
   return { statusCode, headers: { "Content-Type": "application/json", ...corsHeaders({ methods: "GET, POST, OPTIONS" }) }, body: statusCode === 204 ? "" : JSON.stringify(body) };
-}
-
-function uuid(value) {
-  const clean = text(value);
-  return uuidPattern.test(clean) ? clean : "";
 }
 
 function text(value = "") {

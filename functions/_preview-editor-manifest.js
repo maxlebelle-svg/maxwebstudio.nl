@@ -2,6 +2,16 @@ const SECTION_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{2,79}$/;
 const SECTION_TYPE_PATTERN = /^[a-z][a-z0-9_-]{1,39}$/;
 const FIELD_PATTERN = /^[a-z][a-z0-9_-]{1,39}$/;
 const { HERO_FIELDS, HERO_SCHEMA_ID, HERO_SECTION_ID, HERO_SECTION_TYPE, HERO_WRITE_CAPABILITIES } = require("./_preview-editor-hero-schema");
+const {
+  IMAGE_ALLOWED_MIME_TYPES,
+  IMAGE_SCHEMA_ID,
+  IMAGE_SECTION_ID,
+  IMAGE_SECTION_TYPE,
+  IMAGE_SLOT_ID,
+  IMAGE_SOURCE_CAPABILITIES,
+  IMAGE_WRITE_CAPABILITIES,
+  imageEditorDefinition,
+} = require("./_preview-editor-image-schema");
 const { TEXT_FIELDS, TEXT_REQUIRED_FIELDS, TEXT_SCHEMA_ID, TEXT_SECTION_ID, TEXT_SECTION_TYPE, TEXT_WRITE_CAPABILITIES } = require("./_preview-editor-text-schema");
 
 const FACTORY_EDITOR_MANIFEST = Object.freeze({
@@ -11,7 +21,7 @@ const FACTORY_EDITOR_MANIFEST = Object.freeze({
     Object.freeze({
       path: "index.html",
       sections: Object.freeze([
-        section("home.hero", "hero", "Hero", ["eyebrow", "title", "description", "primary-cta", "secondary-cta", "image"], heroEditor()),
+        section("home.hero", "hero", "Hero", ["eyebrow", "title", "description", "primary-cta", "secondary-cta", "image"], heroEditor(), imageEditorDefinition()),
         section("home.introduction", "text", "Introductie", ["eyebrow", "title", "body"], textEditor()),
         section("home.services", "services", "Diensten", ["eyebrow", "title", "items"]),
         section("home.contact-cta", "cta", "Contact en call-to-action", ["eyebrow", "title", "description", "form"]),
@@ -21,8 +31,8 @@ const FACTORY_EDITOR_MANIFEST = Object.freeze({
   ]),
 });
 
-function section(id, type, label, fields, editor = null) {
-  return Object.freeze({ id, type, label, fields: Object.freeze(fields), ...(editor ? { editor: Object.freeze(editor) } : {}) });
+function section(id, type, label, fields, editor = null, imageEditor = null) {
+  return Object.freeze({ id, type, label, fields: Object.freeze(fields), ...(editor ? { editor: Object.freeze(editor) } : {}), ...(imageEditor ? { imageEditor: Object.freeze(imageEditor) } : {}) });
 }
 
 function heroEditor() {
@@ -73,11 +83,36 @@ function validateEditorManifest(value) {
       ids.add(`${path}:${id}`);
       const editor = validateEditorDefinition(candidate?.editor, { id, type, fields });
       if (candidate?.editor && !editor) return null;
-      sections.push({ id, type, label, fields, ...(editor ? { editor } : {}) });
+      const imageEditor = validateImageEditorDefinition(candidate?.imageEditor, { id, type, fields });
+      if (candidate?.imageEditor && !imageEditor) return null;
+      sections.push({ id, type, label, fields, ...(editor ? { editor } : {}), ...(imageEditor ? { imageEditor } : {}) });
     }
     pages.push({ path, sections });
   }
   return { version: 1, source: "factory", pages };
+}
+
+function validateImageEditorDefinition(value, sectionValue = {}) {
+  if (!value || typeof value !== "object") return null;
+  const expected = imageEditorDefinition();
+  if (sectionValue.id !== IMAGE_SECTION_ID || sectionValue.type !== IMAGE_SECTION_TYPE || !sectionValue.fields.includes("image")) return null;
+  if (value.schema !== IMAGE_SCHEMA_ID || value.sectionId !== IMAGE_SECTION_ID || value.sectionType !== IMAGE_SECTION_TYPE || value.field !== "image" || value.assetSlotId !== IMAGE_SLOT_ID) return null;
+  if (Boolean(value.required) !== expected.required || Boolean(value.altRequired) !== expected.altRequired) return null;
+  for (const key of ["maxBytes", "recommendedWidth", "recommendedHeight", "minimumWidth", "minimumHeight", "maxPixels", "altMaxLength"]) {
+    if (Number(value[key]) !== Number(expected[key])) return null;
+  }
+  if (text(value.aspectRatio, 20) !== expected.aspectRatio) return null;
+  if (!sameStringSet(value.allowedMimeTypes, IMAGE_ALLOWED_MIME_TYPES) || !sameStringSet(value.sourceCapabilities, IMAGE_SOURCE_CAPABILITIES) || !sameStringSet(value.capabilities, IMAGE_WRITE_CAPABILITIES)) return null;
+  return {
+    ...expected,
+    allowedMimeTypes: [...expected.allowedMimeTypes],
+    sourceCapabilities: [...expected.sourceCapabilities],
+    capabilities: [...expected.capabilities],
+  };
+}
+
+function sameStringSet(value, expected) {
+  return Array.isArray(value) && value.length === expected.length && expected.every((item) => value.includes(item));
 }
 
 function validateEditorDefinition(value, sectionValue = {}) {

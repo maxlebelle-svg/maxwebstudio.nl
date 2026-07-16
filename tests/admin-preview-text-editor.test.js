@@ -336,8 +336,8 @@ test("frontend text model normalizes blank lines and temporary patch stays bridg
   assert.match(source, /postToPreview\("RESET_TEXT_SECTION_PATCH"/);
   assert.doesNotMatch(source, /APPLY_TEXT_SECTION_PATCH[\s\S]{0,240}editorRequest/);
   assert.match(source, /catch \(error\) \{\s*state\.saving = false;\s*renderTextEditor\(requestMessage\(error\)\)/);
-  assert.match(source, /if \(writableHero\) \{\s*state\.textSection = null;/);
-  assert.match(source, /else if \(writableText\) \{\s*state\.hero = null;/);
+  assert.match(source, /if \(writableHero\) \{[\s\S]{0,100}state\.textSection = null;/);
+  assert.match(source, /else if \(writableText\) \{[\s\S]{0,100}state\.hero = null;/);
   assert.match(source, /Log opnieuw in om de preview te bewerken\./);
 });
 
@@ -347,6 +347,7 @@ test("runtime accepts only explicit text patch messages and never enables ZIP wr
   assert.match(runtime, /RESET_TEXT_SECTION_PATCH/);
   assert.match(runtime, /document\.createElement\("p"\)/);
   assert.match(runtime, /paragraph\.textContent = item/);
-  assert.doesNotMatch(runtime, /write:image|innerHTML\s*=/);
-  assert.match(fs.readFileSync(path.join(__dirname, "../functions/admin-preview-editor.js"), "utf8"), /previewSource\) !== "website_factory"/);
+  assert.doesNotMatch(runtime, /innerHTML\s*=/);
+  assert.match(runtime, /APPLY_IMAGE_PATCH/);
+  assert.match(fs.readFileSync(path.join(__dirname, "../functions/_preview-editor-access.js"), "utf8"), /previewSource\) !== "website_factory"/);
 });
