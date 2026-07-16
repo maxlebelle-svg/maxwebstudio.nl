@@ -24571,6 +24571,7 @@
           }
           elements.manualZipInput.click();
         }
+        window.WebsiteFactoryZipPicker = Object.freeze({ open: openZipPicker });
 
         function selectManualZipFile(file) {
           pendingManualZipFile = file || null;
@@ -26377,7 +26378,7 @@
             if (!uploadButton) return;
             event.preventDefault();
             event.stopPropagation();
-            openZipPicker();
+            window.WebsiteFactoryZipPicker?.open?.();
             document.getElementById("factory-more-menu")?.removeAttribute("open");
           });
           document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", () => {
@@ -26388,7 +26389,7 @@
             const source = button.dataset.factorySourceChoice;
             const manualSourceButton = document.querySelector(".factory-control-preview [data-preview-source='manual']");
             if (source === "manual" && manualSourceButton && !manualSourceButton.disabled) manualSourceButton.click();
-            else openZipPicker();
+            else window.WebsiteFactoryZipPicker?.open?.();
             document.getElementById("factory-more-menu")?.removeAttribute("open");
           }));
           document.querySelectorAll("[data-factory-action='version'], [data-factory-action='versions']").forEach((button) => button.addEventListener("click", () => {
