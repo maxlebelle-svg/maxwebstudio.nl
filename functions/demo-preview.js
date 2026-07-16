@@ -1,8 +1,8 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders: sharedCorsHeaders } = require("./_cors");
-const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { resolveActiveDemoPreview } = require("./_demo-preview-source");
 const { injectEditorRuntime, parseEditorContext, requestOrigin, UUID_PATTERN } = require("./_preview-editor-runtime");
+const { normalizePreviewSource, previewSourceForVersion } = require("./_preview-zip");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return response(204, "", {});
@@ -15,10 +15,13 @@ exports.handler = async (event) => {
   const id = cleanText(event.queryStringParameters?.id);
   const token = cleanText(event.queryStringParameters?.token);
   const format = cleanText(event.queryStringParameters?.format).toLowerCase();
-  const source = cleanText(event.queryStringParameters?.source).toLowerCase();
+  const rawSource = cleanText(event.queryStringParameters?.source).toLowerCase();
+  const source = normalizePreviewSource(rawSource);
   const requestedFilePath = cleanText(event.queryStringParameters?.file);
   const requestedPreviewVersionId = cleanText(event.queryStringParameters?.previewVersionId);
   if (!id) return response(400, "Preview id ontbreekt.", { "Content-Type": "text/plain; charset=utf-8" });
+  if (rawSource && !source) return response(400, "Previewbron is niet geldig. Gebruik factory of manual_zip.", { "Content-Type": "text/plain; charset=utf-8" });
+  if (requestedPreviewVersionId && !UUID_PATTERN.test(requestedPreviewVersionId)) return response(400, "Previewversie is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
 
   const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/demo_journeys?select=*&id=eq.${encodeURIComponent(id)}&limit=1`, {
     method: "GET",
@@ -38,7 +41,7 @@ exports.handler = async (event) => {
     if (!adminCheck.success) return response(403, "Previewlink is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
   }
 
-  const factorySourceRequested = ["factory", "website_factory", "website-factory"].includes(source);
+  const factorySourceRequested = source === "factory";
   let previewVersion = null;
   if (factorySourceRequested || requestedPreviewVersionId) {
     previewVersion = await readPreviewVersion({
@@ -49,9 +52,17 @@ exports.handler = async (event) => {
       token,
     });
   }
-  let previewPackage = factorySourceRequested && hasRenderablePackage(previewVersion?.generated_package)
+  if (requestedPreviewVersionId && !previewVersion?.id) return response(404, "Previewversie niet gevonden.", { "Content-Type": "text/plain; charset=utf-8" });
+  const versionSource = previewVersion ? previewSourceForVersion(previewVersion) : "";
+  if (requestedPreviewVersionId && !versionSource) return response(409, "Previewversie heeft geen geldige bron.", { "Content-Type": "text/plain; charset=utf-8" });
+  if (requestedPreviewVersionId && source && source !== versionSource) return response(409, "Previewbron hoort niet bij deze previewversie.", { "Content-Type": "text/plain; charset=utf-8" });
+  let previewPackage = requestedPreviewVersionId
     ? previewVersion.generated_package
-    : normalizePackage(row.preview_package, row, source);
+    : factorySourceRequested && hasRenderablePackage(previewVersion?.generated_package)
+      ? previewVersion.generated_package
+      : normalizePackage(row.preview_package, row, source);
+  if (requestedPreviewVersionId && !hasRenderablePackage(previewPackage)) return response(409, "Previewversie bevat geen renderbaar pakket.", { "Content-Type": "text/plain; charset=utf-8" });
+  const resolvedSource = requestedPreviewVersionId ? versionSource : source;
   const filePath = requestedFilePath || cleanText(previewPackage.entryFile || previewPackage.meta?.entryFile) || "index.html";
   let editorContext = null;
   if (cleanText(event.queryStringParameters?.editorMode) === "sections") {
@@ -59,7 +70,7 @@ exports.handler = async (event) => {
     if (!UUID_PATTERN.test(previewVersionId)) return response(400, "Editorcontext is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
     const versionToken = cleanText(previewVersion?.preview_token);
     if (!previewVersion?.id || (versionToken && versionToken !== token)) return response(403, "Editorcontext is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
-    const editorSource = source === "manual" || source === "manual_zip" ? "manual_zip" : "factory";
+    const editorSource = resolvedSource === "manual_zip" ? "manual_zip" : "factory";
     if (previewVersion.generated_package?.files?.length) previewPackage = previewVersion.generated_package;
     editorContext = parseEditorContext(event.queryStringParameters, {
       filePath,
@@ -70,38 +81,13 @@ exports.handler = async (event) => {
     if (!editorContext) return response(400, "Editorcontext is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
   }
   if (format === "zip") {
-    const previewVersion = previewPackage.version || previewPackage.meta?.version || 1;
-    const filename = zipFilenameFor({ businessName: row.business_name || previewPackage.businessName, websiteUrl: row.website_url, version: previewVersion });
-    const previewUrl = absolutePreviewUrl(row.preview_url || previewUrlForRequest(event, id, token), event);
-    const files = prepareZipFiles(previewPackage.files, {
-      businessName: row.business_name || previewPackage.businessName,
-      previewVersion,
-      generatedAt: previewPackage.generatedAt,
-      packageLabel: previewPackage.meta?.packageLabel || "",
-      previewUrl,
+    return jsonResponse(400, {
+      success: false,
+      code: "ZIP_DOWNLOAD_ROUTE_REQUIRED",
+      error: "ZIP-downloads worden via de beveiligde downloadroute voorbereid.",
+      endpoint: "/.netlify/functions/admin-preview-zip-download",
+      previewVersionId: requestedPreviewVersionId || null,
     });
-    await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin: {} }, {
-      leadId: row.lead_id,
-      customerId: row.customer_id,
-      demoJourneyId: row.id,
-      businessName: row.business_name || previewPackage.businessName,
-      websiteUrl: row.website_url,
-      latestZipFilename: filename,
-      latestPreviewUrl: row.preview_url || previewUrl,
-      latestPreviewVersion: previewVersion,
-    });
-    const zip = createZip(files);
-    return {
-      statusCode: 200,
-      isBase64Encoded: true,
-      headers: {
-        ...corsHeaders(),
-        "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-        "Cache-Control": "no-store",
-      },
-      body: zip.toString("base64"),
-    };
   }
 
   const file = previewPackage.files.find((item) => item.path === filePath) || previewPackage.files.find((item) => item.path.endsWith("index.html")) || previewPackage.files[0];
@@ -116,9 +102,9 @@ exports.handler = async (event) => {
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
   const resolvedPreviewVersionId = cleanText(previewVersion?.id || requestedPreviewVersionId);
   let content = file?.path?.endsWith(".html")
-    ? rewritePreviewHtml(fileContent, id, token, source, resolvedPreviewVersionId)
+    ? rewritePreviewHtml(fileContent, id, token, resolvedSource, resolvedPreviewVersionId)
     : file?.path?.endsWith(".css")
-      ? rewritePreviewAssetReferences(fileContent, id, token, source, resolvedPreviewVersionId)
+      ? rewritePreviewAssetReferences(fileContent, id, token, resolvedSource, resolvedPreviewVersionId)
     : fileContent;
   if (file?.path?.endsWith(".html") && editorContext) content = injectEditorRuntime(content, editorContext, requestOrigin(event));
   return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
@@ -160,7 +146,7 @@ function unavailablePreviewPackage(row = {}, source = "") {
 
 async function readPreviewVersion({ supabaseUrl, serviceRoleKey, demoJourneyId, previewVersionId = "", token = "" } = {}) {
   const query = new URLSearchParams({
-    select: "id,demo_journey_id,preview_token,generated_package,is_active,version",
+    select: "id,demo_journey_id,preview_token,generated_package,metadata,is_active,version",
     demo_journey_id: `eq.${demoJourneyId}`,
     order: "is_active.desc,version.desc,created_at.desc",
     limit: "1",
@@ -212,99 +198,6 @@ function rewritePreviewAssetReferences(content = "", id = "", token = "", source
     .replace(/url\(["']?(assets\/[^"')]+)["']?\)/g, (_match, file) => `url("${assetUrl(file)}")`);
 }
 
-function prepareZipFiles(files = [], meta = {}) {
-  const existing = Array.isArray(files) ? files : [];
-  const hasReadme = existing.some((file) => file.path === "README.md");
-  const projectSlug = slugifyZipFolder(meta.businessName || "website-preview");
-  const readme = [
-    `# ${cleanText(meta.businessName) || "Demo preview"} preview V${Math.max(1, Number(meta.previewVersion || 1))}`,
-    "",
-    "Interne website-preview voorbereid door de Website Factory.",
-    "",
-    `Bedrijfsnaam: ${cleanText(meta.businessName) || "-"}`,
-    `Preview versie: V${Math.max(1, Number(meta.previewVersion || 1))}`,
-    `Gegenereerd op: ${cleanText(meta.generatedAt) || "-"}`,
-    `Pakket: ${cleanText(meta.packageLabel) || "-"}`,
-    `Preview URL: ${cleanText(meta.previewUrl) || "-"}`,
-    "",
-    "Controleer de preview intern voordat deze naar de klant gaat.",
-    "",
-    "## Publicatie",
-    "- Rootbestanden zijn bedoeld voor preview en overdracht.",
-    "- live-upload/ bevat dezelfde publicatieklare sitebestanden.",
-    `- ${projectSlug}-live/ is een klantmap met dezelfde inhoud voor archief of handmatige upload.`,
-    "- Er wordt niets automatisch live gezet. Publiceer pas na menselijke controle.",
-  ].join("\n");
-  const checklist = [
-    `# Publicatiechecklist - ${cleanText(meta.businessName) || "Demo preview"}`,
-    "",
-    "Gebruik deze map pas nadat de preview is gecontroleerd.",
-    "",
-    "- [ ] Bedrijfsnaam klopt",
-    "- [ ] Contactgegevens kloppen",
-    "- [ ] Teksten passen bij de branche",
-    "- [ ] Afbeeldingen/visuals zijn akkoord",
-    "- [ ] Mobiel en desktop gecontroleerd",
-    "- [ ] Formulier/mailto gecontroleerd",
-    "- [ ] Sitemap, robots en .htaccess aanwezig",
-    "",
-    "Daarna kan de inhoud van live-upload/ handmatig naar hosting worden geplaatst.",
-  ].join("\n");
-  const filesWithReadme = hasReadme
-    ? existing.map((file) => file.path === "README.md" ? { ...file, content: readme } : file)
-    : [{ path: "README.md", content: readme }, ...existing];
-  const deployable = filesWithReadme.filter((file) => isDeployableSiteFile(file.path));
-  const duplicates = deployable.flatMap((file) => [
-    { path: `live-upload/${file.path}`, content: file.content, encoding: file.encoding },
-    { path: `${projectSlug}-live/${file.path}`, content: file.content, encoding: file.encoding },
-  ]);
-  const allFiles = [
-    ...filesWithReadme,
-    { path: "DEPLOYMENT_CHECKLIST.md", content: checklist },
-    ...duplicates,
-  ];
-  const uniqueFiles = Array.from(new Map(allFiles.map((file) => [file.path, file])).values());
-  const preferredOrder = ["README.md", "DEPLOYMENT_CHECKLIST.md", "briefing.json", "index.html", "over-ons.html", "diensten.html", "projecten.html", "reviews.html", "contact.html", "offerte.html", "styles.css", "script.js", "sitemap.xml", "robots.txt", ".htaccess", "assets-map.json"];
-  return uniqueFiles.sort((a, b) => {
-    const left = preferredOrder.indexOf(a.path);
-    const right = preferredOrder.indexOf(b.path);
-    const order = (left === -1 ? 999 : left) - (right === -1 ? 999 : right);
-    return order || a.path.localeCompare(b.path);
-  });
-}
-
-function isDeployableSiteFile(path = "") {
-  return path.startsWith("assets/")
-    || path.endsWith(".html")
-    || path.endsWith(".css")
-    || path.endsWith(".js")
-    || path.endsWith(".xml")
-    || path.endsWith(".txt")
-    || path === ".htaccess";
-}
-
-function slugifyZipFolder(value = "") {
-  return cleanText(value)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48) || "website-preview";
-}
-
-function previewUrlForRequest(event, id, token) {
-  return `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
-}
-
-function absolutePreviewUrl(url = "", event = {}) {
-  const value = cleanText(url);
-  if (!value || /^https?:\/\//i.test(value)) return value;
-  const host = event.headers?.host || event.headers?.Host || "";
-  const proto = event.headers?.["x-forwarded-proto"] || event.headers?.["X-Forwarded-Proto"] || "https";
-  return host ? `${proto}://${host}${value.startsWith("/") ? value : `/${value}`}` : value;
-}
-
 async function supabaseFetch(url, options) {
   const response = await fetch(url, options);
   const text = await response.text();
@@ -323,81 +216,6 @@ async function supabaseFetch(url, options) {
   }
   return Array.isArray(data) ? data : [];
 }
-
-function createZip(files = []) {
-  const localParts = [];
-  const centralParts = [];
-  let offset = 0;
-  files.forEach((file) => {
-    const name = Buffer.from(file.path, "utf8");
-    const content = file.encoding === "base64" ? Buffer.from(file.content || "", "base64") : Buffer.from(file.content || "", "utf8");
-    const crc = crc32(content);
-    const localHeader = Buffer.alloc(30);
-    localHeader.writeUInt32LE(0x04034b50, 0);
-    localHeader.writeUInt16LE(20, 4);
-    localHeader.writeUInt16LE(0, 6);
-    localHeader.writeUInt16LE(0, 8);
-    localHeader.writeUInt16LE(0, 10);
-    localHeader.writeUInt16LE(0, 12);
-    localHeader.writeUInt32LE(crc, 14);
-    localHeader.writeUInt32LE(content.length, 18);
-    localHeader.writeUInt32LE(content.length, 22);
-    localHeader.writeUInt16LE(name.length, 26);
-    localHeader.writeUInt16LE(0, 28);
-    localParts.push(localHeader, name, content);
-
-    const centralHeader = Buffer.alloc(46);
-    centralHeader.writeUInt32LE(0x02014b50, 0);
-    centralHeader.writeUInt16LE(20, 4);
-    centralHeader.writeUInt16LE(20, 6);
-    centralHeader.writeUInt16LE(0, 8);
-    centralHeader.writeUInt16LE(0, 10);
-    centralHeader.writeUInt16LE(0, 12);
-    centralHeader.writeUInt16LE(0, 14);
-    centralHeader.writeUInt32LE(crc, 16);
-    centralHeader.writeUInt32LE(content.length, 20);
-    centralHeader.writeUInt32LE(content.length, 24);
-    centralHeader.writeUInt16LE(name.length, 28);
-    centralHeader.writeUInt16LE(0, 30);
-    centralHeader.writeUInt16LE(0, 32);
-    centralHeader.writeUInt16LE(0, 34);
-    centralHeader.writeUInt16LE(0, 36);
-    centralHeader.writeUInt32LE(0, 38);
-    centralHeader.writeUInt32LE(offset, 42);
-    centralParts.push(centralHeader, name);
-    offset += localHeader.length + name.length + content.length;
-  });
-
-  const central = Buffer.concat(centralParts);
-  const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50, 0);
-  end.writeUInt16LE(0, 4);
-  end.writeUInt16LE(0, 6);
-  end.writeUInt16LE(files.length, 8);
-  end.writeUInt16LE(files.length, 10);
-  end.writeUInt32LE(central.length, 12);
-  end.writeUInt32LE(offset, 16);
-  end.writeUInt16LE(0, 20);
-  return Buffer.concat([...localParts, central, end]);
-}
-
-function crc32(buffer) {
-  let crc = -1;
-  for (let i = 0; i < buffer.length; i += 1) {
-    crc = (crc >>> 8) ^ crcTable[(crc ^ buffer[i]) & 0xff];
-  }
-  return (crc ^ -1) >>> 0;
-}
-
-const crcTable = (() => {
-  const table = new Array(256);
-  for (let n = 0; n < 256; n += 1) {
-    let c = n;
-    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
 
 function restHeaders(serviceRoleKey) {
   return {

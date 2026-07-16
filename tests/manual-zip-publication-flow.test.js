@@ -7,6 +7,8 @@ const root = path.resolve(__dirname, "..");
 const factory = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
 const upload = fs.readFileSync(path.join(root, "functions/admin-manual-preview.js"), "utf8");
 const publication = fs.readFileSync(path.join(root, "functions/admin-preview-publication.js"), "utf8");
+const zipDownload = fs.readFileSync(path.join(root, "functions/admin-preview-zip-download.js"), "utf8");
+const demoPreview = fs.readFileSync(path.join(root, "functions/demo-preview.js"), "utf8");
 
 test("both visible ZIP entries use one direct picker binding", () => {
   assert.equal((factory.match(/<button[^>]*data-manual-zip-upload/g) || []).length, 2);
@@ -89,4 +91,38 @@ test("Factory remains an alternative and source selection does not auto-switch a
   assert.match(factory, /data-preview-source="factory"/);
   assert.match(factory, /data-preview-source="manual"/);
   assert.match(factory, /if \(loadedManualVersion\.isActive\) previewSource = "manual"/);
+});
+
+test("ZIP download uses the active visible version and a separate prepare status", () => {
+  assert.match(factory, /function previewDownloadContext\(\)/);
+  assert.match(factory, /activePreviewSource\(\)/);
+  assert.match(factory, /previewVersionId: version\.id/);
+  assert.match(factory, /source: source === "manual" \? "manual_zip" : "factory"/);
+  assert.match(factory, /admin-preview-zip-download/);
+  assert.match(factory, /ZIP wordt voorbereid…/);
+  assert.match(factory, /state: "not_prepared"/);
+  assert.match(factory, /state: "preparing"/);
+  assert.match(factory, /state: "ready"/);
+  assert.match(factory, /state: "failed"/);
+  assert.doesNotMatch(factory, /function previewZipUrl\(/);
+  assert.doesNotMatch(factory, /format=zip/);
+});
+
+test("ZIP route is admin scoped, storage backed and returns no archive body", () => {
+  assert.match(zipDownload, /allowedRoles: ROLES/);
+  assert.match(zipDownload, /"super_admin", "admin", "sales_manager"/);
+  assert.doesNotMatch(zipDownload, /sales_partner/);
+  assert.match(zipDownload, /assertRequestedScope/);
+  assert.match(zipDownload, /assertStoredRelations/);
+  assert.match(zipDownload, /SIGNED_URL_SECONDS = 300/);
+  assert.match(zipDownload, /storage\/v1\/object\/sign/);
+  assert.doesNotMatch(zipDownload, /isBase64Encoded/);
+  assert.match(demoPreview, /ZIP_DOWNLOAD_ROUTE_REQUIRED/);
+  assert.doesNotMatch(demoPreview, /createZip|zip\.toString\("base64"\)/);
+});
+
+test("manual preview URLs keep one exact version and read-only capability", () => {
+  assert.match(factory, /manual-preview-render\?version=.*source=manual_zip.*previewVersionId=/);
+  assert.match(factory, /Preview klaar — alleen-lezen/);
+  assert.match(factory, /setQueryParam\(sourcedUrl, "previewVersionId", version\.id\)/);
 });

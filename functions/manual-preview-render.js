@@ -9,9 +9,13 @@ exports.handler = async (event) => {
   const context = getContext();
   if (!context.available) return response(500, "Previewomgeving is niet geconfigureerd.", "text/plain; charset=utf-8");
   const versionId = uuid(event.queryStringParameters?.version || event.queryStringParameters?.versionId);
+  const requestedPreviewVersionId = text(event.queryStringParameters?.previewVersionId);
+  const requestedSource = text(event.queryStringParameters?.source).toLowerCase();
   const token = text(event.queryStringParameters?.token);
   const requestedFile = safeFilePath(event.queryStringParameters?.file || "index.html");
   if (!versionId || !token) return response(400, "Previewlink is niet geldig.", "text/plain; charset=utf-8");
+  if (requestedPreviewVersionId && uuid(requestedPreviewVersionId) !== versionId) return response(409, "Previewversie hoort niet bij deze previewlink.", "text/plain; charset=utf-8");
+  if (requestedSource && requestedSource !== "manual_zip") return response(409, "Previewbron hoort niet bij deze previewversie.", "text/plain; charset=utf-8");
   try {
     const rows = await request(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=id,preview_token,generated_package,status,is_active&id=eq.${versionId}&limit=1`, { headers: headers(context.serviceRoleKey) });
     const version = rows[0];
@@ -42,7 +46,7 @@ exports.handler = async (event) => {
   }
 };
 
-function route(versionId, token, file) { return `/.netlify/functions/manual-preview-render?version=${encodeURIComponent(versionId)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(safeFilePath(file))}`; }
+function route(versionId, token, file) { return `/.netlify/functions/manual-preview-render?version=${encodeURIComponent(versionId)}&token=${encodeURIComponent(token)}&source=manual_zip&previewVersionId=${encodeURIComponent(versionId)}&file=${encodeURIComponent(safeFilePath(file))}`; }
 function rewriteHtml(value, id, token, editorContext = null, origin = "") { const rewritten = rewriteCss(String(value || ""), id, token)
   .replace(/(src|href)=["'](?!https?:|mailto:|tel:|#|data:|javascript:|\/)([^"']+)["']/gi, (_m, attr, file) => `${attr}="${route(id, token, file)}"`);
   return injectEditorRuntime(rewritten, editorContext, origin);

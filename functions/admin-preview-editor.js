@@ -133,7 +133,7 @@ async function saveSectionResponse(context, payload = {}) {
   patched.generatedPackage.version = versionNumber;
   patched.generatedPackage.meta = { ...(patched.generatedPackage.meta || {}), version: versionNumber };
   const previewToken = randomBytes(18).toString("hex");
-  const previewUrl = `/.netlify/functions/demo-preview?id=${encodeURIComponent(source.version.demo_journey_id)}&token=${encodeURIComponent(previewToken)}&previewVersionId=${encodeURIComponent(targetId)}`;
+  const previewUrl = `/.netlify/functions/demo-preview?id=${encodeURIComponent(source.version.demo_journey_id)}&token=${encodeURIComponent(previewToken)}&source=factory&previewVersionId=${encodeURIComponent(targetId)}`;
   const now = new Date().toISOString();
   const metadata = lineageMetadata(source.version.metadata, {
     parentPreviewVersionId: sourceId,

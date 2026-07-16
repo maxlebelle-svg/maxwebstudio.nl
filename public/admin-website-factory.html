@@ -21266,6 +21266,7 @@
         let previewSource = "factory";
         let manualPreview = null;
         let manualZipUploading = false;
+        let zipDownloadStatus = { state: "not_prepared", previewVersionId: "", error: "" };
         let pendingManualZipFile = null;
         let customerPreviewPublication = null;
         let leadSelectionVersion = 0;
@@ -23241,9 +23242,9 @@
           if (!url) return "";
           if (url.startsWith("data:") || url.startsWith("blob:")) return url;
           const source = activePreviewSource();
-          const sourcedUrl = appendQueryParam(url, "source", source);
           const version = source === "manual" ? editorPreviewVersion(source) : activeFactoryPreviewVersion();
-          return version?.id && !/[?&]previewVersionId=/i.test(sourcedUrl) ? appendQueryParam(sourcedUrl, "previewVersionId", version.id) : sourcedUrl;
+          const sourcedUrl = setQueryParam(url, "source", source === "manual" ? "manual_zip" : "factory");
+          return version?.id ? setQueryParam(sourcedUrl, "previewVersionId", version.id) : sourcedUrl;
         }
 
         function isManualPreviewVersion(version = {}) {
@@ -23289,9 +23290,8 @@
         }
 
         function manualPreviewUrlForVersion(version = {}) {
-          if (version.previewUrl) return absolutePreviewUrl(version.previewUrl);
-          if (!version.id || !version.previewToken) return "";
-          return absolutePreviewUrl(`/.netlify/functions/manual-preview-render?version=${encodeURIComponent(version.id)}&token=${encodeURIComponent(version.previewToken)}`);
+          if (version.id && version.previewToken) return absolutePreviewUrl(`/.netlify/functions/manual-preview-render?version=${encodeURIComponent(version.id)}&token=${encodeURIComponent(version.previewToken)}&source=manual_zip&previewVersionId=${encodeURIComponent(version.id)}`);
+          return version.previewUrl ? absolutePreviewUrl(version.previewUrl) : "";
         }
 
         function syncPreviewSourceFromJourney() {
@@ -23392,10 +23392,42 @@
           return `${cleanUrl}${cleanUrl.includes("?") ? "&" : "?"}${encodeURIComponent(cleanKey)}=${encodeURIComponent(String(value || ""))}`;
         }
 
-        function previewZipUrl(url = "") {
-          const absoluteUrl = absolutePreviewUrl(url);
-          if (!absoluteUrl) return "";
-          return `${absoluteUrl}${absoluteUrl.includes("?") ? "&" : "?"}format=zip`;
+        function setQueryParam(url = "", key = "", value = "") {
+          try {
+            const target = new URL(absolutePreviewUrl(url), window.location.origin);
+            target.searchParams.set(String(key || ""), String(value || ""));
+            return target.toString();
+          } catch {
+            return appendQueryParam(url, key, value);
+          }
+        }
+
+        function previewDownloadContext() {
+          const source = activePreviewSource();
+          const version = source === "manual" ? editorPreviewVersion("manual") : activeFactoryPreviewVersion();
+          if (!version?.id) return null;
+          return {
+            previewVersionId: version.id,
+            source: source === "manual" ? "manual_zip" : "factory",
+            customerId: version.customerId || journey?.customerId || factoryCustomerContext?.customer?.id || "",
+            projectId: version.projectId || journey?.projectId || factoryCustomerContext?.project?.id || "",
+            websiteId: version.websiteId || journey?.websiteId || factoryCustomerContext?.website?.id || "",
+            demoJourneyId: version.demoJourneyId || journey?.id || "",
+          };
+        }
+
+        function setZipDownloadAction(target, unavailableMessage = "Genereer eerst een previewpakket") {
+          if (!target) return;
+          const context = previewDownloadContext();
+          const enabled = Boolean(context?.previewVersionId);
+          target.dataset.previewVersionId = enabled ? context.previewVersionId : "";
+          target.dataset.previewSource = enabled ? context.source : "";
+          target.dataset.url = "";
+          target.dataset.unavailableMessage = enabled ? "" : unavailableMessage;
+          target.classList.toggle("is-disabled", !enabled);
+          target.setAttribute("aria-disabled", enabled ? "false" : "true");
+          target.title = enabled ? "" : unavailableMessage;
+          if (!target.dataset.defaultLabel) target.dataset.defaultLabel = target.textContent || "ZIP downloaden";
         }
 
         function setActionLink(link, url = "", unavailableMessage = "Genereer eerst een preview") {
@@ -23419,6 +23451,46 @@
             return;
           }
           window.open(url, "_blank", "noopener");
+        }
+
+        async function preparePreviewZip(event, target = elements.downloadZip) {
+          event?.preventDefault();
+          event?.stopPropagation();
+          const context = previewDownloadContext();
+          if (!context?.previewVersionId || target?.getAttribute("aria-disabled") === "true") {
+            setMessage(elements.message, target?.dataset?.unavailableMessage || "Genereer eerst een previewpakket.", "warning");
+            return;
+          }
+          if (zipDownloadStatus.state === "preparing") return;
+          zipDownloadStatus = { state: "preparing", previewVersionId: context.previewVersionId, error: "" };
+          const controls = [elements.downloadZip, elements.workspaceZip, elements.nextStepSecondary].filter(Boolean);
+          const controlLabels = new Map(controls.map((button) => [button, button.textContent || "ZIP downloaden"]));
+          controls.forEach((button) => {
+            button.textContent = "ZIP wordt voorbereid…";
+            button.setAttribute("aria-busy", "true");
+          });
+          setMessage(elements.message, "ZIP wordt voorbereid…", "info");
+          try {
+            const data = await apiRequest("/.netlify/functions/admin-preview-zip-download", "POST", { action: "prepare", ...context });
+            if (!data.downloadReady || !data.signedUrl) throw new Error("De ZIP-download is nog niet gereed.");
+            zipDownloadStatus = { state: "ready", previewVersionId: context.previewVersionId, error: "" };
+            const download = document.createElement("a");
+            download.href = data.signedUrl;
+            download.rel = "noopener";
+            download.target = "_blank";
+            document.body.appendChild(download);
+            download.click();
+            download.remove();
+            setMessage(elements.message, `ZIP gereed · ${Math.max(1, Math.ceil(Number(data.zipBytes || 0) / 1024))} KB${data.reused ? " · bestaande versie hergebruikt" : ""}.`, "success");
+          } catch (error) {
+            zipDownloadStatus = { state: "failed", previewVersionId: context.previewVersionId, error: error.message || "ZIP-download mislukt" };
+            setMessage(elements.message, error.message || "De ZIP kon niet worden voorbereid.", "error");
+          } finally {
+            controls.forEach((button) => {
+              button.textContent = controlLabels.get(button) || "ZIP downloaden";
+              button.removeAttribute("aria-busy");
+            });
+          }
         }
 
         function buildHistoryFromResponse(data = {}) {
@@ -24888,7 +24960,7 @@
           if (action === "generate_plan") return makeWebsitePlan();
           if (action === "generate_preview") return generatePreview();
           if (action === "open_preview") return openActionUrl(null, elements.openPreview, "Genereer eerst een preview.");
-          if (action === "download_zip") return openActionUrl(null, elements.downloadZip, "Genereer eerst een previewpakket.");
+          if (action === "download_zip") return preparePreviewZip(null, elements.downloadZip);
           if (action === "copy_preview") {
             const url = elements.copyPreviewLink?.dataset?.url || "";
             return copyText(url, elements.message);
@@ -25092,7 +25164,6 @@
           const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
           const previewUrl = absolutePreviewUrl(projectWorkspace?.latestPreviewUrl || journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "");
           const version = projectWorkspace?.latestPreviewVersion || activeVersion?.version || latest?.previewVersion || "";
-          const zipUrl = previewUrl ? previewZipUrl(previewUrl) : "";
           const fallbackZipSlug = String(journey?.businessName || selectedLead()?.companyName || "demo-preview").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
           const zipName = projectWorkspace?.latestZipFilename || (version ? `${fallbackZipSlug}-preview-v${version}.zip` : "-");
           const hasWorkspace = Boolean(projectWorkspace?.workspaceSlug);
@@ -25114,7 +25185,7 @@
               : "Cloud projectmap nog niet gekoppeld.";
           }
           setActionLink(elements.workspacePreview, previewUrl, "Genereer eerst een preview");
-          setActionLink(elements.workspaceZip, zipUrl, "Genereer eerst een previewpakket");
+          setZipDownloadAction(elements.workspaceZip, "Genereer eerst een previewpakket");
           setActionLink(elements.workspaceCopy, previewUrl, "Genereer eerst een preview");
           setActionLink(elements.workspaceFolder, projectWorkspace?.driveFolderUrl || "", "Cloud projectmap nog niet gekoppeld");
         }
@@ -25157,6 +25228,7 @@
             const sourceLabel = source === "manual" ? "Handmatige ZIP" : "Factory";
             elements.previewStageState.textContent = saved
               ? `Opgeslagen: ${sourceLabel}`
+              : ready && source === "manual" ? "Preview klaar — alleen-lezen"
               : ready && capability.editorAvailable ? "Preview klaar en bewerkbaar"
               : ready ? "Preview klaar, bewerkmodus niet beschikbaar"
               : capability.buildCompleted && !capability.versionStored ? "Build klaar, previewversie ontbreekt"
@@ -25314,7 +25386,7 @@
           ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           const currentPreviewUrl = activePreviewUrl();
           setActionLink(elements.openPreview, currentPreviewUrl || "", "Genereer eerst een preview");
-          setActionLink(elements.downloadZip, currentPreviewUrl ? previewZipUrl(currentPreviewUrl) : "", "Genereer eerst een preview");
+          setZipDownloadAction(elements.downloadZip, "Genereer eerst een preview");
           setActionLink(elements.copyPreviewLink, currentPreviewUrl || "", "Genereer eerst een preview");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
@@ -25682,7 +25754,7 @@
             await processFactoryNotes();
           });
           elements.openPreview?.addEventListener("click", (event) => openActionUrl(event, elements.openPreview, "Genereer eerst een preview."));
-          elements.downloadZip?.addEventListener("click", (event) => openActionUrl(event, elements.downloadZip, "Genereer eerst een previewpakket."));
+          elements.downloadZip?.addEventListener("click", (event) => preparePreviewZip(event, elements.downloadZip));
           elements.copyPreviewLink?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -25695,7 +25767,7 @@
           });
           elements.openPortal?.addEventListener("click", (event) => openActionUrl(event, elements.openPortal, "Er is nog geen klantportaal gekoppeld."));
           elements.workspacePreview?.addEventListener("click", (event) => openActionUrl(event, elements.workspacePreview, "Genereer eerst een preview."));
-          elements.workspaceZip?.addEventListener("click", (event) => openActionUrl(event, elements.workspaceZip, "Genereer eerst een previewpakket."));
+          elements.workspaceZip?.addEventListener("click", (event) => preparePreviewZip(event, elements.workspaceZip));
           elements.workspaceCopy?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();

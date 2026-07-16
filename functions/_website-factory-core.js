@@ -800,7 +800,7 @@ function nextPreviewVersion(versions = [], jobs = []) {
 }
 
 function previewUrlFor({ journeyId, token, previewVersionId = "" }) {
-  const base = `/.netlify/functions/demo-preview?id=${encodeURIComponent(journeyId)}&token=${encodeURIComponent(token)}`;
+  const base = `/.netlify/functions/demo-preview?id=${encodeURIComponent(journeyId)}&token=${encodeURIComponent(token)}&source=factory`;
   return previewVersionId ? `${base}&previewVersionId=${encodeURIComponent(previewVersionId)}` : base;
 }
 

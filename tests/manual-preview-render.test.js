@@ -37,6 +37,8 @@ test("manual preview index is served with same-origin iframe headers and rewritt
   assert.equal(result.headers["X-Frame-Options"], "SAMEORIGIN");
   assert.match(result.headers["Content-Security-Policy"], /frame-ancestors 'self'/);
   assert.match(result.body, /manual-preview-render\?version=/);
+  assert.match(result.body, /source=manual_zip/);
+  assert.match(result.body, new RegExp(`previewVersionId=${id}`));
   assert.match(result.body, /file=styles\.css/);
   assert.match(result.body, /file=assets%2Flogo\.svg/);
 });
@@ -55,4 +57,11 @@ test("wrong preview token and unsafe paths are rejected", async () => {
   const wrong = await renderer.handler(event({ token: "wrong" }));
   assert.equal(wrong.statusCode, 404);
   assert.equal(renderer._private.safeFilePath("../secret"), "");
+});
+
+test("manual renderer rejects a mismatched source or previewVersionId", async () => {
+  const wrongSource = await renderer.handler(event({ source: "factory", previewVersionId: id }));
+  const wrongVersion = await renderer.handler(event({ source: "manual_zip", previewVersionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }));
+  assert.equal(wrongSource.statusCode, 409);
+  assert.equal(wrongVersion.statusCode, 409);
 });
