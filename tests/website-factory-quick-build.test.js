@@ -119,9 +119,13 @@ test("successful Demo Journey response omits multi-megabyte generated packages",
 
 test("parse5 is a pinned production dependency and loads through the build-time compatibility path", async () => {
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+  const coreSource = fs.readFileSync(path.join(root, "functions/_preview-editor-section-core.js"), "utf8");
   const heroSource = fs.readFileSync(path.join(root, "functions/_preview-editor-hero.js"), "utf8");
+  const textSource = fs.readFileSync(path.join(root, "functions/_preview-editor-text.js"), "utf8");
   assert.equal(packageJson.dependencies.parse5, "7.2.1");
-  assert.match(heroSource, /import\("parse5"\)/);
+  assert.match(coreSource, /import\("parse5"\)/);
+  assert.match(heroSource, /require\("\.\/_preview-editor-section-core"\)/);
+  assert.match(textSource, /require\("\.\/_preview-editor-section-core"\)/);
   assert.equal((await prepareHeroEditorPackage(buildQuick().generatedPackage)).availability, "editable");
 });
 

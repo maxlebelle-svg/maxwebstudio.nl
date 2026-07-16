@@ -1,18 +1,49 @@
 const { createHash, randomBytes, randomUUID } = require("crypto");
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
-const { extractHeroContext, patchFingerprint, patchHeroPackage } = require("./_preview-editor-hero");
+const { extractHeroContext, patchHeroPackage } = require("./_preview-editor-hero");
+const { extractTextContext, patchTextPackage } = require("./_preview-editor-text");
+const { patchFingerprint } = require("./_preview-editor-section-core");
+const { HERO_SCHEMA_ID, HERO_SECTION_ID, HERO_SECTION_TYPE } = require("./_preview-editor-hero-schema");
+const { TEXT_SCHEMA_ID, TEXT_SECTION_ID, TEXT_SECTION_TYPE } = require("./_preview-editor-text-schema");
 
 const roles = ["super_admin", "admin", "sales_manager"];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const idempotencyPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{15,160}$/;
+
+const definitions = Object.freeze({
+  hero: Object.freeze({
+    action: "save_hero_preview",
+    sectionId: HERO_SECTION_ID,
+    sectionType: HERO_SECTION_TYPE,
+    schemaId: HERO_SCHEMA_ID,
+    responseKey: "hero",
+    titleSuffix: "Hero-concept",
+    changeSummary: "Interne Hero-wijziging; nog niet gepubliceerd.",
+    editorSchemaVersion: 1,
+    extract: extractHeroContext,
+    patch: patchHeroPackage,
+  }),
+  text: Object.freeze({
+    action: "save_text_preview",
+    sectionId: TEXT_SECTION_ID,
+    sectionType: TEXT_SECTION_TYPE,
+    schemaId: TEXT_SCHEMA_ID,
+    responseKey: "textSection",
+    titleSuffix: "Tekstconcept",
+    changeSummary: "Interne tekstsectiewijziging; nog niet gepubliceerd.",
+    editorSchemaVersion: TEXT_SCHEMA_ID,
+    extract: extractTextContext,
+    patch: patchTextPackage,
+  }),
+});
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(204, {});
   const requestId = text(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"] || randomUUID());
   const adminCheck = await verifyAdmin(event, json, {
     module: "preview_editor",
-    action: event.httpMethod === "GET" ? "read_hero" : "save_hero",
+    action: event.httpMethod === "GET" ? "read_section" : "save_section",
     allowedRoles: roles,
     allowedStatuses: ["active"],
   });
@@ -21,12 +52,12 @@ exports.handler = async (event) => {
   if (!context.available) return fail(500, "PREVIEW_EDITOR_UNAVAILABLE", "De preview-editor is nog niet geconfigureerd.", "configure_editor", requestId);
 
   try {
-    if (event.httpMethod === "GET") return await readHeroResponse(context, event.queryStringParameters || {});
-    if (event.httpMethod === "POST") return await saveHeroResponse(context, parsePayload(event.body));
+    if (event.httpMethod === "GET") return await readSectionResponse(context, event.queryStringParameters || {});
+    if (event.httpMethod === "POST") return await saveSectionResponse(context, parsePayload(event.body));
     return fail(405, "METHOD_NOT_ALLOWED", "Methode niet toegestaan.", "route_request", requestId);
   } catch (error) {
     console.error("Admin preview editor failed", {
-      action: event.httpMethod === "GET" ? "read_hero" : "save_hero",
+      action: event.httpMethod === "GET" ? "read_section" : "save_section",
       phase: error.phase || "preview_editor",
       requestId,
       previewVersion: error.previewVersionId || "",
@@ -44,42 +75,39 @@ exports.handler = async (event) => {
   }
 };
 
-async function readHeroResponse(context, params = {}) {
-  const source = await resolveSourceContext(context, params);
-  const hero = await extractHeroContext(source.version.generated_package);
+async function readSectionResponse(context, params = {}) {
+  const definition = resolveDefinition(params, "GET");
+  const source = await resolveSourceContext(context, params, definition.sectionId);
+  const extracted = await definition.extract(source.version.generated_package);
+  const section = sanitizeSection(extracted, source.version, definition);
   return json(200, {
     success: true,
     requestId: context.requestId,
-    hero: sanitizeHero(hero, source.version),
+    section,
+    [definition.responseKey]: section,
     previewVersion: sanitizeVersion(source.version),
   });
 }
 
-async function saveHeroResponse(context, payload = {}) {
-  if (text(payload.action || "save_hero_preview") !== "save_hero_preview") throw editorError("ACTION_INVALID", "Onbekende preview-editoractie.", 400, "route_action");
-  const source = await resolveSourceContext(context, payload);
+async function saveSectionResponse(context, payload = {}) {
+  const definition = resolveDefinition(payload, "POST");
+  const source = await resolveSourceContext(context, payload, definition.sectionId);
   const sourceId = source.version.id;
   const sectionId = text(payload.sectionId || payload.section_id);
-  if (sectionId !== "home.hero" || text(payload.sectionType || payload.section_type || "hero") !== "hero") {
-    throw withContext(editorError("HERO_SECTION_INVALID", "Alleen de gemarkeerde Hero-sectie kan in deze sprint worden bewerkt.", 400, "validate_section"), sourceId, sectionId);
-  }
   const idempotencyKey = text(payload.idempotencyKey || payload.idempotency_key);
   if (!idempotencyPattern.test(idempotencyKey)) throw withContext(editorError("IDEMPOTENCY_KEY_INVALID", "De opslagreferentie is ongeldig.", 400, "validate_idempotency"), sourceId, sectionId);
   const patch = payload.patch;
-  if (!patch || typeof patch !== "object" || Array.isArray(patch)) throw withContext(editorError("HERO_PATCH_INVALID", "De Hero-wijziging is ongeldig.", 400, "validate_patch"), sourceId, sectionId);
-  if (Object.values(patch).some((value) => typeof value !== "string")) throw withContext(editorError("HERO_PATCH_INVALID", "De Hero-wijziging mag uitsluitend tekstvelden bevatten.", 400, "validate_patch"), sourceId, sectionId);
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) throw withContext(editorError("SECTION_PATCH_INVALID", "De sectiewijziging is ongeldig.", 400, "validate_patch"), sourceId, sectionId);
 
   const patchHash = patchFingerprint(patch);
   const targetId = deterministicVersionId(context.admin.id, sourceId, idempotencyKey);
   const existing = await readVersion(context, targetId);
-  if (existing?.id) return recoverExistingEdit(context, { existing, source, patchHash, idempotencyKey, sectionId });
+  if (existing?.id) return recoverExistingEdit(context, { existing, source, definition, patchHash, idempotencyKey });
 
   const active = await readActiveVersion(context, source.version.demo_journey_id);
-  if (!active?.id || active.id !== sourceId) {
-    throw withContext(editorError("EDIT_CONFLICT", "Deze preview is ondertussen gewijzigd. Laad de nieuwste versie voordat je opnieuw opslaat.", 409, "validate_active_source"), sourceId, sectionId);
-  }
+  if (!active?.id || active.id !== sourceId) throw withContext(editorError("EDIT_CONFLICT", "Deze preview is ondertussen gewijzigd. Laad de nieuwste versie voordat je opnieuw opslaat.", 409, "validate_active_source"), sourceId, sectionId);
 
-  const patched = await patchHeroPackage(source.version.generated_package, patch, text(payload.baseContentHash || payload.base_content_hash));
+  const patched = await definition.patch(source.version.generated_package, patch, text(payload.baseContentHash || payload.base_content_hash));
   const versionNumber = Number(source.version.version || 0) + 1;
   patched.generatedPackage.version = versionNumber;
   patched.generatedPackage.meta = { ...(patched.generatedPackage.meta || {}), version: versionNumber };
@@ -89,10 +117,13 @@ async function saveHeroResponse(context, payload = {}) {
   const metadata = lineageMetadata(source.version.metadata, {
     parentPreviewVersionId: sourceId,
     sourceBuildJobId: source.version.build_job_id,
+    sectionId: definition.sectionId,
+    sectionType: definition.sectionType,
     baseContentHash: patched.source.contentHash,
     contentHash: patched.contentHash,
     patchHash,
     idempotencyKey,
+    editorSchemaVersion: definition.editorSchemaVersion,
     actorId: context.admin.id,
     createdAt: now,
   });
@@ -104,9 +135,9 @@ async function saveHeroResponse(context, payload = {}) {
     project_id: source.version.project_id || null,
     website_id: source.version.website_id || null,
     version: versionNumber,
-    title: `${text(source.version.title || "Website-preview").slice(0, 105)} — Hero-concept`,
+    title: `${text(source.version.title || "Website-preview").slice(0, 105)} — ${definition.titleSuffix}`,
     customer_summary: null,
-    change_summary: "Interne Hero-wijziging; nog niet gepubliceerd.",
+    change_summary: definition.changeSummary,
     preview_url: previewUrl,
     preview_token: previewToken,
     preview_score: source.version.preview_score ?? null,
@@ -134,44 +165,54 @@ async function saveHeroResponse(context, payload = {}) {
     inserted = (await insertRows(context, "website_preview_versions", record))[0] || record;
   } catch (error) {
     const recovered = await readVersion(context, targetId).catch(() => null);
-    if (recovered?.id) return recoverExistingEdit(context, { existing: recovered, source, patchHash, idempotencyKey, sectionId });
+    if (recovered?.id) return recoverExistingEdit(context, { existing: recovered, source, definition, patchHash, idempotencyKey });
     if (isUniqueViolation(error)) throw withContext(editorError("EDIT_CONFLICT", "Deze preview is ondertussen gewijzigd. Laad de nieuwste versie voordat je opnieuw opslaat.", 409, "insert_preview_version"), sourceId, sectionId);
     throw error;
   }
   await activateVersion(context, inserted);
-  const hero = await extractHeroContext(inserted.generated_package || record.generated_package);
-  return json(201, successBody(context, inserted, hero, false));
+  const extracted = await definition.extract(inserted.generated_package || record.generated_package);
+  return json(201, successBody(context, inserted, extracted, definition, false));
 }
 
-async function recoverExistingEdit(context, { existing, source, patchHash, idempotencyKey, sectionId }) {
+function resolveDefinition(input = {}, method = "GET") {
+  const action = text(input.action);
+  let definition;
+  if (method === "POST") definition = Object.values(definitions).find((item) => item.action === action);
+  else definition = definitions[text(input.sectionType || input.section_type || "hero")];
+  if (!definition) throw editorError("ACTION_INVALID", "Onbekende preview-editoractie.", 400, "route_action");
+  const sectionId = text(input.sectionId || input.section_id || definition.sectionId);
+  const sectionType = text(input.sectionType || input.section_type || definition.sectionType);
+  if (sectionId !== definition.sectionId || sectionType !== definition.sectionType) {
+    const code = definition.sectionType === "hero" ? "HERO_SECTION_INVALID" : "TEXT_SECTION_INVALID";
+    throw withContext(editorError(code, "Deze sectie valt buiten de toegestane editor-scope.", 400, "validate_section"), text(input.previewVersionId || input.preview_version_id), sectionId);
+  }
+  return definition;
+}
+
+async function recoverExistingEdit(context, { existing, source, definition, patchHash, idempotencyKey }) {
   const metadata = existing.metadata || {};
-  if (text(metadata.parentPreviewVersionId) !== source.version.id || text(metadata.editIdempotencyKey) !== idempotencyKey || text(metadata.editPatchHash) !== patchHash) {
-    throw withContext(editorError("IDEMPOTENCY_KEY_REUSED", "Deze opslagreferentie is al voor andere wijzigingen gebruikt.", 409, "validate_idempotency_reuse"), source.version.id, sectionId);
+  if (text(metadata.parentPreviewVersionId) !== source.version.id || text(metadata.editIdempotencyKey) !== idempotencyKey || text(metadata.editPatchHash) !== patchHash || text(metadata.editedSectionId) !== definition.sectionId || text(metadata.editedSectionType) !== definition.sectionType) {
+    throw withContext(editorError("IDEMPOTENCY_KEY_REUSED", "Deze opslagreferentie is al voor andere wijzigingen gebruikt.", 409, "validate_idempotency_reuse"), source.version.id, definition.sectionId);
   }
   await activateVersion(context, existing);
-  const hero = await extractHeroContext(existing.generated_package);
-  return json(200, successBody(context, existing, hero, true));
+  const extracted = await definition.extract(existing.generated_package);
+  return json(200, successBody(context, existing, extracted, definition, true));
 }
 
 async function activateVersion(context, version) {
-  await patchRows(context, "website_preview_versions", `demo_journey_id=eq.${encodeURIComponent(version.demo_journey_id)}&id=neq.${encodeURIComponent(version.id)}&is_active=eq.true`, {
-    is_active: false,
-    updated_at: new Date().toISOString(),
-  });
+  await patchRows(context, "website_preview_versions", `demo_journey_id=eq.${encodeURIComponent(version.demo_journey_id)}&id=neq.${encodeURIComponent(version.id)}&is_active=eq.true`, { is_active: false, updated_at: new Date().toISOString() });
   const rows = await patchRows(context, "website_preview_versions", `id=eq.${encodeURIComponent(version.id)}`, { is_active: true, updated_at: new Date().toISOString() });
   return rows[0] || { ...version, is_active: true };
 }
 
-async function resolveSourceContext(context, input = {}) {
+async function resolveSourceContext(context, input = {}, sectionId = "") {
   const previewVersionId = uuid(input.previewVersionId || input.preview_version_id);
   if (!previewVersionId) throw editorError("PREVIEW_VERSION_REQUIRED", "Selecteer eerst een geldige previewversie.", 400, "validate_preview_version");
   const version = await readVersion(context, previewVersionId);
-  if (!version?.id) throw withContext(editorError("PREVIEW_VERSION_NOT_FOUND", "De previewversie kon niet worden gevonden.", 404, "resolve_preview_version"), previewVersionId, "home.hero");
-  if (text(version.metadata?.previewSource) !== "website_factory" || !Array.isArray(version.generated_package?.files)) {
-    throw withContext(editorError("HERO_WRITE_UNAVAILABLE", "Alleen nieuwe Website Factory-previews kunnen worden bewerkt.", 409, "validate_preview_source"), previewVersionId, "home.hero");
-  }
+  if (!version?.id) throw withContext(editorError("PREVIEW_VERSION_NOT_FOUND", "De previewversie kon niet worden gevonden.", 404, "resolve_preview_version"), previewVersionId, sectionId);
+  if (text(version.metadata?.previewSource) !== "website_factory" || !Array.isArray(version.generated_package?.files)) throw withContext(editorError("SECTION_WRITE_UNAVAILABLE", "Alleen nieuwe Website Factory-previews kunnen worden bewerkt.", 409, "validate_preview_source"), previewVersionId, sectionId);
   const journey = await readOne(context, "demo_journeys", `select=*&id=eq.${encodeURIComponent(version.demo_journey_id)}&limit=1`);
-  if (!journey?.id) throw withContext(editorError("PREVIEW_SCOPE_INVALID", "De preview hoort niet bij een geldige klantreis.", 409, "resolve_journey"), previewVersionId, "home.hero");
+  if (!journey?.id) throw withContext(editorError("PREVIEW_SCOPE_INVALID", "De preview hoort niet bij een geldige klantreis.", 409, "resolve_journey"), previewVersionId, sectionId);
   assertRequestedScope(version, journey, input);
   await assertStoredRelations(context, version, journey);
   return { version, journey };
@@ -193,9 +234,7 @@ async function assertStoredRelations(context, version, journey) {
   const website = version.website_id ? await readOne(context, "websites", `select=id,customer_id&id=eq.${encodeURIComponent(version.website_id)}&limit=1`) : null;
   if (version.website_id && (!website?.id || text(website.customer_id) !== text(version.customer_id))) throw editorError("PREVIEW_SCOPE_MISMATCH", "De website hoort niet bij deze klant.", 409, "validate_relations");
   const project = version.project_id ? await readOne(context, "projects", `select=id,customer_id,website_id&id=eq.${encodeURIComponent(version.project_id)}&limit=1`) : null;
-  if (version.project_id && (!project?.id || text(project.customer_id) !== text(version.customer_id) || (version.website_id && project.website_id && text(project.website_id) !== text(version.website_id)))) {
-    throw editorError("PREVIEW_SCOPE_MISMATCH", "Het project hoort niet bij deze previewcontext.", 409, "validate_relations");
-  }
+  if (version.project_id && (!project?.id || text(project.customer_id) !== text(version.customer_id) || (version.website_id && project.website_id && text(project.website_id) !== text(version.website_id)))) throw editorError("PREVIEW_SCOPE_MISMATCH", "Het project hoort niet bij deze previewcontext.", 409, "validate_relations");
 }
 
 async function readVersion(context, id) {
@@ -206,29 +245,35 @@ async function readActiveVersion(context, demoJourneyId) {
   return readOne(context, "website_preview_versions", `select=*&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&is_active=eq.true&order=version.desc&limit=1`);
 }
 
-function successBody(context, version, hero, reused) {
+function successBody(context, version, extracted, definition, reused) {
+  const section = sanitizeSection(extracted, version, definition);
   return {
     success: true,
     requestId: context.requestId,
     reused,
     message: "Nieuwe conceptpreview opgeslagen. De klantversie is niet gewijzigd.",
-    hero: sanitizeHero(hero, version),
+    section,
+    [definition.responseKey]: section,
     previewVersion: sanitizeVersion({ ...version, is_active: true }),
   };
 }
 
-function sanitizeHero(hero, version) {
+function sanitizeSection(extracted, version, definition) {
   return {
-    sectionId: "home.hero",
-    sectionType: "hero",
-    page: hero.entryFile,
+    sectionId: definition.sectionId,
+    sectionType: definition.sectionType,
+    page: extracted.entryFile,
     sourcePreviewVersionId: version.id,
     sourceVersion: Number(version.version || 1),
-    baseContentHash: hero.contentHash,
-    values: hero.values,
-    schema: hero.schema,
-    image: hero.image,
+    baseContentHash: extracted.contentHash,
+    values: extracted.values,
+    schema: extracted.schema,
+    image: extracted.image || null,
   };
+}
+
+function sanitizeHero(hero, version) {
+  return sanitizeSection(hero, version, definitions.hero);
 }
 
 function sanitizeVersion(row = {}) {
@@ -267,13 +312,13 @@ function lineageMetadata(sourceMetadata = {}, values = {}) {
     parentPreviewVersionId: values.parentPreviewVersionId,
     sourceBuildJobId: text(values.sourceBuildJobId),
     revisionKind: "section_edit",
-    editedSectionId: "home.hero",
-    editedSectionType: "hero",
+    editedSectionId: values.sectionId,
+    editedSectionType: values.sectionType,
     baseContentHash: values.baseContentHash,
     contentHash: values.contentHash,
     editPatchHash: values.patchHash,
     editIdempotencyKey: values.idempotencyKey,
-    editorSchemaVersion: 1,
+    editorSchemaVersion: values.editorSchemaVersion,
     createdBy: values.actorId,
     createdAt: values.createdAt,
     renderable: true,
@@ -371,8 +416,11 @@ function text(value = "") {
 }
 
 exports._private = {
+  definitions,
   deterministicVersionId,
   idempotencyPattern,
   lineageMetadata,
+  resolveDefinition,
   sanitizeHero,
+  sanitizeSection,
 };

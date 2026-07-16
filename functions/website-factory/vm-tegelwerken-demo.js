@@ -169,7 +169,7 @@ function renderHome() {
         <div class="section-copy reveal">
           <span class="eyebrow" data-mws-field="eyebrow">Goed tegelwerk blijft rustig</span>
           <h2 data-mws-field="title">Mooi op de dag van oplevering. Prettig in gebruik in de jaren daarna.</h2>
-          <p data-mws-field="description">Een rustige tegelverdeling, nette aansluitingen en een verzorgde afwerking bepalen hoe de ruimte straks aanvoelt. VM Tegelwerken kan meedenken over voorbereiding, tegelwerk, sanitair, afwerking en volledige renovatie.</p>
+          <div data-mws-field="body"><p>Een rustige tegelverdeling, nette aansluitingen en een verzorgde afwerking bepalen hoe de ruimte straks aanvoelt. VM Tegelwerken kan meedenken over voorbereiding, tegelwerk, sanitair, afwerking en volledige renovatie.</p></div>
         </div>
         <div class="image-stack reveal">
           <img src="${assets.shower}" alt="Detail van douchevloer en afvoer">

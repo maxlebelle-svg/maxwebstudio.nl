@@ -1,5 +1,26 @@
-const { createHash } = require("crypto");
 const { validateEditorManifest } = require("./_preview-editor-manifest");
+const {
+  CONTROL_CHARACTERS,
+  applyOperations,
+  attribute,
+  cleanText,
+  clonePackage,
+  escapeAttribute,
+  escapeHtml,
+  exactFieldNode,
+  findNodes,
+  findSection,
+  hasElementChildren,
+  isSha256,
+  parseDocument,
+  patchFingerprint,
+  replaceEntryHtml,
+  sectionError,
+  sha256,
+  textContent,
+  validateManifestDom,
+  validatePackage,
+} = require("./_preview-editor-section-core");
 const {
   HERO_FIELDS,
   HERO_SCHEMA_ID,
@@ -9,20 +30,8 @@ const {
   publicHeroSchema,
 } = require("./_preview-editor-hero-schema");
 
-const MAX_FILES = 180;
-const MAX_PACKAGE_BYTES = 18 * 1024 * 1024;
-const MAX_HTML_BYTES = 2 * 1024 * 1024;
-const CONTROL_CHARACTERS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
-
-let parserPromise = null;
-
-async function loadParser() {
-  if (!parserPromise) parserPromise = import("parse5");
-  return parserPromise;
-}
-
 async function extractHeroContext(generatedPackage = {}) {
-  const packageContext = validatePackage(generatedPackage);
+  const packageContext = validatePackage(generatedPackage, heroError);
   const manifest = validateEditorManifest(generatedPackage.meta?.editorManifest);
   const heroManifest = manifest?.pages?.find((page) => page.path === packageContext.entryFile)?.sections?.find((section) => section.id === HERO_SECTION_ID);
   if (!heroManifest?.editor || heroManifest.editor.schema !== HERO_SCHEMA_ID || heroManifest.type !== HERO_SECTION_TYPE) {
@@ -64,10 +73,8 @@ async function patchHeroPackage(generatedPackage = {}, patch = {}, expectedHash 
       operations.push({ start: hrefLocation.startOffset, end: hrefLocation.endOffset, replacement: `href="${escapeAttribute(values[field.key])}"` });
     }
   }
-  assertDistinctOperations(operations);
-  const html = operations.sort((left, right) => right.start - left.start).reduce((value, operation) => `${value.slice(0, operation.start)}${operation.replacement}${value.slice(operation.end)}`, source.html);
-  const nextPackage = clonePackage(generatedPackage);
-  nextPackage.files[source.fileIndex] = { ...nextPackage.files[source.fileIndex], content: html };
+  const html = applyOperations(source.html, operations, heroError);
+  const nextPackage = replaceEntryHtml(generatedPackage, source.fileIndex, html);
   const verified = await extractHeroContext(nextPackage);
   for (const [key, value] of Object.entries(values)) {
     if (verified.values[key] !== value) throw heroError("HERO_PATCH_VERIFICATION_FAILED", "De Hero-wijziging kon niet veilig worden geverifieerd.", 500, "verify_patch");
@@ -100,20 +107,24 @@ async function prepareHeroEditorPackage(generatedPackage = {}) {
 }
 
 async function parseHero(html, manifest, pagePath) {
-  const parse5 = await loadParser();
-  const document = parse5.parse(html, { sourceCodeLocationInfo: true });
-  const sections = findNodes(document, (node) => attribute(node, "data-mws-section-id") === HERO_SECTION_ID);
-  if (sections.length > 1) throw heroError("HERO_MARKER_AMBIGUOUS", "De preview bevat meerdere Hero-secties met dezelfde marker.", 422, "validate_editor_markers");
-  if (sections.length !== 1 || attribute(sections[0], "data-mws-section-type") !== HERO_SECTION_TYPE) throw heroError("HERO_WRITE_UNAVAILABLE", "De preview bevat geen eenduidige bewerkbare Hero-sectie.", 409, "validate_hero_marker");
-  const section = sections[0];
-  if (!section.sourceCodeLocation?.startOffset && section.sourceCodeLocation?.startOffset !== 0) throw heroError("HERO_MARKER_INVALID", "De Hero-bronlocatie ontbreekt.", 409, "validate_hero_marker");
+  const document = await parseDocument(html);
+  let section;
+  try { section = findSection(document, HERO_SECTION_ID, HERO_SECTION_TYPE, heroError); }
+  catch (error) {
+    if (error.code === "SECTION_MARKER_AMBIGUOUS") error.code = "HERO_MARKER_AMBIGUOUS";
+    else if (error.code === "SECTION_WRITE_UNAVAILABLE") error.code = "HERO_WRITE_UNAVAILABLE";
+    else if (error.code === "SECTION_MARKER_INVALID") error.code = "HERO_MARKER_INVALID";
+    throw error;
+  }
   const fieldNodes = new Map();
   const nodeFields = [...new Set(HERO_FIELDS.map((field) => field.nodeField))];
   for (const nodeField of nodeFields) {
-    const nodes = findNodes(section, (node) => attribute(node, "data-mws-field") === nodeField);
-    if (nodes.length > 1) throw heroError("HERO_FIELD_MARKER_AMBIGUOUS", `Hero-veld ${nodeField} komt meerdere keren voor.`, 422, "validate_editor_markers");
-    if (nodes.length !== 1) throw heroError("HERO_WRITE_UNAVAILABLE", `Hero-veld ${nodeField} ontbreekt voor veilige bewerking.`, 409, "validate_field_markers");
-    fieldNodes.set(nodeField, nodes[0]);
+    try { fieldNodes.set(nodeField, exactFieldNode(section, nodeField, heroError)); }
+    catch (error) {
+      if (error.code === "SECTION_FIELD_MARKER_AMBIGUOUS") error.code = "HERO_FIELD_MARKER_AMBIGUOUS";
+      else if (error.code === "SECTION_FIELD_MISSING") error.code = "HERO_WRITE_UNAVAILABLE";
+      throw error;
+    }
   }
   const values = {};
   for (const field of HERO_FIELDS) {
@@ -123,7 +134,7 @@ async function parseHero(html, manifest, pagePath) {
   const imageNode = findNodes(section, (node) => attribute(node, "data-mws-field") === "image");
   if (imageNode.length > 1) throw heroError("HERO_FIELD_MARKER_AMBIGUOUS", "De Hero-afbeeldingsmarker komt meerdere keren voor.", 422, "validate_editor_markers");
   if (imageNode.length !== 1) throw heroError("HERO_WRITE_UNAVAILABLE", "De Hero-afbeeldingsmarker ontbreekt voor veilige bewerking.", 409, "validate_field_markers");
-  validateManifestDom(document, manifest, pagePath);
+  validateManifestDom(document, manifest, pagePath, heroError);
   const rawSection = html.slice(section.sourceCodeLocation.startOffset, section.sourceCodeLocation.endOffset);
   return {
     html,
@@ -165,41 +176,6 @@ function removeHeroWriteCapabilities(generatedPackage = {}, reason = "") {
   return nextPackage;
 }
 
-function validateManifestDom(document, manifest, pagePath) {
-  const page = manifest?.pages?.find((item) => item.path === pagePath);
-  if (!page) throw heroError("EDITOR_MANIFEST_PAGE_MISSING", "De manifestpagina ontbreekt.", 409, "validate_manifest_dom");
-  for (const section of page.sections) {
-    const matches = findNodes(document, (node) => attribute(node, "data-mws-section-id") === section.id && attribute(node, "data-mws-section-type") === section.type);
-    if (matches.length !== 1) throw heroError("EDITOR_MANIFEST_DOM_MISMATCH", `Sectie ${section.id} komt niet exact overeen met het manifest.`, 409, "validate_manifest_dom");
-    for (const field of section.fields) {
-      const fieldMatches = findNodes(matches[0], (node) => attribute(node, "data-mws-field") === field);
-      if (!fieldMatches.length) throw heroError("EDITOR_MANIFEST_DOM_MISMATCH", `Veld ${field} ontbreekt in sectie ${section.id}.`, 409, "validate_manifest_dom");
-    }
-  }
-}
-
-function validatePackage(value = {}) {
-  const files = Array.isArray(value.files) ? value.files : [];
-  if (!files.length || files.length > MAX_FILES) throw heroError("PREVIEW_PACKAGE_INVALID", "Het previewpakket bevat geen geldige bestanden.", 409, "validate_package");
-  const entryFile = cleanText(value.entryFile || value.meta?.entryFile || "index.html");
-  let totalBytes = 0;
-  let fileIndex = -1;
-  for (let index = 0; index < files.length; index += 1) {
-    const file = files[index] || {};
-    const path = cleanText(file.path);
-    if (!path || path.startsWith("/") || path.split("/").includes("..")) throw heroError("PREVIEW_PACKAGE_INVALID", "Het previewpakket bevat een ongeldig bestandspad.", 409, "validate_package");
-    const size = file.encoding === "base64" ? Buffer.byteLength(cleanText(file.content), "base64") : Buffer.byteLength(String(file.content || ""), "utf8");
-    totalBytes += size;
-    if (path === entryFile) fileIndex = index;
-  }
-  if (totalBytes > MAX_PACKAGE_BYTES || fileIndex < 0) throw heroError("PREVIEW_PACKAGE_INVALID", "Het previewpakket is te groot of mist het startbestand.", 409, "validate_package");
-  const entry = files[fileIndex];
-  if (entry.encoding === "base64" || !/\.html?$/i.test(entryFile)) throw heroError("PREVIEW_PACKAGE_INVALID", "Het startbestand is geen bewerkbare HTML-pagina.", 409, "validate_package");
-  const html = String(entry.content || "");
-  if (!html || Buffer.byteLength(html, "utf8") > MAX_HTML_BYTES) throw heroError("PREVIEW_PACKAGE_INVALID", "Het HTML-startbestand is leeg of te groot.", 409, "validate_package");
-  return { entryFile, fileIndex, html, totalBytes };
-}
-
 function validateHeroPatch(input = {}, currentValues = {}, availableFields = []) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw heroError("HERO_PATCH_INVALID", "De Hero-wijziging is ongeldig.", 400, "validate_patch");
   const allowed = new Set(availableFields);
@@ -237,71 +213,8 @@ function isSafeLink(value = "") {
   return false;
 }
 
-function findNodes(root, predicate, output = []) {
-  if (root && typeof root === "object" && root.nodeName && predicate(root)) output.push(root);
-  for (const child of root?.childNodes || []) findNodes(child, predicate, output);
-  if (root?.content) findNodes(root.content, predicate, output);
-  return output;
-}
-
-function attribute(node, name) {
-  return cleanText((node?.attrs || []).find((item) => item.name === name)?.value);
-}
-
-function textContent(node) {
-  if (node?.nodeName === "#text") return String(node.value || "");
-  return (node?.childNodes || []).map(textContent).join("");
-}
-
-function hasElementChildren(node) {
-  return (node?.childNodes || []).some((child) => child.nodeName !== "#text");
-}
-
-function assertDistinctOperations(operations = []) {
-  const sorted = [...operations].sort((left, right) => left.start - right.start);
-  for (let index = 0; index < sorted.length; index += 1) {
-    const item = sorted[index];
-    if (!Number.isInteger(item.start) || !Number.isInteger(item.end) || item.start > item.end || (index && sorted[index - 1].end > item.start)) {
-      throw heroError("HERO_PATCH_RANGE_INVALID", "De Hero-wijziging bevat overlappende bronvelden.", 409, "patch_hero");
-    }
-  }
-}
-
-function clonePackage(value) {
-  return { ...value, files: value.files.map((file) => ({ ...file })), meta: { ...(value.meta || {}) } };
-}
-
-function escapeHtml(value = "") {
-  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function escapeAttribute(value = "") {
-  return escapeHtml(value).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-function sha256(value = "") {
-  return createHash("sha256").update(String(value)).digest("hex");
-}
-
-function isSha256(value = "") {
-  return /^[a-f0-9]{64}$/i.test(cleanText(value));
-}
-
-function patchFingerprint(patch = {}) {
-  const ordered = Object.fromEntries(Object.keys(patch).sort().map((key) => [key, patch[key]]));
-  return sha256(JSON.stringify(ordered));
-}
-
-function cleanText(value = "") {
-  return String(value || "").trim();
-}
-
 function heroError(code, message, status = 400, phase = "preview_editor") {
-  const error = new Error(message);
-  error.code = code;
-  error.status = status;
-  error.phase = phase;
-  return error;
+  return sectionError(code, message, status, phase);
 }
 
 module.exports = {

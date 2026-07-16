@@ -10,6 +10,7 @@ const { resolveWebsiteLiveContext } = require("./journey/websiteLive/contextReso
 const { createWebsiteLiveRepository } = require("./journey/websiteLive/repository");
 const { createWebsiteLiveService } = require("./journey/websiteLive/service");
 const { prepareHeroEditorPackage } = require("./_preview-editor-hero");
+const { prepareTextEditorPackage } = require("./_preview-editor-text");
 const { randomUUID } = require("crypto");
 const {
   buildLogs,
@@ -497,7 +498,8 @@ async function generatePackageResponse(context, payload) {
     briefing: payload.briefing || journey.generated_briefing,
     version: Number(payload.version || 1),
   });
-  const { generatedPackage } = await prepareHeroEditorPackage(builtPackage);
+  const textPreparation = await prepareTextEditorPackage(builtPackage);
+  const { generatedPackage } = await prepareHeroEditorPackage(textPreparation.generatedPackage);
   return jsonResponse(200, { success: true, generatedPackage });
 }
 
@@ -876,8 +878,16 @@ async function runBuildJob(context, payload = {}) {
       version: job.previewVersion,
     });
     phase = "prepare_editor_manifest";
-    const editorPreparation = await prepareHeroEditorPackage(builtPackage);
+    const textPreparation = await prepareTextEditorPackage(builtPackage);
+    const editorPreparation = await prepareHeroEditorPackage(textPreparation.generatedPackage);
     const generatedPackage = editorPreparation.generatedPackage;
+    if (textPreparation.availability !== "editable") {
+      console.warn("Website Factory text editor unavailable; build continues read-only", {
+        phase,
+        buildJobId: job.id,
+        reason: textPreparation.reason,
+      });
+    }
     if (editorPreparation.availability !== "editable") {
       console.warn("Website Factory Hero editor unavailable; build continues read-only", {
         phase,

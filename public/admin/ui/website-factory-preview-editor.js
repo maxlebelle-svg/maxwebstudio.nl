@@ -37,8 +37,8 @@
     if (type === "SECTION_LIST") return Array.isArray(payload.sections) && payload.sections.length <= 100 && payload.sections.every(validSection);
     if (type === "SECTION_HOVERED" || type === "SECTION_SELECTED") return validSection(payload.section);
     if (type === "SECTION_DESELECTED") return typeof payload.page === "string" && payload.page.length <= 160;
-    if (type === "PREVIEW_PATCHED") return payload.sectionId === "home.hero" && payload.sectionType === "hero" && Array.isArray(payload.fields) && payload.fields.length <= 7 && payload.fields.every((field) => typeof field === "string" && field.length <= 40);
-    if (type === "PREVIEW_RESET") return payload.sectionId === "home.hero" && payload.sectionType === "hero";
+    if (type === "PREVIEW_PATCHED") return ((payload.sectionId === "home.hero" && payload.sectionType === "hero") || (payload.sectionId === "home.introduction" && payload.sectionType === "text")) && Array.isArray(payload.fields) && payload.fields.length <= 7 && payload.fields.every((field) => typeof field === "string" && field.length <= 40);
+    if (type === "PREVIEW_RESET") return (payload.sectionId === "home.hero" && payload.sectionType === "hero") || (payload.sectionId === "home.introduction" && payload.sectionType === "text");
     if (type === "PREVIEW_ERROR") return typeof payload.code === "string" && payload.code.length <= 80 && typeof payload.message === "string" && payload.message.length <= 180;
     return false;
   }
@@ -117,6 +117,29 @@
     return errors;
   }
 
+  function textParagraphs(value = "") {
+    return String(value || "").replace(/\r\n?/g, "\n").split(/\n\s*\n/).map((item) => item.trim()).filter(Boolean);
+  }
+
+  function validateTextDraft(schema = {}, values = {}) {
+    const errors = {};
+    for (const field of schema.fields || []) {
+      if (field.target === "paragraphs") {
+        const paragraphs = textParagraphs(values[field.key]);
+        if (paragraphs.length > Number(field.maxParagraphs || 0)) errors[field.key] = `Gebruik maximaal ${field.maxParagraphs} paragrafen.`;
+        else if (paragraphs.some((item) => item.length > Number(field.maxParagraphLength || 0))) errors[field.key] = `Een paragraaf mag maximaal ${field.maxParagraphLength} tekens bevatten.`;
+        else if (paragraphs.reduce((total, item) => total + item.length, 0) > Number(field.maxLength || 0)) errors[field.key] = `Body mag maximaal ${field.maxLength} tekens bevatten.`;
+        else if (paragraphs.some((item) => /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(item))) errors[field.key] = "Body bevat ongeldige tekens.";
+        continue;
+      }
+      const value = typeof values[field.key] === "string" ? values[field.key] : "";
+      if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)) errors[field.key] = `${field.label} bevat ongeldige tekens.`;
+      else if (value.trim().length > Number(field.maxLength || 0)) errors[field.key] = `${field.label} is langer dan toegestaan.`;
+      else if (field.required && !value.trim()) errors[field.key] = `${field.label} is verplicht.`;
+    }
+    return errors;
+  }
+
   function init() {
     const frame = document.getElementById("demo-journey-preview-frame");
     const toggle = document.getElementById("factory-preview-editor-toggle");
@@ -130,7 +153,7 @@
     const workspace = document.querySelector(".factory-guided-preview-workspace");
     if (!frame || !toggle || !empty || !details || !note || !workspace || !globalScope.crypto?.getRandomValues) return;
 
-    const state = { enabled: false, nonce: "", previewVersionId: "", origin: globalScope.location.origin, frameWindow: null, sections: [], selectedSection: null, hero: null, savedValues: null, draftValues: null, idempotencyKey: "", saving: false, pendingSelection: "", successMessage: "" };
+    const state = { enabled: false, nonce: "", previewVersionId: "", origin: globalScope.location.origin, frameWindow: null, sections: [], selectedSection: null, hero: null, textSection: null, savedValues: null, draftValues: null, idempotencyKey: "", saving: false, pendingSelection: "", successMessage: "" };
     const resetPanel = (message = "Selecteer een websiteonderdeel om de instellingen te bekijken.") => {
       empty.textContent = message;
       empty.hidden = false;
@@ -159,6 +182,15 @@
       state.nonce = "";
       state.previewVersionId = "";
       state.sections = [];
+      state.selectedSection = null;
+      state.hero = null;
+      state.textSection = null;
+      state.savedValues = null;
+      state.draftValues = null;
+      state.idempotencyKey = "";
+      state.saving = false;
+      state.successMessage = "";
+      state.pendingSelection = "";
       resetPanel();
       const baseUrl = frame.dataset.previewBaseUrl || "";
       if (baseUrl && frame.src !== baseUrl) frame.src = baseUrl;
@@ -171,6 +203,14 @@
         showAvailability(frame.dataset.editorAvailability || "missing_version");
         return;
       }
+      state.selectedSection = null;
+      state.hero = null;
+      state.textSection = null;
+      state.savedValues = null;
+      state.draftValues = null;
+      state.idempotencyKey = "";
+      state.saving = false;
+      state.successMessage = "";
       state.nonce = randomNonce(globalScope.crypto);
       state.previewVersionId = previewVersionId;
       state.frameWindow = frame.contentWindow;
@@ -217,7 +257,7 @@
     });
     const editorRequest = async (method, payload = {}) => {
       const token = sessionToken();
-      if (!token) throw Object.assign(new Error("Log opnieuw in om de Hero te bewerken."), { code: "AUTH_REQUIRED" });
+      if (!token) throw Object.assign(new Error("Log opnieuw in om de preview te bewerken."), { code: "AUTH_REQUIRED" });
       const options = { method, headers: { Accept: "application/json", Authorization: `Bearer ${token}` } };
       let url = "/.netlify/functions/admin-preview-editor";
       if (method === "GET") url += `?${new URLSearchParams(payload).toString()}`;
@@ -384,10 +424,156 @@
         renderHeroEditor(requestMessage(error));
       }
     };
+    const textPatch = () => Object.fromEntries(Object.entries(changedPatch()).map(([key, value]) => [key, key === "body" ? textParagraphs(value) : value]));
+    const renderTextEditor = (message = "") => {
+      const section = state.textSection;
+      if (!section) return;
+      const errors = validateTextDraft(section.schema, state.draftValues || {});
+      const dirty = Object.keys(changedPatch()).length > 0;
+      const form = document.createElement("form");
+      form.className = "factory-hero-editor factory-text-editor";
+      form.addEventListener("submit", (event) => event.preventDefault());
+      const header = document.createElement("div");
+      header.className = "factory-hero-editor-header";
+      const heading = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = "Tekstsectie";
+      const meta = document.createElement("small");
+      meta.textContent = `${section.page} · ${section.sectionId} · bron V${section.sourceVersion}`;
+      heading.append(title, meta);
+      const badge = document.createElement("span");
+      badge.className = `status-badge ${message ? "status-error" : dirty ? "status-warning" : "status-active"}`;
+      badge.textContent = state.saving ? "Opslaan" : message ? "Fout" : dirty ? "Niet opgeslagen" : "Opgeslagen";
+      header.append(heading, badge);
+      form.appendChild(header);
+      const fields = document.createElement("div");
+      fields.className = "factory-hero-fields factory-text-fields";
+      for (const field of section.schema.fields || []) {
+        if (field.conditional && !Object.prototype.hasOwnProperty.call(section.values, field.key)) continue;
+        const label = document.createElement("label");
+        label.textContent = field.label;
+        const control = field.multiline ? document.createElement("textarea") : document.createElement("input");
+        if (control instanceof HTMLTextAreaElement) control.rows = field.key === "body" ? 9 : 3;
+        else control.type = "text";
+        control.name = field.key;
+        control.maxLength = Number(field.maxLength || 4000) + (field.key === "body" ? 24 : 0);
+        control.value = state.draftValues?.[field.key] || "";
+        control.disabled = state.saving;
+        control.addEventListener("input", () => {
+          state.draftValues[field.key] = control.value;
+          state.idempotencyKey = "";
+          renderTextEditor();
+          const nextControl = details.querySelector(`[name="${field.key}"]`);
+          nextControl?.focus();
+          if (typeof nextControl?.setSelectionRange === "function") nextControl.setSelectionRange(control.selectionStart ?? nextControl.value.length, control.selectionEnd ?? nextControl.value.length);
+        });
+        label.appendChild(control);
+        if (errors[field.key]) { const error = document.createElement("small"); error.className = "factory-hero-field-error"; error.textContent = errors[field.key]; label.appendChild(error); }
+        fields.appendChild(label);
+      }
+      form.appendChild(fields);
+      if (section.image?.src) {
+        const imageCard = document.createElement("div");
+        imageCard.className = "factory-hero-image-readonly";
+        const image = document.createElement("img");
+        image.src = previewAssetUrl(section.image.src);
+        image.alt = section.image.alt || "Afbeelding bij tekstsectie";
+        const imageCopy = document.createElement("p");
+        imageCopy.textContent = "Afbeeldingen aanpassen volgt in Sprint 2B.3.";
+        imageCard.append(image, imageCopy);
+        form.appendChild(imageCard);
+      }
+      const status = document.createElement("p");
+      status.className = "factory-hero-editor-message";
+      status.setAttribute("role", "status");
+      status.textContent = message || state.successMessage || "";
+      form.appendChild(status);
+      const actions = document.createElement("div");
+      actions.className = "factory-hero-editor-actions";
+      actions.append(
+        actionButton("Ongedaan maken", "secondary", !dirty || state.saving, () => {
+          state.draftValues = { ...state.savedValues };
+          state.idempotencyKey = "";
+          state.successMessage = "";
+          postToPreview("RESET_TEXT_SECTION_PATCH", { sectionId: "home.introduction", sectionType: "text" });
+          renderTextEditor();
+        }),
+        actionButton("Voorbeeld bijwerken", "secondary", !dirty || state.saving || Object.keys(errors).length > 0, () => {
+          postToPreview("APPLY_TEXT_SECTION_PATCH", { sectionId: "home.introduction", sectionType: "text", patch: textPatch() });
+        }),
+        actionButton(state.saving ? "Opslaan…" : "Opslaan als nieuwe versie", "primary", !dirty || state.saving || Object.keys(errors).length > 0, () => saveTextSection()),
+      );
+      form.appendChild(actions);
+      details.replaceChildren(form);
+      details.hidden = false;
+      empty.hidden = true;
+      note.hidden = true;
+    };
+    const loadTextSection = async (section) => {
+      state.selectedSection = section;
+      const requestedVersionId = frame.dataset.previewVersionId || "";
+      resetPanel("Teksteditor wordt veilig geladen…");
+      try {
+        const body = await editorRequest("GET", { ...scopeParams(), sectionId: section.id, sectionType: section.type });
+        if (state.selectedSection?.id !== section.id || frame.dataset.previewVersionId !== requestedVersionId) return;
+        state.textSection = body.textSection;
+        const values = { ...body.textSection.values, body: (body.textSection.values.body || []).join("\n\n") };
+        state.savedValues = { ...values };
+        state.draftValues = { ...values };
+        state.idempotencyKey = "";
+        renderTextEditor();
+      } catch (error) {
+        resetPanel(requestMessage(error));
+      }
+    };
+    const saveTextSection = async () => {
+      if (state.saving || !state.textSection) return;
+      const patch = textPatch();
+      if (!Object.keys(patch).length) return;
+      state.saving = true;
+      state.successMessage = "";
+      renderTextEditor();
+      try {
+        state.idempotencyKey ||= globalScope.crypto.randomUUID?.() || randomNonce(globalScope.crypto);
+        const body = await editorRequest("POST", {
+          action: "save_text_preview",
+          ...scopeParams(),
+          sectionId: "home.introduction",
+          sectionType: "text",
+          baseContentHash: state.textSection.baseContentHash,
+          idempotencyKey: state.idempotencyKey,
+          patch,
+        });
+        state.saving = false;
+        state.pendingSelection = "home.introduction";
+        state.successMessage = "Nieuwe conceptpreview opgeslagen. De klantversie is niet gewijzigd.";
+        state.textSection = body.textSection;
+        const values = { ...body.textSection.values, body: (body.textSection.values.body || []).join("\n\n") };
+        state.savedValues = { ...values };
+        state.draftValues = { ...values };
+        state.idempotencyKey = "";
+        globalScope.dispatchEvent(new CustomEvent("factory:text-version-saved", { detail: { previewVersion: body.previewVersion, textSection: body.textSection } }));
+        renderTextEditor();
+      } catch (error) {
+        state.saving = false;
+        renderTextEditor(requestMessage(error));
+      }
+    };
     const renderSection = (section) => {
       state.selectedSection = section;
       const writableHero = section.id === "home.hero" && section.type === "hero" && section.capabilities.includes("write:title");
-      if (writableHero) loadHero(section); else renderReadOnlySection(section);
+      const writableText = section.id === "home.introduction" && section.type === "text" && section.capabilities.includes("write:title") && section.capabilities.includes("write:body");
+      if (writableHero) {
+        state.textSection = null;
+        loadHero(section);
+      } else if (writableText) {
+        state.hero = null;
+        loadTextSection(section);
+      } else {
+        state.hero = null;
+        state.textSection = null;
+        renderReadOnlySection(section);
+      }
     };
     const postToPreview = (type, payload = {}) => {
       if (!state.enabled || !state.frameWindow || !state.nonce || !state.previewVersionId) return;
@@ -422,8 +608,8 @@
         }
       }
       if (type === "SECTION_SELECTED") renderSection(payload.section);
-      if (type === "SECTION_DESELECTED") { state.selectedSection = null; state.hero = null; resetPanel(); }
-      if (type === "PREVIEW_ERROR") state.hero ? renderHeroEditor(`Bewerkmodusfout: ${payload.code}.`) : resetPanel(`Bewerkmodus kon niet starten (${payload.code}).`);
+      if (type === "SECTION_DESELECTED") { state.selectedSection = null; state.hero = null; state.textSection = null; resetPanel(); }
+      if (type === "PREVIEW_ERROR") state.hero ? renderHeroEditor(`Bewerkmodusfout: ${payload.code}.`) : state.textSection ? renderTextEditor(`Bewerkmodusfout: ${payload.code}.`) : resetPanel(`Bewerkmodus kon niet starten (${payload.code}).`);
     });
     globalScope.addEventListener("keydown", (event) => { if (state.enabled && event.key === "Escape") { postToPreview("DESELECT"); resetPanel(); } });
     globalScope.addEventListener("factory:preview-context", () => {
@@ -440,7 +626,7 @@
     showAvailability(frame.dataset.editorAvailability || "");
   }
 
-  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorAvailabilityMessage, editorUrl, safeHeroLink, sessionToken, validateBridgeEvent, validateHeroDraft, validPayload, validSection };
+  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorAvailabilityMessage, editorUrl, safeHeroLink, sessionToken, textParagraphs, validateBridgeEvent, validateHeroDraft, validateTextDraft, validPayload, validSection };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (globalScope?.document) {
     globalScope.WebsiteFactoryPreviewEditor = api;

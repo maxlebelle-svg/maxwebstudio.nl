@@ -67,7 +67,7 @@ function editorRuntime(config) {
   const sectionTypePattern = /^[a-z][a-z0-9_-]{1,39}$/;
   const fieldPattern = /^[a-z][a-z0-9_-]{1,39}$/;
   const outgoingTypes = new Set(["READY", "SECTION_LIST", "SECTION_HOVERED", "SECTION_SELECTED", "SECTION_DESELECTED", "PREVIEW_PATCHED", "PREVIEW_RESET", "PREVIEW_ERROR"]);
-  const incomingTypes = new Set(["DESELECT", "SELECT_SECTION", "APPLY_HERO_PATCH", "RESET_HERO_PATCH"]);
+  const incomingTypes = new Set(["DESELECT", "SELECT_SECTION", "APPLY_HERO_PATCH", "RESET_HERO_PATCH", "APPLY_TEXT_SECTION_PATCH", "RESET_TEXT_SECTION_PATCH"]);
   const clean = (value, max) => String(value || "").trim().slice(0, max);
   const byteLength = (value) => {
     try { return new TextEncoder().encode(JSON.stringify(value)).length; } catch { return Number.POSITIVE_INFINITY; }
@@ -216,6 +216,61 @@ function editorRuntime(config) {
       }
       post("PREVIEW_RESET", { sectionId: "home.hero", sectionType: "hero" });
     };
+    const textEntry = entries.find((entry) => entry.descriptor.id === "home.introduction" && entry.descriptor.type === "text");
+    const textDefinitions = textEntry?.descriptor.capabilities.some((item) => item.startsWith("write:"))
+      ? manifestSections.get("home.introduction")?.editor?.fields || [] : [];
+    const textFieldNode = (definition) => {
+      const matches = Array.from(textEntry?.node.querySelectorAll(`[data-mws-field="${definition.nodeField}"]`) || []);
+      return matches.length === 1 ? matches[0] : null;
+    };
+    const originalText = new Map();
+    for (const definition of textDefinitions) {
+      const node = textFieldNode(definition);
+      if (!node) continue;
+      originalText.set(definition.key, definition.target === "paragraphs"
+        ? Array.from(node.childNodes).map((child) => child.cloneNode(true))
+        : node.textContent || "");
+    }
+    const validParagraphs = (value, definition) => Array.isArray(value)
+      && value.length <= Number(definition.maxParagraphs || 0)
+      && value.every((item) => typeof item === "string" && item.length <= Number(definition.maxParagraphLength || 0) && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(item))
+      && value.reduce((total, item) => total + item.length, 0) <= Number(definition.maxLength || 0);
+    const applyTextPatch = (payload) => {
+      if (!textEntry || payload?.sectionId !== "home.introduction" || payload?.sectionType !== "text" || !payload.patch || typeof payload.patch !== "object" || Array.isArray(payload.patch)) return false;
+      const entriesToApply = Object.entries(payload.patch);
+      if (!entriesToApply.length) return false;
+      for (const [key, value] of entriesToApply) {
+        const definition = textDefinitions.find((item) => item.key === key);
+        const node = definition ? textFieldNode(definition) : null;
+        if (!definition || !node) return false;
+        if (definition.target === "paragraphs") {
+          if (!validParagraphs(value, definition)) return false;
+        } else if (typeof value !== "string" || value.length > definition.maxLength || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value) || (definition.required && !value.trim())) return false;
+      }
+      for (const [key, value] of entriesToApply) {
+        const definition = textDefinitions.find((item) => item.key === key);
+        const node = textFieldNode(definition);
+        if (definition.target === "paragraphs") {
+          const paragraphs = value.map((item) => item.trim()).filter(Boolean).map((item) => {
+            const paragraph = document.createElement("p");
+            paragraph.textContent = item;
+            return paragraph;
+          });
+          node.replaceChildren(...paragraphs);
+        } else node.textContent = value.trim();
+      }
+      post("PREVIEW_PATCHED", { sectionId: "home.introduction", sectionType: "text", fields: entriesToApply.map(([key]) => key) });
+      return true;
+    };
+    const resetTextPatch = () => {
+      for (const definition of textDefinitions) {
+        const node = textFieldNode(definition);
+        if (!node || !originalText.has(definition.key)) continue;
+        if (definition.target === "paragraphs") node.replaceChildren(...originalText.get(definition.key).map((child) => child.cloneNode(true)));
+        else node.textContent = originalText.get(definition.key);
+      }
+      post("PREVIEW_RESET", { sectionId: "home.introduction", sectionType: "text" });
+    };
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (event.source !== window.parent || event.origin !== config.origin || byteLength(data) > config.maxMessageBytes || !data || typeof data !== "object") return;
@@ -224,6 +279,8 @@ function editorRuntime(config) {
       if (data.type === "SELECT_SECTION" && (!data.payload || !sectionIdPattern.test(clean(data.payload.sectionId, 80)) || !selectSection(clean(data.payload.sectionId, 80)))) post("PREVIEW_ERROR", { code: "SECTION_SELECT_FAILED", message: "De gekozen sectie kon niet opnieuw worden geselecteerd." });
       if (data.type === "APPLY_HERO_PATCH" && !applyHeroPatch(data.payload)) post("PREVIEW_ERROR", { code: "HERO_PATCH_REJECTED", message: "De tijdelijke Hero-wijziging is geweigerd." });
       if (data.type === "RESET_HERO_PATCH") resetHeroPatch();
+      if (data.type === "APPLY_TEXT_SECTION_PATCH" && !applyTextPatch(data.payload)) post("PREVIEW_ERROR", { code: "TEXT_PATCH_REJECTED", message: "De tijdelijke tekstwijziging is geweigerd." });
+      if (data.type === "RESET_TEXT_SECTION_PATCH") resetTextPatch();
     });
     const sections = entries.map((entry) => entry.descriptor);
     post("READY", { source: config.source, page: config.pagePath, readOnly: sections.length === 0, reason: sections.length ? "" : "missing_explicit_editor_markers" });

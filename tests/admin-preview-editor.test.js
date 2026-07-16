@@ -155,13 +155,15 @@ async function withApi(api, callback) {
   }
 }
 
-test("new Factory manifest exposes explicit Hero write capabilities only", () => {
+test("new Factory manifest exposes separate strict Hero and text write capabilities", () => {
   const manifest = validateEditorManifest(factoryPackage().meta.editorManifest);
   const hero = manifest.pages[0].sections.find((section) => section.id === "home.hero");
   const text = manifest.pages[0].sections.find((section) => section.type === "text");
   assert.equal(hero.editor.schema, "mws.hero.v1");
   assert.deepEqual(hero.editor.capabilities, ["write:eyebrow", "write:title", "write:subtitle", "write:primaryCtaText", "write:primaryCtaLink", "write:secondaryCtaText", "write:secondaryCtaLink"]);
-  assert.equal(text.editor, undefined);
+  assert.equal(text.editor.schema, "mws.text.v1");
+  assert.deepEqual(text.editor.capabilities, ["write:eyebrow", "write:title", "write:body"]);
+  for (const section of manifest.pages[0].sections.filter((item) => !["hero", "text"].includes(item.type))) assert.equal(section.editor, undefined);
 });
 
 test("legacy v1 manifest remains valid for selection but has no write capability", async () => {

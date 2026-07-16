@@ -25474,7 +25474,7 @@
             event.stopPropagation();
             await uploadManualZipFile(pendingManualZipFile);
           });
-          window.addEventListener("factory:hero-version-saved", (event) => {
+          const applyEditorVersionSaved = (event) => {
             const version = event.detail?.previewVersion;
             if (!version?.id) return;
             const previous = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
@@ -25485,7 +25485,9 @@
             buildHistory.activeVersion = { ...version, isActive: true };
             renderJourney();
             setMessage(elements.message, "Nieuwe conceptpreview opgeslagen. De klantversie is niet gewijzigd.", "success");
-          });
+          };
+          window.addEventListener("factory:hero-version-saved", applyEditorVersionSaved);
+          window.addEventListener("factory:text-version-saved", applyEditorVersionSaved);
           elements.previewSourceControls?.forEach((button) => {
             button.addEventListener("click", (event) => {
               event.preventDefault();

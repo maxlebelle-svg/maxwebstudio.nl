@@ -1531,7 +1531,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         <div>
           <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(demoCopy.benefitsEyebrow)}</span>
           <h2 data-mws-field="title">${escapeHtml(demoCopy.benefitsTitle)}</h2>
-          <p data-mws-field="description">${escapeHtml(demoCopy.benefitsText)}</p>
+          <div data-mws-field="body"><p>${escapeHtml(demoCopy.benefitsText)}</p></div>
         </div>
         <div class="benefit-grid">${benefitCards}</div>
       </section>
