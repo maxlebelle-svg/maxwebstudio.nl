@@ -16,6 +16,8 @@ test("both visible ZIP entries use one direct picker binding", () => {
   assert.match(factory, /function openZipPicker\(\)/);
   assert.match(factory, /manualZipInput\.value = ""/);
   assert.match(factory, /manualZipInput\.click\(\)/);
+  const picker = factory.slice(factory.indexOf("function openZipPicker"), factory.indexOf("function selectManualZipFile"));
+  assert.doesNotMatch(picker, /factoryCustomerContext|Selecteer eerst een geldige klant/);
   assert.doesNotMatch(factory, /data-factory-proxy="demo-journey-upload-manual-zip"/);
   assert.equal((factory.match(/proxyClick\("demo-journey-upload-manual-zip"\)/g) || []).length, 0);
   assert.match(factory.slice(factory.indexOf("function initGuidedFactory")), /openZipPicker\(\)/);

@@ -24552,7 +24552,7 @@
         function setManualZipBusy(busy) {
           manualZipUploading = busy;
           document.querySelectorAll("[data-manual-zip-upload], #demo-journey-upload-manual-zip").forEach((button) => {
-            button.disabled = busy || !factoryCustomerContext?.customer?.id;
+            button.disabled = busy;
             button.setAttribute("aria-busy", busy ? "true" : "false");
             button.textContent = busy ? "Uploaden…" : button.id === "demo-journey-upload-manual-zip" ? "ZIP kiezen" : "ZIP uploaden";
           });
@@ -24565,10 +24565,6 @@
 
         function openZipPicker() {
           if (manualZipUploading) return;
-          if (!factoryCustomerContext?.customer?.id) {
-            setMessage(elements.message, "Selecteer eerst een geldige klant.", "warning");
-            return;
-          }
           if (!elements.manualZipInput) {
             setMessage(elements.message, "De ZIP-kiezer is niet beschikbaar. Vernieuw de pagina.", "error");
             return;
@@ -24585,7 +24581,9 @@
           if (elements.manualZipSelection) elements.manualZipSelection.textContent = label;
           if (elements.removeManualZip) elements.removeManualZip.hidden = !file;
           if (elements.processManualZip) elements.processManualZip.disabled = !file || manualZipUploading || !factoryCustomerContext?.customer?.id;
-          if (file) setMessage(elements.message, `${file.name} is gekozen. Klik op ZIP verwerken om de preview aan te maken.`, "info");
+          if (file) setMessage(elements.message, factoryCustomerContext?.customer?.id
+            ? `${file.name} is gekozen. Klik op ZIP verwerken om de preview aan te maken.`
+            : `${file.name} is gekozen. Selecteer een klant om deze ZIP veilig te verwerken.`, "info");
         }
 
         function selectManualZipFiles(files = []) {
@@ -25256,9 +25254,8 @@
             button.title = isManualButton && !hasManual ? "Upload eerst een ZIP-bestand" : "";
           });
           if (elements.uploadManualZip) {
-            const canUploadZip = Boolean(factoryCustomerContext?.customer?.id);
-            elements.uploadManualZip.disabled = !canUploadZip;
-            elements.uploadManualZip.title = canUploadZip ? "Upload een handmatige website-ZIP" : "Selecteer eerst een klant";
+            elements.uploadManualZip.disabled = manualZipUploading;
+            elements.uploadManualZip.title = "Kies een handmatige website-ZIP";
           }
           if (elements.regenerateDemo) {
             const canRegenerate = Boolean(journey?.id || elements.briefing?.value || ready);
