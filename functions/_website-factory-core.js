@@ -2,7 +2,8 @@ const crypto = require("crypto");
 const { normalizeWebsiteInput } = require("./_website-input");
 const fs = require("fs");
 const path = require("path");
-const { resolveDemoImageAsset, resolveDemoImageAssetSet } = require("./_demo-image-assets");
+const { resolveDemoImageAsset, resolveDemoImageAssetSetForProfile } = require("./_demo-image-assets");
+const { adaptIndustryProfileToFactoryInput, buildIndustryProfile } = require("./industry-intelligence");
 const { loadWebsiteFactoryManifests } = require("./_website-factory-manifests");
 const { resolveFactoryConfig } = require("./website-factory/config-resolver");
 const { buildVmTegelwerkenDemo, isVmTegelwerkenJourney } = require("./website-factory/vm-tegelwerken-demo");
@@ -251,8 +252,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const googleRatingTotal = cleanText(journey.googleRatingTotal || journey.google_rating_total || journey.googleBusiness?.ratingTotal || journey.google_business?.rating_total);
   const googleMapsUrl = cleanText(journey.googleMapsUrl || journey.google_maps_url || journey.googleBusiness?.mapsUrl || journey.google_business?.maps_url);
   const industrySignals = [combinedBriefing, websiteUrl, businessName].filter(Boolean).join("\n");
-  const industry = extractField(combinedBriefing, ["Branche/regio", "Branche"]) || inferIndustry(industrySignals, businessName);
-  const industryProfile = resolveIndustryProfile({ industry, briefing: industrySignals, businessName });
+  const explicitIndustry = extractField(combinedBriefing, ["Branche/regio", "Branche"]);
   const currentWebsiteText = [
     currentWebsite.title,
     currentWebsite.metaDescription,
@@ -260,8 +260,42 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.headings || []),
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
-  const extractedServices = extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), industry);
-  const services = mergeUnique(extractedServices, industryProfile.services).filter(isUsableServiceLabel).slice(0, 6);
+  const legacyIndustry = explicitIndustry || inferIndustry(industrySignals, businessName);
+  const extractedServices = extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), legacyIndustry);
+  const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
+  const factoryConfig = resolveFactoryConfig({ packageType, industry: `${legacyIndustry} ${industrySignals} ${businessName}` });
+  const packageRules = resolvePackageRules(factoryConfig.package.id || packageType);
+  const intelligenceProfile = buildIndustryProfile({
+    explicitIndustry,
+    businessDescription: combinedBriefing,
+    services: extractedServices,
+    websiteAnalysis,
+    currentWebsite,
+    googleBusiness: journey.googleBusiness || journey.google_business,
+    businessName,
+    websiteUrl,
+    blockedColors: extractField(combinedBriefing, ["Niet gebruiken", "Geblokkeerde kleuren"]),
+    seoKeywords: websiteAnalysis?.aiBriefing?.seoKeywords,
+    serviceArea: websiteAnalysis?.aiBriefing?.region,
+  });
+  const adaptedIndustry = adaptIndustryProfileToFactoryInput(intelligenceProfile, {
+    industry: explicitIndustry,
+    services: extractedServices,
+    sections: packageRules.sections,
+    cta: extractField(combinedBriefing, ["CTA", "CTA's", "CTA voorkeur", "Call to action"]),
+  }, { packageSections: packageRules.sections, maxServices: 6 });
+  const industry = adaptedIndustry.industry || legacyIndustry;
+  const legacyIndustryProfile = resolveIndustryProfile({ industry, briefing: industrySignals, businessName });
+  const industryProfile = {
+    ...legacyIndustryProfile,
+    key: intelligenceProfile.subcategory,
+    id: intelligenceProfile.subcategory,
+    label: displayIndustryLabel(intelligenceProfile.subcategory, legacyIndustryProfile.label),
+    colors: adaptedIndustry.colors || legacyIndustryProfile.colors,
+    cta: adaptedIndustry.cta || legacyIndustryProfile.cta,
+    services: adaptedIndustry.services.length ? adaptedIndustry.services : legacyIndustryProfile.services,
+  };
+  const services = mergeUnique(adaptedIndustry.services, industryProfile.services).filter(isUsableServiceLabel).slice(0, 6);
   const pricingPackages = extractPricingPackages({
     currentWebsite,
     briefing: combinedBriefing,
@@ -270,13 +304,11 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   });
   const benefits = inferBenefits(industry, industryProfile);
   const processSteps = inferProcessSteps(industry, industryProfile);
-  const cta = inferCta(industrySignals, industryProfile);
-  const colors = inferColors(industry, industryProfile);
-  const style = inferStyle(combinedBriefing);
-  const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
-  const factoryConfig = resolveFactoryConfig({ packageType, industry: `${industry} ${industrySignals} ${businessName}` });
-  const packageRules = resolvePackageRules(factoryConfig.package.id || packageType);
-  const demoImageAssets = resolveDemoImageAssetSet({ businessName, industry, services, briefing: industrySignals });
+  const cta = adaptedIndustry.cta || inferCta(industrySignals, industryProfile);
+  const colors = adaptedIndustry.colors || inferColors(industry, industryProfile);
+  const style = adaptedIndustry.style || inferStyle(combinedBriefing);
+  const photoResolution = resolveDemoImageAssetSetForProfile(intelligenceProfile, { businessName, industry, services, briefing: industrySignals });
+  const demoImageAssets = photoResolution.assets;
   const heroImage = demoImageAssets.hero || resolveDemoImageAsset({ businessName, industry, services, briefing: industrySignals });
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
@@ -307,6 +339,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     industry,
     industryProfile: industryProfile.key,
     industryProfileLabel: industryProfile.label,
+    industryIntelligence: intelligenceSummary(intelligenceProfile),
+    industryImageSelection: photoResolution.selection,
     projectSlug,
     siteUrl,
     style,
@@ -1788,6 +1822,30 @@ function inferProcessSteps(industry = "", profile = null) {
     { title: "Advies of voorstel ontvangen", text: "Het bedrijf reageert met een passende aanpak." },
     { title: "Samen plannen", text: "Daarna worden timing, inhoud en vervolgstappen afgestemd." },
   ];
+}
+
+function displayIndustryLabel(subcategory = "", fallback = "") {
+  const labels = {
+    "holistische-praktijk": "Holistische praktijk",
+    "energetische-praktijk": "Energetische praktijk",
+    coach: "Coaching",
+    "wellness-praktijk": "Wellness",
+    schoonheidssalon: "Schoonheidssalon",
+    fysiotherapie: "Fysiotherapie",
+    tandarts: "Tandartspraktijk",
+    advocaat: "Advocatuur",
+    restaurant: "Restaurant",
+    timmerbedrijf: "Timmerbedrijf",
+    installatiebedrijf: "Installatiebedrijf",
+    webshop: "Webshop",
+    advies: "Zakelijke dienstverlening",
+    "neutrale-lokale-dienstverlener": "Lokale specialist",
+  };
+  return labels[subcategory] || fallback || String(subcategory).replace(/-/g, " ");
+}
+
+function intelligenceSummary(profile = {}) {
+  return JSON.parse(JSON.stringify(profile || {}));
 }
 
 function cleanText(value = "") {

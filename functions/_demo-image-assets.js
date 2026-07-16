@@ -1,4 +1,5 @@
 const DEMO_IMAGE_BASE = "/assets/demo-images/library";
+const { selectPhotoAssetGroup } = require("./industry-intelligence/photo-selection-policy");
 const DEMO_IMAGE_ROLES = Object.freeze([
   "hero",
   "service",
@@ -77,23 +78,24 @@ const demoImageGroups = Object.freeze([
   group("verhuisbedrijf", "Verhuisbedrijf", ["verhuisbedrijf-demo"], ["verhuisbedrijf", "verhuizen", "transport", "opslag", "planning", "logistiek"]),
   group("dierenarts", "Dierenarts", ["dierenarts-demo"], ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"]),
   group("schoonheidssalon", "Schoonheidssalon", ["schoonheidssalon-demo"], ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"]),
-  customGroup("holistisch", "Holistische praktijk", ["holistisch-demo"], ["holistisch", "spiritueel", "zweverig", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"], {
-    hero: { fileName: "hero.png", sourceGroupSlug: "schoonheidssalon" },
-    service: { fileName: "service.png", sourceGroupSlug: "schoonheidssalon" },
-    team: { fileName: "team.png", sourceGroupSlug: "schoonheidssalon" },
-    project: { fileName: "project.png", sourceGroupSlug: "schoonheidssalon" },
-    contact: { fileName: "contact.png", sourceGroupSlug: "schoonheidssalon" },
-    "service-alt": { fileName: "service-alt.png", sourceGroupSlug: "schoonheidssalon" },
-    "project-alt": { fileName: "project-alt.png", sourceGroupSlug: "schoonheidssalon" },
-    detail: { fileName: "detail.png", sourceGroupSlug: "schoonheidssalon" },
-    review: { fileName: "review.png", sourceGroupSlug: "schoonheidssalon" },
-    background: { fileName: "background.png", sourceGroupSlug: "schoonheidssalon" },
+  customGroup("holistisch", "Holistische praktijk", ["holistisch-demo"], ["holistisch", "spiritueel", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"], {
+    hero: "natuur-coaching.png",
+    service: "ontspanning-sessie.png",
+    team: "intake-gesprek.png",
+    project: "behandelruimte.png",
+    contact: "thee-wachtruimte.png",
+    "service-alt": "meditatie-moment.png",
+    "project-alt": "ademwerk-groep.png",
+    detail: "wellness-details.png",
+    review: "journaling-begeleiding.png",
+    background: "sessie-voorbereiden.png",
   }),
   group("makelaar", "Makelaar", ["makelaar-demo"], ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"]),
   group("hotel", "Hotel", ["hotel-demo"], ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"]),
   group("financieel-adviseur", "Financieel adviseur", ["financieel-adviseur-demo"], ["financieel", "financieel advies", "hypotheek", "accountant", "belasting", "advies"]),
   group("fysiotherapie", "Fysiotherapie", ["fysiotherapie-demo"], ["fysiotherapie", "fysiotherapeut", "revalidatie", "herstel", "sportzorg", "pijnklachten"]),
   group("kinderopvang", "Kinderopvang", ["kinderopvang-demo"], ["kinderopvang", "bso", "peuteropvang", "opvang", "rondleiding", "aanmelden"]),
+  customGroup("neutral-professional", "Neutrale professionele dienstverlening", [], ["neutral", "professional", "local service"], Object.fromEntries(DEMO_IMAGE_ROLES.map((role) => [role, { fileName: `${role}.png`, sourceGroupSlug: "financieel-adviseur" }]))),
 ]);
 
 function group(slug, label, demoSiteIds, keywords) {
@@ -171,7 +173,13 @@ function resolveDemoImageGroup(input = {}) {
   const scored = demoImageGroups
     .map((groupItem) => ({ groupItem, score: scoreGroup(groupItem, input) }))
     .sort((left, right) => right.score - left.score);
-  return scored[0]?.score > 0 ? scored[0].groupItem : demoImageGroups[0];
+  return scored[0]?.score > 0 ? scored[0].groupItem : demoImageGroups.find((item) => item.slug === "neutral-professional");
+}
+
+function resolveDemoImageAssetSetForProfile(profile, input = {}) {
+  const selection = selectPhotoAssetGroup(profile, demoImageGroups);
+  const groupItem = selection.group || demoImageGroups.find((item) => item.slug === "neutral-professional");
+  return { assets: groupItem.assets, selection: { ...selection, group: undefined, groupSlug: groupItem.slug, fallbackGroupUsed: !selection.group } };
 }
 
 function resolveDemoImageAssetSet(input = {}) {
@@ -188,5 +196,6 @@ module.exports = {
   demoImageGroups,
   resolveDemoImageAsset,
   resolveDemoImageAssetSet,
+  resolveDemoImageAssetSetForProfile,
   resolveDemoImageGroup,
 };
