@@ -67,7 +67,7 @@ test("Quick Build accepts a business name or valid website without requiring the
   assert.match(factory, /const guidedIntakeKeys = new Set\(\["branch", "goal", "style", "cta", "services", "photoStatus"\]\)/);
   assert.match(factory, /await window\.WebsiteFactoryRuntime\.quickBuild/);
   assert.match(factory, /const savedJourney = journey\?\.id \? journey : await saveJourney\(\)/);
-  assert.match(factory, /const result = await generatePreview\(currentPackageType\(\)\)/);
+  assert.match(factory, /const result = await generatePreview\(currentPackageType\(\), \{ surface: "quick" \}\)/);
   assert.doesNotMatch(factory, /const waitForJourney = window\.setInterval/);
   assert.match(backend, /buildQuickFactoryBriefing\(sourceJourney\)/);
   assert.match(backend, /code: "FACTORY_IDENTITY_REQUIRED"/);
@@ -81,11 +81,32 @@ test("image generation never fakes a provider result in production", () => {
 
 test("status cards and process steps are derived from current Factory state", () => {
   assert.match(factory, /function guidedState\(\)/);
+  assert.match(factory, /pipeline: normalizeFactoryServerState\(\)/);
+  const guidedStateSource = factory.slice(factory.indexOf("function guidedState()"), factory.indexOf("function renderGuidedStatus()"));
+  assert.doesNotMatch(guidedStateSource, /text\("#demo-journey-(build|preview)/);
+  assert.doesNotMatch(guidedStateSource, /document\.querySelectorAll\("#demo-intake-fields/);
   assert.match(factory, /function renderGuidedStatus\(\)/);
   assert.match(factory, /function renderGuidedProcess\(\)/);
   for (const label of ["Briefing", "Research", "Afbeeldingen", "Content", "SEO", "Mail", "Project", "Preview", "Timeline", "Live zetten"]) {
     assert.match(factory, new RegExp(label));
   }
+});
+
+test("journey recovery protects active server context and a real reset clears derived UI", () => {
+  assert.match(factory, /protectedServerContext = serverState\.buildRunning \|\| serverState\.buildRetryable \|\| serverState\.previewStored/);
+  assert.match(factory, /!journeyMatchesLead\(loadedJourney, lead\) && !protectedServerContext/);
+  assert.match(factory, /function resetFactoryDerivedUi\(\)/);
+  assert.match(factory, /"factory-process-next": "Volgende stap: Briefing"/);
+  assert.match(factory, /delete element\.dataset\.signature/);
+});
+
+test("non-JSON platform 504 remains retryable with one safe diagnostic chain", () => {
+  assert.match(factory, /data = \{ rawBody: responseBody \}/);
+  assert.match(factory, /response\.status === 504 \? "UPSTREAM_TIMEOUT"/);
+  assert.match(factory, /retryable: typeof data\.retryable === "boolean"/);
+  assert.match(factory, /De buildstatus is opnieuw gecontroleerd/);
+  assert.match(factory, /replace\(\/\\s\*Request-id:/);
+  assert.match(factory, /if \(retryButton\) retryButton\.hidden = false/);
 });
 
 test("legacy components are moved before the duplicate Control Center layout is retired", () => {

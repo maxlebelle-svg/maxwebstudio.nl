@@ -7,7 +7,7 @@ const { normalizeWebsiteInput } = require("../functions/_website-input");
 const { buildWebsitePackage, runQualityCheck } = require("../functions/_website-factory-core");
 const { extractHeroContext, prepareHeroEditorPackage } = require("../functions/_preview-editor-hero");
 const { extractImageContext, prepareImageEditorPackage } = require("../functions/_preview-editor-image");
-const { createBuildJob, getBuildHistory, runBuildJob, sanitizeBuildResult } = require("../functions/website-factory");
+const { createBuildJob, getBuildHistory, runBuildJob, sanitizeBuildResult, _private } = require("../functions/website-factory");
 
 const root = path.join(__dirname, "..");
 const factoryHtml = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
@@ -169,6 +169,10 @@ test("normal build stores one renderable preview version after Hero validation",
     assert.equal(previewWrites[0].metadata.renderable, true);
     assert.equal((await extractHeroContext(previewWrites[0].generated_package)).schema.id, "mws.hero.v1");
     assert.equal(jobWrites.some((record) => record.status === "completed"), true);
+    assert.equal(jobWrites.filter((record) => Object.hasOwn(record, "generated_package")).length, 1);
+    assert.equal(Object.hasOwn(jobWrites.find((record) => record.status === "quality_check"), "generated_package"), false);
+    assert.equal(Object.hasOwn(jobWrites.find((record) => record.status === "deploying"), "generated_package"), false);
+    assert.equal(Object.hasOwn(jobWrites.find((record) => record.status === "completed"), "generated_package"), false);
   } finally {
     global.fetch = previousFetch;
   }
@@ -213,6 +217,9 @@ test("retry reuses an active build job without creating a duplicate", async () =
 test("FatTrek production 504 marks the same build retryable without resending its 8 MB package", async () => {
   const journeyId = "9a735e10-18e7-4b83-8cc7-e2518fa7959d";
   const jobId = "d9d8944c-37e2-4991-ae06-89348b17fa59";
+  const productionPackage = buildQuick().generatedPackage;
+  productionPackage.files.push({ path: "assets/production-size-fixture.txt", content: "x".repeat(900_000) });
+  assert.ok(Buffer.byteLength(JSON.stringify(productionPackage)) > 8_000_000);
   const activeJob = {
     id: jobId,
     demo_journey_id: journeyId,
@@ -220,6 +227,8 @@ test("FatTrek production 504 marks the same build retryable without resending it
     current_step: "run_quality_check",
     progress: 70,
     preview_version: 1,
+    generated_package: productionPackage,
+    quality_report: { passed: true, score: 96, summary: "Klaar" },
     build_logs: [{ step: "quality_check", message: "Quality checker gestart." }],
   };
   const journey = {
@@ -266,13 +275,133 @@ test("FatTrek production 504 marks the same build retryable without resending it
   }
 });
 
+test("timed-out deploying write is confirmed and the same production job creates exactly one preview", async () => {
+  const journeyId = "b2501d53-cca6-439e-973d-fc14e64e1fc9";
+  const jobId = "085c8eea-66ec-4037-bbbf-3af711d9267a";
+  const generatedPackage = buildQuick().generatedPackage;
+  const journey = { id: journeyId, business_name: "Heel je zelf", generated_briefing: "Energie en balans", created_by: "admin-id" };
+  const retryableJob = {
+    id: jobId,
+    demo_journey_id: journeyId,
+    status: "retryable",
+    current_step: "patch_build_job_deploying",
+    progress: 90,
+    preview_version: 1,
+    preview_url: `/.netlify/functions/demo-preview?id=${journeyId}&token=safe&previewVersionId=${jobId}`,
+    preview_token: "safe",
+    generated_package: generatedPackage,
+    quality_report: { passed: true, score: 96, summary: "Klaar" },
+    build_logs: [],
+  };
+  let buildReads = 0;
+  let previewInserted = false;
+  const previewWrites = [];
+  const jobWrites = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (method === "GET" && target.includes("website_build_jobs")) {
+      buildReads += 1;
+      return mockJson([buildReads >= 3 ? { ...retryableJob, status: "deploying", current_step: "create_preview_version" } : retryableJob]);
+    }
+    if (method === "GET" && target.includes("demo_journeys")) return mockJson([journey]);
+    if (method === "GET" && target.includes("website_preview_versions")) return mockJson(previewInserted ? [{
+      id: jobId,
+      demo_journey_id: journeyId,
+      build_job_id: jobId,
+      version: 1,
+      preview_url: retryableJob.preview_url,
+      preview_token: "safe",
+      entry_file: "index.html",
+      metadata: { renderable: true, editorManifestAvailable: true, sectionMarkersAvailable: true },
+      is_active: true,
+    }] : []);
+    if (method === "PATCH" && target.includes("website_build_jobs")) {
+      jobWrites.push(body);
+      if (body.status === "deploying") throw Object.assign(new Error("timeout after commit"), { name: "AbortError" });
+      return mockJson(null, 204);
+    }
+    if (method === "POST" && target.includes("website_preview_versions")) {
+      previewInserted = true;
+      previewWrites.push(body);
+      return mockJson(null, 201);
+    }
+    if (method === "PATCH" && target.includes("website_preview_versions")) return mockJson(null, 204);
+    if (method === "PATCH" && target.includes("demo_journeys")) return mockJson([{ ...journey, ...body }]);
+    return mockJson({ message: "optional table unavailable" }, 500);
+  };
+  try {
+    const result = await runBuildJob({
+      supabaseUrl: "https://example.supabase.co",
+      serviceRoleKey: "service-role",
+      admin: { id: "admin-id", role: "super_admin" },
+      requestId: "01KXNAVYXAGWTM4XE4BKGM1051",
+    }, { jobId });
+    assert.equal(result.job.status, "completed");
+    assert.equal(result.previewVersion.id, jobId);
+    assert.equal(previewWrites.length, 1);
+    assert.equal(jobWrites.filter((record) => Object.hasOwn(record, "generated_package")).length, 0);
+    assert.equal(jobWrites.some((record) => record.status === "retryable"), false);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("timeout after preview insert recovers the deterministic version without a duplicate", async () => {
+  const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const generatedPackage = buildQuick().generatedPackage;
+  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "Outdoor", created_by: "admin-id" };
+  const job = {
+    id: jobId, demo_journey_id: journeyId, status: "deploying", current_step: "create_preview_version", progress: 90,
+    preview_version: 1, preview_url: `/.netlify/functions/demo-preview?id=${journeyId}&token=safe&previewVersionId=${jobId}`,
+    preview_token: "safe", generated_package: generatedPackage, quality_report: { passed: true, score: 95 }, build_logs: [],
+  };
+  let inserted = false;
+  let insertAttempts = 0;
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (method === "GET" && target.includes("website_build_jobs")) return mockJson([job]);
+    if (method === "GET" && target.includes("demo_journeys")) return mockJson([journey]);
+    if (method === "GET" && target.includes("website_preview_versions")) return mockJson(inserted ? [{
+      id: jobId, demo_journey_id: journeyId, build_job_id: jobId, version: 1, preview_url: job.preview_url,
+      preview_token: "safe", entry_file: "index.html", metadata: { renderable: true }, is_active: true,
+    }] : []);
+    if (method === "PATCH" && target.includes("website_build_jobs")) return mockJson(null, 204);
+    if (method === "POST" && target.includes("website_preview_versions")) {
+      insertAttempts += 1;
+      inserted = true;
+      throw Object.assign(new Error("timeout after insert"), { name: "AbortError" });
+    }
+    if (method === "PATCH" && target.includes("website_preview_versions")) return mockJson(null, 204);
+    if (method === "PATCH" && target.includes("demo_journeys")) return mockJson([{ ...journey, ...body }]);
+    return mockJson({ message: "optional table unavailable" }, 500);
+  };
+  try {
+    const result = await runBuildJob({
+      supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role",
+      admin: { id: "admin-id", role: "super_admin" }, requestId: "REQ-PREVIEW-INSERT-TIMEOUT",
+    }, { jobId });
+    assert.equal(result.previewVersion.id, jobId);
+    assert.equal(result.job.status, "completed");
+    assert.equal(insertAttempts, 1);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 test("retry restores an already stored preview version without duplicate inserts", async () => {
   const journeyId = "9a735e10-18e7-4b83-8cc7-e2518fa7959d";
   const jobId = "d9d8944c-37e2-4991-ae06-89348b17fa59";
   const versionId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
   const job = { id: jobId, demo_journey_id: journeyId, status: "retryable", current_step: "create_preview_version", progress: 90, preview_version: 1, build_logs: [] };
   const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "FatTrek briefing", created_by: "admin-id" };
-  const version = { id: versionId, demo_journey_id: journeyId, build_job_id: jobId, version: 1, preview_url: "/.netlify/functions/demo-preview?id=1", preview_token: "safe-token", preview_score: 96, is_active: true, status: "internal" };
+  const version = { id: versionId, demo_journey_id: journeyId, build_job_id: jobId, version: 1, preview_url: "/.netlify/functions/demo-preview?id=1", preview_token: "safe-token", preview_score: 96, entry_file: "index.html", metadata: { renderable: true }, is_active: true, status: "internal" };
   const methods = [];
   const previousFetch = global.fetch;
   global.fetch = async (url, options = {}) => {
@@ -306,6 +435,7 @@ test("completed job without a stored preview version is not reported as preview-
   global.fetch = async (url) => {
     if (String(url).includes("website_build_jobs")) return mockJson([{ id: "d9d8944c-37e2-4991-ae06-89348b17fa59", demo_journey_id: journeyId, status: "completed", current_step: "completed", progress: 100 }]);
     if (String(url).includes("website_preview_versions")) return mockJson([]);
+    if (String(url).includes("demo_journeys")) return mockJson([{ id: journeyId, generated_briefing: "FatTrek briefing" }]);
     throw new Error(`Unexpected GET ${url}`);
   };
   try {
@@ -325,6 +455,7 @@ test("stored renderable preview exposes lightweight editor capability metadata",
   global.fetch = async (url) => {
     if (String(url).includes("website_build_jobs")) return mockJson([]);
     if (String(url).includes("website_preview_versions")) return mockJson([{ id: versionId, demo_journey_id: journeyId, preview_url: "/preview", preview_token: "token", entry_file: "index.html", package_meta: { editorManifest: { version: 1 } }, is_active: true }]);
+    if (String(url).includes("demo_journeys")) return mockJson([{ id: journeyId, generated_briefing: "FatTrek briefing" }]);
     throw new Error(`Unexpected GET ${url}`);
   };
   try {
@@ -357,6 +488,62 @@ test("frontend keeps concrete backend code, phase and request id visible", () =>
   assert.match(factoryHtml, /replace\(\/\\s\*Request-id:/);
   assert.match(factoryHtml, /retryable: "Opnieuw proberen"/);
   assert.match(factoryHtml, /activeVersion: responseVersion \|\| previewVersions\.find/);
+});
+
+test("editor enrichment failures stay isolated and leave a renderable core package", async () => {
+  for (const editor of ["image", "text", "hero"]) {
+    const corePackage = buildQuick().generatedPackage;
+    const result = await _private.prepareEditorPackageBestEffort(corePackage, {
+      preparations: [{
+        key: editor,
+        prepare: async () => { throw Object.assign(new Error(`${editor} unavailable`), { code: `${editor.toUpperCase()}_PREPARATION_FAILED` }); },
+      }],
+      requestId: `REQ-${editor}`,
+    });
+    const manifest = result.generatedPackage.meta.editorManifest;
+    const hero = manifest.pages[0].sections.find((section) => section.type === "hero");
+    const textSection = manifest.pages[0].sections.find((section) => section.type === "text");
+    assert.equal(result.stages[editor].availability, "read_only");
+    assert.equal(runQualityCheck({ generatedPackage: result.generatedPackage, journey: { businessName: "FatTrek" } }).passed, true);
+    assert.ok(result.generatedPackage.files.some((file) => file.path === "index.html" && /<\/html>/i.test(file.content)));
+    if (editor === "image") {
+      assert.equal(hero.imageEditor, undefined);
+      assert.ok(hero.editor);
+    }
+    if (editor === "text") {
+      assert.equal(textSection.editor, undefined);
+      assert.ok(hero.editor);
+    }
+    if (editor === "hero") {
+      assert.equal(hero.editor, undefined);
+      assert.ok(hero.imageEditor);
+    }
+  }
+});
+
+test("normalized server state never reports briefing as next while a build runs", () => {
+  const active = _private.deriveFactoryServerState({
+    journey: { demoStatus: "briefing_klaar", generatedBriefing: "" },
+    latestJob: { id: "job", status: "deploying", currentStep: "create_preview_version", progress: 90 },
+    activeVersion: null,
+  });
+  assert.equal(active.state, "build_running");
+  assert.equal(active.briefingReady, true);
+  assert.equal(active.buildRunning, true);
+  const retryable = _private.deriveFactoryServerState({
+    journey: { demoStatus: "briefing_klaar" },
+    latestJob: { id: "job", status: "retryable", currentStep: "create_preview_version", progress: 90 },
+  });
+  assert.equal(retryable.state, "build_retryable");
+  assert.equal(retryable.retryable, true);
+});
+
+test("Quick Build response is compact and never returns package bytes", () => {
+  assert.doesNotMatch(demoBackend, /preview:\s*\{[\s\S]{0,600}files:\s*Object\.values/);
+  assert.doesNotMatch(demoBackend, /preview:\s*\{[\s\S]{0,600}package:\s*buildResult/);
+  assert.match(demoBackend, /fileCount:/);
+  assert.match(demoBackend, /delete sanitized\.generated_package/);
+  assert.match(demoBackend, /retryable,/);
 });
 
 test("Phase 2A selection mode remains wired and isolated", () => {

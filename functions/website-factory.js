@@ -36,6 +36,9 @@ const BUILD_JOB_SUMMARY_FIELDS = [
   "preview_version", "preview_url", "preview_token", "preview_score", "build_logs", "error_message",
   "started_at", "finished_at", "created_by", "created_at",
 ].join(",");
+const BUILD_JOB_RUNTIME_FIELDS = [
+  BUILD_JOB_SUMMARY_FIELDS, "quality_report", "generated_package", "updated_at",
+].join(",");
 const PREVIEW_RECOVERY_FIELDS = [
   "id", "demo_journey_id", "build_job_id", "customer_id", "project_id", "website_id", "version", "title",
   "preview_url", "preview_token", "preview_score", "quality_report", "metadata", "is_active", "status", "created_by", "created_at",
@@ -59,6 +62,7 @@ async function handler(event) {
   if (!supabaseUrl || !serviceRoleKey) {
     return jsonResponse(500, { success: false, error: "Website Factory API is nog niet geconfigureerd." });
   }
+  const requestId = cleanText(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"]) || randomUUID();
 
   try {
     const payload = event.httpMethod === "GET" ? event.queryStringParameters || {} : parsePayload(event.body);
@@ -67,7 +71,7 @@ async function handler(event) {
       supabaseUrl,
       serviceRoleKey,
       admin: adminCheck.admin,
-      requestId: cleanText(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"]) || randomUUID(),
+      requestId,
     };
     if (action === "resolve_context") return resolveWebsiteFactoryContextResponse(context, payload);
     if (action === "sync_commercial_package") return syncCommercialPackageResponse(context, payload);
@@ -112,6 +116,7 @@ async function handler(event) {
     return jsonResponse(missing ? 503 : error.status || 500, errorResponse({
       error,
       developerMode,
+      requestId,
       module: "website_factory",
       reason: missing ? "missing_website_factory_tables" : "website_factory_failed",
       fallbackMessage: missing
@@ -499,9 +504,7 @@ async function generatePackageResponse(context, payload) {
     briefing: payload.briefing || journey.generated_briefing,
     version: Number(payload.version || 1),
   });
-  const imagePreparation = await prepareImageEditorPackage(builtPackage);
-  const textPreparation = await prepareTextEditorPackage(imagePreparation.generatedPackage);
-  const { generatedPackage } = await prepareHeroEditorPackage(textPreparation.generatedPackage);
+  const { generatedPackage } = await prepareEditorPackageBestEffort(builtPackage, { requestId: context.requestId });
   return jsonResponse(200, { success: true, generatedPackage });
 }
 
@@ -820,16 +823,21 @@ async function runBuildJob(context, payload = {}) {
   let job = null;
   let journey = null;
   try {
-    const existingJob = cleanText(payload.jobId || payload.job_id) ? await readBuildJobById(context, payload.jobId || payload.job_id) : null;
-    const setup = existingJob
+    const existingJob = cleanText(payload.jobId || payload.job_id) ? await readBuildJobRuntimeById(context, payload.jobId || payload.job_id) : null;
+    const initialSetup = existingJob
       ? { job: normalizeBuildJob(existingJob), journey: mapJourney(await readJourney(context, existingJob.demo_journey_id)) }
       : await createBuildJob(context, payload);
+    const runtimeJob = initialSetup.job?.id
+      ? normalizeBuildJob(await readBuildJobRuntimeById(context, initialSetup.job.id) || jobRecord(initialSetup.job))
+      : initialSetup.job;
+    const setup = { ...initialSetup, job: runtimeJob };
     job = setup.job;
     journey = setup.journey;
     const persistedPreview = job?.id ? await readPreviewVersionByBuildJobId(context, job.id) : null;
-    if (persistedPreview?.id) {
+    if (persistedPreview?.id && persistedPreview.renderable) {
       return recoverBuildFromPreview(context, { job, journey, previewVersion: persistedPreview });
     }
+    if (persistedPreview?.id) throw previewNotRenderableError(persistedPreview);
     phase = "validate_journey";
     if (!journey?.id) {
       const error = new Error("Demo-klantreis voor build job ontbreekt.");
@@ -837,7 +845,7 @@ async function runBuildJob(context, payload = {}) {
       throw error;
     }
     assertCanSeeJourney({ id: journey.id, created_by: journey.createdBy, assigned_to: journey.assignedTo, updated_by: journey.updatedBy }, context.admin);
-    const resumeAfterPackage = isPackageResumePoint(job);
+    const resumeAfterPackage = isPackageResumePoint(job) && isUsableGeneratedPackage(job.generatedPackage);
     const logs = buildLogs(job.buildLogs, { step: "briefing", message: resumeAfterPackage ? "Bestaande build wordt veilig hervat." : "Briefing gevalideerd." });
     if (!resumeAfterPackage) {
       phase = "patch_build_job_briefing";
@@ -865,54 +873,40 @@ async function runBuildJob(context, payload = {}) {
       phase = "patch_build_job_building";
       await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
     }
-    phase = "generate_website_package";
-    const builtPackage = buildWebsitePackage({
-      journey: {
-        ...journey,
-        packageType,
-        websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
-        googleReviews: payload.googleReviews || payload.google_reviews || [],
-        googleRating: payload.googleRating || payload.google_rating || "",
-        googleRatingTotal: payload.googleRatingTotal || payload.google_rating_total || "",
-        googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || "",
-      },
-      briefing,
-      version: job.previewVersion,
-    });
-    phase = "prepare_editor_manifest";
-    const imagePreparation = await prepareImageEditorPackage(builtPackage);
-    const textPreparation = await prepareTextEditorPackage(imagePreparation.generatedPackage);
-    const editorPreparation = await prepareHeroEditorPackage(textPreparation.generatedPackage);
-    const generatedPackage = editorPreparation.generatedPackage;
-    if (textPreparation.availability !== "editable") {
-      console.warn("Website Factory text editor unavailable; build continues read-only", {
-        phase,
-        buildJobId: job.id,
-        reason: textPreparation.reason,
+    let generatedPackage = job.generatedPackage;
+    if (!resumeAfterPackage) {
+      phase = "generate_website_package";
+      const builtPackage = buildWebsitePackage({
+        journey: {
+          ...journey,
+          packageType,
+          websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
+          googleReviews: payload.googleReviews || payload.google_reviews || [],
+          googleRating: payload.googleRating || payload.google_rating || "",
+          googleRatingTotal: payload.googleRatingTotal || payload.google_rating_total || "",
+          googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || "",
+        },
+        briefing,
+        version: job.previewVersion,
       });
-    }
-    if (imagePreparation.availability !== "editable") {
-      console.warn("Website Factory image editor unavailable; build continues read-only", {
-        phase,
+      phase = "prepare_editor_manifest";
+      generatedPackage = (await prepareEditorPackageBestEffort(builtPackage, {
+        requestId: context.requestId,
         buildJobId: job.id,
-        reason: imagePreparation.reason,
-      });
-    }
-    if (editorPreparation.availability !== "editable") {
-      console.warn("Website Factory Hero editor unavailable; build continues read-only", {
-        phase,
-        buildJobId: job.id,
-        reason: editorPreparation.reason,
-      });
+      })).generatedPackage;
     }
 
     const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
     if (!resumeAfterPackage) {
+      phase = "persist_generated_package";
+      await patchBuildJob(context, job.id, { generated_package: generatedPackage });
       phase = "patch_build_job_quality_check";
-      await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, generated_package: generatedPackage, build_logs: qualityLogs });
+      await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, build_logs: qualityLogs });
     }
     phase = "run_quality_check";
-    const qualityReport = runQualityCheck({ generatedPackage, journey });
+    const qualityReport = resumeAfterPackage && job.qualityReport?.passed === true
+      ? job.qualityReport
+      : runQualityCheck({ generatedPackage, journey });
     if (!qualityReport.passed) {
       const failedRecord = {
         status: "quality_failed",
@@ -927,20 +921,29 @@ async function runBuildJob(context, payload = {}) {
       await patchBuildJob(context, job.id, failedRecord);
       return { job: normalizeBuildJob({ ...jobRecord(job), ...failedRecord }), journey, previewVersion: null };
     }
+    if (!resumeAfterPackage || job.qualityReport?.passed !== true) {
+      phase = "patch_build_job_quality_completed";
+      await patchBuildJob(context, job.id, {
+        status: "quality_check",
+        current_step: "quality_check_completed",
+        progress: 85,
+        preview_score: qualityReport.score,
+        quality_report: qualityReport,
+      });
+    }
 
-    const token = makePreviewToken();
-    const previewUrl = previewUrlFor({ journeyId: journey.id, token, previewVersionId: job.id });
+    const token = cleanText(job.previewToken) || makePreviewToken();
+    const previewUrl = cleanText(job.previewUrl) || previewUrlFor({ journeyId: journey.id, token, previewVersionId: job.id });
     phase = "patch_build_job_deploying";
-    await patchBuildJob(context, job.id, {
+    await patchBuildJobWithConfirmation(context, job.id, {
       status: "deploying",
       current_step: "create_preview_version",
       progress: 90,
       preview_url: previewUrl,
       preview_token: token,
       preview_score: qualityReport.score,
-      quality_report: qualityReport,
       build_logs: buildLogs(qualityLogs, { step: "deploying", message: "Interne previewversie wordt opgeslagen." }),
-    });
+    }, (persisted) => persisted.status === "deploying" && persisted.currentStep === "create_preview_version");
 
     phase = "create_preview_version";
     const previewVersion = await createPreviewVersion(context, {
@@ -958,6 +961,7 @@ async function runBuildJob(context, payload = {}) {
       websiteId: journey.websiteId || payload.websiteId || payload.website_id,
       createdBy: context.admin.id,
     });
+    if (!previewVersion?.renderable) throw previewNotRenderableError(previewVersion);
     phase = "patch_build_job_completed";
     const completedRecord = {
       status: "completed",
@@ -1036,7 +1040,7 @@ async function runBuildJob(context, payload = {}) {
     error.packageType = error.packageType || normalizePackageType(payload.packageType || payload.package_type || journey?.packageType);
     if (job?.id && journey?.id) {
       const persistedPreview = await readPreviewVersionByBuildJobId(context, job.id).catch(() => null);
-      if (persistedPreview?.id) {
+      if (persistedPreview?.id && persistedPreview.renderable) {
         return recoverBuildFromPreview(context, { job, journey, previewVersion: persistedPreview });
       }
       await markInterruptedBuild(context, job, error, phase);
@@ -1048,6 +1052,87 @@ async function runBuildJob(context, payload = {}) {
 function isPackageResumePoint(job = {}) {
   if (!["quality_check", "deploying", "retryable"].includes(cleanText(job.status))) return false;
   return /quality|deploy|preview_version|patch_build_job_deploying/i.test(cleanText(job.currentStep));
+}
+
+function isUsableGeneratedPackage(generatedPackage = null) {
+  if (!generatedPackage || typeof generatedPackage !== "object") return false;
+  const files = Array.isArray(generatedPackage.files) ? generatedPackage.files : [];
+  const entryFile = cleanText(generatedPackage.entryFile || generatedPackage.meta?.entryFile || "index.html");
+  return files.some((file) => cleanText(file?.path) === entryFile && cleanText(file?.content));
+}
+
+function previewNotRenderableError(previewVersion = {}) {
+  const error = new Error("De previewversie is opgeslagen maar nog niet renderbaar.");
+  error.status = 503;
+  error.code = "PREVIEW_NOT_RENDERABLE";
+  error.phase = "verify_preview_version";
+  error.retryable = true;
+  error.previewVersionId = cleanText(previewVersion.id);
+  return error;
+}
+
+async function prepareEditorPackageBestEffort(corePackage = {}, options = {}) {
+  const preparations = options.preparations || [
+    { key: "image", prepare: prepareImageEditorPackage },
+    { key: "text", prepare: prepareTextEditorPackage },
+    { key: "hero", prepare: prepareHeroEditorPackage },
+  ];
+  let generatedPackage = corePackage;
+  const stages = {};
+  for (const stage of preparations) {
+    try {
+      const prepared = await stage.prepare(generatedPackage);
+      generatedPackage = prepared?.generatedPackage || generatedPackage;
+      stages[stage.key] = {
+        availability: cleanText(prepared?.availability || "editable"),
+        reason: cleanText(prepared?.reason),
+      };
+      if (stages[stage.key].availability !== "editable") {
+        generatedPackage = markEditorCapabilityReadOnly(generatedPackage, stage.key);
+      }
+    } catch (error) {
+      const code = cleanText(error?.code || "EDITOR_ENRICHMENT_FAILED");
+      if (/AMBIGUOUS|PACKAGE_CORRUPT|INVALID_HTML/i.test(code)) throw error;
+      stages[stage.key] = { availability: "read_only", code, phase: cleanText(error?.phase || `prepare_${stage.key}_editor`) };
+      generatedPackage = markEditorCapabilityReadOnly(generatedPackage, stage.key);
+      console.warn("Website Factory editor enrichment skipped", {
+        phase: stages[stage.key].phase,
+        editor: stage.key,
+        code,
+        buildJobId: cleanText(options.buildJobId),
+        requestId: cleanText(options.requestId),
+      });
+    }
+  }
+  return {
+    generatedPackage: {
+      ...generatedPackage,
+      meta: {
+        ...(generatedPackage.meta || {}),
+        editorEnrichment: { version: 1, stages },
+      },
+    },
+    stages,
+  };
+}
+
+function markEditorCapabilityReadOnly(generatedPackage = {}, editor = "") {
+  const manifest = generatedPackage.meta?.editorManifest;
+  if (!manifest || !Array.isArray(manifest.pages)) return generatedPackage;
+  const pages = manifest.pages.map((page) => ({
+    ...page,
+    sections: Array.isArray(page.sections) ? page.sections.map((section) => {
+      const next = { ...section };
+      if (editor === "image") delete next.imageEditor;
+      if (editor === "text" && cleanText(next.type) === "text") delete next.editor;
+      if (editor === "hero" && cleanText(next.type) === "hero") delete next.editor;
+      return next;
+    }) : [],
+  }));
+  return {
+    ...generatedPackage,
+    meta: { ...(generatedPackage.meta || {}), editorManifest: { ...manifest, pages } },
+  };
 }
 
 async function markInterruptedBuild(context, job, error, phase) {
@@ -1196,9 +1281,63 @@ function sanitizeBuildResult(result = {}) {
 }
 
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
-  const jobs = await readBuildJobSummaries(context, { demoJourneyId, leadId, limit: 25 });
-  const versions = demoJourneyId ? await readPreviewVersionSummaries(context, demoJourneyId) : [];
-  return { jobs, previewVersions: versions, latestJob: jobs[0] || null, activeVersion: versions.find((version) => version.isActive) || versions[0] || null };
+  const [jobs, versions, journeyRow] = await Promise.all([
+    readBuildJobSummaries(context, { demoJourneyId, leadId, limit: 25 }),
+    demoJourneyId ? readPreviewVersionSummaries(context, demoJourneyId) : Promise.resolve([]),
+    demoJourneyId ? readJourneyState(context, demoJourneyId) : Promise.resolve(null),
+  ]);
+  const latestJob = jobs[0] || null;
+  const activeVersion = versions.find((version) => version.isActive) || versions[0] || null;
+  return {
+    jobs,
+    previewVersions: versions,
+    latestJob,
+    activeVersion,
+    serverState: deriveFactoryServerState({ journey: journeyRow ? mapJourney(journeyRow) : null, latestJob, activeVersion }),
+  };
+}
+
+function deriveFactoryServerState({ journey = null, latestJob = null, activeVersion = null } = {}) {
+  const status = cleanText(latestJob?.status).toLowerCase();
+  const buildRunning = ["queued", "briefing", "building", "quality_check", "deploying"].includes(status);
+  const buildRetryable = status === "retryable";
+  const buildFailed = ["failed", "quality_failed"].includes(status);
+  const previewStored = Boolean(activeVersion?.id);
+  const previewRenderable = previewStored && activeVersion?.renderable === true;
+  const previewEditable = previewRenderable && activeVersion?.editorAvailable === true;
+  const hasBuildContext = Boolean(latestJob?.id || previewStored);
+  const briefingReady = hasBuildContext || Boolean(cleanText(journey?.generatedBriefing));
+  const state = !briefingReady
+    ? "briefing_required"
+    : buildRunning
+      ? "build_running"
+      : buildRetryable
+        ? "build_retryable"
+        : buildFailed
+          ? "build_failed"
+          : previewEditable
+            ? "preview_editable"
+            : previewRenderable
+              ? "preview_renderable"
+              : previewStored ? "preview_stored" : "ready_to_build";
+  return {
+    state,
+    briefingReady,
+    researchReady: hasBuildContext || Boolean(journey?.previewPackage?.websiteIntelligence || journey?.previewPackage?.websiteIntelligencePackage),
+    scanReady: hasBuildContext || Boolean(journey?.previewPackage?.websiteIntelligence || journey?.previewPackage?.websiteIntelligencePackage),
+    buildRunning,
+    buildRetryable,
+    buildFailed,
+    buildCompleted: status === "completed" && previewRenderable,
+    previewStored,
+    previewRenderable,
+    previewEditable,
+    retryable: buildRetryable,
+    jobStatus: status,
+    currentStep: cleanText(latestJob?.currentStep),
+    progress: Number(latestJob?.progress || 0),
+    errorMessage: cleanText(latestJob?.errorMessage),
+  };
 }
 
 async function readBuildJobSummaries(context, { demoJourneyId = "", leadId = "", limit = 25 } = {}) {
@@ -1338,8 +1477,25 @@ async function readJourney(context, id) {
   return rows[0] || null;
 }
 
+async function readJourneyState(context, id) {
+  const fields = "id,demo_status,generated_briefing";
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/demo_journeys?select=${encodeURIComponent(fields)}&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
 async function readBuildJobById(context, id) {
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?select=${encodeURIComponent(BUILD_JOB_SUMMARY_FIELDS)}&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function readBuildJobRuntimeById(context, id) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?select=${encodeURIComponent(BUILD_JOB_RUNTIME_FIELDS)}&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
   });
@@ -1380,6 +1536,26 @@ async function patchBuildJob(context, id, record) {
     const fallbackRecord = stripFactoryOptionalColumns(record, ["status", "current_step", "progress", "preview_version", "preview_url"]);
     if (!Object.keys(fallbackRecord).length) throw error;
     return patchBuildJobRecord(context, id, fallbackRecord);
+  }
+}
+
+async function patchBuildJobWithConfirmation(context, id, record, confirms) {
+  try {
+    return await patchBuildJob(context, id, record);
+  } catch (error) {
+    if (error?.code !== "UPSTREAM_TIMEOUT" && Number(error?.status || 0) !== 504) throw error;
+    const persisted = normalizeBuildJob(await readBuildJobById(context, id));
+    if (typeof confirms === "function" && confirms(persisted)) {
+      console.warn("Website Factory timed-out write confirmed from server state", {
+        phase: "confirm_build_job_write",
+        buildJobId: id,
+        status: persisted.status,
+        currentStep: persisted.currentStep,
+        requestId: cleanText(context.requestId),
+      });
+      return [];
+    }
+    throw error;
   }
 }
 
@@ -1561,19 +1737,23 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-function errorResponse({ error = {}, developerMode = false, module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
+function errorResponse({ error = {}, developerMode = false, requestId = "", module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
   const message = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
+  const code = error.code || (Number(error.status) === 504 ? "UPSTREAM_TIMEOUT" : "");
+  const retryable = typeof error.retryable === "boolean"
+    ? error.retryable
+    : code === "UPSTREAM_TIMEOUT" || Number(error.status || 0) >= 500;
   const body = {
     success: false,
+    requestId: cleanText(requestId),
     module,
     phase: error.phase || "",
     reason,
     message,
     error: developerMode ? message : fallbackMessage || message,
-    userMessage: setupRequired
-      ? fallbackMessage
-      : "De Website Factory kon de aanvraag niet verwerken. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
-    code: error.code || "",
+    userMessage: setupRequired ? fallbackMessage : message,
+    code,
+    retryable,
     details: developerMode ? cleanText(error.details) : "",
     hint: developerMode ? cleanText(error.hint) : "",
     setupRequired: Boolean(setupRequired),
@@ -1586,7 +1766,9 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
       leadId: cleanText(error.leadId),
       packageType: cleanText(error.packageType),
       status: error.status || 500,
-      code: error.code || "",
+      code,
+      retryable,
+      requestId: cleanText(requestId),
       method: error.method || "",
       url: developerMode ? cleanText(error.url) : "",
       responseText: developerMode ? cleanText(error.responseText) : "",
@@ -2420,5 +2602,5 @@ module.exports = {
   runBuildJob,
   sanitizeBuildResult,
   startOnboardingFactoryPipeline,
-  _private: { searchRows },
+  _private: { searchRows, deriveFactoryServerState, prepareEditorPackageBestEffort, markEditorCapabilityReadOnly, isUsableGeneratedPackage },
 };

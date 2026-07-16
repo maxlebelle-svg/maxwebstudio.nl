@@ -21560,6 +21560,8 @@
               details: data.details || normalizedError.details || "",
               hint: data.hint || normalizedError.hint || "",
               code: data.code || normalizedError.code || data.diagnostics?.code || (response.status === 504 ? "UPSTREAM_TIMEOUT" : ""),
+              phase: data.phase || data.diagnostics?.phase || (response.status === 504 ? "run_build_job" : ""),
+              retryable: typeof data.retryable === "boolean" ? data.retryable : response.status === 504 || response.status >= 500,
               requestId: response.headers.get("x-nf-request-id") || data.requestId || data.request_id || "",
               stack: data.stack || normalizedError.stack || "",
               demoJourneyId: payload?.demoJourneyId || payload?.demo_journey_id || payload?.id || "",
@@ -21591,7 +21593,13 @@
                 url: diagnostics.url,
               });
             } else {
-              console.warn(failureLabel, { status: diagnostics.status, code: diagnostics.code || "request_failed" });
+              console.warn(failureLabel, {
+                status: diagnostics.status,
+                code: diagnostics.code || "REQUEST_FAILED",
+                phase: diagnostics.phase,
+                requestId: diagnostics.requestId,
+                retryable: diagnostics.retryable,
+              });
             }
             const errorMessage = typeof data.error === "string"
               ? data.error
@@ -21604,18 +21612,23 @@
               data.diagnostics?.reason ? `Reden: ${data.diagnostics.reason}` : "",
               data.stack ? `Stack: ${data.stack}` : "",
             ].filter(Boolean).join("\n");
+            const serverMessage = String(data.message || data.userMessage || errorMessage || "").replace(/\s*Request-id:\s*[A-Z0-9-]+/gi, "").trim();
             const safeMessage = response.status === 401
               ? "Je sessie is verlopen. Log opnieuw in."
               : response.status === 403
               ? diagnostics.code === "ROLE_NOT_ALLOWED" ? "Dit account heeft geen actieve adminrol." : "Je hebt geen toegang tot deze klantcontext."
               : response.status >= 500
-              ? [data.userMessage || errorMessage || "De klantcontext kon door een tijdelijke backendfout niet worden geladen.", diagnostics.code && !String(data.userMessage || "").includes(diagnostics.code) ? `Code: ${diagnostics.code}` : ""].filter(Boolean).join(" ")
+              ? serverMessage || (response.status === 504
+                ? "De buildstatus wordt opnieuw gecontroleerd. Je kunt dezelfde build veilig opnieuw proberen."
+                : "De klantcontext kon door een tijdelijke backendfout niet worden geladen.")
               : data.userMessage || errorMessage || "De klantcontext kon niet worden geladen.";
             const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : safeMessage);
             error.diagnostics = diagnostics;
             error.label = failureLabel;
             error.status = response.status;
             error.code = diagnostics.code || (response.status === 504 ? "UPSTREAM_TIMEOUT" : "REQUEST_FAILED");
+            error.phase = diagnostics.phase;
+            error.retryable = diagnostics.retryable;
             error.requestId = diagnostics.requestId;
             throw error;
           }
@@ -23425,6 +23438,70 @@
           };
         }
 
+        function normalizeFactoryServerState(currentJourney = journey, history = buildHistory) {
+          const authoritative = history?.serverState && typeof history.serverState === "object" ? history.serverState : null;
+          const latestJob = history?.latestJob || history?.jobs?.[0] || null;
+          const activeVersion = history?.activeVersion || history?.previewVersions?.find((version) => version.isActive) || null;
+          const jobStatus = String(latestJob?.status || "").toLowerCase();
+          const activeStatuses = new Set(["queued", "briefing", "building", "quality_check", "deploying"]);
+          const buildRunning = authoritative ? authoritative.buildRunning === true : activeStatuses.has(jobStatus);
+          const buildRetryable = authoritative ? authoritative.buildRetryable === true : jobStatus === "retryable";
+          const buildFailed = authoritative ? authoritative.buildFailed === true : ["failed", "quality_failed"].includes(jobStatus);
+          const previewStored = authoritative ? authoritative.previewStored === true : Boolean(activeVersion?.id);
+          const previewRenderable = authoritative ? authoritative.previewRenderable === true : previewStored && activeVersion?.renderable === true;
+          const previewEditable = authoritative ? authoritative.previewEditable === true : previewRenderable && activeVersion?.editorAvailable === true;
+          const hasBuildContext = Boolean(latestJob?.id || previewStored);
+          const briefingReady = authoritative ? authoritative.briefingReady === true : hasBuildContext || Boolean(currentJourney?.generatedBriefing);
+          const researchReady = authoritative ? authoritative.researchReady === true : hasBuildContext || Boolean(currentJourney?.previewPackage?.websiteIntelligence || currentJourney?.previewPackage?.websiteIntelligencePackage);
+          const scanReady = authoritative ? authoritative.scanReady === true : hasBuildContext || researchReady;
+          const buildCompleted = authoritative ? authoritative.buildCompleted === true : jobStatus === "completed" && previewRenderable;
+          const state = authoritative?.state || (!briefingReady
+            ? "briefing_required"
+            : buildRunning
+              ? "build_running"
+              : buildRetryable
+                ? "build_retryable"
+                : buildFailed
+                  ? "build_failed"
+                  : previewEditable
+                    ? "preview_editable"
+                    : previewRenderable
+                      ? "preview_renderable"
+                      : previewStored
+                        ? "preview_stored"
+                        : "ready_to_build");
+          const nextStep = buildRunning
+            ? "Build wordt uitgevoerd"
+            : buildRetryable
+              ? "Build opnieuw proberen"
+              : buildFailed
+                ? "Buildfout oplossen"
+                : previewRenderable
+                  ? previewEditable ? "Preview bewerken" : "Preview controleren"
+                  : previewStored
+                    ? "Previewbron herstellen"
+                    : briefingReady ? "Build starten" : "Briefing";
+          return {
+            state,
+            nextStep,
+            briefingReady,
+            researchReady,
+            scanReady,
+            buildRunning,
+            buildRetryable,
+            buildFailed,
+            buildCompleted,
+            previewStored,
+            previewRenderable,
+            previewEditable,
+            retryable: buildRetryable,
+            jobStatus,
+            currentStep: String(latestJob?.currentStep || ""),
+            progress: Number(latestJob?.progress || 0),
+            errorMessage: String(latestJob?.errorMessage || ""),
+          };
+        }
+
         async function loadLeads() {
           const selectedId = elements.lead?.value || "";
           const setLeadSourceState = (label, className) => {
@@ -23668,7 +23745,10 @@
           if (String(elements.lead?.value || "") !== String(leadId) || expectedVersion !== leadSelectionVersion) return;
           const loadedJourney = data.journey || null;
           const lead = selectedLead();
-          if (loadedJourney && lead && !journeyMatchesLead(loadedJourney, lead)) {
+          const serverBuildHistory = data.buildHistory || { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+          const serverState = normalizeFactoryServerState(loadedJourney, serverBuildHistory);
+          const protectedServerContext = serverState.buildRunning || serverState.buildRetryable || serverState.previewStored;
+          if (loadedJourney && lead && !journeyMatchesLead(loadedJourney, lead) && !protectedServerContext) {
             if (linkedJourneyId) forgetLocalLeadJourneyLink(leadId);
             clearFactoryRuntimeState();
             loadIntakeLocally();
@@ -23683,7 +23763,7 @@
           if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
           syncPreviewSourceFromJourney();
           events = Array.isArray(data.events) ? data.events : [];
-          buildHistory = data.buildHistory || { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+          buildHistory = serverBuildHistory;
           projectWorkspace = data.projectWorkspace || null;
           loadIntakeLocally();
           if (journey?.intake && typeof journey.intake === "object") intakeState = { ...intakeState, ...journey.intake };
@@ -23693,6 +23773,9 @@
           prefillIntakeFromLead(selectedLead());
           renderIntakeFields();
           renderJourney();
+          if (loadedJourney && lead && !journeyMatchesLead(loadedJourney, lead) && protectedServerContext) {
+            setMessage(elements.message, "De bestaande Factory-build is server-side teruggevonden en veilig opnieuw gekoppeld.", "warning");
+          }
         }
 
         function selectedLead() {
@@ -23709,6 +23792,24 @@
           manualPreview = null;
           previewSource = "factory";
           lastFactoryResponse = null;
+          resetFactoryDerivedUi();
+        }
+
+        function resetFactoryDerivedUi() {
+          const defaults = {
+            "demo-journey-build-state": "Geen build",
+            "demo-journey-preview-stage-state": "Nog geen preview",
+            "factory-control-source-state": "Niet gestart",
+            "factory-process-next": "Volgende stap: Briefing",
+          };
+          Object.entries(defaults).forEach(([id, label]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = label;
+          });
+          ["factory-status-overview", "factory-process-steps", "factory-guided-version-meta"].forEach((id) => {
+            const element = document.getElementById(id);
+            if (element) delete element.dataset.signature;
+          });
         }
 
         function selectFactoryLead(leadId = "", options = {}) {
@@ -24030,7 +24131,7 @@
           }
         }
 
-        async function generatePreview(packageType = currentPackageType()) {
+        async function generatePreview(packageType = currentPackageType(), options = {}) {
           const normalizedPackage = packageTypeFromValue(packageType);
           lastFactoryActionError = null;
           if (!validateIntakeOrWarn(elements.message)) return null;
@@ -24074,7 +24175,7 @@
               if (journey?.previewUrl) setPreviewFieldUrl(journey.previewUrl);
               if (journey?.demoStatus) elements.status.value = journey.demoStatus;
               renderJourney();
-              const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
+              const fileCount = Number(data.preview?.fileCount || 0);
               const version = data.previewVersion?.version || data.buildJob?.previewVersion || data.buildStatus?.previewVersion || "";
               const buildStatus = data.buildJob?.status || data.buildStatus?.status || "";
               if (["quality_failed", "failed"].includes(buildStatus)) {
@@ -24090,17 +24191,22 @@
               lastFactoryActionError = error;
               const diagnostics = error?.diagnostics || {};
               const responseJson = diagnostics.responseJson || {};
-              const technicalHint = developerModeActive() ? [
-                responseJson.phase || responseJson.diagnostics?.phase ? `Fase: ${responseJson.phase || responseJson.diagnostics?.phase}` : "",
-                responseJson.reason || responseJson.diagnostics?.reason ? `Reden: ${responseJson.reason || responseJson.diagnostics?.reason}` : "",
-                diagnostics.code || responseJson.code || responseJson.diagnostics?.code ? `Code: ${diagnostics.code || responseJson.code || responseJson.diagnostics?.code}` : "",
-              ].filter(Boolean).join(" · ") : "";
+              const phase = error.phase || diagnostics.phase || responseJson.phase || responseJson.diagnostics?.phase || "run_build_job";
+              const code = error.code || diagnostics.code || responseJson.code || responseJson.diagnostics?.code || "REQUEST_FAILED";
+              const requestId = error.requestId || diagnostics.requestId || responseJson.requestId || "";
+              const baseMessage = String(error.message || "Preview maken is niet gelukt.")
+                .replace(/\s*(Fase|Code|Request-id):\s*[^·\n]+[·\n]?/gi, " ")
+                .trim();
               const message = [
-                error.message || "Preview maken is niet gelukt.",
-                technicalHint,
-              ].filter(Boolean).join("\n");
-              setMessage(elements.message, message, "error");
-              showDeveloperErrorDetails(elements.message, error);
+                baseMessage,
+                phase ? `Fase: ${phase}.` : "",
+                code ? `Code: ${code}.` : "",
+                requestId ? `Request-id: ${requestId}` : "",
+              ].filter(Boolean).join(" ");
+              if (options.surface !== "quick") {
+                setMessage(elements.message, message, "error");
+                showDeveloperErrorDetails(elements.message, error);
+              }
               await loadJourney().catch(() => null);
               return null;
             }
@@ -24130,7 +24236,7 @@
             throw error;
           }
           if (!elements.briefing?.value) elements.briefing.value = buildBriefing();
-          const result = await generatePreview(currentPackageType());
+          const result = await generatePreview(currentPackageType(), { surface: "quick" });
           if (!result) {
             const error = lastFactoryActionError || new Error("De previewbuild is niet gestart.");
             error.code = "PREVIEW_BUILD_NOT_STARTED";
@@ -24141,7 +24247,14 @@
 
         window.WebsiteFactoryRuntime = {
           quickBuild,
-          getState: () => ({ journey, buildHistory, projectWorkspace, previewSource, hasPreview: Boolean(factoryPreviewUrl() || previewFieldUrl() || journey?.previewUrl || buildHistory.activeVersion?.previewUrl) }),
+          getState: () => ({
+            journey,
+            buildHistory,
+            projectWorkspace,
+            previewSource,
+            pipeline: normalizeFactoryServerState(),
+            hasPreview: normalizeFactoryServerState().previewRenderable,
+          }),
         };
 
         async function resetDemoForRegeneration() {
@@ -25782,19 +25895,42 @@
         }
 
         function guidedState() {
-          const intakeScore = Number.parseInt(text("#demo-intake-score", "0"), 10) || 0;
-          const scanSummary = text("#factory-control-source-state", "Niet gestart");
-          const buildState = text("#demo-journey-build-state", "Geen build");
-          const previewState = text("#demo-journey-preview-stage-state", "Nog geen preview");
-          const feedback = value("#demo-journey-feedback");
-          const briefingReady = Boolean(value("#demo-journey-briefing")) || document.querySelectorAll("#demo-intake-fields .factory-smart-field.is-complete").length >= 4;
-          const researchReady = Boolean(document.querySelector("#factory-intelligence-stats .demo-kv-row, #factory-intelligence-stats > *"));
-          const scanReady = !/niet|geen|crm/i.test(scanSummary) || researchReady;
-          const buildBlocked = /mislukt|aandacht|opnieuw proberen|fout|ontbreekt|niet beschikbaar|niet renderbaar/i.test(buildState);
-          const buildReady = !buildBlocked && !/geen|start|wacht/i.test(buildState);
-          const previewReady = hasPreview() || !/geen|nog/i.test(previewState);
-          const saved = /opgeslagen/i.test(previewState) || /bijwerken/i.test(text("#demo-journey-save-demo-site", ""));
-          return { intakeScore, scanSummary, buildState, previewState, feedback, briefingReady, researchReady, scanReady, buildReady, buildBlocked, previewReady, saved, images: imageState() };
+          const runtime = window.WebsiteFactoryRuntime?.getState?.() || {};
+          const pipeline = runtime.pipeline || {};
+          const currentJourney = runtime.journey || {};
+          const buildBlocked = Boolean(pipeline.buildRetryable || pipeline.buildFailed);
+          const buildState = pipeline.buildRunning
+            ? "Build actief"
+            : pipeline.buildRetryable
+              ? "Opnieuw proberen"
+              : pipeline.buildFailed
+                ? pipeline.errorMessage || "Build mislukt"
+                : pipeline.buildCompleted ? "Preview klaar" : "Nog niet gestart";
+          const previewState = pipeline.previewEditable
+            ? "Preview klaar en bewerkbaar"
+            : pipeline.previewRenderable
+              ? "Preview klaar"
+              : pipeline.previewStored ? "Preview opgeslagen, bron niet renderbaar" : "Nog geen preview";
+          const savedDemo = currentJourney.savedDemoSite || currentJourney.previewPackage?.savedDemoSite || currentJourney.previewPackage?.saved_demo_site;
+          return {
+            intakeScore: Number(currentJourney.intakeCompleteness || 0),
+            scanSummary: pipeline.scanReady ? "Voltooid" : "Niet gestart",
+            buildState,
+            previewState,
+            feedback: String(currentJourney.feedback || ""),
+            briefingReady: Boolean(pipeline.briefingReady),
+            researchReady: Boolean(pipeline.researchReady),
+            scanReady: Boolean(pipeline.scanReady),
+            buildReady: Boolean(pipeline.buildCompleted),
+            buildRunning: Boolean(pipeline.buildRunning),
+            buildBlocked,
+            previewReady: Boolean(pipeline.previewRenderable),
+            previewEditable: Boolean(pipeline.previewEditable),
+            retryable: Boolean(pipeline.retryable),
+            nextStep: pipeline.nextStep || "Briefing",
+            saved: Boolean(savedDemo),
+            images: imageState(),
+          };
         }
 
         function renderGuidedStatus() {
@@ -25803,9 +25939,9 @@
           const state = guidedState();
           const cards = [
             ["Research", state.researchReady ? "Compleet" : "Nog nodig", state.researchReady ? "Bronnen geanalyseerd" : "Start na de briefing", "⌕", "research"],
-            ["Content", value("#demo-journey-briefing") ? "Automatisch ingevuld" : "Aandacht nodig", value("#demo-journey-briefing") ? "Websiteplan beschikbaar" : "Nog geen websiteplan", "✎", "content"],
+            ["Content", state.briefingReady ? "Automatisch ingevuld" : "Aandacht nodig", state.briefingReady ? "Websiteplan beschikbaar" : "Nog geen websiteplan", "✎", "content"],
             ["Afbeeldingen", state.images.missing ? "Aandacht nodig" : "Klaar", state.images.missing ? `${state.images.missing} ontbreken` : `${state.images.available} beschikbaar`, "▧", "images"],
-            ["SEO", state.scanReady ? "Automatisch ingevuld" : "Niet gestart", value("#demo-journey-website", "Geen website"), "⌕", "seo"],
+            ["SEO", state.scanReady ? "Automatisch ingevuld" : "Niet gestart", state.scanSummary, "⌕", "seo"],
             ["Mail", text("#demo-journey-mail-state", "Niet gestart"), "Bestaande e-mailflow", "✉", "mail"],
             ["Project", state.buildState, text("#factory-cockpit-package", "Websitepakket"), "⌘", "project"],
             ["Preview", state.previewReady ? "Klaar" : "Wachtend", state.previewState, "◉", "preview"],
@@ -25848,7 +25984,7 @@
             ["Briefing", state.briefingReady, !state.briefingReady, "Compleet", "Invullen"],
             ["Research", state.researchReady, state.briefingReady && !state.researchReady, "Compleet", "Wachtend"],
             ["Scan", state.scanReady, state.researchReady && !state.scanReady, "Voltooid", "Wachtend"],
-            ["Build", state.buildReady, state.scanReady && !state.buildReady, state.buildState, "Nog niet gestart"],
+            ["Build", state.buildReady, state.buildRunning || (state.scanReady && !state.buildReady && !state.buildBlocked), state.buildState, "Nog niet gestart"],
             ["Preview", state.previewReady, state.buildReady && !state.previewReady, "Klaar", "Wachtend"],
             ["Feedback", Boolean(state.feedback), state.previewReady && !state.feedback, "Ontvangen", "Wachtend"],
             ["Live zetten", /verkocht|definitieve|live/i.test(value("#demo-journey-status")), false, "Voltooid", "Nog niet gestart"],
@@ -25863,21 +25999,23 @@
             }).join("");
           }
           const next = document.getElementById("factory-process-next");
-          const nextText = state.buildBlocked ? "Volgende stap: build opnieuw proberen" : `Volgende stap: ${steps[activeIndex]?.[0] || "Live zetten"}`;
+          const nextText = `Volgende stap: ${state.nextStep}`;
           if (next && next.textContent !== nextText) next.textContent = nextText;
         }
 
         function renderGuidedVersionMeta() {
           const target = document.getElementById("factory-guided-version-meta");
           if (!target) return;
-          const previewState = text("#demo-journey-preview-stage-state", "Geen preview");
-          const source = /handmatige/i.test(previewState) ? "Handmatige ZIP" : "Website Factory";
+          const runtime = window.WebsiteFactoryRuntime?.getState?.() || {};
+          const pipeline = runtime.pipeline || {};
+          const previewState = pipeline.previewEditable ? "Preview klaar en bewerkbaar" : pipeline.previewRenderable ? "Preview klaar" : pipeline.previewStored ? "Preview opgeslagen" : "Geen preview";
+          const source = runtime.previewSource === "manual" ? "Handmatige ZIP" : "Website Factory";
           const meta = [
-            ["Huidige versie", text("#demo-journey-preview-stage-state", "Concept")],
-            ["Laatst gegenereerd", text("#demo-journey-build-state", "Nog niet gegenereerd")],
-            ["Door", value("#demo-journey-assigned", "Huidige medewerker")],
+            ["Huidige versie", previewState],
+            ["Laatst gegenereerd", pipeline.buildRunning ? "Build actief" : pipeline.buildRetryable ? "Herstelbaar" : pipeline.buildCompleted ? "Preview klaar" : "Nog niet gegenereerd"],
+            ["Door", runtime.journey?.assignedTo || "Huidige medewerker"],
             ["Actieve bron", source],
-            ["Demo-status", value("#demo-journey-status", "Nog niet gestart").replaceAll("_", " ")],
+            ["Demo-status", String(runtime.journey?.demoStatus || pipeline.state || "Nog niet gestart").replaceAll("_", " ")],
           ];
           const signature = JSON.stringify(meta);
           if (target.dataset.signature === signature) return;
@@ -26021,10 +26159,10 @@
           } catch (error) {
             const requestId = error?.requestId || error?.diagnostics?.requestId || "";
             const responseJson = error?.diagnostics?.responseJson || {};
-            const phase = responseJson.phase || responseJson.diagnostics?.phase || error?.diagnostics?.diagnostics?.phase || "run_build_job";
+            const phase = error?.phase || error?.diagnostics?.phase || responseJson.phase || responseJson.diagnostics?.phase || error?.diagnostics?.diagnostics?.phase || "run_build_job";
             const code = error?.code || error?.diagnostics?.code || "";
             const concreteMessage = code === "UPSTREAM_TIMEOUT"
-              ? "De previewbuild duurde te lang bij het opslaan. Dezelfde build kan veilig opnieuw worden geprobeerd."
+              ? "De previewbuild duurde te lang bij het opslaan. De buildstatus is opnieuw gecontroleerd en dezelfde build kan veilig opnieuw worden geprobeerd."
               : responseJson.message || error?.message || "De previewbuild kon niet worden gestart.";
             const cleanMessage = String(concreteMessage).replace(/\s*Request-id:\s*[A-Z0-9-]+/gi, "").trim();
             if (message) message.textContent = [cleanMessage, phase ? `Fase: ${phase}.` : "", requestId ? `Request-id: ${requestId}` : ""].filter(Boolean).join(" ");

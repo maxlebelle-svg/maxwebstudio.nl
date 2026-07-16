@@ -881,8 +881,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       preview: {
         url: buildResult.job?.previewUrl || journey.previewUrl,
         zipUrl: buildResult.job?.previewUrl ? appendQueryParam(buildResult.job.previewUrl, "format", "zip") : "",
-        files: Object.values(buildResult.job?.generatedPackage?.files || []).map((file) => ({ path: file.path, bytes: Buffer.byteLength(file.content || "", "utf8") })),
-        package: buildResult.job?.generatedPackage?.meta || null,
+        fileCount: Array.isArray(buildResult.job?.generatedPackage?.files) ? buildResult.job.generatedPackage.files.length : 0,
+        entryFile: cleanText(buildResult.job?.generatedPackage?.entryFile || buildResult.job?.generatedPackage?.meta?.entryFile || "index.html"),
       },
       packageUpgrade: {
         previousPackage: normalizePackageType(payload.previousPackage || payload.previous_package || sourceJourney.previewPackage?.meta?.packageType || ""),
@@ -1514,9 +1514,14 @@ function sanitizeAdminJourney(journey = null) {
 function sanitizePreviewPackageForResponse(previewPackage = null) {
   if (!previewPackage || typeof previewPackage !== "object") return previewPackage || null;
   const sanitized = { ...previewPackage };
+  delete sanitized.generatedPackage;
+  delete sanitized.generated_package;
+  delete sanitized.content;
+  delete sanitized.html;
   if (sanitized.manualPreview) sanitized.manualPreview = sanitizeManualPreviewMeta(sanitized.manualPreview);
   if (sanitized.manual_preview) sanitized.manual_preview = sanitizeManualPreviewMeta(sanitized.manual_preview);
   if (Array.isArray(sanitized.files)) sanitized.files = sanitized.files.map(sanitizePreviewFileMeta);
+  else if (sanitized.files && typeof sanitized.files === "object") sanitized.files = Object.values(sanitized.files).map(sanitizePreviewFileMeta);
   if (sanitized.savedDemoSite) sanitized.savedDemoSite = sanitizeSavedDemoSiteMeta(sanitized.savedDemoSite);
   if (sanitized.saved_demo_site) sanitized.saved_demo_site = sanitizeSavedDemoSiteMeta(sanitized.saved_demo_site);
   return sanitized;
@@ -1657,6 +1662,9 @@ function errorResponse({ error = {}, developerMode = false, requestId = "", modu
   const internalMessage = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
   const isPreviewAction = cleanText(error.action) === "generate_preview" || module === "website_factory";
   const code = error.code || (Number(error.status) === 504 ? "UPSTREAM_TIMEOUT" : "");
+  const retryable = typeof error.retryable === "boolean"
+    ? error.retryable
+    : code === "UPSTREAM_TIMEOUT" || Number(error.status || 0) >= 500;
   const message = isPreviewAction && code === "UPSTREAM_TIMEOUT"
     ? "De previewbuild duurde te lang bij het opslaan en kan veilig opnieuw worden geprobeerd."
     : fallbackMessage || internalMessage;
@@ -1683,6 +1691,7 @@ function errorResponse({ error = {}, developerMode = false, requestId = "", modu
         ? previewUserMessage
         : "De demo-klantreis kon niet worden opgeslagen. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
     code,
+    retryable,
     details: developerMode ? cleanText(error.details) : "",
     hint: developerMode ? cleanText(error.hint) : "",
     setupRequired: Boolean(setupRequired),
@@ -1696,6 +1705,7 @@ function errorResponse({ error = {}, developerMode = false, requestId = "", modu
       packageType: cleanText(error.packageType),
       status: error.status || 500,
       code,
+      retryable,
       requestId: cleanText(requestId),
       method: error.method || "",
       url: developerMode ? cleanText(error.url) : "",
