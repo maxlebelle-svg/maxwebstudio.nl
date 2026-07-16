@@ -805,12 +805,18 @@ async function createBuildJob(context, payload = {}) {
   ]);
   const activeJob = jobs.find((item) => RESUMABLE_BUILD_STATUSES.has(item.status));
   if (activeJob) return { job: activeJob, journey: mapJourney(journey), reusedExisting: true };
-  const interruptedRenderJob = jobs.find((item) => item.status === "failed" && item.currentStep === "render_check");
-  if (interruptedRenderJob?.id) {
-    const runtimeRecord = await readBuildJobRuntimeById(context, interruptedRenderJob.id);
-    const runtimeJob = normalizeBuildJob(runtimeRecord || interruptedRenderJob);
+  const interruptedPreviewJob = jobs.find((item) => {
+    const hasPreviewVersion = previewVersions.some((version) => version.buildJobId === item.id);
+    return !hasPreviewVersion && (
+      (item.status === "failed" && item.currentStep === "render_check")
+      || item.status === "completed"
+    );
+  });
+  if (interruptedPreviewJob?.id) {
+    const runtimeRecord = await readBuildJobRuntimeById(context, interruptedPreviewJob.id);
+    const runtimeJob = normalizeBuildJob(runtimeRecord || interruptedPreviewJob);
     if (isUsableGeneratedPackage(runtimeJob.generatedPackage) && runtimeJob.qualityReport?.passed === true) {
-      return { job: runtimeJob, journey: mapJourney(journey), reusedExisting: true, resumedAfterRenderFailure: true };
+      return { job: runtimeJob, journey: mapJourney(journey), reusedExisting: true, resumedAfterPreviewInterruption: true };
     }
   }
   const previewVersion = nextPreviewVersion(previewVersions, jobs);

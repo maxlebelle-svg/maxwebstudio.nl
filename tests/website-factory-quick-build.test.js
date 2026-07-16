@@ -262,8 +262,37 @@ test("retry resumes the same failed render-check job when package and quality al
   try {
     const result = await createBuildJob({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" } }, { demoJourneyId: journeyId });
     assert.equal(result.reusedExisting, true);
-    assert.equal(result.resumedAfterRenderFailure, true);
+    assert.equal(result.resumedAfterPreviewInterruption, true);
     assert.equal(result.job.id, jobId);
+    assert.equal(methods.includes("POST"), false);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("completed job without a preview version is resumed instead of creating V3", async () => {
+  const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const generatedPackage = buildQuick().generatedPackage;
+  const summary = { id: jobId, demo_journey_id: journeyId, status: "completed", current_step: "completed", preview_version: 2 };
+  const runtime = { ...summary, generated_package: generatedPackage, quality_report: { passed: true, score: 96 } };
+  const methods = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    methods.push(method);
+    if (target.includes("demo_journeys")) return mockJson([{ id: journeyId, business_name: "All4home", created_by: "admin-id" }]);
+    if (target.includes("website_preview_versions")) return mockJson([]);
+    if (target.includes("website_build_jobs") && target.includes("generated_package")) return mockJson([runtime]);
+    if (target.includes("website_build_jobs")) return mockJson([summary]);
+    return mockJson([]);
+  };
+  try {
+    const result = await createBuildJob({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" } }, { demoJourneyId: journeyId });
+    assert.equal(result.reusedExisting, true);
+    assert.equal(result.resumedAfterPreviewInterruption, true);
+    assert.equal(result.job.previewVersion, 2);
     assert.equal(methods.includes("POST"), false);
   } finally {
     global.fetch = previousFetch;
