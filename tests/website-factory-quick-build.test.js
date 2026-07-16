@@ -5,7 +5,7 @@ const path = require("node:path");
 
 const { normalizeWebsiteInput } = require("../functions/_website-input");
 const { buildWebsitePackage, runQualityCheck } = require("../functions/_website-factory-core");
-const { createBuildJob, runBuildJob } = require("../functions/website-factory");
+const { createBuildJob, getBuildHistory, runBuildJob } = require("../functions/website-factory");
 
 const root = path.join(__dirname, "..");
 const factoryHtml = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
@@ -200,6 +200,44 @@ test("retry restores an already stored preview version without duplicate inserts
   }
 });
 
+test("completed job without a stored preview version is not reported as preview-ready", async () => {
+  const journeyId = "9a735e10-18e7-4b83-8cc7-e2518fa7959d";
+  const previousFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).includes("website_build_jobs")) return mockJson([{ id: "d9d8944c-37e2-4991-ae06-89348b17fa59", demo_journey_id: journeyId, status: "completed", current_step: "completed", progress: 100 }]);
+    if (String(url).includes("website_preview_versions")) return mockJson([]);
+    throw new Error(`Unexpected GET ${url}`);
+  };
+  try {
+    const history = await getBuildHistory({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" } }, { demoJourneyId: journeyId });
+    assert.equal(history.latestJob.status, "completed");
+    assert.equal(history.activeVersion, null);
+    assert.equal(history.previewVersions.length, 0);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("stored renderable preview exposes lightweight editor capability metadata", async () => {
+  const journeyId = "9a735e10-18e7-4b83-8cc7-e2518fa7959d";
+  const versionId = "d9d8944c-37e2-4991-ae06-89348b17fa59";
+  const previousFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).includes("website_build_jobs")) return mockJson([]);
+    if (String(url).includes("website_preview_versions")) return mockJson([{ id: versionId, demo_journey_id: journeyId, preview_url: "/preview", preview_token: "token", entry_file: "index.html", package_meta: { editorManifest: { version: 1 } }, is_active: true }]);
+    throw new Error(`Unexpected GET ${url}`);
+  };
+  try {
+    const history = await getBuildHistory({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" } }, { demoJourneyId: journeyId });
+    assert.equal(history.activeVersion.id, versionId);
+    assert.equal(history.activeVersion.renderable, true);
+    assert.equal(history.activeVersion.editorAvailable, true);
+    assert.equal(history.activeVersion.generatedPackage, null);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 function mockJson(value, status = 200) {
   return {
     ok: status >= 200 && status < 300,
@@ -218,6 +256,7 @@ test("frontend keeps concrete backend code, phase and request id visible", () =>
   assert.match(factoryHtml, /response\.status === 504 \? "UPSTREAM_TIMEOUT"/);
   assert.match(factoryHtml, /replace\(\/\\s\*Request-id:/);
   assert.match(factoryHtml, /retryable: "Opnieuw proberen"/);
+  assert.match(factoryHtml, /activeVersion: responseVersion \|\| previewVersions\.find/);
 });
 
 test("Phase 2A selection mode remains wired and isolated", () => {

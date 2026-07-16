@@ -70,12 +70,24 @@
     return url.toString();
   }
 
+  function editorAvailabilityMessage(availability = "") {
+    if (availability === "legacy_read_only") return "Deze preview is gemaakt vóór de nieuwe bewerkmodus en bevat nog geen bewerkbare secties.";
+    if (availability === "empty_sections") return "De bewerkbare preview is geladen, maar bevat geen selecteerbare secties.";
+    if (availability === "source_unavailable") return "De previewbron is tijdelijk niet renderbaar. Koppel de preview opnieuw of maak een nieuwe build.";
+    if (availability === "missing_version") return "De build is afgerond, maar er is geen bruikbare previewversie opgeslagen.";
+    return "Bewerkmodus is beschikbaar zodra een concrete bewerkbare previewversie is geladen.";
+  }
+
   function init() {
     const frame = document.getElementById("demo-journey-preview-frame");
     const toggle = document.getElementById("factory-preview-editor-toggle");
     const empty = document.getElementById("factory-section-context-empty");
     const details = document.getElementById("factory-section-context-details");
     const note = document.getElementById("factory-section-context-note");
+    const unavailableActions = document.getElementById("factory-editor-unavailable-actions");
+    const unavailableMessage = document.getElementById("factory-editor-unavailable-message");
+    const relink = document.getElementById("factory-editor-relink");
+    const openNormal = document.getElementById("factory-editor-open-normal");
     const workspace = document.querySelector(".factory-guided-preview-workspace");
     if (!frame || !toggle || !empty || !details || !note || !workspace || !globalScope.crypto?.getRandomValues) return;
 
@@ -86,6 +98,15 @@
       details.hidden = true;
       details.replaceChildren();
       note.hidden = true;
+    };
+    const showAvailability = (availability = "") => {
+      const available = frame.dataset.editorAvailable === "true";
+      const actionable = ["legacy_read_only", "empty_sections", "source_unavailable", "missing_version"].includes(availability);
+      if (unavailableActions) unavailableActions.hidden = available || !actionable;
+      if (unavailableMessage) unavailableMessage.textContent = editorAvailabilityMessage(availability);
+      if (relink) relink.hidden = !["source_unavailable", "missing_version"].includes(availability);
+      if (openNormal) openNormal.disabled = !frame.dataset.previewBaseUrl;
+      if (!available && actionable) resetPanel(editorAvailabilityMessage(availability));
     };
     const setEnabledState = (enabled) => {
       state.enabled = enabled;
@@ -106,9 +127,9 @@
     const enable = () => {
       const baseUrl = frame.dataset.previewBaseUrl || "";
       const previewVersionId = frame.dataset.previewVersionId || "";
-      if (!baseUrl || !UUID_PATTERN.test(previewVersionId)) {
+      if (!baseUrl || !UUID_PATTERN.test(previewVersionId) || frame.dataset.editorAvailable !== "true") {
         disable();
-        resetPanel("Bewerkmodus is beschikbaar zodra een concrete previewversie is geladen.");
+        showAvailability(frame.dataset.editorAvailability || "missing_version");
         return;
       }
       state.nonce = randomNonce(globalScope.crypto);
@@ -154,6 +175,10 @@
     };
 
     toggle.addEventListener("click", () => state.enabled ? disable() : enable());
+    openNormal?.addEventListener("click", () => {
+      const baseUrl = frame.dataset.previewBaseUrl || "";
+      if (baseUrl) globalScope.open(baseUrl, "_blank", "noopener");
+    });
     globalScope.addEventListener("message", (event) => {
       state.frameWindow = frame.contentWindow;
       if (!validateBridgeEvent(event, state)) return;
@@ -161,7 +186,12 @@
       if (type === "READY" && payload.readOnly) resetPanel(payload.source === "manual_zip" ? "Deze ZIP-preview bevat geen betrouwbare sectiemetadata. Bewerkmodus blijft read-only." : "Deze preview bevat geen geldig sectiemanifest.");
       if (type === "SECTION_LIST") {
         state.sections = payload.sections;
-        if (!payload.sections.length) resetPanel(frame.dataset.previewSource === "manual_zip" ? "Deze ZIP-preview bevat geen betrouwbare sectiemetadata. Bewerkmodus blijft read-only." : "Deze preview bevat geen selecteerbare secties.");
+        if (!payload.sections.length) {
+          setEnabledState(false);
+          frame.dataset.editorAvailability = "empty_sections";
+          frame.dataset.editorAvailable = "false";
+          showAvailability("empty_sections");
+        }
         else resetPanel();
       }
       if (type === "SECTION_SELECTED") renderSection(payload.section);
@@ -170,15 +200,17 @@
     });
     globalScope.addEventListener("keydown", (event) => { if (state.enabled && event.key === "Escape") { postToPreview("DESELECT"); resetPanel(); } });
     globalScope.addEventListener("factory:preview-context", () => {
-      toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "");
+      toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "") || frame.dataset.editorAvailable !== "true";
+      showAvailability(frame.dataset.editorAvailability || "");
       if (state.enabled && state.previewVersionId !== frame.dataset.previewVersionId) enable();
     });
     frame.addEventListener("load", () => { state.frameWindow = frame.contentWindow; });
-    toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "");
+    toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "") || frame.dataset.editorAvailable !== "true";
     resetPanel();
+    showAvailability(frame.dataset.editorAvailability || "");
   }
 
-  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorUrl, validPayload, validSection, validateBridgeEvent };
+  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorAvailabilityMessage, editorUrl, validPayload, validSection, validateBridgeEvent };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (globalScope?.document) {
     globalScope.WebsiteFactoryPreviewEditor = api;

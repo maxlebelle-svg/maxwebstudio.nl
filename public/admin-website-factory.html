@@ -571,6 +571,15 @@
                         <p id="factory-section-context-empty">Selecteer een websiteonderdeel om de instellingen te bekijken.</p>
                         <div id="factory-section-context-details" hidden></div>
                         <p class="factory-section-context-note" id="factory-section-context-note" hidden>Deze sectie is herkenbaar, maar kan in deze fase nog niet worden bewerkt.</p>
+                        <div class="factory-editor-unavailable-actions" id="factory-editor-unavailable-actions" hidden>
+                          <p id="factory-editor-unavailable-message"></p>
+                          <p>Een nieuwe build maakt een nieuwe interne previewversie en vervangt de huidige klantpreview niet automatisch.</p>
+                          <div class="admin-profile-actions">
+                            <button class="button secondary button-small" id="factory-editor-relink" type="button" data-factory-proxy="factory-quick-retry">Preview opnieuw koppelen</button>
+                            <button class="button primary button-small" type="button" data-factory-proxy="demo-journey-regenerate-preview">Nieuwe bewerkbare preview maken</button>
+                            <button class="button secondary button-small" id="factory-editor-open-normal" type="button">Preview normaal openen</button>
+                          </div>
+                        </div>
                       </aside>
                     </div>
                   </section>
@@ -22831,7 +22840,13 @@
                 : ["Laag", "Start met lead en briefing."];
           if (elements.cockpitLead) elements.cockpitLead.textContent = businessName || "Geen lead gekozen";
           if (elements.cockpitLeadMeta) elements.cockpitLeadMeta.textContent = leadMeta || "Kies een lead of vul gegevens handmatig aan.";
-          if (elements.cockpitStatus) elements.cockpitStatus.textContent = journey?.previewUrl ? "Preview klaar" : websiteReadyForScan ? "Klaar voor analyse" : intake.complete ? "Klaar voor preview" : journey?.id ? "Briefing aanvullen" : "Start";
+          if (elements.cockpitStatus) {
+            const capability = previewCapabilityState();
+            elements.cockpitStatus.textContent = capability.renderable
+              ? capability.editorAvailable ? "Preview klaar en bewerkbaar" : "Preview klaar, bewerkmodus niet beschikbaar"
+              : capability.buildCompleted ? capability.versionStored ? "Preview tijdelijk niet renderbaar" : "Build klaar, previewversie ontbreekt"
+              : websiteReadyForScan ? "Klaar voor analyse" : intake.complete ? "Klaar voor preview" : journey?.id ? "Briefing aanvullen" : "Start";
+          }
           if (elements.cockpitPackage) elements.cockpitPackage.textContent = packageLabel(currentPackageType());
           if (elements.cockpitAttention) elements.cockpitAttention.textContent = attention.length ? attention.join(" + ") : "Geen blokkades";
           if (elements.cockpitConfidence) elements.cockpitConfidence.textContent = confidence[0];
@@ -23202,8 +23217,10 @@
         function factoryPreviewUrl() {
           if (activePreviewSource() === "manual" && manualPreview?.localPreviewUrl) return manualPreview.localPreviewUrl;
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
-          const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
-          return absolutePreviewUrl(journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "");
+          const activeVersion = activeFactoryPreviewVersion();
+          if (activeVersion?.renderable && activeVersion.previewUrl) return absolutePreviewUrl(activeVersion.previewUrl);
+          const journeyFiles = Array.isArray(journey?.previewPackage?.files) ? journey.previewPackage.files : [];
+          return journeyFiles.length ? absolutePreviewUrl(journey?.previewUrl || latest?.previewUrl || "") : "";
         }
 
         function activePreviewUrl() {
@@ -23211,17 +23228,51 @@
           if (!url) return "";
           if (url.startsWith("data:") || url.startsWith("blob:")) return url;
           const source = activePreviewSource();
-          return appendQueryParam(url, "source", source);
+          const sourcedUrl = appendQueryParam(url, "source", source);
+          const version = source === "manual" ? editorPreviewVersion(source) : activeFactoryPreviewVersion();
+          return version?.id && !/[?&]previewVersionId=/i.test(sourcedUrl) ? appendQueryParam(sourcedUrl, "previewVersionId", version.id) : sourcedUrl;
+        }
+
+        function isManualPreviewVersion(version = {}) {
+          return version?.metadata?.previewSource === "manual_zip" || version?.generatedPackage?.meta?.previewSource === "manual_zip";
+        }
+
+        function activeFactoryPreviewVersion() {
+          const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
+          const active = buildHistory.activeVersion;
+          if (active && !isManualPreviewVersion(active)) return active;
+          return versions.find((version) => version.isActive && !isManualPreviewVersion(version))
+            || versions.find((version) => !isManualPreviewVersion(version))
+            || null;
         }
 
         function editorPreviewVersion(source = activePreviewSource()) {
           const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
-          const isManual = (version) => version?.metadata?.previewSource === "manual_zip" || version?.generatedPackage?.meta?.previewSource === "manual_zip";
-          const hasEditorManifest = (version) => version?.generatedPackage?.meta?.editorManifest?.version === 1;
-          const supportsEditor = (version) => source === "manual" ? isManual(version) : !isManual(version) && hasEditorManifest(version);
-          const matching = versions.find(supportsEditor);
-          const active = buildHistory.activeVersion || versions[0] || null;
-          return matching || (active && supportsEditor(active) ? active : null);
+          if (source !== "manual") return activeFactoryPreviewVersion();
+          return versions.find((version) => version.isActive && isManualPreviewVersion(version))
+            || versions.find(isManualPreviewVersion)
+            || null;
+        }
+
+        function previewCapabilityState(source = activePreviewSource()) {
+          const version = editorPreviewVersion(source);
+          if (source === "manual") {
+            const renderable = Boolean(manualPreviewMeta()?.files?.length && (manualPreview?.localPreviewUrl || version?.previewUrl));
+            return { buildCompleted: true, versionStored: Boolean(version?.id), renderable, editorAvailable: Boolean(version?.id), availability: renderable ? "manual_read_only" : "source_unavailable", version };
+          }
+          const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
+          const journeyFiles = Array.isArray(journey?.previewPackage?.files) ? journey.previewPackage.files : [];
+          const versionStored = Boolean(version?.id);
+          const renderable = version?.renderable === true || (!versionStored && journeyFiles.length > 0 && Boolean(journey?.previewUrl));
+          const editorAvailable = Boolean(renderable && version?.editorAvailable);
+          return {
+            buildCompleted: latest?.status === "completed",
+            versionStored,
+            renderable,
+            editorAvailable,
+            availability: !versionStored ? "missing_version" : !renderable ? "source_unavailable" : editorAvailable ? "editable" : "legacy_read_only",
+            version,
+          };
         }
 
         function manualPreviewUrlForVersion(version = {}) {
@@ -23363,14 +23414,14 @@
           const previewVersions = Array.isArray(history.previewVersions) ? [...history.previewVersions] : [];
           const responseJob = data.buildJob || data.buildStatus || null;
           const responseVersion = data.previewVersion || null;
-          if (responseJob?.id && !jobs.some((job) => job.id === responseJob.id)) jobs.unshift(responseJob);
-          if (responseVersion?.id && !previewVersions.some((version) => version.id === responseVersion.id)) previewVersions.unshift(responseVersion);
+          if (responseJob?.id) jobs.splice(0, jobs.length, responseJob, ...jobs.filter((job) => job.id !== responseJob.id));
+          if (responseVersion?.id) previewVersions.splice(0, previewVersions.length, responseVersion, ...previewVersions.filter((version) => version.id !== responseVersion.id).map((version) => ({ ...version, isActive: false })));
           return {
             ...history,
             jobs,
             previewVersions,
-            latestJob: history.latestJob || responseJob || jobs[0] || null,
-            activeVersion: history.activeVersion || responseVersion || previewVersions.find((version) => version.isActive) || previewVersions[0] || null,
+            latestJob: responseJob || jobs[0] || history.latestJob || null,
+            activeVersion: responseVersion || previewVersions.find((version) => version.isActive) || history.activeVersion || previewVersions[0] || null,
           };
         }
 
@@ -24726,10 +24777,11 @@
         function renderMetrics() {
           const jobs = Array.isArray(buildHistory.jobs) ? buildHistory.jobs : [];
           const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
+          const capability = previewCapabilityState();
           const activeBuilds = jobs.filter((job) => !["completed", "failed", "quality_failed", "retryable"].includes(job.status)).length;
-          const readyPreviews = versions.filter((version) => version.previewUrl || version.isActive).length || (journey?.previewUrl ? 1 : 0);
+          const readyPreviews = versions.filter((version) => version.renderable).length || (capability.renderable ? 1 : 0);
           const openFeedback = journey?.feedback ? 1 : 0;
-          const readyForLive = journey?.demoStatus === "interne_preview_klaar" || journey?.previewUrl ? 1 : 0;
+          const readyForLive = capability.renderable ? 1 : 0;
           if (elements.liveBuilds) elements.liveBuilds.textContent = String(activeBuilds);
           if (elements.livePreviews) elements.livePreviews.textContent = String(readyPreviews);
           if (elements.liveFeedback) elements.liveFeedback.textContent = String(openFeedback);
@@ -24738,7 +24790,7 @@
           const status = journey?.demoStatus || "geen_demo";
           elements.metrics.innerHTML = [
             ["Status", statusLabel(status), "Demo voortgang"],
-            ["Preview", journey?.previewUrl ? "Klaar" : "Nog leeg", "Preview klaar"],
+            ["Preview", capability.renderable ? capability.editorAvailable ? "Klaar en bewerkbaar" : "Klaar, alleen bekijken" : capability.buildCompleted ? "Bron ontbreekt" : "Nog leeg", "Previewstatus"],
             ["Feedback", journey?.feedback ? "Ontvangen" : "Nog geen", "Klantreactie"],
             ["Opvolging", journey?.followUpAt ? formatDate(journey.followUpAt) : "Nog plannen", "Volgende stap"],
           ].map(([label, value, helper]) => `
@@ -24797,14 +24849,18 @@
           }
         }
 
-        function buildStatusLabel(status = "") {
+        function buildStatusLabel(status = "", capability = previewCapabilityState()) {
+          if (status === "completed") {
+            if (!capability.versionStored) return "Build klaar, previewversie ontbreekt";
+            if (!capability.renderable) return "Build klaar, previewbron ontbreekt";
+            return capability.editorAvailable ? "Preview klaar en bewerkbaar" : "Preview klaar, bewerkmodus niet beschikbaar";
+          }
           return ({
             queued: "In wachtrij",
             briefing: "Websiteplan verwerken",
             building: "Website bouwen",
             quality_check: "Controle uitvoeren",
             deploying: "Preview opslaan",
-            completed: "Preview klaar",
             quality_failed: "Aandacht nodig",
             retryable: "Opnieuw proberen",
             failed: "Mislukt",
@@ -24814,6 +24870,7 @@
         function renderBuildStatus() {
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
           const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
+          const capability = previewCapabilityState();
           const previewUrl = journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "";
           const absoluteUrl = absolutePreviewUrl(previewUrl);
           const previewToken = journey?.previewToken || latest?.previewToken || activeVersion?.previewToken || "";
@@ -24821,7 +24878,7 @@
           const generatedPages = Array.isArray(packageMeta.generatedPages) ? packageMeta.generatedPages : [];
           const generatedSections = Array.isArray(packageMeta.generatedSections || packageMeta.templateSections) ? (packageMeta.generatedSections || packageMeta.templateSections) : [];
           if (elements.buildState) {
-            elements.buildState.textContent = latest ? buildStatusLabel(latest.status) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
+            elements.buildState.textContent = latest ? buildStatusLabel(latest.status, capability) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
           }
           if (elements.buildProgress) {
             elements.buildProgress.style.width = `${Math.max(0, Math.min(100, Number(latest?.progress || 0)))}%`;
@@ -24829,7 +24886,7 @@
           if (elements.buildDetails) {
             const score = latest?.previewScore ?? activeVersion?.previewScore;
             elements.buildDetails.innerHTML = [
-              ["Website Factory", latest ? buildStatusLabel(latest.status) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
+              ["Website Factory", latest ? buildStatusLabel(latest.status, capability) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
               ["Websitepakket", packageMeta.packageLabel || packageLabel(currentPackageType())],
               ["Brancheprofiel", packageMeta.industryName || packageMeta.industryProfileLabel || "-"],
               ["Aantal pagina's", generatedPages.length ? String(generatedPages.length) : "-"],
@@ -24849,7 +24906,7 @@
               <div class="sales-timeline-item factory-history-item">
                 <span class="sales-timeline-dot ${job.status === "completed" ? "is-active" : ""}"></span>
                 <div>
-                  <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status)}`)}</strong>
+                  <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status, job === latest ? capability : { versionStored: false, renderable: false, editorAvailable: false })}`)}</strong>
                   <small>${escapeHtml(`Score ${Number.isFinite(Number(job.previewScore)) ? job.previewScore : "-"} / 100 · ${job.currentStep || "build"}`)}</small>
                   <small>${escapeHtml(formatDate(job.finishedAt || job.updatedAt || job.createdAt))}</small>
                 </div>
@@ -24937,9 +24994,10 @@
 
         function renderPreviewStage() {
           const source = activePreviewSource();
+          const capability = previewCapabilityState(source);
           const hasManual = Boolean(manualPreviewMeta()?.files?.length);
           const previewUrl = activePreviewUrl();
-          const ready = Boolean(previewUrl);
+          const ready = Boolean(previewUrl && capability.renderable);
           const saved = isDemoSiteSaved();
           elements.previewSourceControls?.forEach((button) => {
             const isManualButton = button.dataset.previewSource === "manual";
@@ -24970,7 +25028,12 @@
           }
           if (elements.previewStageState) {
             const sourceLabel = source === "manual" ? "Handmatige ZIP" : "Factory";
-            elements.previewStageState.textContent = saved ? `Opgeslagen: ${sourceLabel}` : ready ? `${sourceLabel} preview` : "Nog geen preview";
+            elements.previewStageState.textContent = saved
+              ? `Opgeslagen: ${sourceLabel}`
+              : ready && capability.editorAvailable ? "Preview klaar en bewerkbaar"
+              : ready ? "Preview klaar, bewerkmodus niet beschikbaar"
+              : capability.buildCompleted && !capability.versionStored ? "Build klaar, previewversie ontbreekt"
+              : capability.versionStored ? "Preview tijdelijk niet renderbaar" : "Nog geen preview";
             elements.previewStageState.className = saved || ready ? "status-badge status-active" : "status-badge status-planned";
           }
           if (elements.saveDemoSite) {
@@ -24989,6 +25052,8 @@
             elements.previewFrame.dataset.previewBaseUrl = ready ? previewUrl : "";
             elements.previewFrame.dataset.previewVersionId = editorVersion?.id || "";
             elements.previewFrame.dataset.previewSource = source === "manual" ? "manual_zip" : "factory";
+            elements.previewFrame.dataset.editorAvailability = source === "manual" ? (ready ? "manual_read_only" : "source_unavailable") : capability.availability;
+            elements.previewFrame.dataset.editorAvailable = capability.editorAvailable ? "true" : "false";
             elements.previewFrame.hidden = !ready;
             if (ready && elements.previewFrame.dataset.editorActive !== "true" && elements.previewFrame.src !== previewUrl) {
               elements.previewFrame.src = previewUrl;
@@ -24997,7 +25062,7 @@
               elements.previewFrame.dataset.editorActive = "false";
               elements.previewFrame.removeAttribute("src");
             }
-            window.dispatchEvent(new CustomEvent("factory:preview-context", { detail: { ready, previewUrl, previewVersionId: editorVersion?.id || "", source: elements.previewFrame.dataset.previewSource } }));
+            window.dispatchEvent(new CustomEvent("factory:preview-context", { detail: { ready, previewUrl, previewVersionId: editorVersion?.id || "", source: elements.previewFrame.dataset.previewSource, availability: elements.previewFrame.dataset.editorAvailability, editorAvailable: capability.editorAvailable } }));
           }
         }
 
@@ -25706,7 +25771,7 @@
           const briefingReady = Boolean(value("#demo-journey-briefing")) || document.querySelectorAll("#demo-intake-fields .factory-smart-field.is-complete").length >= 4;
           const researchReady = Boolean(document.querySelector("#factory-intelligence-stats .demo-kv-row, #factory-intelligence-stats > *"));
           const scanReady = !/niet|geen|crm/i.test(scanSummary) || researchReady;
-          const buildBlocked = /mislukt|aandacht|opnieuw proberen|fout/i.test(buildState);
+          const buildBlocked = /mislukt|aandacht|opnieuw proberen|fout|ontbreekt|niet beschikbaar|niet renderbaar/i.test(buildState);
           const buildReady = !buildBlocked && !/geen|start|wacht/i.test(buildState);
           const previewReady = hasPreview() || !/geen|nog/i.test(previewState);
           const saved = /opgeslagen/i.test(previewState) || /bijwerken/i.test(text("#demo-journey-save-demo-site", ""));
@@ -25929,7 +25994,7 @@
           try {
             const result = await window.WebsiteFactoryRuntime.quickBuild({ businessName: business, websiteUrl: website, place: value("#factory-quick-place"), wishes: value("#factory-quick-wishes") });
             const version = result?.previewVersion?.version || result?.buildJob?.previewVersion || result?.buildStatus?.previewVersion || "";
-            const ready = Boolean(result?.preview?.url || result?.buildJob?.previewUrl || result?.buildStatus?.previewUrl || window.WebsiteFactoryRuntime?.getState?.().hasPreview);
+            const ready = result?.previewVersion?.renderable === true || Boolean(window.WebsiteFactoryRuntime?.getState?.().hasPreview);
             const warning = Array.isArray(result?.warnings) ? result.warnings.filter(Boolean)[0] : "";
             if (message) message.textContent = [ready ? `Preview klaar${version ? ` als versie ${version}` : ""}.` : `Previewbuild gestart${version ? ` voor versie ${version}` : ""}.`, warning].filter(Boolean).join(" ");
             syncFactoryMode(ready);

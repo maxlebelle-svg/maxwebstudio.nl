@@ -35,7 +35,8 @@ const BUILD_JOB_SUMMARY_FIELDS = [
 ].join(",");
 const PREVIEW_RECOVERY_FIELDS = [
   "id", "demo_journey_id", "build_job_id", "customer_id", "project_id", "website_id", "version", "title",
-  "preview_url", "preview_token", "preview_score", "quality_report", "is_active", "status", "created_by", "created_at",
+  "preview_url", "preview_token", "preview_score", "quality_report", "metadata", "is_active", "status", "created_by", "created_at",
+  "entry_file:generated_package->>entryFile", "package_meta:generated_package->meta",
 ].join(",");
 const RESUMABLE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "retryable"]);
 
@@ -896,7 +897,7 @@ async function runBuildJob(context, payload = {}) {
     }
 
     const token = makePreviewToken();
-    const previewUrl = previewUrlFor({ journeyId: journey.id, token });
+    const previewUrl = previewUrlFor({ journeyId: journey.id, token, previewVersionId: job.id });
     phase = "patch_build_job_deploying";
     await patchBuildJob(context, job.id, {
       status: "deploying",
@@ -920,6 +921,9 @@ async function runBuildJob(context, payload = {}) {
       qualityReport,
       generatedPackage,
       packageType: generatedPackage.packageType,
+      customerId: journey.customerId || payload.customerId || payload.customer_id,
+      projectId: journey.projectId || payload.projectId || payload.project_id,
+      websiteId: journey.websiteId || payload.websiteId || payload.website_id,
       createdBy: context.admin.id,
     });
     phase = "patch_build_job_completed";
@@ -1069,6 +1073,18 @@ async function recoverBuildFromPreview(context, { job = {}, journey = {}, previe
       code: error?.code || "",
     });
   }
+  await runOptionalPreviewWrite("recover_project_workspace", () => upsertProjectWorkspace(context, {
+    leadId: journey.leadId,
+    customerId: journey.customerId || previewVersion.customerId,
+    demoJourneyId: journey.id,
+    businessName: journey.businessName,
+    websiteUrl: journey.websiteUrl,
+    latestPreviewUrl: previewVersion.previewUrl,
+    latestPreviewVersion: previewVersion.version || job.previewVersion,
+    latestZipFilename: zipFilenameFor({ businessName: journey.businessName, websiteUrl: journey.websiteUrl, version: previewVersion.version || job.previewVersion || 1 }),
+    updatedBy: context.admin.id,
+    createdBy: context.admin.id,
+  }));
   return {
     job: normalizeBuildJob({ ...jobRecord(job), ...completedRecord }),
     journey: updatedJourney,
@@ -1164,6 +1180,12 @@ async function createPreviewVersion(context, payload = {}) {
     const existing = await readPreviewVersionByBuildJobId(context, buildJobId);
     if (existing?.id) return normalizePreviewVersion(existing);
   }
+  const generatedPackage = payload.generatedPackage || payload.generated_package || {};
+  const files = Array.isArray(generatedPackage.files) ? generatedPackage.files : [];
+  const entryFile = cleanText(generatedPackage.entryFile || generatedPackage.meta?.entryFile || "index.html");
+  const entryExists = files.some((file) => cleanText(file?.path) === entryFile);
+  const editorManifestAvailable = Number(generatedPackage.meta?.editorManifest?.version || 0) === 1;
+  const sectionMarkersAvailable = files.some((file) => /\.html?$/i.test(cleanText(file?.path)) && /data-mws-section-id/i.test(cleanText(file?.content)));
   const record = {
     id: cleanUuid(payload.id) || cleanUuid(buildJobId) || randomUUID(),
     demo_journey_id: demoJourneyId,
@@ -1177,7 +1199,16 @@ async function createPreviewVersion(context, payload = {}) {
     preview_token: cleanText(payload.previewToken || payload.preview_token),
     preview_score: Number(payload.previewScore || payload.preview_score || 0),
     quality_report: payload.qualityReport || payload.quality_report || {},
-    generated_package: payload.generatedPackage || payload.generated_package || {},
+    generated_package: generatedPackage,
+    metadata: {
+      ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
+      previewSource: "website_factory",
+      entryFile,
+      fileCount: files.length,
+      renderable: Boolean(entryExists && cleanText(payload.previewUrl || payload.preview_url) && cleanText(payload.previewToken || payload.preview_token)),
+      editorManifestAvailable,
+      sectionMarkersAvailable,
+    },
     is_active: true,
     status: "internal",
     created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
@@ -1418,6 +1449,8 @@ function mapJourney(row = {}) {
     id: cleanText(row.id),
     leadId: cleanText(row.lead_id),
     customerId: cleanText(row.customer_id),
+    projectId: cleanText(row.project_id),
+    websiteId: cleanText(row.website_id),
     businessName: cleanText(row.business_name),
     contactName: cleanText(row.contact_name),
     email: cleanText(row.email),

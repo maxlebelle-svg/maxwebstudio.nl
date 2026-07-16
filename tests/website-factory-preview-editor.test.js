@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { buildWebsitePackage } = require("../functions/_website-factory-core");
+const { buildWebsitePackage, normalizePreviewVersion } = require("../functions/_website-factory-core");
 const { FACTORY_EDITOR_MANIFEST, validateEditorManifest } = require("../functions/_preview-editor-manifest");
 const { MAX_MESSAGE_BYTES, PROTOCOL, injectEditorRuntime, parseEditorContext, requestOrigin, stripUntrustedEditorContent } = require("../functions/_preview-editor-runtime");
 const parentBridge = require("../public/admin/ui/website-factory-preview-editor.js");
@@ -165,6 +165,31 @@ test("Factory preview validates the requested version before injecting the runti
   }
 });
 
+test("Factory renderer recovers the exact stored preview version when the journey package is empty", async () => {
+  const generated = packageForFactory();
+  const journeyId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const token = "fedcba9876543210fedcba9876543210";
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
+  const previousFetch = global.fetch;
+  const requested = [];
+  global.fetch = async (url) => {
+    requested.push(String(url));
+    if (String(url).includes("website_preview_versions")) return { ok: true, status: 200, text: async () => JSON.stringify([{ id: VERSION_ID, demo_journey_id: journeyId, preview_token: token, generated_package: generated, is_active: true, version: 3 }]) };
+    return { ok: true, status: 200, text: async () => JSON.stringify([{ id: journeyId, business_name: "FatTrek", preview_token: token, preview_package: { activePreviewSource: "website_factory" } }]) };
+  };
+  try {
+    const result = await demoRenderer.handler({ httpMethod: "GET", headers: { host: "maxwebstudio.nl", "x-forwarded-proto": "https" }, queryStringParameters: { id: journeyId, token, source: "factory", previewVersionId: VERSION_ID } });
+    assert.equal(result.statusCode, 200);
+    assert.match(result.body, /Editor Testbedrijf/);
+    assert.doesNotMatch(result.body, /Previewbron niet beschikbaar/);
+    assert.equal(requested.filter((url) => url.includes("website_preview_versions")).length, 1);
+    assert.match(requested.find((url) => url.includes("website_preview_versions")), new RegExp(VERSION_ID));
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 test("runtime declares hover, click selection and Escape deselection without mutating content", () => {
   const runtimeSource = fs.readFileSync(path.join(__dirname, "../functions/_preview-editor-runtime.js"), "utf8");
   assert.match(runtimeSource, /addEventListener\("mouseover"[\s\S]*SECTION_HOVERED/);
@@ -176,8 +201,45 @@ test("runtime declares hover, click selection and Escape deselection without mut
 
 test("legacy Factory versions without a manifest cannot activate editor mode", () => {
   const factoryHtml = fs.readFileSync(path.join(__dirname, "../public/admin-website-factory.html"), "utf8");
-  assert.match(factoryHtml, /const hasEditorManifest = \(version\) => version\?\.generatedPackage\?\.meta\?\.editorManifest\?\.version === 1/);
-  assert.match(factoryHtml, /const supportsEditor = \(version\) => source === "manual" \? isManual\(version\) : !isManual\(version\) && hasEditorManifest\(version\)/);
+  const legacy = normalizePreviewVersion({ id: VERSION_ID, preview_url: "/preview", preview_token: "token", entry_file: "index.html", package_meta: {} });
+  assert.equal(legacy.renderable, true);
+  assert.equal(legacy.editorAvailable, false);
+  assert.equal(legacy.availability, "legacy_read_only");
+  assert.equal(parentBridge.editorAvailabilityMessage(legacy.availability), "Deze preview is gemaakt vóór de nieuwe bewerkmodus en bevat nog geen bewerkbare secties.");
+  assert.match(factoryHtml, /Nieuwe bewerkbare preview maken/);
+  assert.match(factoryHtml, /Preview normaal openen/);
+  assert.match(factoryHtml, /vervangt de huidige klantpreview niet automatisch/);
+});
+
+test("new preview capability metadata enables editor mode without returning the full package", () => {
+  const editable = normalizePreviewVersion({
+    id: VERSION_ID,
+    preview_url: "/preview",
+    preview_token: "token",
+    entry_file: "index.html",
+    package_meta: { editorManifest: { version: 1 } },
+  });
+  assert.equal(editable.renderable, true);
+  assert.equal(editable.editorManifestAvailable, true);
+  assert.equal(editable.editorAvailable, true);
+  assert.equal(editable.availability, "editable");
+});
+
+test("completed build, stored preview and editor availability remain separate UI states", () => {
+  const factoryHtml = fs.readFileSync(path.join(__dirname, "../public/admin-website-factory.html"), "utf8");
+  assert.match(factoryHtml, /Build klaar, previewversie ontbreekt/);
+  assert.match(factoryHtml, /Build klaar, previewbron ontbreekt/);
+  assert.match(factoryHtml, /Preview klaar, bewerkmodus niet beschikbaar/);
+  assert.match(factoryHtml, /Preview klaar en bewerkbaar/);
+  assert.match(factoryHtml, /data-factory-proxy="factory-quick-retry">Preview opnieuw koppelen/);
+  assert.match(factoryHtml, /previewVersionId/);
+});
+
+test("empty SECTION_LIST produces a concrete unavailable state", () => {
+  const parentSource = fs.readFileSync(path.join(__dirname, "../public/admin/ui/website-factory-preview-editor.js"), "utf8");
+  assert.equal(parentBridge.editorAvailabilityMessage("empty_sections"), "De bewerkbare preview is geladen, maar bevat geen selecteerbare secties.");
+  assert.match(parentSource, /frame\.dataset\.editorAvailability = "empty_sections"/);
+  assert.match(parentSource, /frame\.dataset\.editorAvailable = "false"/);
 });
 
 test("request origin is exact and rejects malformed forwarded hosts", () => {

@@ -718,8 +718,9 @@ function nextPreviewVersion(versions = [], jobs = []) {
   return Math.max(0, ...versionNumbers) + 1;
 }
 
-function previewUrlFor({ journeyId, token }) {
-  return `/.netlify/functions/demo-preview?id=${encodeURIComponent(journeyId)}&token=${encodeURIComponent(token)}`;
+function previewUrlFor({ journeyId, token, previewVersionId = "" }) {
+  const base = `/.netlify/functions/demo-preview?id=${encodeURIComponent(journeyId)}&token=${encodeURIComponent(token)}`;
+  return previewVersionId ? `${base}&previewVersionId=${encodeURIComponent(previewVersionId)}` : base;
 }
 
 function makePreviewToken() {
@@ -758,16 +759,39 @@ function normalizeBuildJob(row = {}) {
 }
 
 function normalizePreviewVersion(row = {}) {
+  const generatedPackage = row.generated_package && typeof row.generated_package === "object" ? row.generated_package : null;
+  const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  const packageMeta = row.package_meta && typeof row.package_meta === "object"
+    ? row.package_meta
+    : generatedPackage?.meta && typeof generatedPackage.meta === "object" ? generatedPackage.meta : {};
+  const entryFile = cleanText(row.entry_file || metadata.entryFile || generatedPackage?.entryFile || packageMeta.entryFile);
+  const previewUrl = cleanText(row.preview_url);
+  const previewToken = cleanText(row.preview_token);
+  const previewStored = Boolean(cleanText(row.id));
+  const renderable = typeof metadata.renderable === "boolean" ? metadata.renderable : Boolean(previewStored && previewUrl && previewToken && entryFile);
+  const editorManifestAvailable = typeof metadata.editorManifestAvailable === "boolean" ? metadata.editorManifestAvailable : Number(packageMeta.editorManifest?.version || 0) === 1;
+  const sectionMarkersAvailable = typeof metadata.sectionMarkersAvailable === "boolean" ? metadata.sectionMarkersAvailable : editorManifestAvailable;
   return {
     id: cleanText(row.id),
     demoJourneyId: cleanText(row.demo_journey_id),
     buildJobId: cleanText(row.build_job_id),
+    customerId: cleanText(row.customer_id),
+    projectId: cleanText(row.project_id),
+    websiteId: cleanText(row.website_id),
     version: Number(row.version || 1),
-    previewUrl: cleanText(row.preview_url),
-    previewToken: cleanText(row.preview_token),
+    previewUrl,
+    previewToken,
     previewScore: row.preview_score === null || row.preview_score === undefined ? null : Number(row.preview_score),
     qualityReport: row.quality_report && typeof row.quality_report === "object" ? row.quality_report : null,
-    generatedPackage: row.generated_package && typeof row.generated_package === "object" ? row.generated_package : null,
+    generatedPackage,
+    metadata,
+    entryFile,
+    previewStored,
+    renderable,
+    editorManifestAvailable,
+    sectionMarkersAvailable,
+    editorAvailable: renderable && editorManifestAvailable && sectionMarkersAvailable,
+    availability: !previewStored ? "missing_version" : !renderable ? "source_unavailable" : editorManifestAvailable && sectionMarkersAvailable ? "editable" : "legacy_read_only",
     isActive: row.is_active !== false,
     createdAt: cleanText(row.created_at),
     createdBy: cleanText(row.created_by),
