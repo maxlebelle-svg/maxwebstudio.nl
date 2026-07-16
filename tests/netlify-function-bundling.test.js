@@ -5,6 +5,9 @@ const test = require("node:test");
 test("Netlify bundles Factory functions with esbuild to avoid tracing the full demo library", () => {
   const config = fs.readFileSync("netlify.toml", "utf8");
   assert.match(config, /\[functions\][\s\S]*?node_bundler\s*=\s*"esbuild"/);
-  assert.match(config, /\[functions\."website-factory"\][\s\S]*?included_files\s*=\s*\["public\/assets\/demo-images\/library\/bouwbedrijf\/\*\*"\]/);
-  assert.match(config, /\[functions\."demo-journey"\][\s\S]*?included_files\s*=\s*\["public\/assets\/demo-images\/library\/bouwbedrijf\/\*\*"\]/);
+  for (const name of ["website-factory", "demo-journey"]) {
+    const section = config.slice(config.indexOf(`[functions."${name}"]`), config.indexOf("\n[", config.indexOf(`[functions."${name}"]`) + 1));
+    assert.match(section, /public\/assets\/demo-images\/library\/bouwbedrijf\/\*\*/);
+    assert.match(section, /public\/assets\/demo-images\/library\/financieel-adviseur\/\*\*/);
+  }
 });

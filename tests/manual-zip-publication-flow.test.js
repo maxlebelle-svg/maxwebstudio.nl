@@ -13,12 +13,12 @@ const demoPreview = fs.readFileSync(path.join(root, "functions/demo-preview.js")
 test("both visible ZIP entries use one direct picker binding", () => {
   assert.equal((factory.match(/<button[^>]*data-manual-zip-upload/g) || []).length, 2);
   assert.equal((factory.match(/factory-guided-shell"\)\?\.addEventListener\("click"/g) || []).length, 1);
-  assert.match(factory, /function openManualZipPicker\(\)/);
+  assert.match(factory, /function openZipPicker\(\)/);
   assert.match(factory, /manualZipInput\.value = ""/);
   assert.match(factory, /manualZipInput\.click\(\)/);
   assert.doesNotMatch(factory, /data-factory-proxy="demo-journey-upload-manual-zip"/);
-  assert.equal((factory.match(/proxyClick\("demo-journey-upload-manual-zip"\)/g) || []).length, 2);
-  assert.doesNotMatch(factory.slice(factory.indexOf("function initGuidedFactory")), /manualPreviewMeta\(\)|openManualZipPicker\(\)|activateManualPreview\(\)/);
+  assert.equal((factory.match(/proxyClick\("demo-journey-upload-manual-zip"\)/g) || []).length, 0);
+  assert.match(factory.slice(factory.indexOf("function initGuidedFactory")), /openZipPicker\(\)/);
 });
 
 test("manual upload has one change handler, duplicate guard and explicit states", () => {
@@ -30,12 +30,34 @@ test("manual upload has one change handler, duplicate guard and explicit states"
   assert.match(factory, /id="factory-process-manual-zip"/);
   assert.match(factory, /function syncGuidedZipProcess\(\)/);
   assert.match(factory, /proxyClick\("demo-journey-process-manual-zip"\)/);
-  assert.match(factory, /elements\.uploadManualZip\?\.addEventListener\("click"[\s\S]*openManualZipPicker\(\)/);
+  assert.match(factory, /elements\.uploadManualZip\?\.addEventListener\("click"[\s\S]*openZipPicker\(\)/);
   assert.match(factory, /elements\.processManualZip\?\.addEventListener\("click"[\s\S]*uploadManualZipFile\(pendingManualZipFile\)/);
   assert.match(factory, /manualZipUploading/);
   assert.match(factory, /Uploaden…/);
   assert.match(factory, /ZIP succesvol verwerkt/);
   assert.match(factory, /ZIP kon niet worden verwerkt/);
+});
+
+test("premium ZIP dropzone supports one ZIP, rejection, keyboard and removal", () => {
+  assert.match(factory, /id="factory-zip-dropzone"[^>]*role="button"[^>]*tabindex="0"/);
+  assert.match(factory, /Sleep uw website-ZIP hierheen/);
+  assert.match(factory, /\["dragenter", "dragover"\]/);
+  assert.match(factory, /\["dragleave", "drop"\]/);
+  assert.match(factory, /selected\.length !== 1/);
+  assert.match(factory, /meerdere bestanden tegelijk worden niet verwerkt/);
+  assert.match(factory, /is geen ZIP-bestand/);
+  assert.match(factory, /\["Enter", " "\]\.includes\(event\.key\)/);
+  assert.match(factory, /factory-remove-manual-zip/);
+  assert.match(factory, /Math\.ceil\(Number\(file\.size/);
+});
+
+test("manual upload returns compact render metadata and waits for iframe load", () => {
+  for (const field of ["previewVersionId", "source", "fileCount", "entryFile", "renderStatus"]) assert.match(upload, new RegExp(`${field}:`));
+  assert.doesNotMatch(upload, /previewPackage: sanitizePackage/);
+  assert.match(factory, /waitForManualPreviewFrame\(localPreviewUrl\)/);
+  assert.match(factory, /refreshManualPreviewContext\(previewVersionId\)/);
+  assert.match(factory, /renderable: true, editorAvailable: false, availability: "manual_read_only"/);
+  assert.doesNotMatch(factory.slice(factory.indexOf("async function uploadManualZipFile"), factory.indexOf("function manualPackageDataUrl")), /parseWebsiteZip\(/);
 });
 
 test("customerId mode does not wait for unrelated lead and Demo Journey loading", () => {

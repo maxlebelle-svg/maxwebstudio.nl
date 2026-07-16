@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const { normalizeWebsiteInput } = require("../functions/_website-input");
-const { buildWebsitePackage, runQualityCheck, validateGeneratedPackage } = require("../functions/_website-factory-core");
+const { buildWebsitePackage, hydrateMissingDemoImageAssets, runQualityCheck, validateGeneratedPackage } = require("../functions/_website-factory-core");
 const { extractHeroContext, prepareHeroEditorPackage } = require("../functions/_preview-editor-hero");
 const { extractImageContext, prepareImageEditorPackage } = require("../functions/_preview-editor-image");
 const { createBuildJob, getBuildHistory, runBuildJob, sanitizeBuildResult, _private } = require("../functions/website-factory");
@@ -74,6 +74,33 @@ test("scan failure uses branch defaults rather than blocking package generation"
   const { generatedPackage } = buildQuick({ websiteAnalysis: { ok: false } }, "Branche: outdoor en reizen");
   assert.ok(generatedPackage.files.some((file) => file.path === "index.html"));
   assert.ok(generatedPackage.meta.services.length >= 3);
+});
+
+test("All4home Quick Build produces a renderable neutral package with its selected assets", () => {
+  const generatedPackage = buildWebsitePackage({
+    journey: { businessName: "Aannemer Almere Tegels Almere All4home", websiteUrl: "https://all4home.nl/", packageType: "starter" },
+    briefing: "Aannemer Almere Tegels Almere All4home",
+    version: 1,
+  });
+  assert.equal(generatedPackage.meta.industryProfile, "neutrale-lokale-dienstverlener");
+  assert.equal(generatedPackage.meta.industryImageSelection.groupSlug, "neutral-professional");
+  assert.equal(validateGeneratedPackage(generatedPackage).passed, true);
+});
+
+test("a persisted All4home package hydrates only its missing demo-image files", () => {
+  const generatedPackage = {
+    entryFile: "index.html",
+    files: [
+      { path: "index.html", content: '<link href="assets/site.css" rel="stylesheet"><script src="assets/site.js"></script><img src="assets/demo-images/library/financieel-adviseur/hero.png">' },
+      { path: "assets/site.css", content: "body{}" },
+      { path: "assets/site.js", content: "void 0;" },
+    ],
+  };
+  const result = hydrateMissingDemoImageAssets(generatedPackage);
+  assert.equal(result.changed, true);
+  assert.deepEqual(result.hydratedPaths, ["assets/demo-images/library/financieel-adviseur/hero.png"]);
+  assert.equal(validateGeneratedPackage(result.generatedPackage).passed, true);
+  assert.equal(generatedPackage.files.length, 3);
 });
 
 test("standard and VM builds keep valid explicit Hero write capabilities", async () => {
@@ -208,6 +235,35 @@ test("retry reuses an active build job without creating a duplicate", async () =
     }, { demoJourneyId: journeyId });
     assert.equal(result.reusedExisting, true);
     assert.equal(result.job.id, activeJob.id);
+    assert.equal(methods.includes("POST"), false);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("retry resumes the same failed render-check job when package and quality already exist", async () => {
+  const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const generatedPackage = buildQuick().generatedPackage;
+  const summary = { id: jobId, demo_journey_id: journeyId, status: "failed", current_step: "render_check", preview_version: 1 };
+  const runtime = { ...summary, generated_package: generatedPackage, quality_report: { passed: true, score: 92 } };
+  const methods = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    methods.push(method);
+    if (target.includes("demo_journeys")) return mockJson([{ id: journeyId, business_name: "All4home", created_by: "admin-id" }]);
+    if (target.includes("website_preview_versions")) return mockJson([]);
+    if (target.includes("website_build_jobs") && target.includes("generated_package")) return mockJson([runtime]);
+    if (target.includes("website_build_jobs")) return mockJson([summary]);
+    return mockJson([]);
+  };
+  try {
+    const result = await createBuildJob({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" } }, { demoJourneyId: journeyId });
+    assert.equal(result.reusedExisting, true);
+    assert.equal(result.resumedAfterRenderFailure, true);
+    assert.equal(result.job.id, jobId);
     assert.equal(methods.includes("POST"), false);
   } finally {
     global.fetch = previousFetch;

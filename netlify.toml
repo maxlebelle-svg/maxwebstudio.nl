@@ -6,10 +6,16 @@
   node_bundler = "esbuild"
 
 [functions."website-factory"]
-  included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
+  included_files = [
+    "public/assets/demo-images/library/bouwbedrijf/**",
+    "public/assets/demo-images/library/financieel-adviseur/**",
+  ]
 
 [functions."demo-journey"]
-  included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
+  included_files = [
+    "public/assets/demo-images/library/bouwbedrijf/**",
+    "public/assets/demo-images/library/financieel-adviseur/**",
+  ]
 
 [functions."admin-preview-image-assets"]
   included_files = [

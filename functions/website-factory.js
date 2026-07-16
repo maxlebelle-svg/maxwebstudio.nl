@@ -16,6 +16,7 @@ const { randomUUID } = require("crypto");
 const {
   buildLogs,
   buildWebsitePackage,
+  hydrateMissingDemoImageAssets,
   editorEnrichmentAvailable,
   isBuildStatus,
   makePreviewToken,
@@ -804,6 +805,14 @@ async function createBuildJob(context, payload = {}) {
   ]);
   const activeJob = jobs.find((item) => RESUMABLE_BUILD_STATUSES.has(item.status));
   if (activeJob) return { job: activeJob, journey: mapJourney(journey), reusedExisting: true };
+  const interruptedRenderJob = jobs.find((item) => item.status === "failed" && item.currentStep === "render_check");
+  if (interruptedRenderJob?.id) {
+    const runtimeRecord = await readBuildJobRuntimeById(context, interruptedRenderJob.id);
+    const runtimeJob = normalizeBuildJob(runtimeRecord || interruptedRenderJob);
+    if (isUsableGeneratedPackage(runtimeJob.generatedPackage) && runtimeJob.qualityReport?.passed === true) {
+      return { job: runtimeJob, journey: mapJourney(journey), reusedExisting: true, resumedAfterRenderFailure: true };
+    }
+  }
   const previewVersion = nextPreviewVersion(previewVersions, jobs);
   const now = new Date().toISOString();
   const rows = await insertBuildJob(context, {
@@ -900,6 +909,19 @@ async function runBuildJob(context, payload = {}) {
         requestId: context.requestId,
         buildJobId: job.id,
       })).generatedPackage;
+    }
+    const assetRecovery = hydrateMissingDemoImageAssets(generatedPackage);
+    if (assetRecovery.changed) {
+      generatedPackage = assetRecovery.generatedPackage;
+      phase = "repair_generated_package_assets";
+      await patchBuildJobWithConfirmation(context, job.id, {
+        generated_package: generatedPackage,
+        build_logs: buildLogs(buildingLogs, {
+          step: "asset_recovery",
+          message: "Ontbrekende preview-assets zijn aan het bestaande pakket gekoppeld.",
+          hydratedPaths: assetRecovery.hydratedPaths,
+        }),
+      }, (persisted) => validateGeneratedPackage(persisted.generatedPackage).passed);
     }
 
     const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });

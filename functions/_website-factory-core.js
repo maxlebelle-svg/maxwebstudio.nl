@@ -1240,6 +1240,33 @@ function packageDemoImageAsset(assetItem = {}, role = "image", projectSlug = "we
   };
 }
 
+function hydrateMissingDemoImageAssets(generatedPackage = {}) {
+  const files = Array.isArray(generatedPackage.files) ? generatedPackage.files : [];
+  const knownPaths = new Set(files.map((file) => cleanText(file?.path).replace(/^\.\//, "")));
+  const validation = validateGeneratedPackage(generatedPackage);
+  const hydrated = [];
+  for (const missingPath of validation.missing || []) {
+    const normalizedPath = cleanText(missingPath).replace(/^\.\//, "").replace(/^\//, "");
+    if (!normalizedPath.startsWith("assets/demo-images/library/") || knownPaths.has(normalizedPath)) continue;
+    const sourcePath = path.join(__dirname, "..", "public", normalizedPath);
+    if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) continue;
+    hydrated.push({
+      path: normalizedPath,
+      kind: "demo-image",
+      originalSrc: `/${normalizedPath}`,
+      content: fs.readFileSync(sourcePath).toString("base64"),
+      encoding: "base64",
+    });
+    knownPaths.add(normalizedPath);
+  }
+  if (!hydrated.length) return { generatedPackage, changed: false, hydratedPaths: [] };
+  return {
+    generatedPackage: { ...generatedPackage, files: uniqueFilesByPath([...files, ...hydrated]) },
+    changed: true,
+    hydratedPaths: hydrated.map((file) => file.path),
+  };
+}
+
 function renderLogoSvg({ businessName, colors }) {
   const initials = cleanText(businessName).split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "MW";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="${escapeHtml(businessName)} logo"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${escapeHtml(colors.accent)}"/><stop offset="1" stop-color="${escapeHtml(colors.brand)}"/></linearGradient></defs><rect width="240" height="240" rx="18" fill="url(#g)"/><path d="M34 190V50h38l48 66 48-66h38v140h-38V109l-41 55h-14l-41-55v81z" fill="#fff"/></svg>`;
@@ -1923,6 +1950,7 @@ module.exports = {
   BUILD_STATUSES,
   buildLogs,
   buildWebsitePackage,
+  hydrateMissingDemoImageAssets,
   editorEnrichmentAvailable,
   isBuildStatus,
   makePreviewToken,

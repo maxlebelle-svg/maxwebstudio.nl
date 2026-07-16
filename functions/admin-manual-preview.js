@@ -91,8 +91,12 @@ exports.handler = async (event) => {
       success: true,
       requestId,
       reused,
+      previewVersionId: version.id,
+      source: "manual_zip",
+      fileCount: extracted.files.length,
+      entryFile,
+      renderStatus: "ready",
       previewVersion: sanitize(version),
-      previewPackage: sanitizePackage(version.generated_package),
       message: "ZIP succesvol verwerkt. De websitepreview is klaar en kan nu naar het klantportaal worden gepubliceerd.",
     });
   } catch (error) {
@@ -123,7 +127,17 @@ async function activateManualVersion(context, customerId, demoJourneyId, payload
   let active = await setActiveManualVersion(context, customerId, version);
   active = await ensureManualPreviewUrl(context, customerId, active);
   await persistJourneySource(context, demoJourneyId || active.demo_journey_id, active);
-  return json(200, { success: true, reused: true, previewVersion: sanitize(active), previewPackage: sanitizePackage(active.generated_package), message: "Handmatige ZIP is nu de actieve previewbron." });
+  return json(200, {
+    success: true,
+    reused: true,
+    previewVersionId: active.id,
+    source: "manual_zip",
+    fileCount: Array.isArray(active.generated_package?.files) ? active.generated_package.files.length : 0,
+    entryFile: text(active.generated_package?.entryFile || active.metadata?.entryFile || "index.html"),
+    renderStatus: "ready",
+    previewVersion: sanitize(active),
+    message: "Handmatige ZIP is nu de actieve previewbron.",
+  });
 }
 
 async function ensureManualPreviewUrl(context, customerId, version) {
@@ -247,7 +261,6 @@ function decodeZip(value) { try { return Buffer.from(text(value), "base64"); } c
 function zipError(code, message, status = 400) { const error = new Error(message); error.code = code; error.status = status; return error; }
 function safeMessage(error) { return error.code ? error.message : "Het ZIP-bestand kon niet worden verwerkt."; }
 function sanitize(row = {}) { return { id: text(row.id), customerId: text(row.customer_id), projectId: text(row.project_id), websiteId: text(row.website_id), demoJourneyId: text(row.demo_journey_id), version: Number(row.version || 1), title: text(row.title), previewSource: "manual_zip", status: text(row.status || "internal"), previewUrl: text(row.preview_url), previewToken: text(row.preview_token), createdAt: text(row.created_at), contentHash: text(row.metadata?.manualZipContentHash) }; }
-function sanitizePackage(value = {}) { return { files: Array.isArray(value.files) ? value.files : [], version: value.version, entryFile: value.entryFile || value.entry_file || "index.html", meta: value.meta || {} }; }
 function uuid(value) { const clean = text(value); return uuidPattern.test(clean) ? clean : ""; }
 function text(value = "") { return String(value || "").trim(); }
 function getContext(admin) { const supabaseUrl = text(process.env.SUPABASE_URL).replace(/\/$/, ""); const serviceRoleKey = text(process.env.SUPABASE_SERVICE_ROLE_KEY); return { available: Boolean(supabaseUrl && serviceRoleKey), supabaseUrl, serviceRoleKey, admin }; }
