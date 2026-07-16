@@ -9,6 +9,7 @@ const { createPreviewReadyService } = require("./journey/previewReady/service");
 const { resolveWebsiteLiveContext } = require("./journey/websiteLive/contextResolver");
 const { createWebsiteLiveRepository } = require("./journey/websiteLive/repository");
 const { createWebsiteLiveService } = require("./journey/websiteLive/service");
+const { prepareHeroEditorPackage } = require("./_preview-editor-hero");
 const { randomUUID } = require("crypto");
 const {
   buildLogs,
@@ -460,7 +461,7 @@ async function createBuildJobResponse(context, payload) {
 
 async function runBuildJobResponse(context, payload) {
   const result = await runBuildJob(context, payload);
-  return jsonResponse(200, { success: true, ...result });
+  return jsonResponse(200, { success: true, ...sanitizeBuildResult(result) });
 }
 
 async function getBuildStatusResponse(context, payload) {
@@ -468,7 +469,7 @@ async function getBuildStatusResponse(context, payload) {
   if (!id) return jsonResponse(400, { success: false, error: "Build job id ontbreekt." });
   const row = await readBuildJobById(context, id);
   if (!row) return jsonResponse(404, { success: false, error: "Build job niet gevonden." });
-  return jsonResponse(200, { success: true, job: normalizeBuildJob(row) });
+  return jsonResponse(200, { success: true, job: sanitizeBuildJob(normalizeBuildJob(row)) });
 }
 
 async function getBuildHistoryResponse(context, payload) {
@@ -484,7 +485,7 @@ async function generatePackageResponse(context, payload) {
   if (!journey) return jsonResponse(404, { success: false, error: "Demo-klantreis niet gevonden." });
   const mappedJourney = payload.journey ? { ...mapJourney(journey), ...journey } : mapJourney(journey);
   const packageType = normalizePackageType(payload.packageType || payload.package_type || mappedJourney.packageType);
-  const generatedPackage = buildWebsitePackage({
+  const builtPackage = buildWebsitePackage({
     journey: {
       ...mappedJourney,
       packageType,
@@ -496,6 +497,7 @@ async function generatePackageResponse(context, payload) {
     briefing: payload.briefing || journey.generated_briefing,
     version: Number(payload.version || 1),
   });
+  const { generatedPackage } = await prepareHeroEditorPackage(builtPackage);
   return jsonResponse(200, { success: true, generatedPackage });
 }
 
@@ -860,7 +862,7 @@ async function runBuildJob(context, payload = {}) {
       await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
     }
     phase = "generate_website_package";
-    const generatedPackage = buildWebsitePackage({
+    const builtPackage = buildWebsitePackage({
       journey: {
         ...journey,
         packageType,
@@ -873,6 +875,16 @@ async function runBuildJob(context, payload = {}) {
       briefing,
       version: job.previewVersion,
     });
+    phase = "prepare_editor_manifest";
+    const editorPreparation = await prepareHeroEditorPackage(builtPackage);
+    const generatedPackage = editorPreparation.generatedPackage;
+    if (editorPreparation.availability !== "editable") {
+      console.warn("Website Factory Hero editor unavailable; build continues read-only", {
+        phase,
+        buildJobId: job.id,
+        reason: editorPreparation.reason,
+      });
+    }
 
     const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
     if (!resumeAfterPackage) {
@@ -1140,6 +1152,26 @@ function jobRecord(job = {}) {
     finished_at: job.finishedAt || null,
     created_by: job.createdBy,
     created_at: job.createdAt,
+  };
+}
+
+function sanitizeBuildJob(job = null) {
+  if (!job || typeof job !== "object") return job;
+  const { generatedPackage, ...safe } = job;
+  return safe;
+}
+
+function sanitizePreviewVersion(version = null) {
+  if (!version || typeof version !== "object") return version;
+  const { generatedPackage, ...safe } = version;
+  return safe;
+}
+
+function sanitizeBuildResult(result = {}) {
+  return {
+    ...result,
+    job: sanitizeBuildJob(result.job),
+    previewVersion: sanitizePreviewVersion(result.previewVersion),
   };
 }
 
@@ -2366,6 +2398,7 @@ module.exports = {
   createBuildJob,
   getBuildHistory,
   runBuildJob,
+  sanitizeBuildResult,
   startOnboardingFactoryPipeline,
   _private: { searchRows },
 };

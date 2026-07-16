@@ -85,21 +85,34 @@ async function patchHeroPackage(generatedPackage = {}, patch = {}, expectedHash 
   return { generatedPackage: nextPackage, source, values: verified.values, contentHash: verified.contentHash };
 }
 
+async function prepareHeroEditorPackage(generatedPackage = {}) {
+  try {
+    await extractHeroContext(generatedPackage);
+    return { generatedPackage, availability: "editable", reason: "" };
+  } catch (error) {
+    if (["HERO_MARKER_AMBIGUOUS", "HERO_FIELD_MARKER_AMBIGUOUS"].includes(error?.code)) throw error;
+    return {
+      generatedPackage: removeHeroWriteCapabilities(generatedPackage, error?.code || "EDITOR_VALIDATION_UNAVAILABLE"),
+      availability: "read_only",
+      reason: error?.code || "EDITOR_VALIDATION_UNAVAILABLE",
+    };
+  }
+}
+
 async function parseHero(html, manifest, pagePath) {
   const parse5 = await loadParser();
   const document = parse5.parse(html, { sourceCodeLocationInfo: true });
-  validateManifestDom(document, manifest, pagePath);
   const sections = findNodes(document, (node) => attribute(node, "data-mws-section-id") === HERO_SECTION_ID);
-  if (sections.length !== 1 || attribute(sections[0], "data-mws-section-type") !== HERO_SECTION_TYPE) {
-    throw heroError("HERO_MARKER_INVALID", "De preview moet exact één geldige Hero-sectie bevatten.", 409, "validate_hero_marker");
-  }
+  if (sections.length > 1) throw heroError("HERO_MARKER_AMBIGUOUS", "De preview bevat meerdere Hero-secties met dezelfde marker.", 422, "validate_editor_markers");
+  if (sections.length !== 1 || attribute(sections[0], "data-mws-section-type") !== HERO_SECTION_TYPE) throw heroError("HERO_WRITE_UNAVAILABLE", "De preview bevat geen eenduidige bewerkbare Hero-sectie.", 409, "validate_hero_marker");
   const section = sections[0];
   if (!section.sourceCodeLocation?.startOffset && section.sourceCodeLocation?.startOffset !== 0) throw heroError("HERO_MARKER_INVALID", "De Hero-bronlocatie ontbreekt.", 409, "validate_hero_marker");
   const fieldNodes = new Map();
   const nodeFields = [...new Set(HERO_FIELDS.map((field) => field.nodeField))];
   for (const nodeField of nodeFields) {
     const nodes = findNodes(section, (node) => attribute(node, "data-mws-field") === nodeField);
-    if (nodes.length !== 1) throw heroError("HERO_FIELD_MARKER_INVALID", `Hero-veld ${nodeField} moet exact één keer voorkomen.`, 409, "validate_field_markers");
+    if (nodes.length > 1) throw heroError("HERO_FIELD_MARKER_AMBIGUOUS", `Hero-veld ${nodeField} komt meerdere keren voor.`, 422, "validate_editor_markers");
+    if (nodes.length !== 1) throw heroError("HERO_WRITE_UNAVAILABLE", `Hero-veld ${nodeField} ontbreekt voor veilige bewerking.`, 409, "validate_field_markers");
     fieldNodes.set(nodeField, nodes[0]);
   }
   const values = {};
@@ -108,7 +121,9 @@ async function parseHero(html, manifest, pagePath) {
     values[field.key] = field.target === "href" ? attribute(node, "href") : textContent(node).trim();
   }
   const imageNode = findNodes(section, (node) => attribute(node, "data-mws-field") === "image");
-  if (imageNode.length !== 1) throw heroError("HERO_FIELD_MARKER_INVALID", "De Hero-afbeeldingsmarker moet exact één keer voorkomen.", 409, "validate_field_markers");
+  if (imageNode.length > 1) throw heroError("HERO_FIELD_MARKER_AMBIGUOUS", "De Hero-afbeeldingsmarker komt meerdere keren voor.", 422, "validate_editor_markers");
+  if (imageNode.length !== 1) throw heroError("HERO_WRITE_UNAVAILABLE", "De Hero-afbeeldingsmarker ontbreekt voor veilige bewerking.", 409, "validate_field_markers");
+  validateManifestDom(document, manifest, pagePath);
   const rawSection = html.slice(section.sourceCodeLocation.startOffset, section.sourceCodeLocation.endOffset);
   return {
     html,
@@ -118,6 +133,36 @@ async function parseHero(html, manifest, pagePath) {
     image: { src: attribute(imageNode[0], "src"), alt: attribute(imageNode[0], "alt") },
     contentHash: sha256(rawSection),
   };
+}
+
+function removeHeroWriteCapabilities(generatedPackage = {}, reason = "") {
+  const nextPackage = clonePackage(generatedPackage);
+  const sourceManifest = generatedPackage.meta?.editorManifest;
+  const manifest = sourceManifest && typeof sourceManifest === "object" ? structuredClone(sourceManifest) : null;
+  if (manifest?.pages) {
+    for (const page of manifest.pages) {
+      for (const section of page.sections || []) {
+        if (section?.id === HERO_SECTION_ID) delete section.editor;
+      }
+    }
+  }
+  nextPackage.meta = {
+    ...(nextPackage.meta || {}),
+    ...(manifest ? { editorManifest: manifest } : {}),
+    heroEditorAvailability: "read_only",
+    heroEditorReason: cleanText(reason).slice(0, 80),
+  };
+  const briefingIndex = nextPackage.files.findIndex((file) => file?.path === "briefing.json" && file.encoding !== "base64");
+  if (briefingIndex >= 0) {
+    try {
+      const briefing = JSON.parse(String(nextPackage.files[briefingIndex].content || "{}"));
+      nextPackage.files[briefingIndex] = {
+        ...nextPackage.files[briefingIndex],
+        content: JSON.stringify({ ...briefing, ...(manifest ? { editorManifest: manifest } : {}), heroEditorAvailability: "read_only", heroEditorReason: cleanText(reason).slice(0, 80) }, null, 2),
+      };
+    } catch {}
+  }
+  return nextPackage;
 }
 
 function validateManifestDom(document, manifest, pagePath) {
@@ -265,6 +310,7 @@ module.exports = {
   isSafeLink,
   patchFingerprint,
   patchHeroPackage,
+  prepareHeroEditorPackage,
   publicHeroSchema,
   sha256,
   validateHeroPatch,

@@ -2,7 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { sendEmail } = require("./email");
 const { readProjectWorkspace, upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
-const { getBuildHistory, runBuildJob } = require("./website-factory");
+const { getBuildHistory, runBuildJob, sanitizeBuildResult } = require("./website-factory");
 const { createTimelineEvent } = require("./services/timelineService");
 const crypto = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
@@ -867,14 +867,15 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const events = await optionalPreviewOperation("read_preview_events", () => readEvents({ supabaseUrl, serviceRoleKey, journeyId }), []);
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId });
     const responseJourney = sanitizeAdminJourney(journey);
+    const responseBuild = sanitizeBuildResult(buildResult);
     return jsonResponse(200, {
       success: true,
       journey: responseJourney,
       demoJourney: responseJourney,
       events,
-      buildJob: buildResult.job,
-      buildStatus: buildResult.job || null,
-      previewVersion: buildResult.previewVersion,
+      buildJob: responseBuild.job,
+      buildStatus: responseBuild.job || null,
+      previewVersion: responseBuild.previewVersion,
       buildHistory,
       projectWorkspace,
       preview: {

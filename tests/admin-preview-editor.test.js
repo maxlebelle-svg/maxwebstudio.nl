@@ -221,22 +221,22 @@ test("duplicate, missing and wrong Hero markers are hard failures", async () => 
   const entry = duplicate.files.find((file) => file.path === "index.html");
   const heroHtml = entry.content.match(/<section class="hero"[\s\S]*?<\/section>/)[0];
   entry.content = entry.content.replace("</main>", `${heroHtml}</main>`);
-  await assert.rejects(() => extractHeroContext(duplicate), { code: "EDITOR_MANIFEST_DOM_MISMATCH" });
+  await assert.rejects(() => extractHeroContext(duplicate), { code: "HERO_MARKER_AMBIGUOUS" });
   const missing = factoryPackage();
   missing.files[0].content = missing.files[0].content.replace('data-mws-section-id="home.hero"', "");
-  await assert.rejects(() => extractHeroContext(missing), { code: "EDITOR_MANIFEST_DOM_MISMATCH" });
+  await assert.rejects(() => extractHeroContext(missing), { code: "HERO_WRITE_UNAVAILABLE" });
   const wrong = factoryPackage();
   wrong.files[0].content = wrong.files[0].content.replace('data-mws-section-type="hero"', 'data-mws-section-type="text"');
-  await assert.rejects(() => extractHeroContext(wrong), { code: "EDITOR_MANIFEST_DOM_MISMATCH" });
+  await assert.rejects(() => extractHeroContext(wrong), { code: "HERO_WRITE_UNAVAILABLE" });
 });
 
 test("duplicate and missing singular Hero field nodes are rejected", async () => {
   const duplicate = factoryPackage();
   duplicate.files[0].content = duplicate.files[0].content.replace('<h1 data-mws-field="title">', '<h1 data-mws-field="title"></h1><h1 data-mws-field="title">');
-  await assert.rejects(() => extractHeroContext(duplicate), { code: "HERO_FIELD_MARKER_INVALID" });
+  await assert.rejects(() => extractHeroContext(duplicate), { code: "HERO_FIELD_MARKER_AMBIGUOUS" });
   const missing = factoryPackage();
   missing.files[0].content = missing.files[0].content.replace('data-mws-field="primary-cta"', "");
-  await assert.rejects(() => extractHeroContext(missing), { code: "EDITOR_MANIFEST_DOM_MISMATCH" });
+  await assert.rejects(() => extractHeroContext(missing), { code: "HERO_WRITE_UNAVAILABLE" });
 });
 
 test("base content hash mismatch returns EDIT_CONFLICT", async () => {

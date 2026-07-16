@@ -5,7 +5,8 @@ const path = require("node:path");
 
 const { normalizeWebsiteInput } = require("../functions/_website-input");
 const { buildWebsitePackage, runQualityCheck } = require("../functions/_website-factory-core");
-const { createBuildJob, getBuildHistory, runBuildJob } = require("../functions/website-factory");
+const { extractHeroContext, prepareHeroEditorPackage } = require("../functions/_preview-editor-hero");
+const { createBuildJob, getBuildHistory, runBuildJob, sanitizeBuildResult } = require("../functions/website-factory");
 
 const root = path.join(__dirname, "..");
 const factoryHtml = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
@@ -72,6 +73,96 @@ test("scan failure uses branch defaults rather than blocking package generation"
   const { generatedPackage } = buildQuick({ websiteAnalysis: { ok: false } }, "Branche: outdoor en reizen");
   assert.ok(generatedPackage.files.some((file) => file.path === "index.html"));
   assert.ok(generatedPackage.meta.services.length >= 3);
+});
+
+test("standard and VM builds keep valid explicit Hero write capabilities", async () => {
+  const standard = buildQuick().generatedPackage;
+  const vm = buildWebsitePackage({ journey: { businessName: "VM Tegelwerken", websiteUrl: "https://vmtegelwerken.nl" }, briefing: "Tegelwerken", version: 1 });
+  for (const generatedPackage of [standard, vm]) {
+    const prepared = await prepareHeroEditorPackage(generatedPackage);
+    assert.equal(prepared.availability, "editable");
+    assert.equal((await extractHeroContext(prepared.generatedPackage)).schema.id, "mws.hero.v1");
+  }
+});
+
+test("missing optional editor marker falls back to read-only without blocking the build", async () => {
+  const generatedPackage = buildQuick().generatedPackage;
+  const entry = generatedPackage.files.find((file) => file.path === "index.html");
+  entry.content = entry.content.replace('data-mws-field="image"', "");
+  const prepared = await prepareHeroEditorPackage(generatedPackage);
+  const hero = prepared.generatedPackage.meta.editorManifest.pages[0].sections.find((section) => section.id === "home.hero");
+  assert.equal(prepared.availability, "read_only");
+  assert.equal(hero.editor, undefined);
+  assert.equal(runQualityCheck({ generatedPackage: prepared.generatedPackage, journey: { businessName: "FatTrek" } }).passed, true);
+  assert.ok(prepared.generatedPackage.files.some((file) => file.path === "index.html" && /<\/html>/i.test(file.content)));
+});
+
+test("duplicate critical Hero marker produces a concrete non-retryable validation error", async () => {
+  const generatedPackage = buildQuick().generatedPackage;
+  const entry = generatedPackage.files.find((file) => file.path === "index.html");
+  entry.content = entry.content.replace('<h1 data-mws-field="title">', '<h1 data-mws-field="title"></h1><h1 data-mws-field="title">');
+  await assert.rejects(() => prepareHeroEditorPackage(generatedPackage), { code: "HERO_FIELD_MARKER_AMBIGUOUS", status: 422, phase: "validate_editor_markers" });
+});
+
+test("successful Demo Journey response omits multi-megabyte generated packages", () => {
+  const generatedPackage = buildQuick().generatedPackage;
+  assert.ok(Buffer.byteLength(JSON.stringify(generatedPackage)) > 6_291_556);
+  const safe = sanitizeBuildResult({
+    job: { id: "job", status: "completed", generatedPackage },
+    previewVersion: { id: "version", version: 1, generatedPackage },
+  });
+  const response = { success: true, buildJob: safe.job, buildStatus: safe.job, previewVersion: safe.previewVersion };
+  assert.equal(Object.hasOwn(safe.job, "generatedPackage"), false);
+  assert.equal(Object.hasOwn(safe.previewVersion, "generatedPackage"), false);
+  assert.ok(Buffer.byteLength(JSON.stringify(response)) < 100_000);
+});
+
+test("parse5 is a pinned production dependency and loads through the build-time compatibility path", async () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+  const heroSource = fs.readFileSync(path.join(root, "functions/_preview-editor-hero.js"), "utf8");
+  assert.equal(packageJson.dependencies.parse5, "7.2.1");
+  assert.match(heroSource, /import\("parse5"\)/);
+  assert.equal((await prepareHeroEditorPackage(buildQuick().generatedPackage)).availability, "editable");
+});
+
+test("normal build stores one renderable preview version after Hero validation", async () => {
+  const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const job = { id: jobId, demo_journey_id: journeyId, status: "queued", current_step: "queued", progress: 5, preview_version: 1, build_logs: [], created_by: "admin-id" };
+  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "Branche: outdoor en reizen", created_by: "admin-id" };
+  const previewWrites = [];
+  const jobWrites = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (method === "GET" && target.includes("website_build_jobs")) return mockJson([job]);
+    if (method === "GET" && target.includes("demo_journeys")) return mockJson([journey]);
+    if (method === "GET" && target.includes("website_preview_versions")) return mockJson([]);
+    if (method === "PATCH" && target.includes("website_build_jobs")) { jobWrites.push(body); return mockJson(null, 204); }
+    if (method === "POST" && target.includes("website_preview_versions")) { previewWrites.push(body); return mockJson(null, 201); }
+    if (method === "PATCH" && target.includes("website_preview_versions")) return mockJson(null, 204);
+    if (method === "PATCH" && target.includes("demo_journeys")) return mockJson([{ ...journey, ...body }]);
+    return mockJson({ message: "optional table unavailable" }, 500);
+  };
+  try {
+    const result = await runBuildJob({
+      supabaseUrl: "https://example.supabase.co",
+      serviceRoleKey: "service-role",
+      admin: { id: "admin-id", role: "super_admin" },
+      requestId: "REQ-NORMAL-BUILD",
+    }, { jobId, generatedBriefing: journey.generated_briefing });
+    assert.equal(result.job.status, "completed");
+    assert.equal(result.previewVersion.id, jobId);
+    assert.equal(previewWrites.length, 1);
+    assert.equal(previewWrites[0].metadata.editorManifestAvailable, true);
+    assert.equal(previewWrites[0].metadata.renderable, true);
+    assert.equal((await extractHeroContext(previewWrites[0].generated_package)).schema.id, "mws.hero.v1");
+    assert.equal(jobWrites.some((record) => record.status === "completed"), true);
+  } finally {
+    global.fetch = previousFetch;
+  }
 });
 
 test("retry reuses an active build job without creating a duplicate", async () => {
