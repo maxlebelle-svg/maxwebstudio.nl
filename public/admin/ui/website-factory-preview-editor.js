@@ -81,6 +81,14 @@
     return "Bewerkmodus is beschikbaar zodra een concrete bewerkbare previewversie is geladen.";
   }
 
+  function editorLayoutState({ enabled = false, editable = false } = {}) {
+    const showSettingsPanel = enabled === true && editable === true;
+    return {
+      showSettingsPanel,
+      workspaceClass: showSettingsPanel ? "has-settings-panel" : "",
+    };
+  }
+
   function sessionToken(storage = globalScope.localStorage) {
     for (const key of ["mws_admin_supabase_session", "maxwebstudioCurrentSession", "maxwebstudioSupabaseAuthSession"]) {
       try {
@@ -168,7 +176,9 @@
     const relink = document.getElementById("factory-editor-relink");
     const openNormal = document.getElementById("factory-editor-open-normal");
     const workspace = document.querySelector(".factory-guided-preview-workspace");
-    if (!frame || !toggle || !empty || !details || !note || !workspace || !globalScope.crypto?.getRandomValues) return;
+    const editorWorkspace = document.querySelector(".factory-editor-workspace");
+    const settingsPanel = document.getElementById("factory-section-context");
+    if (!frame || !toggle || !empty || !details || !note || !workspace || !editorWorkspace || !settingsPanel || !globalScope.crypto?.getRandomValues) return;
 
     const state = {
       enabled: false, nonce: "", previewVersionId: "", origin: globalScope.location.origin, frameWindow: null, sections: [], selectedSection: null,
@@ -211,19 +221,23 @@
       if (available && !state.enabled) resetPanel();
       else if (!available && actionable) resetPanel(editorAvailabilityMessage(availability));
     };
+    const syncEditorLayout = () => {
+      const layout = editorLayoutState({ enabled: state.enabled, editable: frame.dataset.editorAvailable === "true" });
+      editorWorkspace.classList.toggle("has-settings-panel", layout.showSettingsPanel);
+      settingsPanel.hidden = !layout.showSettingsPanel;
+      settingsPanel.setAttribute("aria-hidden", layout.showSettingsPanel ? "false" : "true");
+    };
     const setEnabledState = (enabled) => {
       state.enabled = enabled;
       toggle.classList.toggle("is-active", enabled);
       toggle.setAttribute("aria-pressed", enabled ? "true" : "false");
+      toggle.textContent = enabled ? "Bewerken sluiten" : "Bewerken";
       workspace.classList.toggle("is-editor-mode", enabled);
       frame.dataset.editorActive = enabled ? "true" : "false";
+      syncEditorLayout();
     };
-    const disable = () => {
-      resetImageState(true);
-      setEnabledState(false);
-      state.nonce = "";
-      state.previewVersionId = "";
-      state.sections = [];
+    const clearSectionSelection = (resetPreview = true) => {
+      resetImageState(resetPreview);
       state.selectedSection = null;
       state.hero = null;
       state.textSection = null;
@@ -234,6 +248,13 @@
       state.successMessage = "";
       state.pendingSelection = "";
       resetPanel();
+    };
+    const disable = () => {
+      clearSectionSelection(true);
+      setEnabledState(false);
+      state.nonce = "";
+      state.previewVersionId = "";
+      state.sections = [];
       const baseUrl = frame.dataset.previewBaseUrl || "";
       if (baseUrl && frame.getAttribute("src") !== baseUrl) frame.src = baseUrl;
     };
@@ -875,25 +896,34 @@
         }
       }
       if (type === "SECTION_SELECTED") renderSection(payload.section);
-      if (type === "SECTION_DESELECTED") { resetImageState(false); state.selectedSection = null; state.hero = null; state.textSection = null; resetPanel(); }
+      if (type === "SECTION_DESELECTED") clearSectionSelection(false);
       if (type === "PREVIEW_ERROR") state.hero ? renderHeroEditor(`Bewerkmodusfout: ${payload.code}.`) : state.textSection ? renderTextEditor(`Bewerkmodusfout: ${payload.code}.`) : resetPanel(`Bewerkmodus kon niet starten (${payload.code}).`);
     });
-    globalScope.addEventListener("keydown", (event) => { if (state.enabled && event.key === "Escape") { postToPreview("DESELECT"); resetPanel(); } });
+    globalScope.addEventListener("keydown", (event) => {
+      if (!state.enabled || event.key !== "Escape") return;
+      if (state.selectedSection) {
+        postToPreview("DESELECT");
+        clearSectionSelection(true);
+      } else disable();
+    });
     globalScope.addEventListener("factory:preview-context", () => {
-      toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "") || frame.dataset.editorAvailable !== "true";
+      const editable = Boolean(frame.dataset.previewBaseUrl) && UUID_PATTERN.test(frame.dataset.previewVersionId || "") && frame.dataset.editorAvailable === "true";
+      toggle.disabled = !editable;
       showAvailability(frame.dataset.editorAvailability || "");
-      if (state.enabled && state.previewVersionId !== frame.dataset.previewVersionId) {
+      if (state.enabled && !editable) disable();
+      else if (state.enabled && state.previewVersionId !== frame.dataset.previewVersionId) {
         state.pendingSelection ||= state.selectedSection?.id || "";
         enable();
-      }
+      } else syncEditorLayout();
     });
     frame.addEventListener("load", () => { if (state.imageBlobUrl) revokeImageBlob(false); state.frameWindow = frame.contentWindow; });
     toggle.disabled = !frame.dataset.previewBaseUrl || !UUID_PATTERN.test(frame.dataset.previewVersionId || "") || frame.dataset.editorAvailable !== "true";
+    setEnabledState(false);
     resetPanel();
     showAvailability(frame.dataset.editorAvailability || "");
   }
 
-  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorAvailabilityMessage, editorUrl, safeHeroLink, sessionToken, textParagraphs, validateBridgeEvent, validateHeroDraft, validateTextDraft, validPayload, validSection };
+  const api = { MAX_MESSAGE_BYTES, PROTOCOL, byteLength, editorAvailabilityMessage, editorLayoutState, editorUrl, safeHeroLink, sessionToken, textParagraphs, validateBridgeEvent, validateHeroDraft, validateTextDraft, validPayload, validSection };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (globalScope?.document) {
     globalScope.WebsiteFactoryPreviewEditor = api;
