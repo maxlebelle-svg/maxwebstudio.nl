@@ -1,5 +1,5 @@
 const DEMO_IMAGE_BASE = "/assets/demo-images/library";
-const { selectPhotoAssetGroup } = require("./industry-intelligence/photo-selection-policy");
+const { selectPhotoAssetGroup, selectPhotoAssetsForSlots } = require("./industry-intelligence/photo-selection-policy");
 const DEMO_IMAGE_ROLES = Object.freeze([
   "hero",
   "service",
@@ -12,7 +12,6 @@ const DEMO_IMAGE_ROLES = Object.freeze([
   "review",
   "background",
 ]);
-const HOLISTIC_CANONICAL_IMAGE = "natuur-coaching.png";
 
 const roleLabels = Object.freeze({
   hero: "hero",
@@ -26,6 +25,41 @@ const roleLabels = Object.freeze({
   review: "review en vertrouwen",
   background: "achtergrond",
 });
+
+const HOLISTIC_ASSET_CATALOG = Object.freeze([
+  holisticAsset("natuur-coaching.png", "738b4556db3740f817ebec634e38ccab9c71bbbbebaf35e9d2ab5995dcdfa020", ["holistic", "nature", "calm", "coaching", "personal-growth", "walking", "connection", "16:9"]),
+  holisticAsset("intake-gesprek.png", "62469f59bd29b112293e55944b0a1e6c446e766c409da2be5ebd295a9f9b7e25", ["holistic", "conversation", "coaching", "consultation", "guidance", "personal-guidance", "16:9"]),
+  holisticAsset("behandelruimte.png", "393df479022a4af73832cf07f6f483d785ce37d4ca4a8f0cec8872fdfbf92dce", ["holistic", "treatment-room", "wellness", "session", "calm", "interior", "16:9"]),
+  holisticAsset("meditatie-moment.png", "40aab94edf279ddb6690bc53526758d6776313103552a06c1e76f5793918e995", ["holistic", "meditation", "mindfulness", "relaxation", "nature", "calm"], "5:3"),
+  holisticAsset("wellness-details.png", "74438384500f30490d4609ad4d98e9e77c054873f3ffda35b23dc15b883208ad", ["holistic", "energy-work", "holistic-treatment", "hands", "peaceful", "wellness", "16:9"]),
+  holisticAsset("ademwerk-groep.png", "e342c1651d560f85a4f09f0bd2e114ea6103c033614bdb63ced205a5a62f5a42", ["holistic", "energy-work", "breathwork", "session", "connection", "peaceful", "16:9"]),
+  holisticAsset("journaling-begeleiding.png", "b1fc4d3043a9bb355e4e7cfced11c4c8d43b10e05349b84a8b9f25a6ddd0bb86", ["holistic", "personal-guidance", "journaling", "reflection", "coaching", "personal-growth", "calm", "16:9"]),
+  holisticAsset("ontspanning-sessie.png", "e19a44a040762889afb3c475d8442a077a690f09c069f5fbad44d07b6e50ab29", ["holistic", "relaxation", "wellness", "session", "calm", "16:9"]),
+  holisticAsset("thee-wachtruimte.png", "f0040d19ef49dc7827b7d53d664ace615c71791aac9bb7740079ae4958f1fd1b", ["holistic", "welcoming", "calm", "wellness", "interior", "connection", "16:9"]),
+  holisticAsset("sessie-voorbereiden.png", "0a8f03fc6bef6c522758f68a4216f8875ab9d2ba1a36cfb6646359e6fc9dfcc3", ["holistic", "authentic", "personal-guidance", "session", "treatment-room", "calm", "16:9"]),
+]);
+
+const SLOT_TO_LEGACY_ROLE = Object.freeze({
+  hero: "hero",
+  introduction: "background",
+  service_1: "detail",
+  service_2: "team",
+  service_3: "service",
+  service_4: "service-alt",
+  service_5: "project",
+  about: "project-alt",
+  contact: "contact",
+  testimonial: "review",
+});
+
+const ACTIVE_LEGACY_IMAGE_SLOTS = Object.freeze([
+  "hero",
+  "service_1",
+  "service_2",
+  "service_3",
+  "service_4",
+  "service_5",
+]);
 
 const demoImageGroups = Object.freeze([
   group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
@@ -79,9 +113,7 @@ const demoImageGroups = Object.freeze([
   group("verhuisbedrijf", "Verhuisbedrijf", ["verhuisbedrijf-demo"], ["verhuisbedrijf", "verhuizen", "transport", "opslag", "planning", "logistiek"]),
   group("dierenarts", "Dierenarts", ["dierenarts-demo"], ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"]),
   group("schoonheidssalon", "Schoonheidssalon", ["schoonheidssalon-demo"], ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"]),
-  customGroup("holistisch", "Holistische praktijk", ["holistisch-demo"], ["holistisch", "spiritueel", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"], {
-    ...Object.fromEntries(DEMO_IMAGE_ROLES.map((role) => [role, HOLISTIC_CANONICAL_IMAGE])),
-  }),
+  holisticGroup(),
   group("makelaar", "Makelaar", ["makelaar-demo"], ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"]),
   group("hotel", "Hotel", ["hotel-demo"], ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"]),
   group("financieel-adviseur", "Financieel adviseur", ["financieel-adviseur-demo"], ["financieel", "financieel advies", "hypotheek", "accountant", "belasting", "advies"]),
@@ -109,6 +141,47 @@ function customGroup(slug, label, demoSiteIds, keywords, roleFiles = {}) {
     demoSiteIds: Object.freeze(demoSiteIds),
     keywords: Object.freeze(keywords),
     assets: Object.freeze(assets),
+  });
+}
+
+function holisticGroup() {
+  const assets = Object.fromEntries(ACTIVE_LEGACY_IMAGE_SLOTS.map((slot, index) => {
+    const role = SLOT_TO_LEGACY_ROLE[slot];
+    return [role, roleAssetFromSelection(HOLISTIC_ASSET_CATALOG[index], role, slot)];
+  }));
+  return Object.freeze({
+    slug: "holistisch",
+    label: "Holistische praktijk",
+    demoSiteIds: Object.freeze(["holistisch-demo"]),
+    keywords: Object.freeze(["holistisch", "spiritueel", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"]),
+    assets: Object.freeze(assets),
+    assetCatalog: HOLISTIC_ASSET_CATALOG,
+  });
+}
+
+function holisticAsset(fileName, checksum, tags, aspectRatio = "16:9") {
+  const name = fileName.replace(/\.[^.]+$/, "");
+  return Object.freeze({
+    assetId: `holistisch:${name}`,
+    slug: `holistisch-${name}`,
+    groupSlug: "holistisch",
+    src: `${DEMO_IMAGE_BASE}/holistisch/${fileName}`,
+    checksum,
+    tags: Object.freeze(tags),
+    aspectRatio,
+    imageType: "photo",
+    visualSuitability: 1,
+    alt: `Holistische praktijk ${name.replace(/-/g, " ")}`,
+  });
+}
+
+function roleAssetFromSelection(selected = {}, role = "service", slot = "introduction") {
+  return Object.freeze({
+    ...selected,
+    role,
+    type: role,
+    selectionSlot: slot,
+    alt: selected.alt || `Holistische praktijk ${roleLabels[role]} afbeelding voor demo website`,
   });
 }
 
@@ -171,6 +244,35 @@ function resolveDemoImageGroup(input = {}) {
 function resolveDemoImageAssetSetForProfile(profile, input = {}) {
   const selection = selectPhotoAssetGroup(profile, demoImageGroups);
   const groupItem = selection.group || demoImageGroups.find((item) => item.slug === "neutral-professional");
+  if (Array.isArray(groupItem.assetCatalog) && groupItem.assetCatalog.length) {
+    const slotSelection = selectPhotoAssetsForSlots(profile, groupItem.assetCatalog);
+    const assets = Object.fromEntries(ACTIVE_LEGACY_IMAGE_SLOTS.map((slot) => {
+      const role = SLOT_TO_LEGACY_ROLE[slot];
+      return [role, roleAssetFromSelection(slotSelection.slots[slot], role, slot)];
+    }));
+    const slots = Object.fromEntries(Object.entries(slotSelection.slots).map(([slot, selected]) => [slot, selected ? {
+      selectedAssetId: selected.selectedAssetId,
+      checksum: selected.checksum,
+      score: selected.score,
+      slot: selected.slot,
+      duplicateAvoided: selected.duplicateAvoided,
+      fallbackReason: selected.fallbackReason,
+      reusedAsset: selected.reusedAsset,
+    } : null]));
+    return {
+      assets,
+      selection: {
+        ...selection,
+        group: undefined,
+        groupSlug: groupItem.slug,
+        fallbackGroupUsed: !selection.group,
+        slots,
+        uniqueAssetCount: slotSelection.uniqueAssetCount,
+        uniqueChecksumCount: slotSelection.uniqueChecksumCount,
+        fallbackCount: slotSelection.fallbackCount,
+      },
+    };
+  }
   return { assets: groupItem.assets, selection: { ...selection, group: undefined, groupSlug: groupItem.slug, fallbackGroupUsed: !selection.group } };
 }
 
@@ -185,6 +287,7 @@ function resolveDemoImageAsset(input = {}, role = "hero") {
 
 module.exports = {
   DEMO_IMAGE_ROLES,
+  HOLISTIC_ASSET_CATALOG,
   demoImageGroups,
   resolveDemoImageAsset,
   resolveDemoImageAssetSet,

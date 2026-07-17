@@ -9,7 +9,6 @@ test("Netlify bundles Factory functions with esbuild to avoid tracing the full d
     const section = config.slice(config.indexOf(`[functions."${name}"]`), config.indexOf("\n[", config.indexOf(`[functions."${name}"]`) + 1));
     assert.match(section, /public\/assets\/demo-images\/library\/bouwbedrijf\/\*\*/);
     assert.match(section, /public\/assets\/demo-images\/library\/financieel-adviseur\/\*\*/);
-    assert.match(section, /public\/assets\/demo-images\/library\/holistisch\/natuur-coaching\.png/);
-    assert.doesNotMatch(section, /public\/assets\/demo-images\/library\/holistisch\/\*\*/);
+    assert.match(section, /public\/assets\/demo-images\/library\/holistisch\/\*\*/);
   }
 });

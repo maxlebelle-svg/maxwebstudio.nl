@@ -117,10 +117,15 @@ function persistedHeelJeZelfPackage() {
   generatedPackage.meta.recoveryMarker = "production-package-was-reused";
   const canonicalLocalPath = "assets/holistisch-natuur-coaching.png";
   const productionCanonicalPath = "/assets/demo-images/library/holistisch/natuur-coaching.png";
-  const serialized = JSON.stringify({
+  const holisticLocalPaths = generatedPackage.files
+    .filter((file) => String(file.path || "").startsWith("assets/holistisch-"))
+    .map((file) => file.path);
+  let serialized = JSON.stringify({
     ...generatedPackage,
-    files: generatedPackage.files.filter((file) => file.path !== canonicalLocalPath),
-  }).replaceAll(canonicalLocalPath, productionCanonicalPath);
+    files: generatedPackage.files.filter((file) => !holisticLocalPaths.includes(file.path)),
+  });
+  for (const localPath of holisticLocalPaths) serialized = serialized.replaceAll(localPath, productionCanonicalPath);
+  serialized = serialized.replaceAll(canonicalLocalPath, productionCanonicalPath);
   const persisted = JSON.parse(serialized);
   const entry = persisted.files.find((file) => file.path === "index.html");
   entry.content += [
