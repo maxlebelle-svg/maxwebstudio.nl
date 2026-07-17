@@ -32,8 +32,10 @@ test("sidebar module exports the full phase one component contract without auto 
   for (const name of ["AdminSidebar", "SidebarSection", "SidebarItem", "WorkspaceCard", "WorkspaceSelector", "MetricBadge", "StatusBadge", "Avatar", "UserProfileMenu", "EmptyWorkspaceState", "LoadingSkeleton"]) assert.match(source, new RegExp(`\\b${name}\\b`));
   assert.doesNotMatch(source, /DOMContentLoaded|querySelector\(|appendChild\(AdminSidebar|\.replaceChildren\(AdminSidebar/);
   assert.match(source, /image\.addEventListener\("error"/);
-  assert.match(source, /brandLogo\.src = "\/max-webstudio-logo-full\.svg"/);
-  assert.match(source, /brandLogo\.alt = "Max Webstudio"/);
+  assert.match(source, /brandLogo\.src = "\/max-webstudio-logo-mark\.svg"/);
+  assert.match(source, /brandLogo\.alt = ""/);
+  assert.match(source, /"mws-sidebar-brand-copy"/);
+  assert.match(source, /"Max Webstudio"/);
   assert.match(source, /brand\.classList\.add\("is-fallback"\)/);
   assert.match(source, /aria-current/);
   assert.match(source, /aria-disabled/);
@@ -52,6 +54,7 @@ test("customer-only production routes are explicit and relationship routes never
 test("shared sidebar styles cover every normal admin page and exclude explicit exceptions", () => {
   const css = read("public/admin/styles/admin-sidebar-system.css");
   assert.match(css, /\.mws-admin-sidebar-v2/);
+  assert.match(css, /\.mws-sidebar-brand-copy strong \{ color: #fff; font-size: 18px;/);
   for (const tone of ["success", "info", "purple", "warning", "danger"]) assert.match(css, new RegExp(`is-${tone}`));
   assert.match(css, /\.admin-body \.admin-crm-shell \{ grid-template-columns: 288px minmax\(0, 1fr\); \}/);
   assert.match(css, /data-shared-admin-sidebar="true"\] \.admin-page-search \{ flex: 0 0 auto; \}/);

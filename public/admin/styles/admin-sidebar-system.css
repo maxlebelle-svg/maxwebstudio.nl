@@ -33,8 +33,11 @@
 .mws-admin-sidebar-v2 *, .mws-admin-sidebar-v2 *::before, .mws-admin-sidebar-v2 *::after { box-sizing: border-box; }
 .admin-body .admin-crm-shell { grid-template-columns: 288px minmax(0, 1fr); }
 .admin-body #admin-sidebar-root { min-width: 0; }
-.mws-sidebar-brand { display: flex; align-items: center; gap: 10px; min-height: 44px; color: inherit; font-weight: 850; text-decoration: none; }
-.mws-sidebar-brand-logo { display: block; width: 174px; height: 40px; object-fit: contain; object-position: left center; }
+.mws-sidebar-brand { display: flex; align-items: center; gap: 12px; min-height: 54px; color: inherit; font-weight: 850; text-decoration: none; }
+.mws-sidebar-brand-logo { display: block; flex: 0 0 54px; width: 54px; height: 54px; object-fit: contain; object-position: left center; }
+.mws-sidebar-brand-copy { display: grid; min-width: 0; gap: 2px; }
+.mws-sidebar-brand-copy strong { color: #fff; font-size: 18px; font-weight: 900; line-height: 1.1; white-space: nowrap; }
+.mws-sidebar-brand-copy small { color: rgba(226, 236, 248, 0.52); font-size: 8px; font-weight: 850; letter-spacing: .16em; line-height: 1.2; white-space: nowrap; }
 .mws-sidebar-brand-mark { display: none; width: 36px; height: 36px; place-items: center; border-radius: 11px; background: linear-gradient(135deg, #155eef, #19c2ff); box-shadow: 0 10px 28px rgba(21, 94, 239, 0.3); }
 .mws-sidebar-brand.is-fallback .mws-sidebar-brand-logo { display: none; }
 .mws-sidebar-brand.is-fallback .mws-sidebar-brand-mark { display: grid; }

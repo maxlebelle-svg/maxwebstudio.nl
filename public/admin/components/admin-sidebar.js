@@ -227,10 +227,11 @@
     const sidebar = element("aside", "mws-admin-sidebar-v2");
     sidebar.setAttribute("aria-label", "Admin navigatie");
     const brand = element("a", "mws-sidebar-brand"); brand.href = "admin-dashboard.html"; brand.setAttribute("aria-label", "Max Webstudio admin dashboard");
-    const brandLogo = element("img", "mws-sidebar-brand-logo"); brandLogo.src = "/max-webstudio-logo-full.svg"; brandLogo.alt = "Max Webstudio"; brandLogo.width = 174; brandLogo.height = 40;
+    const brandLogo = element("img", "mws-sidebar-brand-logo"); brandLogo.src = "/max-webstudio-logo-mark.svg"; brandLogo.alt = ""; brandLogo.width = 54; brandLogo.height = 54;
     const brandFallback = element("span", "mws-sidebar-brand-mark", "M"); brandFallback.setAttribute("aria-hidden", "true");
+    const brandCopy = element("span", "mws-sidebar-brand-copy"); brandCopy.append(element("strong", "", "Max Webstudio"), element("small", "", "BUILD BETTER ONLINE"));
     brandLogo.addEventListener("error", () => brand.classList.add("is-fallback"), { once: true });
-    brand.append(brandLogo, brandFallback); sidebar.append(brand);
+    brand.append(brandLogo, brandFallback, brandCopy); sidebar.append(brand);
     const content = element("div", "mws-sidebar-content");
     config.forEach((section) => { if (section.type === "workspace") content.append(WorkspaceCard({ relationship, onSwitch: onSwitchWorkspace, onSelect: onSelectWorkspace, onClear: onClearWorkspace })); else content.append(SidebarSection({ section, activeId, badgeValues, relationship, canAccess })); });
     sidebar.append(content, UserProfileMenu({ user, perspective, actions: profileActions }));
