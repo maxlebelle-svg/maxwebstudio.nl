@@ -41,13 +41,13 @@ test.beforeEach(() => {
 
 function response(value) { return { ok: true, status: 200, text: async () => JSON.stringify(value) }; }
 
-test("exact previewVersionId selects only that package and derives missing source", async () => {
+test("exact previewVersionId selects only that package and inlines its assets", async () => {
   const result = await preview.handler(event());
   assert.equal(result.statusCode, 200);
   assert.match(result.body, /EXACT VERSION PACKAGE/);
   assert.doesNotMatch(result.body, /OLD JOURNEY PACKAGE/);
-  assert.match(result.body, /source=manual_zip/);
-  assert.match(result.body, new RegExp(`previewVersionId=${VERSION}`));
+  assert.match(result.body, /<style data-preview-asset="styles\.css">body\{color:green\}<\/style>/);
+  assert.doesNotMatch(result.body, /file=styles\.css/);
 });
 
 test("wrong explicit source returns 409 without falling back", async () => {

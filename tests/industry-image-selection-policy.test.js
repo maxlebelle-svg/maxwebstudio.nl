@@ -60,6 +60,21 @@ test("hero and generated service cards do not all use the same asset", () => {
   assert.ok(services.some((src) => src !== hero));
 });
 
+test("Factory hero never uses a logo and the generated logo belongs to the customer", () => {
+  const generated = buildWebsitePackage({
+    journey: { businessName: "Heel je Zelf", packageType: "starter" },
+    briefing: "Branche: Energetisch\nDiensten: Advies, Behandeling en Ontspanning",
+    version: 1,
+  });
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  const logo = generated.files.find((file) => file.path === "assets/logo.svg").content;
+  const hero = html.match(/<section class="hero"[\s\S]*?<img[^>]+src="([^"]+)"/)?.[1];
+  assert.ok(hero);
+  assert.doesNotMatch(hero, /logo|favicon|brand-mark/i);
+  assert.match(logo, />HJ<\/text>/);
+  assert.doesNotMatch(logo, /M34 190V50/);
+});
+
 test("five suitable unique assets produce five unique service selections", () => {
   const selected = selectPhotoAssetsForSlots(holisticProfile(), HOLISTIC_ASSET_CATALOG.slice(0, 5), ["service_1", "service_2", "service_3", "service_4", "service_5"]);
   assert.equal(selected.selections.length, 5);
