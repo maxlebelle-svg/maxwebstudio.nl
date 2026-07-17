@@ -855,6 +855,9 @@ function normalizePreviewVersion(row = {}) {
   const sectionMarkersAvailable = typeof metadata.sectionMarkersAvailable === "boolean" ? metadata.sectionMarkersAvailable : editorManifestAvailable;
   const enrichmentAvailable = editorEnrichmentAvailable(packageMeta);
   const editorAvailable = renderable && editorManifestAvailable && sectionMarkersAvailable && enrichmentAvailable;
+  const sourceType = ["manual", "manual_zip"].includes(cleanText(metadata.previewSource || packageMeta.previewSource).toLowerCase())
+    ? "manual_zip"
+    : "factory_build";
   const feedbackItems = Array.isArray(row.feedback_items) ? row.feedback_items : [];
   return {
     id: cleanText(row.id),
@@ -870,6 +873,8 @@ function normalizePreviewVersion(row = {}) {
     qualityReport: row.quality_report && typeof row.quality_report === "object" ? row.quality_report : null,
     generatedPackage,
     metadata,
+    sourceType,
+    sourceLabel: sourceType === "manual_zip" ? "Geüploade ZIP" : "Website Factory",
     status: cleanText(row.status || "internal"),
     entryFile,
     previewStored,
@@ -877,6 +882,7 @@ function normalizePreviewVersion(row = {}) {
     editorManifestAvailable,
     sectionMarkersAvailable,
     editorAvailable,
+    editable: sourceType === "factory_build" && editorAvailable,
     availability: !previewStored ? "missing_version" : !renderable ? "source_unavailable" : editorAvailable ? "editable" : editorManifestAvailable && sectionMarkersAvailable && !enrichmentAvailable ? "enrichment_read_only" : "legacy_read_only",
     feedbackItems,
     feedbackCount: feedbackItems.length,
@@ -884,6 +890,10 @@ function normalizePreviewVersion(row = {}) {
     publishedToPortal: Boolean(row.published_to_portal),
     publishedAt: cleanText(row.published_at),
     isActive: row.is_active !== false,
+    active: row.is_active !== false,
+    uploadId: cleanText(metadata.uploadId),
+    contentHash: cleanText(metadata.manualZipContentHash || metadata.contentHash || packageMeta.contentHash),
+    fileName: cleanText(metadata.fileName || packageMeta.fileName),
     createdAt: cleanText(row.created_at),
     createdBy: cleanText(row.created_by),
   };

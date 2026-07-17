@@ -68,7 +68,7 @@ exports.handler = async (event) => {
         change_summary: "Handmatige ZIP-preview verwerkt.",
         preview_token: previewToken,
         generated_package: generatedPackage,
-        is_active: true,
+        is_active: false,
         published_to_portal: false,
         allow_feedback: true,
         allow_approval: true,
@@ -82,9 +82,7 @@ exports.handler = async (event) => {
       version = rows[0] || null;
     }
     if (!version?.id) return fail(500, "preview_version_failed", "De previewversie kon niet worden opgeslagen.", "create_preview_version", requestId);
-    version = await setActiveManualVersion(context, customerId, version);
     version = await ensureManualPreviewUrl(context, customerId, version);
-    await persistJourneySource(context, demoJourneyId || version.demo_journey_id, version);
     await safeTimeline({ customerId, eventType: "manual_preview_uploaded", title: "Handmatige website geüpload", description: `${fileName} is veilig verwerkt.`, module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "info", metadata: { dedupeKey: `manual_preview_uploaded:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     await safeTimeline({ customerId, eventType: "manual_preview_ready", title: "Handmatige preview klaar", description: "De websitepreview kan worden gecontroleerd en gepubliceerd.", module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "success", metadata: { dedupeKey: `manual_preview_ready:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     return json(200, {
@@ -97,7 +95,7 @@ exports.handler = async (event) => {
       entryFile,
       renderStatus: "ready",
       previewVersion: sanitize(version),
-      message: "ZIP succesvol verwerkt. De websitepreview is klaar en kan nu naar het klantportaal worden gepubliceerd.",
+      message: "ZIP succesvol verwerkt. De preview is beschikbaar om te bekijken; de actieve klantpreview is niet gewijzigd.",
     });
   } catch (error) {
     const phase = error.phase || phaseForCode(error.code);
@@ -260,7 +258,7 @@ function findSignature(buffer, signature, start) { for (let i = buffer.length - 
 function decodeZip(value) { try { return Buffer.from(text(value), "base64"); } catch { return Buffer.alloc(0); } }
 function zipError(code, message, status = 400) { const error = new Error(message); error.code = code; error.status = status; return error; }
 function safeMessage(error) { return error.code ? error.message : "Het ZIP-bestand kon niet worden verwerkt."; }
-function sanitize(row = {}) { return { id: text(row.id), customerId: text(row.customer_id), projectId: text(row.project_id), websiteId: text(row.website_id), demoJourneyId: text(row.demo_journey_id), version: Number(row.version || 1), title: text(row.title), previewSource: "manual_zip", status: text(row.status || "internal"), previewUrl: text(row.preview_url), previewToken: text(row.preview_token), createdAt: text(row.created_at), contentHash: text(row.metadata?.manualZipContentHash) }; }
+function sanitize(row = {}) { return { id: text(row.id), customerId: text(row.customer_id), projectId: text(row.project_id), websiteId: text(row.website_id), demoJourneyId: text(row.demo_journey_id), version: Number(row.version || 1), title: text(row.title), sourceType: "manual_zip", sourceLabel: "Geüploade ZIP", previewSource: "manual_zip", status: text(row.status || "internal"), previewUrl: text(row.preview_url), previewToken: text(row.preview_token), createdAt: text(row.created_at), editable: false, active: row.is_active === true, isActive: row.is_active === true, buildJobId: "", uploadId: text(row.metadata?.uploadId), contentHash: text(row.metadata?.manualZipContentHash), fileName: text(row.metadata?.fileName), renderable: Boolean(text(row.id) && text(row.preview_url) && text(row.preview_token)) }; }
 function uuid(value) { const clean = text(value); return uuidPattern.test(clean) ? clean : ""; }
 function text(value = "") { return String(value || "").trim(); }
 function getContext(admin) { const supabaseUrl = text(process.env.SUPABASE_URL).replace(/\/$/, ""); const serviceRoleKey = text(process.env.SUPABASE_SERVICE_ROLE_KEY); return { available: Boolean(supabaseUrl && serviceRoleKey), supabaseUrl, serviceRoleKey, admin }; }
