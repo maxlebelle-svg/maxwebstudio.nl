@@ -254,29 +254,21 @@ test("authoritative catalog snapshot inventariseert targets, ACL-bronnen en migr
   }
 });
 
-test("API heeft afzonderlijke selectcontracten voor legacy, prerequisites en workspace", () => {
-  assert.match(api, /lead_status,pipeline_stage,interest_level,priority,is_favorite,archived_at,assigned_user_id/);
-  assert.match(api, /lead_status,assigned_user_id,assigned_at,assigned_by,normalized_company_name/);
-  assert.match(api, /status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata/);
+test("API leest leads schema-onafhankelijk in één request", () => {
+  assert.match(api, /select:\s*"\*"/);
+  assert.doesNotMatch(api, /const selects = \[\s*"id,company_name/);
 });
 
-test("API doorloopt zonder crash legacy, prerequisites-only en workspace-selects", async () => {
+test("API leest legacy, prerequisites-only en workspace-rows zonder schema-retries", async () => {
   const previousFetch = global.fetch;
-  const states = {
-    legacy: (select) => !select.includes("assigned_user_id") && select.includes("company_name"),
-    prerequisites: (select) => select.includes("assigned_user_id") && !select.includes("pipeline_stage") && !select.includes("reviewed_at"),
-    workspace: (select) => select.includes("pipeline_stage") && !select.includes("reviewed_at"),
-  };
+  const states = ["legacy", "prerequisites", "workspace"];
   try {
-    for (const [state, accepts] of Object.entries(states)) {
+    for (const state of states) {
+      let requests = 0;
       global.fetch = async (url) => {
+        requests += 1;
         const select = new URL(url).searchParams.get("select") || "";
-        if (!accepts(select)) {
-          return new Response(JSON.stringify({ code: "42703", message: `column missing in ${state}` }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
+        assert.equal(select, "*");
         return new Response(JSON.stringify([{ id: "11111111-1111-4111-8111-111111111111", company_name: state, metadata: {} }]), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -284,6 +276,7 @@ test("API doorloopt zonder crash legacy, prerequisites-only en workspace-selects
       };
       const rows = await leadsApi._test.readLeadRows({ supabaseUrl: "https://example.test", serviceRoleKey: "test-only" });
       assert.equal(rows[0].company_name, state);
+      assert.equal(requests, 1);
     }
   } finally {
     global.fetch = previousFetch;
