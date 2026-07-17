@@ -185,6 +185,8 @@ test("Factory renderer recovers the exact stored preview version when the journe
     assert.match(result.body, /Editor Testbedrijf/);
     assert.match(result.body, /<style data-preview-asset="styles\.css">/);
     assert.doesNotMatch(result.body, /file=styles\.css/);
+    assert.match(result.body, /\/api\/demo-preview\?/);
+    assert.ok(Buffer.byteLength(result.body, "utf8") < 6 * 1024 * 1024, "Factory HTML response must stay below the Netlify function response limit");
     assert.doesNotMatch(result.body, /Previewbron niet beschikbaar/);
     assert.equal(requested.filter((url) => url.includes("website_preview_versions")).length, 1);
     assert.match(requested.find((url) => url.includes("website_preview_versions")), new RegExp(VERSION_ID));

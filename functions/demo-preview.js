@@ -102,7 +102,7 @@ exports.handler = async (event) => {
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
   const resolvedPreviewVersionId = cleanText(previewVersion?.id || requestedPreviewVersionId);
   let content = file?.path?.endsWith(".html")
-    ? rewritePreviewHtml(inlinePreviewPackageAssets(fileContent, previewPackage), id, token, resolvedSource, resolvedPreviewVersionId)
+    ? rewritePreviewHtml(inlinePreviewPackageAssets(fileContent, previewPackage, { id, token, source: resolvedSource, previewVersionId: resolvedPreviewVersionId }), id, token, resolvedSource, resolvedPreviewVersionId)
     : file?.path?.endsWith(".css")
       ? rewritePreviewAssetReferences(fileContent, id, token, resolvedSource, resolvedPreviewVersionId)
     : fileContent;
@@ -187,13 +187,10 @@ function resolvePreviewFilePath(value = {}, requestedFilePath = "") {
     || "index.html";
 }
 
-function inlinePreviewPackageAssets(html = "", previewPackage = {}) {
+function inlinePreviewPackageAssets(html = "", previewPackage = {}, context = {}) {
   const files = Array.isArray(previewPackage?.files) ? previewPackage.files : [];
   const fileMap = new Map(files.map((file) => [cleanRelativePath(file?.path), file]).filter(([path]) => path));
-  const inlineCss = (css = "") => String(css || "").replace(/url\(["']?([^"')]+)["']?\)/gi, (match, assetPath) => {
-    const asset = fileMap.get(cleanRelativePath(assetPath));
-    return asset ? `url("${dataUriFor(asset)}")` : match;
-  });
+  const inlineCss = (css = "") => rewritePreviewAssetReferences(String(css || ""), context.id, context.token, context.source, context.previewVersionId);
   return String(html || "")
     .replace(/<link([^>]+?)href=["']([^"']+\.css)["']([^>]*)>/gi, (match, _before, assetPath) => {
       const asset = fileMap.get(cleanRelativePath(assetPath));
@@ -202,10 +199,6 @@ function inlinePreviewPackageAssets(html = "", previewPackage = {}) {
     .replace(/<script([^>]+?)src=["']([^"']+\.js)["']([^>]*)><\/script>/gi, (match, _before, assetPath) => {
       const asset = fileMap.get(cleanRelativePath(assetPath));
       return asset ? `<script data-preview-asset="${escapeHtml(cleanRelativePath(assetPath))}">${fileContentFor(asset)}<\/script>` : match;
-    })
-    .replace(/(src|href)=["']([^"']+\.(?:svg|png|jpe?g|webp|gif|ico|woff2?|ttf))["']/gi, (match, attribute, assetPath) => {
-      const asset = fileMap.get(cleanRelativePath(assetPath));
-      return asset ? `${attribute}="${dataUriFor(asset)}"` : match;
     });
 }
 
@@ -218,19 +211,11 @@ function fileContentFor(file = {}) {
   return String(file?.content || "");
 }
 
-function dataUriFor(file = {}) {
-  const mimeType = contentTypeFor(file?.path).split(";")[0];
-  const content = file?.encoding === "base64"
-    ? cleanText(file.content)
-    : Buffer.from(String(file?.content || ""), "utf8").toString("base64");
-  return `data:${mimeType};base64,${content}`;
-}
-
 function previewAssetUrl(file = "", id = "", token = "", source = "", previewVersionId = "") {
   const query = new URLSearchParams({ id, token, source });
   if (previewVersionId) query.set("previewVersionId", previewVersionId);
   query.set("file", file);
-  return `/.netlify/functions/demo-preview?${query.toString()}`;
+  return `/api/demo-preview?${query.toString()}`;
 }
 
 function rewritePreviewHtml(html = "", id = "", token = "", source = "", previewVersionId = "") {
