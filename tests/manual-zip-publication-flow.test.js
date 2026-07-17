@@ -13,7 +13,7 @@ const demoPreview = fs.readFileSync(path.join(root, "functions/demo-preview.js")
 test("both visible ZIP entries use one direct picker binding", () => {
   assert.equal((factory.match(/<button[^>]*data-manual-zip-upload/g) || []).length, 2);
   assert.equal((factory.match(/factory-guided-shell"\)\?\.addEventListener\("click"/g) || []).length, 1);
-  assert.match(factory, /function openZipPicker\(\)/);
+  assert.match(factory, /function openZipPicker\(\{ autoProcess = false \} = \{\}\)/);
   assert.match(factory, /manualZipInput\.value = ""/);
   assert.match(factory, /manualZipInput\.click\(\)/);
   const picker = factory.slice(factory.indexOf("function openZipPicker"), factory.indexOf("function selectManualZipFile"));
@@ -22,7 +22,8 @@ test("both visible ZIP entries use one direct picker binding", () => {
   assert.equal((factory.match(/proxyClick\("demo-journey-upload-manual-zip"\)/g) || []).length, 0);
   const guidedFactoryScript = factory.slice(factory.indexOf("function initGuidedFactory"));
   assert.match(factory, /window\.WebsiteFactoryZipPicker = Object\.freeze\(\{ open: openZipPicker \}\)/);
-  assert.equal((guidedFactoryScript.match(/window\.WebsiteFactoryZipPicker\?\.open\?\.\(\)/g) || []).length, 1);
+  assert.equal((guidedFactoryScript.match(/window\.WebsiteFactoryZipPicker\?\.open\?\.\(\{/g) || []).length, 1);
+  assert.match(guidedFactoryScript, /autoProcess: Boolean\(uploadButton\.closest\("#factory-preview-actions-menu"\)\)/);
   assert.doesNotMatch(guidedFactoryScript, /(^|[^.\w])openZipPicker\(\)/);
 });
 
@@ -38,6 +39,7 @@ test("manual upload has one change handler, duplicate guard and explicit states"
   assert.match(factory, /proxyClick\("demo-journey-process-manual-zip"\)/);
   assert.match(factory, /elements\.uploadManualZip\?\.addEventListener\("click"[\s\S]*openZipPicker\(\)/);
   assert.match(factory, /elements\.processManualZip\?\.addEventListener\("click"[\s\S]*uploadManualZipFile\(pendingManualZipFile\)/);
+  assert.match(factory, /manualZipInput\?\.addEventListener\("change", async[\s\S]*if \(autoProcess\) await uploadManualZipFile\(pendingManualZipFile\)/);
   assert.match(factory, /manualZipUploading/);
   assert.match(factory, /Uploaden…/);
   assert.match(factory, /ZIP succesvol verwerkt/);
@@ -108,9 +110,9 @@ test("manual preview activation is persisted server-side and survives refresh", 
   assert.match(factory, /Handmatige preview klaar/);
 });
 
-test("manual publication uses the exact active version without requiring a Factory build or website", () => {
-  assert.match(factory, /manualReady/);
-  assert.match(factory, /website\?\.id \|\| ""/);
+test("manual publication uses the exact selected version without requiring a Factory build or website", () => {
+  assert.match(factory, /selectedPreviewActionContext\(\)/);
+  assert.match(factory, /websiteId: context\.websiteId/);
   assert.match(publication, /previewSource !== PREVIEW_SOURCES\.MANUAL/);
   assert.match(publication, /resolveStandaloneManualOwnership/);
   assert.match(publication, /target = previewSource === PREVIEW_SOURCES\.MANUAL \? selectedVersion/);

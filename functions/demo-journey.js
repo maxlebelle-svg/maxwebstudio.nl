@@ -328,6 +328,53 @@ async function readCustomerPreviewVersion({ supabaseUrl, serviceRoleKey, journey
     || null;
 }
 
+function storedPreviewVersionSource(version = {}) {
+  return normalizePreviewSource(version.metadata?.previewSource || version.generated_package?.meta?.previewSource) || PREVIEW_SOURCES.FACTORY;
+}
+
+async function resolveSelectedDemoPreview({ supabaseUrl, serviceRoleKey, journey, previewVersionId, previewSource }) {
+  const id = cleanUuid(previewVersionId);
+  if (!id) throw previewActionError("PREVIEW_VERSION_INVALID", "Selecteer eerst een geldige previewversie.", 400);
+  const params = new URLSearchParams({ select: "*", id: `eq.${id}`, limit: "1" });
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/website_preview_versions?${params.toString()}`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  const version = rows[0] || null;
+  if (!version?.id) throw previewActionError("PREVIEW_VERSION_NOT_FOUND", "De geselecteerde previewversie bestaat niet meer.", 404);
+  if (version.demo_journey_id && cleanText(version.demo_journey_id) !== cleanText(journey?.id)) {
+    throw previewActionError("PREVIEW_RELATION_MISMATCH", "Deze previewversie hoort niet bij de geselecteerde klantreis.", 409);
+  }
+  if (!version.demo_journey_id && (!version.customer_id || !journey?.customer_id)) {
+    throw previewActionError("PREVIEW_RELATION_MISMATCH", "Deze previewversie heeft geen geldige relatie met de geselecteerde klantreis.", 409);
+  }
+  if (version.customer_id && journey?.customer_id && cleanText(version.customer_id) !== cleanText(journey.customer_id)) {
+    throw previewActionError("PREVIEW_CUSTOMER_MISMATCH", "Deze previewversie hoort niet bij de geselecteerde klant.", 409);
+  }
+  const storedSource = storedPreviewVersionSource(version);
+  const requestedSource = normalizePreviewSource(previewSource);
+  if (!requestedSource || requestedSource !== storedSource) {
+    throw previewActionError("PREVIEW_SOURCE_MISMATCH", "De geselecteerde previewbron komt niet overeen met de opgeslagen versie.", 409);
+  }
+  const generatedPackage = version.generated_package && typeof version.generated_package === "object" ? version.generated_package : {};
+  const previewUrl = cleanText(version.preview_url);
+  if (!Array.isArray(generatedPackage.files) || !generatedPackage.files.length || !previewUrl) {
+    throw previewActionError("PREVIEW_NOT_READY", "Verwerk de preview eerst voordat deze kan worden opgeslagen.", 409);
+  }
+  const expectedRoute = storedSource === PREVIEW_SOURCES.MANUAL
+    ? /\/\.netlify\/functions\/manual-preview-render(?:\?|$)/i
+    : /\/(?:\.netlify\/functions\/demo-preview|demo-preview(?:\.html)?)(?:\?|$)/i;
+  if (!expectedRoute.test(previewUrl)) throw previewActionError("PREVIEW_URL_INVALID", "De opgeslagen preview-URL is niet geldig voor deze previewbron.", 409);
+  return { version, source: storedSource, previewUrl, previewPackage: generatedPackage };
+}
+
+function previewActionError(code, message, status = 409) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  return error;
+}
+
 async function patchCustomerPreviewVersion({ supabaseUrl, serviceRoleKey, id, record = {} }) {
   return supabaseFetch(`${supabaseUrl}/rest/v1/website_preview_versions?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
@@ -744,13 +791,25 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const savedAt = new Date().toISOString();
     const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
     const previousSavedDemo = previewPackage.savedDemoSite || previewPackage.saved_demo_site || null;
-    const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source) || resolveActiveDemoPreview(previewPackage).source || PREVIEW_SOURCES.FACTORY;
-    const sourceResolution = resolveActiveDemoPreview(previewPackage, requestedSource);
+    const requestedPreviewVersionId = cleanUuid(payload.previewVersionId || payload.preview_version_id);
+    const selectedPreview = requestedPreviewVersionId ? await resolveSelectedDemoPreview({
+      supabaseUrl,
+      serviceRoleKey,
+      journey: current,
+      previewVersionId: requestedPreviewVersionId,
+      previewSource: payload.previewSource || payload.preview_source,
+    }) : null;
+    const requestedSource = selectedPreview?.source || normalizePreviewSource(payload.previewSource || payload.preview_source) || resolveActiveDemoPreview(previewPackage).source || PREVIEW_SOURCES.FACTORY;
+    const sourceResolution = selectedPreview ? { available: true, previewPackage: selectedPreview.previewPackage } : resolveActiveDemoPreview(previewPackage, requestedSource);
     if (!sourceResolution.available) return jsonResponse(409, { success: false, code: "preview_source_unavailable", error: "De gekozen previewbron is momenteel niet beschikbaar. Kies een andere bron om verder te gaan." });
     const activePreviewSource = requestedSource;
-    const previewUrl = cleanText(payload.previewUrl || payload.preview_url || current.preview_url);
+    const previewUrl = selectedPreview?.previewUrl || cleanText(payload.previewUrl || payload.preview_url || current.preview_url);
     if (!previewUrl) return jsonResponse(400, { success: false, error: "Genereer eerst een preview voordat je de demo-site opslaat." });
     const currentJourney = mapJourney(current);
+    if (previousSavedDemo?.saved && requestedPreviewVersionId && cleanText(previousSavedDemo.previewVersionId) === requestedPreviewVersionId && normalizePreviewSource(previousSavedDemo.previewSource) === activePreviewSource) {
+      const responseJourney = sanitizeAdminJourney(currentJourney);
+      return jsonResponse(200, { success: true, alreadySaved: true, journey: responseJourney, demoJourney: responseJourney, savedDemoSite: previousSavedDemo });
+    }
     const protectedDemo = Boolean(previousSavedDemo?.saved && (
       currentJourney.previewApprovedAt
       || currentJourney.deliveryApprovedAt
@@ -763,7 +822,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         error: "Deze demo is al goedgekeurd of definitief. Maak eerst een nieuwe previewversie om de live of goedgekeurde versie intact te houden.",
       });
     }
-    const thumbnailPackage = activePreviewSource === PREVIEW_SOURCES.MANUAL ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage;
+    const selectedVersionPackage = selectedPreview?.previewPackage || null;
+    const thumbnailPackage = selectedVersionPackage || (activePreviewSource === PREVIEW_SOURCES.MANUAL ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage);
     const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage: thumbnailPackage, previewUrl, savedAt });
     const savedDemoSite = {
       saved: true,
@@ -777,13 +837,15 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       businessName: cleanText(payload.businessName || payload.business_name || currentJourney.businessName),
       domain: cleanText(payload.websiteUrl || payload.website_url || currentJourney.websiteUrl),
       previewUrl,
-      previewVersionId: cleanUuid(payload.previewVersionId || payload.preview_version_id) || previousSavedDemo?.previewVersionId || null,
-      previewVersion: Number(payload.previewVersion || payload.preview_version || previewPackage.version || previewPackage.meta?.version || 0) || null,
+      previewVersionId: requestedPreviewVersionId || previousSavedDemo?.previewVersionId || null,
+      previewVersion: Number(selectedPreview?.version?.version || payload.previewVersion || payload.preview_version || previewPackage.version || previewPackage.meta?.version || 0) || null,
       previewSource: activePreviewSource,
       sourceLabel: activePreviewSource === PREVIEW_SOURCES.MANUAL ? "Handmatige ZIP" : "Website Factory",
+      readOnly: activePreviewSource === PREVIEW_SOURCES.MANUAL,
+      contentHash: cleanText(selectedPreview?.version?.metadata?.manualZipContentHash || selectedPreview?.version?.metadata?.contentHash || selectedVersionPackage?.meta?.contentHash),
       status: currentJourney.demoStatus,
       package: cleanText(payload.packageType || payload.package_type || previewPackage.meta?.packageType || previewPackage.packageType),
-      manualZipFileName: activePreviewSource === PREVIEW_SOURCES.MANUAL ? cleanText(previewPackage.manualPreview?.fileName) : "",
+      manualZipFileName: activePreviewSource === PREVIEW_SOURCES.MANUAL ? cleanText(selectedPreview?.version?.metadata?.fileName || selectedVersionPackage?.meta?.fileName || previewPackage.manualPreview?.fileName) : "",
       thumbnailUrl: thumbnail.thumbnailUrl,
       thumbnailGeneratedAt: thumbnail.thumbnailGeneratedAt,
       thumbnailKind: thumbnail.thumbnailKind,
@@ -2147,3 +2209,8 @@ function isMissingFactoryTableError(error = {}) {
     || text.includes("website_build_jobs")
     || text.includes("website_preview_versions");
 }
+
+exports._private = {
+  resolveSelectedDemoPreview,
+  storedPreviewVersionSource,
+};

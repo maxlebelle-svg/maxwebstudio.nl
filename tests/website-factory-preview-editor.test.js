@@ -157,7 +157,7 @@ test("Factory preview validates the requested version before injecting the runti
     const result = await demoRenderer.handler({ httpMethod: "GET", headers: { host: "maxwebstudio.nl", "x-forwarded-proto": "https" }, queryStringParameters: { id: journeyId, token, source: "factory", editorMode: "sections", editorSession: NONCE, previewVersionId: VERSION_ID } });
     assert.equal(result.statusCode, 200);
     assert.match(result.body, /data-mws-editor-runtime/);
-    assert.match(result.body, new RegExp(`previewVersionId=${VERSION_ID}`));
+    assert.match(result.body, /data-preview-asset="styles\.css"/);
     assert.equal(result.headers["X-Frame-Options"], "SAMEORIGIN");
     assert.equal(result.headers["Referrer-Policy"], "no-referrer");
     assert.match(result.headers["Content-Security-Policy"], /frame-ancestors 'self'/);
@@ -183,7 +183,10 @@ test("Factory renderer recovers the exact stored preview version when the journe
     const result = await demoRenderer.handler({ httpMethod: "GET", headers: { host: "maxwebstudio.nl", "x-forwarded-proto": "https" }, queryStringParameters: { id: journeyId, token, source: "factory", previewVersionId: VERSION_ID } });
     assert.equal(result.statusCode, 200);
     assert.match(result.body, /Editor Testbedrijf/);
-    assert.match(result.body, new RegExp(`previewVersionId=${VERSION_ID}&amp;file=styles\\.css|previewVersionId=${VERSION_ID}&file=styles\\.css`));
+    assert.match(result.body, /<style data-preview-asset="styles\.css">/);
+    assert.doesNotMatch(result.body, /file=styles\.css/);
+    assert.match(result.body, /\/api\/demo-preview\?/);
+    assert.ok(Buffer.byteLength(result.body, "utf8") < 6 * 1024 * 1024, "Factory HTML response must stay below the Netlify function response limit");
     assert.doesNotMatch(result.body, /Previewbron niet beschikbaar/);
     assert.equal(requested.filter((url) => url.includes("website_preview_versions")).length, 1);
     assert.match(requested.find((url) => url.includes("website_preview_versions")), new RegExp(VERSION_ID));

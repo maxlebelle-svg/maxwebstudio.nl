@@ -168,10 +168,16 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
     let project = selectPrimaryProject(projects, website);
     const demoJourney = journeys[0] || null;
     const history = demoJourney?.id
-      ? await getBuildHistory(context, { demoJourneyId: demoJourney.id }).catch((error) => {
-        logOptionalContextFailure("build_history", error);
-        return { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-      })
+      ? await Promise.all([
+        getBuildHistory(context, { demoJourneyId: demoJourney.id }).catch((error) => {
+          logOptionalContextFailure("build_history", error);
+          return { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+        }),
+        readPreviewVersionsByCustomer(context, customerId).catch((error) => {
+          logOptionalContextFailure("customer_preview_versions", error);
+          return [];
+        }),
+      ]).then(([journeyHistory, customerPreviewVersions]) => mergeCustomerManualPreviewVersions(journeyHistory, customerPreviewVersions))
       : await readPreviewVersionsByCustomer(context, customerId).then((previewVersions) => ({
         jobs: [], previewVersions, latestJob: null, activeVersion: previewVersions.find((item) => item.isActive) || previewVersions[0] || null,
       })).catch((error) => {
@@ -262,6 +268,23 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
       },
     });
   }
+}
+
+function mergeCustomerManualPreviewVersions(history = {}, customerPreviewVersions = []) {
+  const journeyVersions = Array.isArray(history.previewVersions) ? history.previewVersions : [];
+  const knownIds = new Set(journeyVersions.map((version) => cleanText(version.id)).filter(Boolean));
+  const recoveredManualVersions = (Array.isArray(customerPreviewVersions) ? customerPreviewVersions : [])
+    .filter((version) => version?.sourceType === "manual_zip")
+    .filter((version) => !knownIds.has(cleanText(version.id)));
+  const previewVersions = [...journeyVersions, ...recoveredManualVersions].sort((left, right) => {
+    const dateDifference = Date.parse(right.createdAt || 0) - Date.parse(left.createdAt || 0);
+    return dateDifference || Number(right.version || 0) - Number(left.version || 0);
+  });
+  return {
+    ...history,
+    previewVersions,
+    activeVersion: history.activeVersion || previewVersions.find((version) => version.isActive) || previewVersions[0] || null,
+  };
 }
 
 async function syncCommercialPackageResponse(context, payload = {}) {
@@ -2757,5 +2780,5 @@ module.exports = {
   runBuildJob,
   sanitizeBuildResult,
   startOnboardingFactoryPipeline,
-  _private: { searchRows, deriveFactoryServerState, prepareEditorPackageBestEffort, markEditorCapabilityReadOnly, isUsableGeneratedPackage },
+  _private: { searchRows, deriveFactoryServerState, prepareEditorPackageBestEffort, markEditorCapabilityReadOnly, isUsableGeneratedPackage, mergeCustomerManualPreviewVersions },
 };

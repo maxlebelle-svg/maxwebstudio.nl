@@ -225,7 +225,7 @@ async function publishActiveCustomerPreview(context, payload = {}) {
     };
   }
   response.body = JSON.stringify(body);
-  await safeTimeline({
+  if (!body.alreadyPublished) await safeTimeline({
     customerId,
     eventType: "customer_preview_published",
     title: "Klantpreview gepubliceerd",
@@ -264,6 +264,10 @@ async function publishPreviewVersion(context, payload = {}) {
     ? await readSingle(context, "website_preview_versions", `select=${previewVersionFields}&id=eq.${previewVersionId}&limit=1`)
     : selectedWebsite?.id ? (await findPreviewVersionsForWebsite(context, { website: selectedWebsite, selectedCustomerId, selectedProjectId }))[0] || null : null;
   if (!version?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen bestaande previewversie gevonden om te publiceren.", 404);
+  const storedSource = normalizePreviewSource(version.metadata?.previewSource || version.generated_package?.meta?.previewSource) || PREVIEW_SOURCES.FACTORY;
+  if (requestedSource && requestedSource !== storedSource) {
+    throw previewError("PREVIEW_SOURCE_MISMATCH", "De geselecteerde previewbron komt niet overeen met de opgeslagen previewversie.", 409);
+  }
 
   const ownership = selectedWebsite?.id
     ? await resolveOwnership(context, version, { website: selectedWebsite, selectedCustomerId, selectedProjectId })
@@ -272,9 +276,19 @@ async function publishPreviewVersion(context, payload = {}) {
     throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
   }
 
+  assertNoRelationConflict(version, ownership);
+  if (version.published_to_portal === true && cleanText(ownership.customer.metadata?.publishedPreviewVersionId) === version.id) {
+    return jsonResponse(200, {
+      success: true,
+      alreadyPublished: true,
+      publishedPreviewVersionId: version.id,
+      previewVersion: sanitizeAdminVersion(version),
+      website: ownership.website ? sanitizeWebsite(ownership.website) : null,
+    });
+  }
+
   const now = new Date().toISOString();
   const safePreviewPath = `/preview.html?version=${encodeURIComponent(version.id)}`;
-  assertNoRelationConflict(version, ownership);
   const patch = {
     customer_id: ownership.customer.id,
     project_id: ownership.project?.id || version.project_id || null,

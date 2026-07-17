@@ -21,6 +21,7 @@
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
     <script src="admin/ui/website-factory-preview-sources.js"></script>
+    <script src="admin/ui/website-factory-preview-actions.js"></script>
     <script src="admin/ui/website-factory-preview-editor.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js"></script>
@@ -494,7 +495,7 @@
               </div>
               <div class="factory-guided-primary-actions">
                 <button class="button primary" id="factory-primary-save-demo" type="button">Opslaan in Demo Sites</button>
-                <button class="button secondary" id="factory-publish-customer-preview" type="button" disabled>Publiceren naar klantportaal</button>
+                <button class="button secondary" id="factory-publish-customer-preview" type="button" disabled>Doorzetten naar klantportaal</button>
               </div>
             </header>
             <div class="factory-customer-publication-status" id="factory-customer-publication-status" hidden></div>
@@ -553,22 +554,24 @@
                         <button type="button" data-guided-preview-mode="tablet">Tablet</button>
                         <button type="button" data-guided-preview-mode="mobile">Mobiel</button>
                       </div>
-                      <div class="factory-preview-view-selector" id="factory-preview-view-selector" role="group" aria-label="Previewbron" hidden>
+                      <div class="factory-preview-view-selector" id="factory-preview-view-selector" aria-label="Previewbron" hidden>
                         <span>Previewbron</span>
-                        <button type="button" data-view-preview-source="factory_build"><strong>Website Factory</strong><small>Bewerkbaar</small></button>
-                        <button type="button" data-view-preview-source="manual_zip"><strong>Geüploade ZIP</strong><small>Alleen-lezen</small></button>
+                        <div class="factory-preview-source-toggle" role="radiogroup" aria-label="Schakel tussen previewbronnen">
+                          <button type="button" role="radio" data-view-preview-source="factory_build"><strong>Website Factory</strong><small>Bewerkbaar</small></button>
+                          <button type="button" role="radio" data-view-preview-source="manual_zip"><strong>Handmatige ZIP</strong><small>Alleen-lezen</small></button>
+                        </div>
                         <label class="factory-preview-version-select" id="factory-preview-version-select-wrap" hidden>
                           <span>Versie</span>
                           <select id="factory-preview-version-select" aria-label="Bekeken previewversie"></select>
                         </label>
                       </div>
                       <div class="factory-guided-preview-actions">
-                        <span id="factory-guided-preview-url">Nog geen preview-URL</span>
+                        <a id="factory-guided-preview-url" aria-disabled="true">Preview nog niet beschikbaar</a>
                         <button id="factory-preview-editor-toggle" type="button" aria-pressed="false">Bewerken</button>
-                        <button type="button" data-factory-proxy="demo-journey-open-preview">Preview openen</button>
-                        <button type="button" data-factory-proxy="demo-journey-preview-refresh">Opnieuw laden</button>
+                        <button type="button" data-factory-proxy="demo-journey-open-preview">Open preview</button>
+                        <button type="button" data-factory-proxy="demo-journey-preview-refresh">Vernieuwen</button>
                         <details class="factory-preview-actions-menu" id="factory-preview-actions-menu">
-                          <summary>Meer acties <span aria-hidden="true">⌄</span></summary>
+                          <summary>Meer <span aria-hidden="true">⌄</span></summary>
                           <div role="menu" aria-label="Previewacties">
                             <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Nieuwe Factory-build starten</button>
                             <button type="button" data-manual-zip-upload>ZIP uploaden</button>
@@ -576,6 +579,18 @@
                             <button type="button" data-factory-action="versions">Previewversies beheren</button>
                           </div>
                         </details>
+                      </div>
+                    </div>
+                    <div class="factory-selected-preview-actions" id="factory-selected-preview-actions" aria-live="polite">
+                      <div class="factory-selected-preview-actions-copy">
+                        <small>Acties voor geselecteerde preview</small>
+                        <strong id="factory-selected-preview-action-label">Selecteer een previewversie</strong>
+                        <span id="factory-selected-preview-action-hint">Bekijken alleen verandert de actieve klantpreview niet.</span>
+                      </div>
+                      <div class="factory-selected-preview-action-buttons">
+                        <button class="button primary" id="factory-preview-save-demo" type="button" disabled>Opslaan in Demo Sites</button>
+                        <button class="button secondary" id="factory-preview-use-customer" type="button" hidden disabled>Gebruik als klantpreview</button>
+                        <button class="button secondary" id="factory-preview-publish-customer" type="button" disabled>Doorzetten naar klantportaal</button>
                       </div>
                     </div>
                     <div class="factory-editor-workspace">
@@ -21290,6 +21305,7 @@
         let previewLoadFailedId = "";
         let manualPreview = null;
         let manualZipUploading = false;
+        let manualZipAutoProcess = false;
         let zipDownloadStatus = { state: "not_prepared", previewVersionId: "", error: "" };
         let pendingManualZipFile = null;
         let customerPreviewPublication = null;
@@ -21752,6 +21768,7 @@
           } finally {
             journeyLocks.delete(key);
             setDemoActionBusy(false, buttons);
+            if (typeof renderSelectedPreviewActions === "function") renderSelectedPreviewActions(true);
           }
         }
 
@@ -23278,6 +23295,33 @@
           return version?.id ? setQueryParam(sourcedUrl, "previewVersionId", version.id) : sourcedUrl;
         }
 
+        function selectedPreviewActionContext() {
+          const actionApi = window.WebsiteFactoryPreviewActions;
+          const sourceApi = previewSourceApi();
+          const rawVersion = selectedViewedPreviewVersion();
+          const version = rawVersion && sourceApi ? sourceApi.normalize(rawVersion) : rawVersion;
+          const sourceType = version ? sourceApi?.sourceTypeOf(version) : "";
+          let previewUrl = "";
+          if (version?.id && sourceType === sourceApi?.SOURCE_MANUAL) previewUrl = manualPreviewUrlForVersion(version);
+          else if (version?.id && version.previewUrl) {
+            previewUrl = setQueryParam(setQueryParam(absolutePreviewUrl(version.previewUrl), "source", "factory"), "previewVersionId", version.id);
+          }
+          const savedDemo = savedDemoSiteMeta() || {};
+          const publishedPreviewVersionId = customerPreviewPublication?.previewVersionId || customerPreviewPublication?.id || "";
+          return actionApi?.actionContext({
+            version,
+            previewUrl,
+            customerId: factoryCustomerContext?.customer?.id || "",
+            demoJourneyId: version?.demoJourneyId || journey?.id || "",
+            leadId: selectedLead()?.leadId || selectedLead()?.id || journey?.leadId || "",
+            projectId: version?.projectId || factoryCustomerContext?.project?.id || projectWorkspace?.projectId || "",
+            websiteId: version?.websiteId || factoryCustomerContext?.website?.id || projectWorkspace?.websiteId || "",
+            savedPreviewVersionId: savedDemo.previewVersionId || "",
+            publishedPreviewVersionId,
+            localZipPending: Boolean(pendingManualZipFile && (!version || sourceType === sourceApi?.SOURCE_MANUAL)),
+          }) || null;
+        }
+
         function isManualPreviewVersion(version = {}) {
           return version?.sourceType === "manual_zip" || version?.metadata?.previewSource === "manual_zip" || version?.generatedPackage?.meta?.previewSource === "manual_zip";
         }
@@ -23334,6 +23378,7 @@
           renderPreviewStage();
           renderGuidedVersionMeta();
           renderPreviewVersionHistory();
+          renderSelectedPreviewActions();
           return true;
         }
 
@@ -23731,6 +23776,7 @@
             latestJob: (factoryCustomerContext.buildJobs || [])[0] || null,
             activeVersion: (factoryCustomerContext.previewVersions || []).find((item) => item.isActive) || factoryCustomerContext.previewVersions?.[0] || null,
           };
+          await refreshCustomerPreviewPublication();
           syncPreviewSourceFromJourney();
           ensureViewedPreviewSelection();
           const loadedManualVersion = (factoryCustomerContext.previewVersions || []).find((item) => item.isActive && (item.metadata?.previewSource === "manual_zip" || item.generatedPackage?.meta?.previewSource === "manual_zip"))
@@ -24512,53 +24558,99 @@
         }
 
         async function saveDemoSite() {
-          if (!journey?.id) {
-            setMessage(elements.message, "Sla eerst de demo-aanvraag op.", "warning");
+          const context = selectedPreviewActionContext();
+          if (!context?.demoEnabled) {
+            setMessage(elements.message, context?.explanation || "Selecteer eerst een verwerkte previewversie.", "warning");
             return;
           }
-          const previewUrl = activePreviewUrl() || previewFieldUrl() || absolutePreviewUrl(journey?.previewUrl || "");
-          if (!previewUrl) {
-            setMessage(elements.message, "Genereer eerst een preview voordat je de demo-site opslaat.", "warning");
+          if (context.saved) {
+            setMessage(elements.message, `${context.versionLabel} staat al in Demo Sites.`, "info");
             return;
           }
-          const selectedSource = activePreviewSource();
-          await withJourneyLock("save_demo_site", [elements.saveDemoSite, elements.save, elements.generatePreview, elements.nextStepPrimary], async () => {
-            setMessage(elements.message, "Demo-site koppelen aan deze lead/klant...", "info");
+          await withJourneyLock("save_demo_site", [elements.saveDemoSite, elements.save, elements.generatePreview, elements.nextStepPrimary, document.getElementById("factory-preview-save-demo")], async () => {
+            setMessage(elements.message, `${context.versionLabel} opslaan in Demo Sites...`, "info");
             try {
               const data = await apiRequest(endpoint, "POST", collectPayload({
                 action: "save_demo_site",
-                demoJourneyId: journey.id,
-                previewUrl,
-                previewSource: selectedSource,
+                demoJourneyId: context.demoJourneyId,
+                previewVersionId: context.previewVersionId,
+                previewSource: context.sourceType,
               }));
+              if (data.savedDemoSite?.previewVersionId !== context.previewVersionId) throw new Error("Demo Sites bevestigde niet dezelfde geselecteerde previewversie.");
               journey = data.demoJourney || data.journey || journey;
               if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
               events = Array.isArray(data.events) ? data.events : events;
               buildHistory = data.buildHistory || buildHistory;
               projectWorkspace = data.projectWorkspace || projectWorkspace;
               syncPreviewSourceFromJourney();
-              ensureViewedPreviewSelection();
+              viewedPreviewVersionId = context.previewVersionId;
+              previewSource = context.sourceType === window.WebsiteFactoryPreviewActions?.SOURCE_MANUAL ? "manual" : "factory";
+              try { window.sessionStorage.setItem(previewSessionKey(), context.previewVersionId); } catch {}
               renderJourney();
-              setMessage(elements.message, nextStepMessage("save_demo_site"), "success");
+              setMessage(elements.message, data.alreadySaved ? `${context.versionLabel} stond al in Demo Sites.` : `${context.versionLabel} is opgeslagen in Demo Sites.`, "success");
             } catch (error) {
               setMessage(elements.message, error.message, "error");
             }
           });
         }
 
-        function renderCustomerPreviewPublication() {
-          const button = elements.publishCustomerPreview;
-          const activeVersion = buildHistory.activeVersion || buildHistory.previewVersions?.[0] || null;
-          const customer = factoryCustomerContext?.customer || null;
-          const website = factoryCustomerContext?.website || null;
-          const project = factoryCustomerContext?.project || null;
-          const manualReady = activePreviewSource() === "manual" && activeVersion?.id && manualPreviewMeta()?.files?.length;
-          const ready = Boolean(customer?.id && activeVersion?.id && activePreviewUrl() && (website?.id || manualReady));
-          if (button) {
-            button.disabled = !ready || journeyLocks.has("publish_customer_preview");
-            button.textContent = customerPreviewPublication?.previewVersionId ? "Klantpreview bijwerken" : "Publiceren naar klantportaal";
-            button.title = ready ? "Publiceer exact de preview die je nu in de Website Factory ziet" : !customer?.id ? "Selecteer eerst een klant" : !activeVersion?.id ? "Selecteer eerst een concrete previewversie" : !website?.id && !manualReady ? "Koppel een website of activeer een handmatige ZIP" : "Genereer eerst een geldige preview";
+        function renderSelectedPreviewActions(force = false) {
+          const context = selectedPreviewActionContext();
+          const label = document.getElementById("factory-selected-preview-action-label");
+          const hint = document.getElementById("factory-selected-preview-action-hint");
+          const saveButtons = [document.getElementById("factory-primary-save-demo"), document.getElementById("factory-preview-save-demo")].filter(Boolean);
+          const publishButtons = [elements.publishCustomerPreview, document.getElementById("factory-preview-publish-customer")].filter(Boolean);
+          const activateButton = document.getElementById("factory-preview-use-customer");
+          const signature = JSON.stringify([context || {}, Array.from(journeyLocks).sort()]);
+          const container = document.getElementById("factory-selected-preview-actions");
+          if (!force && container?.dataset.signature === signature) return context;
+          if (container) container.dataset.signature = signature;
+          if (label) label.textContent = context?.versionLabel || "Selecteer een previewversie";
+          if (hint) {
+            hint.textContent = context?.published
+              ? "Deze versie is actief in het klantportaal. Bekijken van een andere versie verandert dit niet."
+              : context?.saved
+                ? "Deze versie is opgeslagen in Demo Sites. Doorzetten blijft een aparte, expliciete handeling."
+                : context?.explanation || "Bekijken alleen verandert de actieve klantpreview niet.";
           }
+          saveButtons.forEach((button) => {
+            button.textContent = context?.saveLabel || "Opslaan in Demo Sites";
+            button.disabled = !context?.demoEnabled || context.saved || journeyLocks.has("save_demo_site");
+            button.title = button.disabled && !context?.saved ? context?.explanation || "Selecteer eerst een verwerkte previewversie" : "Sla exact de geselecteerde previewversie op";
+          });
+          publishButtons.forEach((button) => {
+            button.textContent = context?.publishLabel || "Doorzetten naar klantportaal";
+            button.disabled = !context?.publishEnabled || context.published || journeyLocks.has("publish_customer_preview");
+            button.title = button.disabled && !context?.published ? context?.explanation || "Selecteer eerst een klant en verwerkte previewversie" : "Zet exact de geselecteerde previewversie door";
+          });
+          if (activateButton) {
+            const manual = context?.sourceType === window.WebsiteFactoryPreviewActions?.SOURCE_MANUAL;
+            activateButton.hidden = !manual;
+            activateButton.disabled = !context?.activateEnabled || journeyLocks.has("activate_manual_preview");
+            activateButton.textContent = context?.activateEnabled ? "Gebruik als klantpreview" : "Geselecteerd als klantpreview";
+            activateButton.title = context?.activateEnabled ? "Maak deze ZIP de interne actieve klantpreview" : context?.explanation || "Deze ZIP is al geselecteerd";
+          }
+          return context;
+        }
+
+        async function refreshCustomerPreviewPublication() {
+          const customerId = factoryCustomerContext?.customer?.id || "";
+          if (!customerId) {
+            customerPreviewPublication = null;
+            return null;
+          }
+          try {
+            const data = await apiRequest(`${previewPublicationEndpoint}?action=current&customerId=${encodeURIComponent(customerId)}`);
+            customerPreviewPublication = data.previewVersion ? { ...data.previewVersion, previewVersionId: data.publishedPreviewVersionId || data.previewVersion.id } : null;
+          } catch (error) {
+            if (["PREVIEW_POINTER_NOT_FOUND", "PREVIEW_POINTER_INVALID"].includes(error.code)) customerPreviewPublication = null;
+            else console.warn("Actieve klantpreview kon niet worden geladen", { code: error.code || "REQUEST_FAILED" });
+          }
+          return customerPreviewPublication;
+        }
+
+        function renderCustomerPreviewPublication() {
+          renderSelectedPreviewActions();
           if (!elements.customerPublicationStatus) return;
           if (!customerPreviewPublication?.previewVersionId) {
             elements.customerPublicationStatus.hidden = true;
@@ -24586,48 +24678,48 @@
 
         async function publishCustomerPreview() {
           const customer = factoryCustomerContext?.customer || null;
-          const website = factoryCustomerContext?.website || null;
-          const project = factoryCustomerContext?.project || null;
-          const activeVersion = buildHistory.activeVersion || buildHistory.previewVersions?.[0] || null;
-          const manualReady = activePreviewSource() === "manual" && activeVersion?.id && manualPreviewMeta()?.files?.length;
-          if (!customer?.id || (!website?.id && !manualReady)) {
-            setMessage(elements.message, "Selecteer eerst een geldige klant en preview.", "warning");
+          const context = selectedPreviewActionContext();
+          if (!context?.publishEnabled) {
+            setMessage(elements.message, context?.explanation || "Selecteer eerst een geldige klant en verwerkte preview.", "warning");
             return;
           }
-          if (!activeVersion?.id || !activePreviewUrl()) {
-            setMessage(elements.message, "Selecteer eerst een geldige preview.", "warning");
+          if (context.published) {
+            setMessage(elements.message, `${context.versionLabel} is al actief in het klantportaal.`, "info");
             return;
           }
-          await withJourneyLock("publish_customer_preview", [elements.publishCustomerPreview, elements.saveDemoSite, elements.generatePreview], async () => {
+          const customerLabel = customer?.company || customer?.name || "de geselecteerde klant";
+          if (!window.confirm(`${context.versionLabel} doorzetten naar het klantportaal van ${customerLabel}?\n\nHiermee wordt exact deze versie de actieve klantpreview. De goedkeuringsstatus verandert niet.`)) return;
+          await withJourneyLock("publish_customer_preview", [elements.publishCustomerPreview, elements.saveDemoSite, elements.generatePreview, document.getElementById("factory-preview-publish-customer")], async () => {
             renderCustomerPreviewPublication();
-            setMessage(elements.message, "Preview publiceren naar het klantportaal...", "info");
+            setMessage(elements.message, `${context.versionLabel} doorzetten naar het klantportaal...`, "info");
             try {
               const data = await apiRequest(previewPublicationEndpoint, "POST", {
                 action: "publish_customer_preview",
                 customerId: customer.id,
-                projectId: project?.id || "",
-                websiteId: website?.id || "",
-                demoJourneyId: journey?.id || activeVersion.demoJourneyId || "",
-                previewVersionId: activeVersion.id,
-                previewSource: activePreviewSource(),
+                projectId: context.projectId,
+                websiteId: context.websiteId,
+                demoJourneyId: context.demoJourneyId,
+                previewVersionId: context.previewVersionId,
+                previewSource: context.sourceType,
                 title: `${elements.business?.value || customer.company || customer.name || "Website"} — klantpreview`,
               });
-              if (data.publishedPreviewVersionId !== activeVersion.id) {
-                throw new Error("De server heeft niet dezelfde previewversie gepubliceerd als de actieve Factory-versie.");
+              if (data.publishedPreviewVersionId !== context.previewVersionId) {
+                throw new Error("De server heeft niet dezelfde previewversie gepubliceerd als de geselecteerde versie.");
               }
-              const confirmation = await apiRequest(`${previewPublicationEndpoint}?action=current&customerId=${encodeURIComponent(customer.id)}&previewVersionId=${encodeURIComponent(activeVersion.id)}`);
-              if (confirmation.publishedPreviewVersionId !== activeVersion.id || confirmation.previewVersion?.id !== activeVersion.id) {
+              const confirmation = await apiRequest(`${previewPublicationEndpoint}?action=current&customerId=${encodeURIComponent(customer.id)}&previewVersionId=${encodeURIComponent(context.previewVersionId)}`);
+              if (confirmation.publishedPreviewVersionId !== context.previewVersionId || confirmation.previewVersion?.id !== context.previewVersionId) {
                 throw new Error("De gepubliceerde klantpreview kon niet eenduidig worden bevestigd.");
               }
               customerPreviewPublication = {
                 ...(data.customerPreview || data.previewVersion || {}),
                 ...confirmation.previewVersion,
                 previewVersionId: confirmation.previewVersion.id,
-                previewSource: activePreviewSource(),
+                previewSource: context.sourceType,
                 reviewStatus: confirmation.previewVersion.approvedAt ? "approved" : "ready_for_review",
               };
               renderCustomerPreviewPublication();
-              setMessage(elements.message, "Preview gepubliceerd. De geselecteerde websiteversie is nu zichtbaar in het klantportaal.", "success");
+              renderGuidedVersionMeta();
+              setMessage(elements.message, `${context.versionLabel} is nu actief in het klantportaal.`, "success");
             } catch (error) {
               setMessage(elements.message, error.message || "De klantpreview kon niet worden gepubliceerd.", "error");
             } finally {
@@ -24664,12 +24756,14 @@
           }
         }
 
-        function openZipPicker() {
+        function openZipPicker({ autoProcess = false } = {}) {
           if (manualZipUploading) return;
           if (!elements.manualZipInput) {
             setMessage(elements.message, "De ZIP-kiezer is niet beschikbaar. Vernieuw de pagina.", "error");
             return;
           }
+          manualZipAutoProcess = Boolean(autoProcess);
+          elements.manualZipInput.value = "";
           elements.manualZipInput.click();
         }
         window.WebsiteFactoryZipPicker = Object.freeze({ open: openZipPicker });
@@ -25367,16 +25461,22 @@
           const saved = isDemoSiteSaved();
           const viewedVersion = selectedViewedPreviewVersion();
           const viewSelector = document.getElementById("factory-preview-view-selector");
-          if (viewSelector) viewSelector.hidden = availableSources.size === 0;
+          const activeSourceType = source === "manual" ? "manual_zip" : "factory_build";
+          if (viewSelector) {
+            viewSelector.hidden = availableSources.size === 0;
+            viewSelector.dataset.activeSource = activeSourceType;
+          }
           document.querySelectorAll("[data-view-preview-source]").forEach((button) => {
             const sourceType = button.dataset.viewPreviewSource;
             const available = availableSources.has(sourceType);
-            const active = sourceType === (source === "manual" ? "manual_zip" : "factory_build");
-            button.hidden = !available;
+            const active = sourceType === activeSourceType;
+            button.hidden = false;
+            button.disabled = !available;
+            button.classList.toggle("is-unavailable", !available);
             button.classList.toggle("is-active", active);
-            button.setAttribute("aria-pressed", active ? "true" : "false");
+            button.setAttribute("aria-checked", active ? "true" : "false");
+            button.title = available ? `Schakel naar ${sourceType === "manual_zip" ? "de handmatige ZIP" : "Website Factory"}` : sourceType === "manual_zip" ? "Upload eerst een handmatige ZIP" : "Maak eerst een Factory-build";
           });
-          const activeSourceType = source === "manual" ? "manual_zip" : "factory_build";
           const sourceVersions = usableVersions.filter((version) => version.sourceType === activeSourceType);
           const versionSelectWrap = document.getElementById("factory-preview-version-select-wrap");
           const versionSelect = document.getElementById("factory-preview-version-select");
@@ -25892,8 +25992,11 @@
             event.stopPropagation();
             openZipPicker();
           });
-          elements.manualZipInput?.addEventListener("change", (event) => {
-            selectManualZipFiles(event.target.files || []);
+          elements.manualZipInput?.addEventListener("change", async (event) => {
+            const autoProcess = manualZipAutoProcess;
+            manualZipAutoProcess = false;
+            if (!selectManualZipFiles(event.target.files || [])) return;
+            if (autoProcess) await uploadManualZipFile(pendingManualZipFile);
           });
           elements.manualZipDropzone?.addEventListener("keydown", (event) => {
             if (!["Enter", " "].includes(event.key) || event.target.closest("button")) return;
@@ -26400,7 +26503,10 @@
           const versions = runtime.buildHistory?.previewVersions || [];
           const viewedVersion = versions.find((version) => version.id === runtime.viewedPreviewVersionId) || null;
           const viewed = api?.normalize(viewedVersion || {}) || null;
-          const active = api?.normalize(runtime.buildHistory?.activeVersion || {}) || null;
+          const publishedPreviewVersionId = customerPreviewPublication?.previewVersionId || customerPreviewPublication?.id || "";
+          const publishedVersion = versions.find((version) => version.id === publishedPreviewVersionId)
+            || (customerPreviewPublication ? { ...customerPreviewPublication, sourceType: customerPreviewPublication.previewSource } : null);
+          const active = api?.normalize(publishedVersion || runtime.buildHistory?.activeVersion || {}) || null;
           const viewedLabel = viewed?.id ? api.versionLabel(viewed) : "Geen preview";
           const activeLabel = active?.id ? api.versionLabel(active) : "Geen actieve klantpreview";
           const viewedAt = viewed?.createdAt ? new Date(viewed.createdAt) : null;
@@ -26420,16 +26526,7 @@
         }
 
         function syncPrimaryAction() {
-          const primary = document.getElementById("factory-primary-save-demo");
-          const original = document.getElementById("demo-journey-save-demo-site");
-          if (!primary || !original) return;
-          const saved = guidedState().saved;
-          const label = saved ? "Demo bijwerken" : "Opslaan in Demo Sites";
-          const busy = original.getAttribute("aria-busy") || "false";
-          if (primary.textContent !== label) primary.textContent = label;
-          if (primary.disabled !== original.disabled) primary.disabled = original.disabled;
-          if (primary.getAttribute("aria-busy") !== busy) primary.setAttribute("aria-busy", busy);
-          if (primary.title !== (original.title || "")) primary.title = original.title || "";
+          renderSelectedPreviewActions();
         }
 
         function syncGuidedZipProcess() {
@@ -26453,7 +26550,21 @@
           const company = document.getElementById("factory-guided-company");
           if (company) company.textContent = value("#demo-journey-business", "Nieuw project") || "Nieuw project";
           const previewUrl = document.getElementById("factory-guided-preview-url");
-          if (previewUrl) previewUrl.textContent = document.getElementById("demo-journey-preview-frame")?.getAttribute("src") || "Nog geen preview-URL";
+          if (previewUrl) {
+            const activeUrl = document.getElementById("demo-journey-preview-frame")?.getAttribute("src") || "";
+            previewUrl.textContent = activeUrl ? "Actieve previewlink" : "Preview nog niet beschikbaar";
+            previewUrl.title = activeUrl || "Genereer of upload eerst een preview";
+            previewUrl.setAttribute("aria-disabled", activeUrl ? "false" : "true");
+            if (activeUrl) {
+              previewUrl.href = activeUrl;
+              previewUrl.target = "_blank";
+              previewUrl.rel = "noopener";
+            } else {
+              previewUrl.removeAttribute("href");
+              previewUrl.removeAttribute("target");
+              previewUrl.removeAttribute("rel");
+            }
+          }
           syncFactoryMode();
         }
 
@@ -26579,6 +26690,15 @@
           moveFactoryComponents();
 
           document.getElementById("factory-primary-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
+          document.getElementById("factory-preview-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
+          document.getElementById("factory-preview-publish-customer")?.addEventListener("click", () => publishCustomerPreview());
+          document.getElementById("factory-preview-use-customer")?.addEventListener("click", async () => {
+            const context = selectedPreviewActionContext();
+            if (!context?.activateEnabled) return;
+            const customerLabel = factoryCustomerContext?.customer?.company || factoryCustomerContext?.customer?.name || "de geselecteerde klant";
+            if (!window.confirm(`${context.versionLabel} gebruiken als interne klantpreview voor ${customerLabel}?\n\nBekijken en opslaan in Demo Sites doen dit niet automatisch.`)) return;
+            await activateManualPreview(context.previewVersionId);
+          });
           document.getElementById("factory-process-manual-zip")?.addEventListener("click", () => proxyClick("demo-journey-process-manual-zip"));
           document.querySelectorAll("[data-factory-proxy]").forEach((button) => button.addEventListener("click", () => proxyClick(button.dataset.factoryProxy)));
           document.getElementById("factory-quick-generate")?.addEventListener("click", runQuickBuild);
@@ -26616,7 +26736,9 @@
             if (!uploadButton) return;
             event.preventDefault();
             event.stopPropagation();
-            window.WebsiteFactoryZipPicker?.open?.();
+            window.WebsiteFactoryZipPicker?.open?.({
+              autoProcess: Boolean(uploadButton.closest("#factory-preview-actions-menu")),
+            });
             document.getElementById("factory-preview-actions-menu")?.removeAttribute("open");
           });
           document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", () => {

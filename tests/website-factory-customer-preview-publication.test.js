@@ -20,7 +20,7 @@ const mollieProducts = fs.readFileSync(path.join(root, "functions/mollie-product
 
 test("Website Factory keeps Demo Sites and customer publication as separate actions", () => {
   assert.match(factoryUi, /id="factory-primary-save-demo"[^>]*>Opslaan in Demo Sites/);
-  assert.match(factoryUi, /id="factory-publish-customer-preview"[^>]*>Publiceren naar klantportaal/);
+  assert.match(factoryUi, /id="factory-publish-customer-preview"[^>]*>Doorzetten naar klantportaal/);
   assert.match(factoryUi, /action: "publish_customer_preview"/);
   assert.match(factoryUi, /withJourneyLock\("publish_customer_preview"/);
 });
@@ -77,7 +77,7 @@ test("publication status provides safe admin copy and responsive actions", () =>
   assert.match(factoryUi, /Reviewstatus/);
   assert.match(factoryUi, /Open klantportaal/);
   assert.match(factoryUi, /action=current&customerId=/);
-  assert.match(factoryUi, /confirmation\.publishedPreviewVersionId !== activeVersion\.id/);
+  assert.match(factoryUi, /confirmation\.publishedPreviewVersionId !== context\.previewVersionId/);
   assert.match(factoryUi, /dataset\.publishedPreviewVersionId/);
 });
 

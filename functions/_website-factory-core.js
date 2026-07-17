@@ -1126,6 +1126,19 @@ function assetPath(siteAssets = [], kind = "", fallback = "") {
   return siteAssets.find((asset) => asset.kind === kind)?.path || fallback;
 }
 
+function isBrandAssetPath(value = "") {
+  return /(?:^|\/)(?:logo|favicon|brand-mark)(?:[._-]|$)/i.test(cleanText(value));
+}
+
+function heroAssetPath(siteAssets = [], fallback = "assets/og-image.svg") {
+  const preferredKinds = ["hero", "background", "project", "service", "detail"];
+  for (const kind of preferredKinds) {
+    const candidate = assetPath(siteAssets, kind, "");
+    if (candidate && !isBrandAssetPath(candidate)) return candidate;
+  }
+  return !isBrandAssetPath(fallback) ? fallback : "assets/og-image.svg";
+}
+
 function serviceAssetPath(siteAssets = [], service = "", fallback = "assets/hero.svg") {
   return siteAssets.find((asset) => asset.kind === "service" && asset.service === service)?.path || fallback;
 }
@@ -1302,7 +1315,8 @@ function replacePackageAssetReferences(value, replacements) {
 
 function renderLogoSvg({ businessName, colors }) {
   const initials = cleanText(businessName).split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "MW";
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="${escapeHtml(businessName)} logo"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${escapeHtml(colors.accent)}"/><stop offset="1" stop-color="${escapeHtml(colors.brand)}"/></linearGradient></defs><rect width="240" height="240" rx="18" fill="url(#g)"/><path d="M34 190V50h38l48 66 48-66h38v140h-38V109l-41 55h-14l-41-55v81z" fill="#fff"/></svg>`;
+  const fontSize = initials.length > 1 ? 82 : 104;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="${escapeHtml(businessName)} logo"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${escapeHtml(colors.accent)}"/><stop offset="1" stop-color="${escapeHtml(colors.brand)}"/></linearGradient></defs><rect width="240" height="240" rx="42" fill="url(#g)"/><text x="120" y="147" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="${fontSize}" font-weight="900" letter-spacing="-5" fill="#fff">${escapeHtml(initials)}</text></svg>`;
 }
 
 function renderFaviconSvg({ businessName, colors }) {
@@ -1552,7 +1566,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const logoAsset = assetPath(siteAssets, "logo", "");
   const faviconAsset = assetPath(siteAssets, "favicon", "");
   const ogAsset = assetPath(siteAssets, "og", "");
-  const heroAsset = assetPath(siteAssets, "hero", heroImage.src);
+  const heroAsset = heroAssetPath(siteAssets, heroImage.src);
   const serviceTiles = services.slice(0, packageRules.pages.length >= 7 ? 6 : 5).map((service, index) => `
         <a class="project-tile service-card" href="#portfolio" data-service="${escapeHtml(service)}">
           <img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)} door ${escapeHtml(businessName)}" loading="lazy" />
@@ -1799,7 +1813,7 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
   const demoCopy = demoCopyForIndustry(profile, packageRules);
   const logoAsset = assetPath(siteAssets, "logo", "");
   const faviconAsset = assetPath(siteAssets, "favicon", "");
-  const heroAsset = assetPath(siteAssets, "hero", heroImage.src);
+  const heroAsset = heroAssetPath(siteAssets, heroImage.src);
   const serviceBody = services.map((service) => `<article class="service-card"><img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)}" loading="lazy" /><h3>${escapeHtml(service)}</h3><p>${escapeHtml(serviceText(service, profile))}</p></article>`).join("");
   const pricingBody = pricingPackages.map((item) => `<article class="pricing-card"><span>${escapeHtml(item.confidence === "manual" ? "Aangeleverd" : "Gevonden op huidige website")}</span><h3>${escapeHtml(item.name)}</h3><strong>${escapeHtml(item.price)}</strong><p>${escapeHtml(item.description)}</p></article>`).join("");
   const body = page === "diensten.html"

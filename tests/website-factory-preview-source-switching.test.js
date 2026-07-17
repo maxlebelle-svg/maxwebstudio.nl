@@ -9,6 +9,7 @@ const factoryHtml = fs.readFileSync(path.join(root, "public/admin-website-factor
 const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
 const upload = fs.readFileSync(path.join(root, "functions/admin-manual-preview.js"), "utf8");
 const factoryBackend = fs.readFileSync(path.join(root, "functions/website-factory.js"), "utf8");
+const { _private: factoryPrivate } = require("../functions/website-factory.js");
 
 function version(id, sourceType, overrides = {}) {
   return {
@@ -43,7 +44,21 @@ test("3 both sources are represented as first-class versions", () => {
   assert.equal(grouped.manual_zip.length, 1);
   assert.match(factoryHtml, /id="factory-preview-view-selector"/);
   assert.match(factoryHtml, /<strong>Website Factory<\/strong><small>Bewerkbaar<\/small>/);
-  assert.match(factoryHtml, /<strong>Geüploade ZIP<\/strong><small>Alleen-lezen<\/small>/);
+  assert.match(factoryHtml, /<strong>Handmatige ZIP<\/strong><small>Alleen-lezen<\/small>/);
+  assert.match(factoryHtml, /class="factory-preview-source-toggle" role="radiogroup"/);
+});
+
+test("3b customer ZIP uploads without the current journey id are recovered", () => {
+  const factoryVersion = version("factory", "factory_build", { isActive: true });
+  const legacyCustomerZip = version("zip", "manual_zip", { isActive: false, demoJourneyId: "", createdAt: "2026-07-17T11:00:00.000Z" });
+  const unrelatedFactory = version("other-factory", "factory_build", { isActive: false, demoJourneyId: "other" });
+  const merged = factoryPrivate.mergeCustomerManualPreviewVersions(
+    { jobs: [], previewVersions: [factoryVersion], latestJob: null, activeVersion: factoryVersion },
+    [factoryVersion, legacyCustomerZip, unrelatedFactory]
+  );
+
+  assert.deepEqual(merged.previewVersions.map((item) => item.id), ["zip", "factory"]);
+  assert.equal(merged.activeVersion.id, "factory");
 });
 
 test("4 switching Factory to ZIP resolves the latest ZIP", () => {
@@ -123,15 +138,19 @@ test("17 a stale browser-session choice falls back to the active version", () =>
 
 test("18 mobile controls wrap without horizontal overflow", () => {
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*factory-preview-view-selector[\s\S]*width:\s*100%/);
-  assert.match(styles, /factory-preview-view-selector button\{flex:1 1 9rem;min-height:44px/);
+  assert.match(styles, /factory-preview-source-toggle\{width:100%;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(styles, /factory-preview-version-card footer \.button\{min-height:44px/);
-  assert.match(styles, /@media\(max-width:420px\)[\s\S]*factory-preview-actions-menu\{width:100%/);
+  assert.match(styles, /@media\(max-width:420px\)[\s\S]*factory-preview-actions-menu\{grid-column:1\/-1;width:100%/);
 });
 
 test("19 source selector supports keyboard arrows and native button focus", () => {
   assert.match(factoryHtml, /\["ArrowLeft", "ArrowRight"\]\.includes\(event\.key\)/);
   assert.match(factoryHtml, /buttons\[next\]\.focus\(\)/);
-  assert.match(factoryHtml, /role="group" aria-label="Previewbron"/);
+  assert.match(factoryHtml, /role="radiogroup" aria-label="Schakel tussen previewbronnen"/);
+  assert.match(factoryHtml, /button\.hidden = false/);
+  assert.match(factoryHtml, /button\.disabled = !available/);
+  assert.match(styles, /factory-preview-source-toggle::before/);
+  assert.match(styles, /data-active-source="manual_zip"/);
 });
 
 test("20 only-ZIP mode does not depend on a Factory journey package", () => {
@@ -204,6 +223,17 @@ test("metadata explicitly warns when viewed and active versions differ", () => {
   assert.match(factoryHtml, /Je bekijkt een andere versie dan de actieve klantpreview\./);
   assert.match(factoryHtml, /\["Type", viewed\?\.id \? api\.typeLabel\(viewed\)/);
   assert.doesNotMatch(factoryHtml, /\["Door", viewed\?\.createdBy/);
+});
+
+test("preview action bar stays readable and turns its status into a useful link", () => {
+  assert.match(factoryHtml, /id="factory-guided-preview-url" aria-disabled="true">Preview nog niet beschikbaar/);
+  assert.match(factoryHtml, />Bewerken<\/button>/);
+  assert.match(factoryHtml, />Open preview<\/button>/);
+  assert.match(factoryHtml, />Vernieuwen<\/button>/);
+  assert.match(factoryHtml, /previewUrl\.href = activeUrl/);
+  assert.match(styles, /factory-guided-preview-actions\{grid-column:1\/-1/);
+  assert.match(styles, /white-space:nowrap/);
+  assert.match(styles, /factory-preview-actions-menu\{position:relative;flex:0 0 auto/);
 });
 
 test("viewed and active preview terminology is explicit", () => {

@@ -63,7 +63,7 @@ exports.handler = async (event) => {
       : normalizePackage(row.preview_package, row, source);
   if (requestedPreviewVersionId && !hasRenderablePackage(previewPackage)) return response(409, "Previewversie bevat geen renderbaar pakket.", { "Content-Type": "text/plain; charset=utf-8" });
   const resolvedSource = requestedPreviewVersionId ? versionSource : source;
-  const filePath = requestedFilePath || cleanText(previewPackage.entryFile || previewPackage.meta?.entryFile) || "index.html";
+  const filePath = resolvePreviewFilePath(previewPackage, requestedFilePath);
   let editorContext = null;
   if (cleanText(event.queryStringParameters?.editorMode) === "sections") {
     const previewVersionId = requestedPreviewVersionId;
@@ -102,7 +102,7 @@ exports.handler = async (event) => {
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
   const resolvedPreviewVersionId = cleanText(previewVersion?.id || requestedPreviewVersionId);
   let content = file?.path?.endsWith(".html")
-    ? rewritePreviewHtml(fileContent, id, token, resolvedSource, resolvedPreviewVersionId)
+    ? rewritePreviewHtml(inlinePreviewPackageAssets(fileContent, previewPackage, { id, token, source: resolvedSource, previewVersionId: resolvedPreviewVersionId }), id, token, resolvedSource, resolvedPreviewVersionId)
     : file?.path?.endsWith(".css")
       ? rewritePreviewAssetReferences(fileContent, id, token, resolvedSource, resolvedPreviewVersionId)
     : fileContent;
@@ -171,15 +171,51 @@ async function readPreviewVersion({ supabaseUrl, serviceRoleKey, demoJourneyId, 
 
 function hasRenderablePackage(value = {}) {
   const files = Array.isArray(value?.files) ? value.files : [];
-  const entryFile = cleanText(value?.entryFile || value?.meta?.entryFile || "index.html");
-  return Boolean(files.length && files.some((file) => cleanText(file?.path) === entryFile));
+  return files.some((file) => cleanText(file?.path).toLowerCase().endsWith(".html"));
+}
+
+function resolvePreviewFilePath(value = {}, requestedFilePath = "") {
+  const requested = cleanText(requestedFilePath);
+  if (requested) return requested;
+  const files = Array.isArray(value?.files) ? value.files : [];
+  const paths = files.map((file) => cleanText(file?.path)).filter(Boolean);
+  const storedEntry = cleanText(value?.entryFile || value?.meta?.entryFile);
+  if (storedEntry.toLowerCase().endsWith(".html") && paths.includes(storedEntry)) return storedEntry;
+  return paths.find((path) => path.toLowerCase() === "index.html")
+    || paths.find((path) => path.toLowerCase().endsWith("/index.html"))
+    || paths.find((path) => path.toLowerCase().endsWith(".html"))
+    || "index.html";
+}
+
+function inlinePreviewPackageAssets(html = "", previewPackage = {}, context = {}) {
+  const files = Array.isArray(previewPackage?.files) ? previewPackage.files : [];
+  const fileMap = new Map(files.map((file) => [cleanRelativePath(file?.path), file]).filter(([path]) => path));
+  const inlineCss = (css = "") => rewritePreviewAssetReferences(String(css || ""), context.id, context.token, context.source, context.previewVersionId);
+  return String(html || "")
+    .replace(/<link([^>]+?)href=["']([^"']+\.css)["']([^>]*)>/gi, (match, _before, assetPath) => {
+      const asset = fileMap.get(cleanRelativePath(assetPath));
+      return asset ? `<style data-preview-asset="${escapeHtml(cleanRelativePath(assetPath))}">${inlineCss(fileContentFor(asset))}</style>` : match;
+    })
+    .replace(/<script([^>]+?)src=["']([^"']+\.js)["']([^>]*)><\/script>/gi, (match, _before, assetPath) => {
+      const asset = fileMap.get(cleanRelativePath(assetPath));
+      return asset ? `<script data-preview-asset="${escapeHtml(cleanRelativePath(assetPath))}">${fileContentFor(asset)}<\/script>` : match;
+    });
+}
+
+function cleanRelativePath(value = "") {
+  return cleanText(value).replace(/^\.?\//, "").split("?")[0].split("#")[0];
+}
+
+function fileContentFor(file = {}) {
+  if (file?.encoding === "base64" && isTextPreviewFile(file.path)) return Buffer.from(cleanText(file.content), "base64").toString("utf8");
+  return String(file?.content || "");
 }
 
 function previewAssetUrl(file = "", id = "", token = "", source = "", previewVersionId = "") {
   const query = new URLSearchParams({ id, token, source });
   if (previewVersionId) query.set("previewVersionId", previewVersionId);
   query.set("file", file);
-  return `/.netlify/functions/demo-preview?${query.toString()}`;
+  return `/api/demo-preview?${query.toString()}`;
 }
 
 function rewritePreviewHtml(html = "", id = "", token = "", source = "", previewVersionId = "") {
@@ -285,3 +321,9 @@ function escapeHtml(value = "") {
     "'": "&#039;",
   })[character]);
 }
+
+exports._private = {
+  hasRenderablePackage,
+  inlinePreviewPackageAssets,
+  resolvePreviewFilePath,
+};
