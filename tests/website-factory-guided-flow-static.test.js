@@ -110,6 +110,12 @@ test("non-JSON platform 504 remains retryable with one safe diagnostic chain", (
   assert.match(factory, /if \(retryButton\) retryButton\.hidden = false/);
 });
 
+test("demo journey awaits async routes inside its backend error boundary", () => {
+  assert.match(backend, /if \(event\.httpMethod === "GET"\) return await readAdminJourney/);
+  assert.match(backend, /if \(event\.httpMethod === "POST"\) return await upsertJourney/);
+  assert.match(backend, /if \(event\.httpMethod === "PATCH"\) return await upsertJourney/);
+});
+
 test("legacy components are moved before the duplicate Control Center layout is retired", () => {
   for (const mapping of [
     ['.factory-sources-panel', 'factory-research-panel-slot'],

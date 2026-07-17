@@ -63,9 +63,9 @@ exports.handler = async (event) => {
   }
 
   try {
-    if (event.httpMethod === "GET") return readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
-    if (event.httpMethod === "POST") return upsertJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
-    if (event.httpMethod === "PATCH") return upsertJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
+    if (event.httpMethod === "GET") return await readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
+    if (event.httpMethod === "POST") return await upsertJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
+    if (event.httpMethod === "PATCH") return await upsertJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan voor demo klantreis." });
   } catch (error) {
     const missing = isMissingTableError(error);
