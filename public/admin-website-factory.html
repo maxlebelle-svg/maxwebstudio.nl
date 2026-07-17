@@ -21292,6 +21292,7 @@
         let previewLoadFailedId = "";
         let manualPreview = null;
         let manualZipUploading = false;
+        let manualZipAutoProcess = false;
         let zipDownloadStatus = { state: "not_prepared", previewVersionId: "", error: "" };
         let pendingManualZipFile = null;
         let customerPreviewPublication = null;
@@ -24666,12 +24667,14 @@
           }
         }
 
-        function openZipPicker() {
+        function openZipPicker({ autoProcess = false } = {}) {
           if (manualZipUploading) return;
           if (!elements.manualZipInput) {
             setMessage(elements.message, "De ZIP-kiezer is niet beschikbaar. Vernieuw de pagina.", "error");
             return;
           }
+          manualZipAutoProcess = Boolean(autoProcess);
+          elements.manualZipInput.value = "";
           elements.manualZipInput.click();
         }
         window.WebsiteFactoryZipPicker = Object.freeze({ open: openZipPicker });
@@ -25900,8 +25903,11 @@
             event.stopPropagation();
             openZipPicker();
           });
-          elements.manualZipInput?.addEventListener("change", (event) => {
-            selectManualZipFiles(event.target.files || []);
+          elements.manualZipInput?.addEventListener("change", async (event) => {
+            const autoProcess = manualZipAutoProcess;
+            manualZipAutoProcess = false;
+            if (!selectManualZipFiles(event.target.files || [])) return;
+            if (autoProcess) await uploadManualZipFile(pendingManualZipFile);
           });
           elements.manualZipDropzone?.addEventListener("keydown", (event) => {
             if (!["Enter", " "].includes(event.key) || event.target.closest("button")) return;
@@ -26638,7 +26644,9 @@
             if (!uploadButton) return;
             event.preventDefault();
             event.stopPropagation();
-            window.WebsiteFactoryZipPicker?.open?.();
+            window.WebsiteFactoryZipPicker?.open?.({
+              autoProcess: Boolean(uploadButton.closest("#factory-preview-actions-menu")),
+            });
             document.getElementById("factory-preview-actions-menu")?.removeAttribute("open");
           });
           document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", () => {
