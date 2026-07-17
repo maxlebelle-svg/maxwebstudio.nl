@@ -24433,6 +24433,7 @@
             buildHistory,
             projectWorkspace,
             previewSource,
+            viewedPreviewVersionId,
             pipeline: normalizeFactoryServerState(),
             hasPreview: normalizeFactoryServerState().previewRenderable,
           }),
@@ -26332,15 +26333,20 @@
         function renderGuidedVersionMeta() {
           const target = document.getElementById("factory-guided-version-meta");
           if (!target) return;
-          const api = previewSourceApi();
-          const viewed = api?.normalize(selectedViewedPreviewVersion() || {}) || null;
-          const active = api?.normalize(buildHistory.activeVersion || {}) || null;
+          const runtime = window.WebsiteFactoryRuntime?.getState?.() || {};
+          const api = window.WebsiteFactoryPreviewSources;
+          const versions = runtime.buildHistory?.previewVersions || [];
+          const viewedVersion = versions.find((version) => version.id === runtime.viewedPreviewVersionId) || null;
+          const viewed = api?.normalize(viewedVersion || {}) || null;
+          const active = api?.normalize(runtime.buildHistory?.activeVersion || {}) || null;
           const viewedStatus = viewed?.status === "approved" ? "goedgekeurd" : viewed?.active ? "actief" : "concept";
           const activeLabel = active?.id ? `${active.sourceLabel}${active.id === viewed?.id ? " (ook bekeken)" : ""}` : "Geen actieve klantpreview";
+          const viewedAt = viewed?.createdAt ? new Date(viewed.createdAt) : null;
+          const viewedAtLabel = viewedAt && !Number.isNaN(viewedAt.getTime()) ? viewedAt.toLocaleString("nl-NL") : "Onbekend";
           const meta = [
             ["Je bekijkt nu", viewed?.sourceLabel || "Geen preview"],
-            [viewed?.sourceType === "manual_zip" ? "Geüpload" : "Laatst gegenereerd", viewed?.createdAt ? formatDate(viewed.createdAt) : "Onbekend"],
-            ["Door", viewed?.createdBy || journey?.assignedTo || "Huidige medewerker"],
+            [viewed?.sourceType === "manual_zip" ? "Geüpload" : "Laatst gegenereerd", viewedAtLabel],
+            ["Door", viewed?.createdBy || runtime.journey?.assignedTo || "Huidige medewerker"],
             ["Bewerkbaar", viewed?.editable ? "Ja" : "Nee"],
             ["Status bekeken versie", viewed?.id ? viewedStatus : "Niet beschikbaar"],
             ["Actieve klantpreview", activeLabel],

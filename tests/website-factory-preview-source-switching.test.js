@@ -148,3 +148,13 @@ test("viewed and active preview terminology is explicit", () => {
   assert.match(factoryHtml, /Actieve klantpreview/);
   assert.doesNotMatch(factoryHtml, /\["Actieve bron", source\]/);
 });
+
+test("guided version metadata uses only the public runtime bridge", () => {
+  const start = factoryHtml.indexOf("function renderGuidedVersionMeta()");
+  const end = factoryHtml.indexOf("function syncPrimaryAction()", start);
+  const guidedMeta = factoryHtml.slice(start, end);
+  assert.match(guidedMeta, /window\.WebsiteFactoryRuntime/);
+  assert.match(guidedMeta, /window\.WebsiteFactoryPreviewSources/);
+  assert.match(guidedMeta, /runtime\.viewedPreviewVersionId/);
+  assert.doesNotMatch(guidedMeta, /previewSourceApi\(|selectedViewedPreviewVersion\(|formatDate\(|(?<!runtime\.)journey\?/);
+});
