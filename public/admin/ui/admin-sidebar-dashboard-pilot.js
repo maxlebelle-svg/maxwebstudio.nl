@@ -11,7 +11,9 @@
     sales_partner: "Sales Partner", developer: "Developer", designer: "Designer",
     support: "Support", customer: "Klant", demo_user: "Demo Gebruiker",
   });
-  const selectorState = { open: false, type: "all", query: "", request: null, restoreFocus: null, debouncedSearch: null };
+  const selectorState = { open: false, type: "all", query: "", results: [], request: null, restoreFocus: null, debouncedSearch: null };
+  const RELATIONSHIP_PAGE_SIZE = 50;
+  const RELATIONSHIP_MAX_PAGE = 200;
   const employeeSelectorState = { open: false, query: "", results: [], loading: false, error: "", request: null, requestId: 0, restoreFocus: null, debouncedSearch: null };
   const actorState = { profile: null, loading: false, request: null };
   const perspectiveState = { current: null, request: null, requestId: 0 };
@@ -276,9 +278,23 @@
       const option = document.createElement("button"); option.type = "button"; option.className = "mws-workspace-result"; option.setAttribute("role", "option");
       option.dataset.entityType = relationshipType; option.dataset.relationshipId = relationshipId;
       const title = document.createElement("strong"); title.textContent = result.companyName || "Onbekende relatie";
-      const meta = document.createElement("span"); meta.textContent = [relationshipType === "lead" ? "Lead" : "Klant", result.contactName, result.email, result.status, result.assignedUserName ? `Eigenaar: ${result.assignedUserName}` : ""].filter(Boolean).join(" · ");
+      const meta = document.createElement("span"); meta.textContent = [relationshipType === "lead" ? "Lead" : "Klant", result.contactName, result.email, result.status, relationshipDateLabel(result.createdAt), result.assignedUserName ? `Eigenaar: ${result.assignedUserName}` : ""].filter(Boolean).join(" · ");
       option.append(title, meta); option.addEventListener("click", () => selectRelationship(result)); list.append(option);
     });
+  }
+
+  function relationshipTimestamp(result = {}) {
+    const value = Date.parse(result.createdAt || "");
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function relationshipDateLabel(value) {
+    const date = new Date(value || "");
+    return Number.isFinite(date.getTime()) ? `Toegevoegd ${date.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}` : "";
+  }
+
+  function sortRelationships(results = []) {
+    return [...results].sort((a, b) => relationshipTimestamp(b) - relationshipTimestamp(a) || String(a.companyName || "").localeCompare(String(b.companyName || ""), "nl"));
   }
 
   function recentResults() {
@@ -299,32 +315,42 @@
 
   async function searchRelationships() {
     const query = selectorState.query.trim();
-    if (query.length < 2) { setSelectorStatus(recentResults().length ? "Recente relatie" : "Typ minimaal twee tekens om te zoeken."); renderSelectorResults(recentResults(), { emptyMessage: "Nog geen recente relatie." }); return; }
     const token = adminToken();
     if (!token) { setSelectorStatus("Log opnieuw in om relaties te zoeken.", "error"); renderSelectorResults([], { emptyMessage: "Zoeken is niet beschikbaar zonder geldige sessie." }); return; }
-    selectorState.request?.abort(); selectorState.request = new AbortController();
-    setSelectorStatus("Relaties zoeken…", "loading");
+    selectorState.request?.abort(); const request = new AbortController(); selectorState.request = request; selectorState.results = [];
+    setSelectorStatus(query ? "Relaties zoeken…" : "Alle relaties laden…", "loading");
     const list = document.querySelector("[data-workspace-results]");
     if (list && global.MaxAdminSidebar?.LoadingSkeleton) list.replaceChildren(global.MaxAdminSidebar.LoadingSkeleton({ rows: 4, label: "Relaties zoeken" }));
     try {
-      const params = new URLSearchParams({ q: query, type: selectorState.type, limit: "20" });
-      const response = await fetch(`/api/admin-relationship-search?${params}`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` }, cache: "no-store", signal: selectorState.request.signal });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.success) throw new Error(data.error || "Relaties konden niet worden doorzocht.");
-      const results = Array.isArray(data.results) ? data.results : [];
-      setSelectorStatus(results.length ? `${results.length} ${results.length === 1 ? "relatie" : "relaties"} gevonden` : "Geen relaties gevonden.");
-      renderSelectorResults(results);
+      const collected = new Map();
+      for (let page = 0; page <= RELATIONSHIP_MAX_PAGE; page += 1) {
+        const params = new URLSearchParams({ q: query, type: selectorState.type, limit: String(RELATIONSHIP_PAGE_SIZE), page: String(page) });
+        const response = await fetch(`/api/admin-relationship-search?${params}`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` }, cache: "no-store", signal: request.signal });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) throw new Error(data.error || "Relaties konden niet worden doorzocht.");
+        if (selectorState.request !== request) return;
+        (Array.isArray(data.results) ? data.results : []).forEach((result) => {
+          const type = result.relationshipType || result.entityType;
+          const id = result.relationshipId || result.id;
+          if (type && id) collected.set(`${type}:${id}`, result);
+        });
+        selectorState.results = sortRelationships([...collected.values()]);
+        renderSelectorResults(selectorState.results);
+        if (!data.hasMore) break;
+        setSelectorStatus(`${selectorState.results.length} relaties geladen…`, "loading");
+      }
+      setSelectorStatus(selectorState.results.length ? `${selectorState.results.length} ${selectorState.results.length === 1 ? "relatie" : "relaties"} · nieuwste eerst` : "Geen relaties gevonden.");
     } catch (error) {
       if (error.name === "AbortError") return;
       setSelectorStatus(error.message || "Relaties konden niet worden doorzocht.", "error");
       renderSelectorResults([], { emptyMessage: "Probeer een andere zoekterm of probeer het later opnieuw." });
-    }
+    } finally { if (selectorState.request === request) selectorState.request = null; }
   }
 
   function setSelectorType(type) {
     selectorState.type = ["lead", "customer"].includes(type) ? type : "all";
     document.querySelectorAll("[data-workspace-type]").forEach((tab) => { const active = tab.dataset.workspaceType === selectorState.type; tab.classList.toggle("is-active", active); tab.setAttribute("aria-selected", String(active)); });
-    if (selectorState.query.trim().length >= 2) selectorState.debouncedSearch(); else searchRelationships();
+    selectorState.debouncedSearch?.cancel(); searchRelationships();
   }
 
   function handleSelectorKeys(event) {
@@ -349,7 +375,7 @@
   function openWorkspaceSelector() {
     const existing = document.querySelector(".mws-workspace-selector");
     if (existing) { existing.querySelector("[data-workspace-search]")?.focus(); return; }
-    selectorState.open = true; selectorState.query = ""; selectorState.type = "all"; selectorState.restoreFocus = document.activeElement;
+    selectorState.open = true; selectorState.query = ""; selectorState.type = "all"; selectorState.results = []; selectorState.restoreFocus = document.activeElement;
     selectorState.debouncedSearch ||= createDebouncer(searchRelationships, 280);
     const selector = global.MaxAdminSidebar?.WorkspaceSelector({
       activeType: selectorState.type,
@@ -588,7 +614,7 @@
     document.addEventListener("click", (event) => { if (!event.target.closest("#active-relationship-workspace [data-relationship-switch]")) return; event.preventDefault(); event.stopImmediatePropagation(); openWorkspaceSelector(); }, true);
   }
 
-  const api = Object.freeze({ actorState, buildBadgeValues, canAccessItem, clearMetricState, clearPerspective, clearWorkspace, closeEmployeeSelector, closeWorkspaceSelector, createDebouncer, currentSidebarItemId, employeeSelectorState, handleEmployeeSelectorKeys, handleSelectorKeys, loadActorProfile, loadSidebarMetrics, logoutFromSidebar, metricState, minimalPerspective, openEmployeeSelector, openWorkspaceSelector, perspectiveState, pilotNavigation, profileActionsFor, readJson, recentResults, refresh, relationshipForSidebar, relationshipKey, rememberRelationship, renderPageWorkspaceContext, resetWorkspaceMetrics, resolveUser, restorePerspective, safeRelationship, searchEmployees, searchRelationships, selectPerspective, selectRelationship, semanticTone, sessionIsValid, syncRelationshipUrl, toggleSessionPanel, validatePerspective, validateSessionState });
+  const api = Object.freeze({ actorState, buildBadgeValues, canAccessItem, clearMetricState, clearPerspective, clearWorkspace, closeEmployeeSelector, closeWorkspaceSelector, createDebouncer, currentSidebarItemId, employeeSelectorState, handleEmployeeSelectorKeys, handleSelectorKeys, loadActorProfile, loadSidebarMetrics, logoutFromSidebar, metricState, minimalPerspective, openEmployeeSelector, openWorkspaceSelector, perspectiveState, pilotNavigation, profileActionsFor, readJson, recentResults, refresh, relationshipDateLabel, relationshipForSidebar, relationshipKey, relationshipTimestamp, rememberRelationship, renderPageWorkspaceContext, resetWorkspaceMetrics, resolveUser, restorePerspective, safeRelationship, searchEmployees, searchRelationships, selectPerspective, selectRelationship, semanticTone, sessionIsValid, sortRelationships, syncRelationshipUrl, toggleSessionPanel, validatePerspective, validateSessionState });
   global.MaxAdminSidebarPilot = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof document !== "undefined") {

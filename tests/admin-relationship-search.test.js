@@ -19,7 +19,7 @@ test("super_admin receives bounded minimal lead and customer results", async () 
   assert(body.results.every((row) => row.entityType === "lead" ? row.leadId === row.relationshipId && row.customerId === null : row.customerId === row.relationshipId && row.leadId === null));
   assert(body.results.every((row) => !Object.hasOwn(row, "phone") && !Object.hasOwn(row, "metadata")));
   assert(body.results.length <= 20);
-  assert(urls.filter((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers")).every((url) => new URL(url).searchParams.get("limit") === "20"));
+  assert(urls.filter((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers")).every((url) => Number(new URL(url).searchParams.get("limit")) <= 11));
 }));
 
 test("sales_partner search is server-scoped and post-filters foreign relationships", async () => withBackend("sales_partner", async ({ urls }) => {
@@ -41,11 +41,32 @@ test("sales_partner search tolerates missing optional ownership columns while re
   assert(urls.some((url) => decodeURIComponent(url).includes("metadata->>assignedUserId")));
 }, { schemaVariantScope: true }));
 
-test("empty search returns no relationship dataset", async () => withBackend("admin", async ({ urls }) => {
+test("empty search returns all relationship types newest first", async () => withBackend("admin", async ({ urls }) => {
   const result = await handler(event({ q: "" }));
+  const body = JSON.parse(result.body);
   assert.equal(result.statusCode, 200);
-  assert.deepEqual(JSON.parse(result.body).results, []);
-  assert.equal(urls.some((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers")), false);
+  assert.deepEqual(body.results.map((row) => row.companyName), ["Acme Lead", "Acme Customer", "Foreign Lead"]);
+  assert(body.results.every((row) => Object.hasOwn(row, "createdAt")));
+  assert.equal(body.hasMore, false);
+  assert.equal(urls.some((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers")), true);
+}));
+
+test("one typed character already searches the complete relationship dataset", async () => withBackend("admin", async () => {
+  const result = await handler(event({ q: "a", type: "all" }));
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  assert(body.results.some((row) => row.companyName === "Acme Lead"));
+}));
+
+test("relationship list pagination is bounded per type and exposes more pages", async () => withBackend("admin", async ({ urls }) => {
+  const result = await handler(event({ q: "", type: "all", limit: "2", page: "0" }));
+  const body = JSON.parse(result.body);
+  assert.equal(result.statusCode, 200);
+  assert.equal(body.hasMore, true);
+  assert(body.results.length <= 2);
+  const databaseUrls = urls.filter((url) => url.includes("/rest/v1/leads") || url.includes("/rest/v1/customers"));
+  assert(databaseUrls.every((url) => new URL(url).searchParams.get("limit") === "2"));
+  assert(databaseUrls.every((url) => new URL(url).searchParams.get("offset") === "0"));
 }));
 
 test("mail recipient mode returns globally labelled leads and customers", async () => withBackend("admin", async () => {
@@ -96,15 +117,15 @@ async function withBackend(role, callback, options = {}) {
     if (String(url).includes("/auth/v1/user")) return response(200, { id: ACTOR, email: "partner@example.test" });
     if (String(url).includes("/rest/v1/profiles")) return response(200, [{ id: PROFILE, role, status: "active" }]);
     if (options.failSearch) return response(503, { code: "UPSTREAM" });
-    if (String(url).includes("/rest/v1/customers")) return response(200, [{ id: "44444444-4444-4444-8444-444444444444", company: "Acme Customer", name: "Ada", email: "ada@example.test", status: "active", metadata: role === "sales_partner" ? { ownerProfileId: PROFILE } : {} }]);
+    if (String(url).includes("/rest/v1/customers")) return response(200, [{ id: "44444444-4444-4444-8444-444444444444", company: "Acme Customer", name: "Ada", email: "ada@example.test", status: "active", created_at: "2026-07-16T10:00:00.000Z", metadata: role === "sales_partner" ? { ownerProfileId: PROFILE } : {} }]);
     if (String(url).includes("/rest/v1/leads")) {
       if (options.schemaVariantScope && !decodeURIComponent(String(url)).includes("metadata->>")) return response(400, { code: "42703" });
       if (decodeURIComponent(String(url)).includes("lisanne")) {
         return response(200, [{ id: "66666666-6666-4666-8666-666666666666", company_name: "Lisanne Post", contact_name: "Lisanne", email: "lisanne@example.test", lead_status: "new" }]);
       }
       return response(200, [
-      { id: "33333333-3333-4333-8333-333333333333", company_name: "Acme Lead", contact_name: "Lena", email: "lena@example.test", lead_status: "qualified", assigned_user_id: options.schemaVariantScope ? undefined : ACTOR, metadata: options.schemaVariantScope ? { assignedUserId: ACTOR } : {} },
-      { id: "55555555-5555-4555-8555-555555555555", company_name: "Foreign Lead", assigned_user_id: "other" },
+      { id: "33333333-3333-4333-8333-333333333333", company_name: "Acme Lead", contact_name: "Lena", email: "lena@example.test", lead_status: "qualified", created_at: "2026-07-17T10:00:00.000Z", assigned_user_id: options.schemaVariantScope ? undefined : ACTOR, metadata: options.schemaVariantScope ? { assignedUserId: ACTOR } : {} },
+      { id: "55555555-5555-4555-8555-555555555555", company_name: "Foreign Lead", created_at: "2026-07-15T10:00:00.000Z", assigned_user_id: "other" },
       ]);
     }
     return response(404, {});

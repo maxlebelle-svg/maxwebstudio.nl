@@ -154,6 +154,25 @@ test("relationship search input is debounced and only runs the latest query", ()
   assert.deepEqual(calls, ["acme"]);
 });
 
+test("workspace relationships are sorted newest first with undated rows last", () => {
+  const sorted = pilot.sortRelationships([
+    { companyName: "Oud", createdAt: "2026-01-01T10:00:00.000Z" },
+    { companyName: "Zonder datum", createdAt: "" },
+    { companyName: "Nieuw", createdAt: "2026-07-17T10:00:00.000Z" },
+  ]);
+  assert.deepEqual(sorted.map((row) => row.companyName), ["Nieuw", "Oud", "Zonder datum"]);
+  assert.match(pilot.relationshipDateLabel(sorted[0].createdAt), /^Toegevoegd /);
+});
+
+test("workspace selector loads every page and supports immediate typed search", () => {
+  const source = read("public/admin/ui/admin-sidebar-dashboard-pilot.js");
+  const css = read("public/admin/styles/admin-sidebar-system.css");
+  assert.match(source, /for \(let page = 0; page <= RELATIONSHIP_MAX_PAGE; page \+= 1\)/);
+  assert.match(source, /limit: String\(RELATIONSHIP_PAGE_SIZE\), page: String\(page\)/);
+  assert.doesNotMatch(source.slice(source.indexOf("async function searchRelationships"), source.indexOf("function setSelectorType")), /query\.length < 2/);
+  assert.match(css, /\.mws-workspace-results \{[^}]*max-height:[^}]*overflow-y: auto;[^}]*overscroll-behavior: contain;/);
+});
+
 test("recent relationships use a bounded non-sensitive session cache", () => {
   const previous = global.sessionStorage; const values = new Map();
   global.sessionStorage = { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };

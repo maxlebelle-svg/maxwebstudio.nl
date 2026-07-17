@@ -12,14 +12,12 @@ exports.handler = async (event) => {
   const params = queryParams(event);
   const query = clean(params.get("q") || params.get("query")).replace(/[,%()]/g, " ").trim().slice(0, 80);
   const type = clean(params.get("type")).toLowerCase();
-  const limit = Math.min(Math.max(Number(params.get("limit") || 20), 1), 20);
-  const page = Math.min(Math.max(Number(params.get("page") || 0), 0), 40);
+  const limit = Math.min(Math.max(Number(params.get("limit") || 20), 1), 50);
+  const page = Math.min(Math.max(Math.trunc(Number(params.get("page") || 0)), 0), 200);
   const recipientMode = clean(params.get("purpose")).toLowerCase() === "mail-recipient";
   const relationshipType = clean(params.get("relationshipType")).toLowerCase();
   const relationshipId = clean(params.get("relationshipId"));
   if (!TYPES.has(type)) return json(400, { success: false, code: "INVALID_TYPE", error: "Kies Leads, Klanten of Alle." });
-  if (query.length > 0 && query.length < 2) return json(200, { success: true, results: [], limit, page, hasMore: false });
-  if (!recipientMode && query.length < 2) return json(200, { success: true, results: [], limit, page, hasMore: false });
 
   const context = {
     url: clean(process.env.SUPABASE_URL).replace(/\/$/, ""),
@@ -39,15 +37,19 @@ exports.handler = async (event) => {
       return json(200, { success: true, result, results: [result], limit: 1, page: 0, hasMore: false });
     }
     const tasks = [];
-    const fetchLimit = recipientMode ? limit + 1 : limit;
-    const offset = recipientMode ? page * limit : 0;
+    const selectedTypeCount = !type || type === "all" ? 2 : 1;
+    const pageSize = recipientMode ? limit : Math.max(1, Math.ceil(limit / selectedTypeCount));
+    const fetchLimit = pageSize + 1;
+    const offset = page * pageSize;
     if (!type || type === "all" || type === "customer") tasks.push(query ? searchEntity(context, "customer", query, fetchLimit, offset) : listRecentEntity(context, "customer", fetchLimit, offset));
     if (!type || type === "all" || type === "lead") tasks.push(query ? searchEntity(context, "lead", query, fetchLimit, offset) : listRecentEntity(context, "lead", fetchLimit, offset));
-    const rows = (await Promise.all(tasks)).flat();
+    const groups = await Promise.all(tasks);
+    const hasMore = groups.some((group) => group.length > pageSize);
+    const rows = groups.flatMap((group) => group.slice(0, pageSize));
     const unique = [...new Map(rows.map((row) => [`${row.entityType}:${row.id}`, row])).values()]
       .filter((row) => !recipientMode || Boolean(row.email))
-      .sort((a, b) => Number(exactMatch(b, query)) - Number(exactMatch(a, query)) || a.companyName.localeCompare(b.companyName, "nl"));
-    return json(200, { success: true, results: unique.slice(0, limit), limit, page, hasMore: unique.length > limit });
+      .sort((a, b) => Number(exactMatch(b, query)) - Number(exactMatch(a, query)) || relationshipTimestamp(b) - relationshipTimestamp(a) || a.companyName.localeCompare(b.companyName, "nl"));
+    return json(200, { success: true, results: recipientMode ? unique.slice(0, limit) : unique, limit, page, hasMore });
   } catch (error) {
     console.error("Relationship search failed", { code: error.code || "SEARCH_FAILED", phase: error.phase || "search", status: error.status || 500 });
     return json(error.status || 500, { success: false, code: error.code || "SEARCH_FAILED", error: "Relaties konden niet worden doorzocht. Probeer het opnieuw." });
@@ -65,7 +67,7 @@ async function readEntity(context, entityType, id) {
 
 async function listRecentEntity(context, entityType, limit, offset = 0) {
   const table = entityType === "lead" ? "leads" : "customers";
-  const attempts = await Promise.allSettled(["updated_at", "created_at"].map(async (orderField) => {
+  const attempts = await Promise.allSettled(["created_at", "updated_at"].map(async (orderField) => {
     const params = new URLSearchParams({ select: "*", order: `${orderField}.desc.nullslast`, limit: String(limit), offset: String(offset) });
     const response = await fetch(`${context.url}/rest/v1/${table}?${params.toString()}`, { headers: restHeaders(context.key) });
     const rows = await response.json().catch(() => []);
@@ -182,6 +184,7 @@ function mapResult(entityType, row = {}) {
     email: clean(row.email),
     status: clean(row.lead_status || row.portal_status || row.status || row.package),
     assignedUserName: clean(row.assigned_user_name || meta.assignedUserName || meta.ownerName),
+    createdAt: clean(row.created_at || meta.createdAt || meta.created_at || row.updated_at),
   };
 }
 
@@ -194,11 +197,12 @@ function isUnavailable(row = {}) {
     || ["demo", "test", "testing"].includes(environment);
 }
 
-function exactMatch(row, query) { return [row.companyName, row.email].map((value) => clean(value).toLowerCase()).includes(clean(query).toLowerCase()); }
+function exactMatch(row, query) { const needle = clean(query).toLowerCase(); return Boolean(needle) && [row.companyName, row.email].map((value) => clean(value).toLowerCase()).includes(needle); }
+function relationshipTimestamp(row = {}) { const value = Date.parse(row.createdAt || ""); return Number.isFinite(value) ? value : 0; }
 function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]+/g, "_"); }
 function restHeaders(key) { return { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" }; }
 function clean(value) { return String(value || "").trim(); }
 function queryParams(event) { if (event.rawQuery) return new URLSearchParams(event.rawQuery); const params = new URLSearchParams(); Object.entries(event.queryStringParameters || {}).forEach(([key, value]) => { if (value != null) params.set(key, value); }); return params; }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(body) }; }
 
-exports._test = { canAccess, exactMatch, isUnavailable, listRecentEntity, mapResult, matchesQuery, ownershipFilter, ownershipVariants, readEntity, searchEntity, searchScopedEntity };
+exports._test = { canAccess, exactMatch, isUnavailable, listRecentEntity, mapResult, matchesQuery, ownershipFilter, ownershipVariants, readEntity, relationshipTimestamp, searchEntity, searchScopedEntity };

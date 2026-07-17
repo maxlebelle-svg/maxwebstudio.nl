@@ -160,12 +160,12 @@
     input.setAttribute("aria-label", input.placeholder);
     input.dataset.workspaceSearch = "true";
     if (typeof onSearch === "function") input.addEventListener("input", (event) => onSearch(event.target.value));
-    const status = element("div", "mws-workspace-selector-status", "Typ minimaal twee tekens om te zoeken."); status.setAttribute("role", "status"); status.dataset.workspaceStatus = "true";
+    const status = element("div", "mws-workspace-selector-status", "Relaties laden…"); status.setAttribute("role", "status"); status.dataset.workspaceStatus = "true";
     const list = element("div", "mws-workspace-results");
     list.setAttribute("role", "listbox");
     list.dataset.workspaceResults = "true";
-    results.forEach((result) => { const option = element("button", "mws-workspace-result"); option.type = "button"; option.setAttribute("role", "option"); option.append(element("strong", "", result.companyName || "Onbekende relatie"), element("span", "", [result.entityType === "lead" ? "Lead" : "Klant", result.contactName, result.status, result.assignedUserName ? `Eigenaar: ${result.assignedUserName}` : ""].filter(Boolean).join(" · "))); if (typeof onSelect === "function") option.addEventListener("click", () => onSelect(result)); list.append(option); });
-    if (!results.length) list.append(element("p", "mws-workspace-no-results", "Nog geen resultaten."));
+    results.forEach((result) => { const option = element("button", "mws-workspace-result"); option.type = "button"; option.setAttribute("role", "option"); option.append(element("strong", "", result.companyName || "Onbekende relatie"), element("span", "", [result.entityType === "lead" ? "Lead" : "Klant", result.contactName, result.status, result.createdAt ? new Date(result.createdAt).toLocaleDateString("nl-NL") : "", result.assignedUserName ? `Eigenaar: ${result.assignedUserName}` : ""].filter(Boolean).join(" · "))); if (typeof onSelect === "function") option.addEventListener("click", () => onSelect(result)); list.append(option); });
+    if (!results.length) list.append(element("p", "mws-workspace-no-results", "Relaties laden…"));
     selector.append(header, tabs, input, status, list, element("small", "mws-workspace-selector-hint", "Gebruik ↑ en ↓ om te navigeren · Esc sluit"));
     return selector;
   }
