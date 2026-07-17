@@ -57,7 +57,24 @@
   }
 
   function usableVersions(versions = []) {
-    return versions.map(normalize).filter((version) => version.id && version.renderable && version.previewUrl);
+    return versions
+      .map(normalize)
+      .filter((version) => version.id && version.renderable && version.previewUrl)
+      .sort((left, right) => {
+        const dateDifference = Date.parse(right.createdAt || 0) - Date.parse(left.createdAt || 0);
+        if (dateDifference) return dateDifference;
+        return Number(right.version || 0) - Number(left.version || 0);
+      });
+  }
+
+  function versionLabel(version = {}) {
+    const normalized = normalize(version);
+    return `${normalized.sourceLabel} · V${Number(normalized.version || 1)}`;
+  }
+
+  function typeLabel(version = {}) {
+    if (sourceTypeOf(version) === SOURCE_MANUAL) return "Alleen-lezen ZIP-preview";
+    return normalize(version).editable ? "Bewerkbare Factory-build" : "Factory-build";
   }
 
   function sessionKey(scope = {}) {
@@ -92,6 +109,8 @@
     sourceLabel,
     normalize,
     usableVersions,
+    versionLabel,
+    typeLabel,
     sessionKey,
     chooseViewedVersion,
     versionsBySource,

@@ -42,6 +42,8 @@ test("3 both sources are represented as first-class versions", () => {
   assert.equal(grouped.factory_build.length, 1);
   assert.equal(grouped.manual_zip.length, 1);
   assert.match(factoryHtml, /id="factory-preview-view-selector"/);
+  assert.match(factoryHtml, /<strong>Website Factory<\/strong><small>Bewerkbaar<\/small>/);
+  assert.match(factoryHtml, /<strong>Geüploade ZIP<\/strong><small>Alleen-lezen<\/small>/);
 });
 
 test("4 switching Factory to ZIP resolves the latest ZIP", () => {
@@ -106,6 +108,7 @@ test("15 version history offers Bekijken for every usable source version", () =>
   assert.match(factoryHtml, /factory-preview-version-history-list/);
   assert.match(factoryHtml, /data-view-preview-version/);
   assert.match(factoryHtml, />Bekijken</);
+  assert.match(factoryHtml, /factory-preview-version-card/);
 });
 
 test("16 a valid browser-session choice wins over the active version", () => {
@@ -119,8 +122,10 @@ test("17 a stale browser-session choice falls back to the active version", () =>
 });
 
 test("18 mobile controls wrap without horizontal overflow", () => {
-  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*factory-preview-view-selector[\s\S]*width: 100%/);
-  assert.match(styles, /factory-preview-view-selector button \{ flex: 1 1 9rem; \}/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*factory-preview-view-selector[\s\S]*width:\s*100%/);
+  assert.match(styles, /factory-preview-view-selector button\{flex:1 1 9rem;min-height:44px/);
+  assert.match(styles, /factory-preview-version-card footer \.button\{min-height:44px/);
+  assert.match(styles, /@media\(max-width:420px\)[\s\S]*factory-preview-actions-menu\{width:100%/);
 });
 
 test("19 source selector supports keyboard arrows and native button focus", () => {
@@ -141,6 +146,64 @@ test("source metadata includes labels, identity, ownership and hashes", () => {
   assert.equal(normalized.fileName, "site.zip");
   assert.equal(normalized.contentHash, "abc");
   for (const key of ["id", "sourceType", "sourceLabel", "createdAt", "status", "previewUrl", "editable", "active", "buildJobId", "uploadId", "contentHash"]) assert.ok(Object.hasOwn(normalized, key));
+});
+
+test("multiple Factory and ZIP versions stay grouped by source and newest first", () => {
+  const versions = [
+    version("factory-old", "factory_build", { version: 1, createdAt: "2026-07-17T09:00:00.000Z" }),
+    version("zip-new", "manual_zip", { version: 2, createdAt: "2026-07-17T12:00:00.000Z" }),
+    version("factory-new", "factory_build", { version: 2, createdAt: "2026-07-17T11:00:00.000Z" }),
+    version("zip-old", "manual_zip", { version: 1, createdAt: "2026-07-17T10:00:00.000Z" }),
+  ];
+  assert.deepEqual(sources.usableVersions(versions).map((item) => item.id), ["zip-new", "factory-new", "zip-old", "factory-old"]);
+  assert.deepEqual(sources.versionsBySource(versions).factory_build.map((item) => item.id), ["factory-new", "factory-old"]);
+  assert.deepEqual(sources.versionsBySource(versions).manual_zip.map((item) => item.id), ["zip-new", "zip-old"]);
+  assert.match(factoryHtml, /id="factory-preview-version-select"/);
+});
+
+test("version labels never expose technical ids", () => {
+  assert.equal(sources.versionLabel(version("technical-uuid", "factory_build", { version: 2 })), "Website Factory · V2");
+  assert.equal(sources.versionLabel(version("other-uuid", "manual_zip")), "Geüploade ZIP · V1");
+});
+
+test("history separates viewed, active, concept, editable and read-only badges", () => {
+  for (const label of ["Factory", "ZIP", "Actief voor klant", "Wordt bekeken", "Concept", "Bewerkbaar", "Alleen-lezen", "Goedgekeurd"]) {
+    assert.match(factoryHtml, new RegExp(label));
+  }
+  assert.match(factoryHtml, /version\.active[\s\S]*Actief voor klant/);
+  assert.match(factoryHtml, /viewed[\s\S]*Wordt bekeken/);
+});
+
+test("viewing never activates and customer activation remains explicit", () => {
+  const historyHandler = factoryHtml.slice(factoryHtml.indexOf('document.getElementById("factory-preview-version-history-list")?.addEventListener("click"'), factoryHtml.indexOf('document.getElementById("factory-preview-retry")?.addEventListener'));
+  assert.match(historyHandler, /data-view-preview-version/);
+  assert.match(historyHandler, /data-use-customer-preview/);
+  assert.match(historyHandler, /window\.confirm/);
+  assert.match(historyHandler, /activateManualPreview\(versionId\)/);
+  const viewBranch = historyHandler.slice(0, historyHandler.indexOf("const activationButton"));
+  assert.doesNotMatch(viewBranch, /activateManualPreview|apiRequest/);
+});
+
+test("Factory and ZIP type copy communicates editability", () => {
+  assert.equal(sources.typeLabel(version("f", "factory_build", { editorAvailable: true })), "Bewerkbare Factory-build");
+  assert.equal(sources.typeLabel(version("z", "manual_zip", { editorAvailable: true })), "Alleen-lezen ZIP-preview");
+});
+
+test("general actions no longer contain primary source selection", () => {
+  const menuStart = factoryHtml.indexOf('id="factory-preview-actions-menu"');
+  const menuEnd = factoryHtml.indexOf("</details>", menuStart);
+  const menu = factoryHtml.slice(menuStart, menuEnd);
+  assert.match(menu, /Nieuwe Factory-build starten/);
+  assert.match(menu, /ZIP uploaden/);
+  assert.match(menu, /Technische preview vernieuwen/);
+  assert.match(menu, /Previewversies beheren/);
+  assert.doesNotMatch(menu, /Factory-versie kiezen|Geüploade ZIP actief maken|data-view-preview-source/);
+});
+
+test("metadata explicitly warns when viewed and active versions differ", () => {
+  assert.match(factoryHtml, /Je bekijkt een andere versie dan de actieve klantpreview\./);
+  assert.match(factoryHtml, /\["Type", viewed\?\.id \? api\.typeLabel\(viewed\)/);
+  assert.doesNotMatch(factoryHtml, /\["Door", viewed\?\.createdBy/);
 });
 
 test("viewed and active preview terminology is explicit", () => {

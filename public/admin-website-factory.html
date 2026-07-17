@@ -495,18 +495,6 @@
               <div class="factory-guided-primary-actions">
                 <button class="button primary" id="factory-primary-save-demo" type="button">Opslaan in Demo Sites</button>
                 <button class="button secondary" id="factory-publish-customer-preview" type="button" disabled>Publiceren naar klantportaal</button>
-                <details class="factory-more-menu" id="factory-more-menu">
-                  <summary class="button secondary">Meer opties <span aria-hidden="true">⌄</span></summary>
-                  <div class="factory-more-menu-panel" role="menu" aria-label="Technische Website Factory opties">
-                    <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Preview opnieuw genereren</button>
-                    <button type="button" data-factory-proxy="demo-journey-preview-refresh">Technische preview vernieuwen</button>
-                    <button type="button" data-factory-action="version">Factory-versie kiezen</button>
-                    <button type="button" data-factory-source-choice="manual">Geüploade ZIP actief maken</button>
-                    <button type="button" data-manual-zip-upload>ZIP uploaden</button>
-                    <button type="button" data-factory-proxy="demo-journey-regenerate">Build opnieuw starten</button>
-                    <button type="button" data-factory-action="versions">Previewversies beheren</button>
-                  </div>
-                </details>
               </div>
             </header>
             <div class="factory-customer-publication-status" id="factory-customer-publication-status" hidden></div>
@@ -567,15 +555,27 @@
                       </div>
                       <div class="factory-preview-view-selector" id="factory-preview-view-selector" role="group" aria-label="Previewbron" hidden>
                         <span>Previewbron</span>
-                        <button type="button" data-view-preview-source="factory_build">Website Factory</button>
-                        <button type="button" data-view-preview-source="manual_zip">Geüploade ZIP</button>
+                        <button type="button" data-view-preview-source="factory_build"><strong>Website Factory</strong><small>Bewerkbaar</small></button>
+                        <button type="button" data-view-preview-source="manual_zip"><strong>Geüploade ZIP</strong><small>Alleen-lezen</small></button>
+                        <label class="factory-preview-version-select" id="factory-preview-version-select-wrap" hidden>
+                          <span>Versie</span>
+                          <select id="factory-preview-version-select" aria-label="Bekeken previewversie"></select>
+                        </label>
                       </div>
                       <div class="factory-guided-preview-actions">
                         <span id="factory-guided-preview-url">Nog geen preview-URL</span>
                         <button id="factory-preview-editor-toggle" type="button" aria-pressed="false">Bewerkmodus</button>
                         <button type="button" data-factory-proxy="demo-journey-open-preview">Preview openen</button>
                         <button type="button" data-factory-proxy="demo-journey-preview-refresh">Opnieuw laden</button>
-                        <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Nieuwe build</button>
+                        <details class="factory-preview-actions-menu" id="factory-preview-actions-menu">
+                          <summary>Meer acties <span aria-hidden="true">⌄</span></summary>
+                          <div role="menu" aria-label="Previewacties">
+                            <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Nieuwe Factory-build starten</button>
+                            <button type="button" data-manual-zip-upload>ZIP uploaden</button>
+                            <button type="button" data-factory-proxy="demo-journey-preview-refresh">Technische preview vernieuwen</button>
+                            <button type="button" data-factory-action="versions">Previewversies beheren</button>
+                          </div>
+                        </details>
                       </div>
                     </div>
                     <div class="factory-editor-workspace">
@@ -24710,10 +24710,16 @@
           return (buildHistory.previewVersions || []).find((item) => item.id === previewVersionId) || null;
         }
 
-        async function activateManualPreview() {
+        async function activateManualPreview(requestedPreviewVersionId = "") {
           const customer = factoryCustomerContext?.customer || null;
-          const meta = manualPreviewMeta();
-          const versionId = meta?.previewVersionId || (buildHistory.previewVersions || []).find((item) => item.metadata?.previewSource === "manual_zip" || item.generatedPackage?.meta?.previewSource === "manual_zip")?.id;
+          const requestedVersion = (buildHistory.previewVersions || []).find((item) => item.id === requestedPreviewVersionId) || null;
+          const storedMeta = manualPreviewMeta();
+          const meta = requestedVersion ? {
+            previewVersionId: requestedVersion.id,
+            fileName: requestedVersion.metadata?.fileName || requestedVersion.generatedPackage?.meta?.fileName || storedMeta?.fileName,
+            entryPath: requestedVersion.metadata?.entryFile || requestedVersion.generatedPackage?.meta?.entryFile || storedMeta?.entryPath,
+          } : storedMeta;
+          const versionId = requestedPreviewVersionId || meta?.previewVersionId || (buildHistory.previewVersions || []).find((item) => item.metadata?.previewSource === "manual_zip" || item.generatedPackage?.meta?.previewSource === "manual_zip")?.id;
           if (!customer?.id || !versionId) {
             setMessage(elements.message, "Upload eerst een handmatige ZIP.", "warning");
             return;
@@ -25341,12 +25347,24 @@
           const saved = isDemoSiteSaved();
           const viewedVersion = selectedViewedPreviewVersion();
           const viewSelector = document.getElementById("factory-preview-view-selector");
-          if (viewSelector) viewSelector.hidden = availableSources.size < 2;
+          if (viewSelector) viewSelector.hidden = availableSources.size === 0;
           document.querySelectorAll("[data-view-preview-source]").forEach((button) => {
-            const active = button.dataset.viewPreviewSource === (source === "manual" ? "manual_zip" : "factory_build");
+            const sourceType = button.dataset.viewPreviewSource;
+            const available = availableSources.has(sourceType);
+            const active = sourceType === (source === "manual" ? "manual_zip" : "factory_build");
+            button.hidden = !available;
             button.classList.toggle("is-active", active);
             button.setAttribute("aria-pressed", active ? "true" : "false");
           });
+          const activeSourceType = source === "manual" ? "manual_zip" : "factory_build";
+          const sourceVersions = usableVersions.filter((version) => version.sourceType === activeSourceType);
+          const versionSelectWrap = document.getElementById("factory-preview-version-select-wrap");
+          const versionSelect = document.getElementById("factory-preview-version-select");
+          if (versionSelectWrap) versionSelectWrap.hidden = sourceVersions.length < 2;
+          if (versionSelect) {
+            const options = sourceVersions.map((version) => `<option value="${escapeHtml(version.id)}"${version.id === viewedVersion?.id ? " selected" : ""}>${escapeHtml(api.versionLabel(version))}</option>`).join("");
+            if (versionSelect.innerHTML !== options) versionSelect.innerHTML = options;
+          }
           elements.previewSourceControls?.forEach((button) => {
             const isManualButton = button.dataset.previewSource === "manual";
             const active = button.dataset.previewSource === source;
@@ -25438,11 +25456,22 @@
             return;
           }
           target.innerHTML = versions.map((version) => {
-            const status = version.status === "approved" ? "goedgekeurd" : version.active ? "actief" : "concept";
-            const detail = version.sourceType === "manual_zip"
-              ? [version.fileName || "ZIP-bestand", formatDate(version.createdAt)].filter(Boolean).join(" · ")
-              : [`V${version.version || 1}`, formatDate(version.createdAt)].filter(Boolean).join(" · ");
-            return `<article class="factory-preview-version-row ${version.id === viewedPreviewVersionId ? "is-viewed" : ""}"><div><strong>${escapeHtml(version.sourceLabel)}</strong><span>${escapeHtml(detail)}</span></div><span>${escapeHtml(version.editable ? "Bewerkbaar" : "Alleen-lezen")}</span><mark>${escapeHtml(status)}</mark><button class="button secondary button-small" type="button" data-view-preview-version="${escapeHtml(version.id)}" aria-pressed="${version.id === viewedPreviewVersionId ? "true" : "false"}">${version.id === viewedPreviewVersionId ? "Wordt bekeken" : "Bekijken"}</button></article>`;
+            const viewed = version.id === viewedPreviewVersionId;
+            const approved = version.status === "approved";
+            const sourceBadge = version.sourceType === "manual_zip" ? "ZIP" : "Factory";
+            const badges = [
+              `<span class="factory-preview-badge is-source">${sourceBadge}</span>`,
+              version.active ? '<span class="factory-preview-badge is-active">Actief voor klant</span>' : "",
+              viewed ? '<span class="factory-preview-badge is-viewed">Wordt bekeken</span>' : "",
+              !version.active && !approved ? '<span class="factory-preview-badge is-concept">Concept</span>' : "",
+              approved ? '<span class="factory-preview-badge is-approved">Goedgekeurd</span>' : "",
+              `<span class="factory-preview-badge is-access">${version.editable ? "Bewerkbaar" : "Alleen-lezen"}</span>`,
+            ].filter(Boolean).join("");
+            const actions = [
+              !viewed ? `<button class="button secondary button-small" type="button" data-view-preview-version="${escapeHtml(version.id)}">Bekijken</button>` : "",
+              !version.active && version.sourceType === "manual_zip" ? `<button class="button secondary button-small" type="button" data-use-customer-preview="${escapeHtml(version.id)}">Gebruik als klantpreview</button>` : "",
+            ].filter(Boolean).join("");
+            return `<article class="factory-preview-version-card ${viewed ? "is-viewed" : ""} ${version.active ? "is-active" : ""}" data-preview-source-type="${escapeHtml(version.sourceType)}"><header><div><small>${escapeHtml(version.sourceLabel)}</small><strong>${escapeHtml(api.versionLabel(version))}</strong></div><div class="factory-preview-version-badges">${badges}</div></header><div class="factory-preview-version-details"><span>${escapeHtml(formatDate(version.createdAt) || "Datum onbekend")}</span>${version.fileName ? `<span title="${escapeHtml(version.fileName)}">${escapeHtml(version.fileName)}</span>` : ""}</div>${actions ? `<footer>${actions}</footer>` : ""}</article>`;
           }).join("");
         }
 
@@ -25914,7 +25943,7 @@
           });
           document.getElementById("factory-preview-view-selector")?.addEventListener("keydown", (event) => {
             if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
-            const buttons = Array.from(event.currentTarget.querySelectorAll("button:not([disabled])"));
+            const buttons = Array.from(event.currentTarget.querySelectorAll("button:not([disabled]):not([hidden])"));
             const index = buttons.indexOf(document.activeElement);
             if (index < 0 || buttons.length < 2) return;
             event.preventDefault();
@@ -25922,10 +25951,23 @@
             buttons[next].focus();
             buttons[next].click();
           });
-          document.getElementById("factory-preview-version-history-list")?.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-view-preview-version]");
-            if (!button || !viewPreviewVersion(button.dataset.viewPreviewVersion)) return;
+          document.getElementById("factory-preview-version-select")?.addEventListener("change", (event) => {
+            if (!viewPreviewVersion(event.currentTarget.value)) return;
             setMessage(elements.message, "Previewversie geopend. De actieve klantpreview is niet gewijzigd.", "success");
+          });
+          document.getElementById("factory-preview-version-history-list")?.addEventListener("click", async (event) => {
+            const button = event.target.closest("[data-view-preview-version]");
+            if (button) {
+              if (!viewPreviewVersion(button.dataset.viewPreviewVersion)) return;
+              setMessage(elements.message, "Previewversie geopend. De actieve klantpreview is niet gewijzigd.", "success");
+              return;
+            }
+            const activationButton = event.target.closest("[data-use-customer-preview]");
+            if (!activationButton) return;
+            const versionId = activationButton.dataset.useCustomerPreview;
+            const version = (buildHistory.previewVersions || []).find((item) => item.id === versionId);
+            if (!version || !window.confirm(`${previewSourceApi()?.versionLabel(version) || "Deze preview"} gebruiken als actieve klantpreview?`)) return;
+            await activateManualPreview(versionId);
           });
           document.getElementById("factory-preview-retry")?.addEventListener("click", () => {
             previewLoadFailedId = "";
@@ -26339,23 +26381,22 @@
           const viewedVersion = versions.find((version) => version.id === runtime.viewedPreviewVersionId) || null;
           const viewed = api?.normalize(viewedVersion || {}) || null;
           const active = api?.normalize(runtime.buildHistory?.activeVersion || {}) || null;
-          const viewedStatus = viewed?.status === "approved" ? "goedgekeurd" : viewed?.active ? "actief" : "concept";
-          const activeLabel = active?.id ? `${active.sourceLabel}${active.id === viewed?.id ? " (ook bekeken)" : ""}` : "Geen actieve klantpreview";
+          const viewedLabel = viewed?.id ? api.versionLabel(viewed) : "Geen preview";
+          const activeLabel = active?.id ? api.versionLabel(active) : "Geen actieve klantpreview";
           const viewedAt = viewed?.createdAt ? new Date(viewed.createdAt) : null;
           const viewedAtLabel = viewedAt && !Number.isNaN(viewedAt.getTime()) ? viewedAt.toLocaleString("nl-NL") : "Onbekend";
           const meta = [
-            ["Je bekijkt nu", viewed?.sourceLabel || "Geen preview"],
-            [viewed?.sourceType === "manual_zip" ? "Geüpload" : "Laatst gegenereerd", viewedAtLabel],
-            ["Door", viewed?.createdBy || runtime.journey?.assignedTo || "Huidige medewerker"],
-            ["Bewerkbaar", viewed?.editable ? "Ja" : "Nee"],
-            ["Status bekeken versie", viewed?.id ? viewedStatus : "Niet beschikbaar"],
+            ["Je bekijkt nu", viewedLabel],
             ["Actieve klantpreview", activeLabel],
-            ...(viewed?.fileName ? [["Bestandsnaam", viewed.fileName]] : []),
+            ["Type", viewed?.id ? api.typeLabel(viewed) : "Niet beschikbaar"],
+            [viewed?.sourceType === "manual_zip" ? "Geüpload" : "Aangemaakt", viewedAtLabel],
+            ["Bewerkbaarheid", viewed?.editable ? "Bewerkbaar" : viewed?.id ? "Alleen-lezen" : "Niet beschikbaar"],
           ];
-          const signature = JSON.stringify(meta);
+          const differs = Boolean(viewed?.id && active?.id && viewed.id !== active.id);
+          const signature = JSON.stringify([meta, differs]);
           if (target.dataset.signature === signature) return;
           target.dataset.signature = signature;
-          target.innerHTML = meta.map(([label, content]) => `<div><small>${label}</small><strong>${content}</strong></div>`).join("");
+          target.innerHTML = `${differs ? '<p class="factory-preview-comparison-note">Je bekijkt een andere versie dan de actieve klantpreview.</p>' : ""}<div class="factory-guided-version-meta-grid">${meta.map(([label, content]) => `<div><small>${label}</small><strong>${escapeHtml(content)}</strong></div>`).join("")}</div>`;
         }
 
         function syncPrimaryAction() {
@@ -26400,7 +26441,7 @@
           const target = document.getElementById(id);
           if (!target || target.disabled) return;
           target.click();
-          document.getElementById("factory-more-menu")?.removeAttribute("open");
+          document.getElementById("factory-preview-actions-menu")?.removeAttribute("open");
         }
 
         function activateFactoryTab(name = "preview", options = {}) {
@@ -26556,22 +26597,15 @@
             event.preventDefault();
             event.stopPropagation();
             window.WebsiteFactoryZipPicker?.open?.();
-            document.getElementById("factory-more-menu")?.removeAttribute("open");
+            document.getElementById("factory-preview-actions-menu")?.removeAttribute("open");
           });
           document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", () => {
             document.querySelectorAll("[data-guided-preview-mode]").forEach((item) => item.classList.toggle("is-active", item === button));
             document.querySelector(`.factory-control-preview [data-preview-mode="${button.dataset.guidedPreviewMode}"]`)?.click();
           }));
-          document.querySelectorAll("[data-factory-source-choice]").forEach((button) => button.addEventListener("click", () => {
-            const source = button.dataset.factorySourceChoice;
-            const manualSourceButton = document.querySelector(".factory-control-preview [data-preview-source='manual']");
-            if (source === "manual" && manualSourceButton && !manualSourceButton.disabled) window.dispatchEvent(new CustomEvent("factory:activate-manual-preview"));
-            else window.WebsiteFactoryZipPicker?.open?.();
-            document.getElementById("factory-more-menu")?.removeAttribute("open");
-          }));
-          document.querySelectorAll("[data-factory-action='version'], [data-factory-action='versions']").forEach((button) => button.addEventListener("click", () => {
+          document.querySelectorAll("[data-factory-action='versions']").forEach((button) => button.addEventListener("click", () => {
             activateFactoryTab("project");
-            document.getElementById("factory-more-menu")?.removeAttribute("open");
+            document.getElementById("factory-preview-actions-menu")?.removeAttribute("open");
           }));
 
           window.addEventListener("factory:preview-updated", () => {

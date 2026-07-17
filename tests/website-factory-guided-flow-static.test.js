@@ -9,9 +9,9 @@ const demoSites = fs.readFileSync(path.join(root, "public/admin-demo-sites.html"
 const backend = fs.readFileSync(path.join(root, "functions/demo-journey.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
 
-test("guided Factory exposes one primary action and a technical overflow menu", () => {
+test("guided Factory exposes one primary action and a preview overflow menu", () => {
   assert.match(factory, /id="factory-primary-save-demo"[^>]*>Opslaan in Demo Sites/);
-  assert.match(factory, /id="factory-more-menu"/);
+  assert.match(factory, /id="factory-preview-actions-menu"/);
   assert.equal((factory.match(/<button[^>]*data-manual-zip-upload/g) || []).length, 2);
   assert.match(factory, /factory-guided-shell[\s\S]*openZipPicker\(\)/);
   assert.doesNotMatch(factory, /proxyClick\("demo-journey-upload-manual-zip"\)/);
