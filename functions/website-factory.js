@@ -50,7 +50,7 @@ const PREVIEW_RECOVERY_FIELDS = [
 ].join(",");
 const RESUMABLE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "retryable"]);
 const DEFAULT_SUPABASE_TIMEOUT_MS = 8000;
-const PACKAGE_SUPABASE_TIMEOUT_MS = 15000;
+const PACKAGE_SUPABASE_TIMEOUT_MS = 30000;
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
