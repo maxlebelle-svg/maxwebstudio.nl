@@ -230,6 +230,7 @@ async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   }
   const attempts = [
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: preparedRecord }),
+    () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: minimalModernLeadPayload(preparedRecord) }),
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: true }) }),
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: true, ownerColumn: false, interestColumn: false, messageColumn: false, lifecycleColumns: true }) }),
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: false }) }),
@@ -250,6 +251,28 @@ async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
       leadId: lead.id,
     },
   });
+}
+
+function minimalModernLeadPayload(record = {}) {
+  const allowedColumns = [
+    "company_name",
+    "contact_name",
+    "email",
+    "phone",
+    "website",
+    "status",
+    "notes",
+    "metadata",
+    "is_demo",
+    "environment",
+    "created_at",
+    "updated_at",
+  ];
+  return Object.fromEntries(
+    allowedColumns
+      .filter((column) => Object.prototype.hasOwnProperty.call(record, column))
+      .map((column) => [column, record[column]])
+  );
 }
 
 async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
