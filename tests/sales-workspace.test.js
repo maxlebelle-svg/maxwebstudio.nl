@@ -115,6 +115,15 @@ test("leadselectie en detailpaneel blijven onderdeel van dezelfde workspace", ()
   assert.doesNotMatch(salesHtml, /location\.href\s*=.*leadId/);
 });
 
+test("handmatig toegevoegde lokale leads worden centraal opgeslagen en blijven geselecteerd", () => {
+  assert.match(salesHtml, /async function centralizeLocalLeadRecords/);
+  assert.match(salesHtml, /leadApiRequest\("POST", localLeadCentralPayload\(localLead\)\)/);
+  assert.match(salesHtml, /findCentralMatchForLocalLead\(localLead, knownRemoteLeads\)/);
+  assert.match(salesHtml, /remapSelectedLocalLead\(localLead\.id, result\.lead\.id\)/);
+  assert.match(salesHtml, /url\.searchParams\.set\("leadId", centralId\)/);
+  assert.match(salesHtml, /const resolvedSelection = selectedLeadFinderId/);
+});
+
 test("eigenaar wijzigen gebruikt de bestaande expliciete assignmentactie", () => {
   assert.match(apiSource, /payload\.action === "assign"/);
   assert.match(apiSource, /assigned_user_email: assignment\.email/);

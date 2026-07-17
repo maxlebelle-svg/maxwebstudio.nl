@@ -19599,6 +19599,7 @@
       const selectedSalesLeadIds = new Set();
       const favoriteLeadWriteIds = new Set();
       const favoriteLeadErrorIds = new Set();
+      const localLeadCentralSyncAttempts = new Set();
       const leadfinderSortStorageKey = "maxwebstudioLeadfinderSortMode";
       const leadfinderSortModes = ["newest", "oldest", "updated_desc", "score_desc", "score_asc", "name_asc"];
       let leadfinderSortMode = localStorage.getItem(leadfinderSortStorageKey) || "newest";
@@ -20165,16 +20166,21 @@
         const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
         const website = normalizeComparableUrl(lead.websiteUrl || lead.website || metadata.websiteUrl || metadata.website);
         const phone = normalizeComparablePhone(lead.phone || metadata.phone);
+        const email = String(lead.email || metadata.email || "").trim().toLowerCase();
         const placeId = String(lead.googlePlaceId || metadata.googlePlaceId || metadata.google_place_id || "").trim().toLowerCase();
-        const companyRegion = [
-          String(lead.companyName || lead.company || lead.businessName || "").trim().toLowerCase(),
-          String(lead.region || lead.city || lead.plaats || "").trim().toLowerCase(),
-        ].filter(Boolean).join("|");
+        const company = String(lead.companyName || lead.company || lead.businessName || "").trim().toLowerCase();
+        const region = String(lead.region || lead.city || lead.plaats || "").trim().toLowerCase();
+        const companyRegion = company && region ? `${company}|${region}` : "";
+        const localLeadId = String(metadata.localLeadId || "").trim();
+        const localRecordId = lead._source && lead._source !== "supabase" ? String(lead.id || "").trim() : "";
         return [
           lead.id ? `id:${String(lead.id).trim()}` : "",
+          localLeadId ? `local:${localLeadId}` : "",
+          localRecordId ? `local:${localRecordId}` : "",
           placeId ? `place:${placeId}` : "",
           website ? `website:${website}` : "",
           phone ? `phone:${phone}` : "",
+          email ? `email:${email}` : "",
           companyRegion ? `company:${companyRegion}` : "",
         ].filter(Boolean);
       }
@@ -20200,12 +20206,105 @@
         return merged;
       }
 
+      function findCentralMatchForLocalLead(localLead = {}, remoteLeads = []) {
+        const localKeys = leadMergeKeyParts(localLead).filter((key) => !key.startsWith("id:"));
+        if (!localKeys.length) return null;
+        return remoteLeads.find((remoteLead) => {
+          const remoteKeys = new Set(leadMergeKeyParts(remoteLead).filter((key) => !key.startsWith("id:")));
+          return localKeys.some((key) => remoteKeys.has(key));
+        }) || null;
+      }
+
+      function localLeadCentralPayload(lead = {}) {
+        const metadata = lead.metadata && typeof lead.metadata === "object" ? { ...lead.metadata } : {};
+        [
+          "assignedTo", "assigned_to", "assignedToEmail", "assigned_to_email", "assignedUserEmail", "assigned_user_email",
+          "assignedUserId", "assigned_user_id", "assignedUserName", "assigned_user_name", "assignedToName", "assigned_to_name",
+          "medewerker", "medewerkerEmail", "medewerker_email", "employee", "employeeEmail", "employee_email",
+          "salesPartnerEmail", "sales_partner_email", "salesPartnerName", "sales_partner_name", "userEmail", "user_email",
+          "userName", "user_name", "ownerAuthUserId", "owner_id", "ownerEmail", "owner_email", "ownerName", "owner_name",
+        ].forEach((key) => delete metadata[key]);
+        return {
+          companyName: lead.companyName || "",
+          contactName: lead.contactName || "",
+          industry: lead.industry || "",
+          region: lead.region || "",
+          phone: lead.phone || "",
+          email: lead.email || "",
+          websiteUrl: lead.websiteUrl || "",
+          websiteStatus: lead.websiteStatus || "onbekend",
+          leadScore: Number.isFinite(Number(lead.leadScore)) ? Number(lead.leadScore) : 50,
+          callStatus: lead.callStatus || "nieuw",
+          leadStatus: lead.leadStatus || undefined,
+          followUpDate: lead.followUpDate || "",
+          notes: lead.notes || "",
+          source: lead.source || "handmatig",
+          externalSource: lead.externalSource || lead._source || "local-admin-sales",
+          googlePlaceId: lead.googlePlaceId || "",
+          googleMapsUrl: lead.googleMapsUrl || "",
+          websiteAnalysis: lead.websiteAnalysis || undefined,
+          metadata: {
+            ...metadata,
+            localLeadId: lead.id || "",
+            localLeadSource: lead._source || lead.source || "local-admin-sales",
+            centralSyncSource: "admin-sales-local-lead-migration",
+            centralSyncedAt: new Date().toISOString(),
+          },
+        };
+      }
+
+      function remapSelectedLocalLead(localId = "", centralId = "") {
+        if (!localId || !centralId) return;
+        const url = new URL(window.location.href);
+        const urlLeadId = url.searchParams.get("leadId") || "";
+        if (selectedLeadFinderId !== localId && urlLeadId !== localId) return;
+        selectedLeadFinderId = centralId;
+        if (urlLeadId === localId) {
+          url.searchParams.set("leadId", centralId);
+          window.history.replaceState({}, "", url);
+        }
+      }
+
+      async function centralizeLocalLeadRecords(remoteLeads = [], localLeads = []) {
+        const knownRemoteLeads = [...remoteLeads];
+        let synced = 0;
+        const errors = [];
+        for (const localLead of localLeads.filter((lead) => lead && !isDemoLeadfinderLead(lead))) {
+          const existing = findCentralMatchForLocalLead(localLead, knownRemoteLeads);
+          if (existing?.id) {
+            remapSelectedLocalLead(localLead.id, existing.id);
+            continue;
+          }
+          if (!localLead.id || localLeadCentralSyncAttempts.has(localLead.id)) continue;
+          localLeadCentralSyncAttempts.add(localLead.id);
+          try {
+            const result = await leadApiRequest("POST", localLeadCentralPayload(localLead));
+            if (result.lead?.id) {
+              knownRemoteLeads.push(result.lead);
+              remapSelectedLocalLead(localLead.id, result.lead.id);
+            }
+            synced += 1;
+          } catch (error) {
+            errors.push({ id: localLead.id, message: error.message || "Centrale opslag mislukt." });
+          }
+        }
+        return { synced, errors };
+      }
+
       async function loadLeadfinderDataLayer(options = {}) {
         renderLeadfinderState("Leads laden", "De sales pipeline wordt opgehaald.", "loading");
         try {
           const result = await leadApiRequest("GET");
-          const remoteRecords = Array.isArray(result.records) ? result.records : [];
+          let remoteRecords = Array.isArray(result.records) ? result.records : [];
           const localRecords = readAllLocalLeadSources();
+          const localSyncResult = await centralizeLocalLeadRecords(remoteRecords, localRecords);
+          if (localSyncResult.synced) {
+            const refreshed = await leadApiRequest("GET");
+            remoteRecords = Array.isArray(refreshed.records) ? refreshed.records : remoteRecords;
+            result.counts = refreshed.counts || result.counts;
+            result.diagnostics = refreshed.diagnostics || result.diagnostics;
+            result.refreshedAt = refreshed.refreshedAt || result.refreshedAt;
+          }
           leadfinderDataLayerLeads = mergeLeadDataLayerRecords(remoteRecords, localRecords);
           leadfinderLastDiagnostics = result.diagnostics || null;
           leadfinderSourceStatus = {
@@ -20218,8 +20317,10 @@
             },
             fallbackUsed: localRecords.length > 0,
             error: result.error || "",
-            warning: localRecords.length
-              ? "Lokale Lead Generator leads worden getoond tot centrale synchronisatie klaar is."
+            warning: localSyncResult.errors.length
+              ? `${localSyncResult.errors.length} lokale lead(s) konden nog niet centraal worden opgeslagen.`
+              : localRecords.length
+                ? "Handmatig toegevoegde leads zijn centraal beschikbaar."
               : result.warning || "",
             refreshedAt: result.refreshedAt || new Date().toISOString(),
             dataLayer: localRecords.length ? "supabase-production-plus-local-leads" : "supabase-production-leads",
@@ -20251,6 +20352,8 @@
             fallbackUsed: leadfinderSourceStatus.fallbackUsed,
             error: leadfinderSourceStatus.error,
             diagnostics: leadfinderLastDiagnostics,
+            localLeadsCentralized: localSyncResult.synced,
+            localLeadSyncErrors: localSyncResult.errors,
           });
         } catch (error) {
           const developerFallbackActive = developerModeActive();
@@ -20285,10 +20388,13 @@
       async function refreshLeads(options = {}) {
         const keepSelection = options.keepSelection !== false;
         const previousSelection = selectedLeadFinderId;
-        const urlLeadId = new URLSearchParams(window.location.search).get("leadId") || "";
         await loadLeadfinderDataLayer({ syncOfflineQueue: Boolean(options.syncOfflineQueue) });
-        if (keepSelection && urlLeadId && getLeadfinderLeads().some((lead) => lead.id === urlLeadId)) {
-          selectedLeadFinderId = urlLeadId;
+        const resolvedUrlLeadId = new URLSearchParams(window.location.search).get("leadId") || "";
+        const resolvedSelection = selectedLeadFinderId;
+        if (keepSelection && resolvedUrlLeadId && getLeadfinderLeads().some((lead) => lead.id === resolvedUrlLeadId)) {
+          selectedLeadFinderId = resolvedUrlLeadId;
+        } else if (keepSelection && resolvedSelection && getLeadfinderLeads().some((lead) => lead.id === resolvedSelection)) {
+          selectedLeadFinderId = resolvedSelection;
         } else if (keepSelection && previousSelection && getLeadfinderLeads().some((lead) => lead.id === previousSelection)) {
           selectedLeadFinderId = previousSelection;
         } else if (!keepSelection) {
