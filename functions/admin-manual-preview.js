@@ -21,16 +21,29 @@ exports.handler = async (event) => {
   try {
     const payload = JSON.parse(event.body || "{}");
     const action = text(payload.action || "upload").toLowerCase();
-    const customerId = uuid(payload.customerId || payload.customer_id);
+    const requestedCustomerId = uuid(payload.customerId || payload.customer_id);
+    const leadId = uuid(payload.leadId || payload.lead_id);
     const websiteId = uuid(payload.websiteId || payload.website_id);
     const projectId = uuid(payload.projectId || payload.project_id);
-    const demoJourneyId = uuid(payload.demoJourneyId || payload.demo_journey_id);
-    if (!customerId) return fail(400, "customer_required", "Selecteer eerst een geldige klant.", "validate_customer", requestId);
+    const requestedDemoJourneyId = uuid(payload.demoJourneyId || payload.demo_journey_id);
     const context = getContext(adminCheck.admin);
     if (!context.available) return fail(500, "preview_version_failed", "De previewomgeving is nog niet geconfigureerd.", "configure_preview", requestId);
-    const customer = await readOne(context, "customers", `select=id,name,company&id=eq.${customerId}&limit=1`);
-    if (!customer?.id) return fail(404, "customer_not_found", "Deze klant kon niet worden gevonden.", "resolve_customer", requestId);
-    if (action === "activate") return activateManualVersion(context, customerId, demoJourneyId, payload);
+    const scope = await resolveUploadScope(context, {
+      customerId: requestedCustomerId,
+      demoJourneyId: requestedDemoJourneyId,
+      leadId,
+      payload,
+      admin: adminCheck.admin,
+    });
+    const { customerId, demoJourneyId, journey } = scope;
+    const customer = customerId
+      ? await readOne(context, "customers", `select=id,name,company&id=eq.${customerId}&limit=1`)
+      : null;
+    if (customerId && !customer?.id) return fail(404, "customer_not_found", "Deze klant kon niet worden gevonden.", "resolve_customer", requestId);
+    if (action === "activate") {
+      if (!customerId) return fail(409, "customer_required_for_activation", "Zet deze lead eerst om naar klant voordat je een actieve klantpreview kiest.", "activate_customer_preview", requestId);
+      return activateManualVersion(context, customerId, demoJourneyId, payload);
+    }
     const fileName = text(payload.fileName || payload.file_name);
     if (!/\.zip$/i.test(fileName)) return fail(400, "invalid_file_type", "Kies een geldig ZIP-bestand.", "validate_zip", requestId);
     const zipBuffer = decodeZip(payload.zipBase64 || payload.zip_base64);
@@ -44,7 +57,8 @@ exports.handler = async (event) => {
     const extracted = extractZip(zipBuffer);
     const entryFile = resolveEntryFile(extracted.files);
     const contentHash = createHash("sha256").update(zipBuffer).digest("hex");
-    const existing = await readRows(context, "website_preview_versions", `select=*&customer_id=eq.${customerId}&order=version.desc&limit=100`);
+    const ownerFilter = demoJourneyId ? `demo_journey_id=eq.${demoJourneyId}` : `customer_id=eq.${customerId}`;
+    const existing = await readRows(context, "website_preview_versions", `select=*&${ownerFilter}&order=version.desc&limit=100`);
     let version = existing.find((row) => text(row.metadata?.manualZipContentHash) === contentHash) || null;
     let reused = Boolean(version);
     if (!version) {
@@ -58,12 +72,12 @@ exports.handler = async (event) => {
         meta: { previewSource: "manual_zip", fileName, contentHash, uploadedAt: now },
       };
       const rows = await insert(context, "website_preview_versions", {
-        customer_id: customerId,
+        customer_id: customerId || null,
         project_id: projectId || null,
         website_id: websiteId || null,
         demo_journey_id: demoJourneyId || null,
         version: versionNumber,
-        title: `${customer.company || customer.name || "Website"} — handmatige preview`,
+        title: `${customer?.company || customer?.name || journey?.business_name || "Website"} — handmatige preview`,
         customer_summary: "Een handmatig aangeleverde websiteversie staat klaar.",
         change_summary: "Handmatige ZIP-preview verwerkt.",
         preview_token: previewToken,
@@ -82,9 +96,10 @@ exports.handler = async (event) => {
       version = rows[0] || null;
     }
     if (!version?.id) return fail(500, "preview_version_failed", "De previewversie kon niet worden opgeslagen.", "create_preview_version", requestId);
-    version = await ensureManualPreviewUrl(context, customerId, version);
-    await safeTimeline({ customerId, eventType: "manual_preview_uploaded", title: "Handmatige website geüpload", description: `${fileName} is veilig verwerkt.`, module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "info", metadata: { dedupeKey: `manual_preview_uploaded:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
-    await safeTimeline({ customerId, eventType: "manual_preview_ready", title: "Handmatige preview klaar", description: "De websitepreview kan worden gecontroleerd en gepubliceerd.", module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "success", metadata: { dedupeKey: `manual_preview_ready:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
+    version = await ensureManualPreviewUrl(context, customerId, version, demoJourneyId);
+    const timelineRelationship = { customerId: customerId || null, leadId: uuid(journey?.lead_id) || leadId || null };
+    await safeTimeline({ ...timelineRelationship, eventType: "manual_preview_uploaded", title: "Handmatige website geüpload", description: `${fileName} is veilig verwerkt.`, module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "info", metadata: { dedupeKey: `manual_preview_uploaded:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
+    await safeTimeline({ ...timelineRelationship, eventType: "manual_preview_ready", title: "Handmatige preview klaar", description: "De websitepreview kan worden gecontroleerd en gepubliceerd.", module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "success", metadata: { dedupeKey: `manual_preview_ready:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     return json(200, {
       success: true,
       requestId,
@@ -115,6 +130,46 @@ exports.handler = async (event) => {
   }
 };
 
+async function resolveUploadScope(context, { customerId = "", demoJourneyId = "", leadId = "", payload = {}, admin = {} } = {}) {
+  let journey = demoJourneyId
+    ? await readOne(context, "demo_journeys", `select=*&id=eq.${demoJourneyId}&limit=1`)
+    : null;
+  if (demoJourneyId && !journey?.id) throw zipError("demo_journey_not_found", "Deze leadwerkruimte kon niet worden gevonden.", 404);
+
+  if (!journey?.id && leadId) {
+    const lead = await readOne(context, "leads", `select=*&id=eq.${leadId}&limit=1`);
+    if (!lead?.id) throw zipError("lead_not_found", "Deze lead kon niet worden gevonden.", 404);
+    journey = await readOne(context, "demo_journeys", `select=*&lead_id=eq.${leadId}&order=updated_at.desc.nullslast&limit=1`);
+    if (!journey?.id) {
+      const now = new Date().toISOString();
+      const rows = await insert(context, "demo_journeys", {
+        lead_id: leadId,
+        customer_id: uuid(lead.customer_id) || null,
+        business_name: text(payload.businessName || payload.business_name || payload.companyName || lead.company_name || lead.company),
+        contact_name: text(payload.contactName || payload.contact_name || lead.contact_name || lead.name),
+        email: text(payload.email || lead.email).toLowerCase(),
+        phone: text(payload.phone || lead.phone),
+        website_url: text(payload.websiteUrl || payload.website_url || lead.website_url || lead.website),
+        demo_status: "aanvraag_ontvangen",
+        preview_package: {},
+        created_by: admin.id || null,
+        updated_by: admin.id || null,
+        created_at: now,
+        updated_at: now,
+      });
+      journey = rows[0] || null;
+    }
+  }
+
+  const journeyCustomerId = uuid(journey?.customer_id);
+  const journeyLeadId = uuid(journey?.lead_id);
+  if (customerId && journeyCustomerId && customerId !== journeyCustomerId) throw zipError("customer_mismatch", "Deze leadwerkruimte hoort bij een andere klant.", 409);
+  if (leadId && journeyLeadId && leadId !== journeyLeadId) throw zipError("lead_mismatch", "Deze ZIP hoort niet bij de actieve lead.", 409);
+  const resolvedCustomerId = customerId || journeyCustomerId;
+  if (!resolvedCustomerId && !journey?.id) throw zipError("relationship_required", "Selecteer eerst een geldige lead of klant.", 400);
+  return { customerId: resolvedCustomerId, demoJourneyId: uuid(journey?.id) || demoJourneyId, journey };
+}
+
 async function activateManualVersion(context, customerId, demoJourneyId, payload = {}) {
   const previewVersionId = uuid(payload.previewVersionId || payload.preview_version_id);
   if (!previewVersionId) return fail(400, "preview_version_required", "Kies eerst een handmatige previewversie.");
@@ -123,7 +178,7 @@ async function activateManualVersion(context, customerId, demoJourneyId, payload
     return fail(404, "manual_preview_not_found", "Deze handmatige previewversie is niet beschikbaar.");
   }
   let active = await setActiveManualVersion(context, customerId, version);
-  active = await ensureManualPreviewUrl(context, customerId, active);
+  active = await ensureManualPreviewUrl(context, customerId, active, demoJourneyId || active.demo_journey_id);
   await persistJourneySource(context, demoJourneyId || active.demo_journey_id, active);
   return json(200, {
     success: true,
@@ -138,12 +193,13 @@ async function activateManualVersion(context, customerId, demoJourneyId, payload
   });
 }
 
-async function ensureManualPreviewUrl(context, customerId, version) {
+async function ensureManualPreviewUrl(context, customerId, version, demoJourneyId = "") {
   const token = text(version.preview_token);
   if (!version?.id || !token) throw zipError("preview_version_failed", "De previewlink kon niet worden aangemaakt.", 500);
   const previewUrl = `/.netlify/functions/manual-preview-render?version=${encodeURIComponent(version.id)}&token=${encodeURIComponent(token)}`;
   if (text(version.preview_url) === previewUrl) return version;
-  const rows = await patch(context, "website_preview_versions", `id=eq.${version.id}&customer_id=eq.${customerId}`, { preview_url: previewUrl, updated_at: new Date().toISOString() });
+  const relationshipFilter = demoJourneyId ? `demo_journey_id=eq.${demoJourneyId}` : `customer_id=eq.${customerId}`;
+  const rows = await patch(context, "website_preview_versions", `id=eq.${version.id}&${relationshipFilter}`, { preview_url: previewUrl, updated_at: new Date().toISOString() });
   return rows[0] || { ...version, preview_url: previewUrl };
 }
 

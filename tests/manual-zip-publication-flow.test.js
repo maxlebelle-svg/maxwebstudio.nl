@@ -42,6 +42,19 @@ test("manual upload has one change handler, duplicate guard and explicit states"
   assert.match(factory, /Uploaden…/);
   assert.match(factory, /ZIP succesvol verwerkt/);
   assert.match(factory, /ZIP kon niet worden verwerkt/);
+  assert.match(factory, /function manualZipUploadContext\(\)/);
+  assert.match(factory, /context\.customerId \|\| context\.demoJourneyId \|\| context\.leadId/);
+  assert.match(factory, /Klik op ZIP verwerken om de preview aan deze lead te koppelen/);
+});
+
+test("lead phase owns ZIP uploads before customer conversion", () => {
+  assert.match(upload, /async function resolveUploadScope/);
+  assert.match(upload, /demo_journey_id=eq\.\$\{demoJourneyId\}/);
+  assert.match(upload, /customer_id: customerId \|\| null/);
+  assert.match(upload, /leadId: uuid\(journey\?\.lead_id\) \|\| leadId \|\| null/);
+  assert.match(factory, /leadId: uploadContext\.leadId/);
+  assert.match(factory, /demoJourneyId: uploadContext\.demoJourneyId/);
+  assert.match(factory, /factoryCustomerContext\?\.customer\?\.id && !version\.active/);
 });
 
 test("premium ZIP dropzone supports one ZIP, rejection, keyboard and removal", () => {

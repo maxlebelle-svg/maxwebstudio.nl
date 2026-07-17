@@ -24636,6 +24636,20 @@
           });
         }
 
+        function manualZipUploadContext() {
+          const lead = selectedLead();
+          return {
+            customerId: factoryCustomerContext?.customer?.id || journey?.customerId || journey?.customer_id || "",
+            demoJourneyId: journey?.id || "",
+            leadId: backendLeadId(journey?.leadId || journey?.lead_id || lead?.leadId || lead?.lead_id || elements.lead?.value || ""),
+          };
+        }
+
+        function manualZipCanProcess() {
+          const context = manualZipUploadContext();
+          return Boolean(context.customerId || context.demoJourneyId || context.leadId);
+        }
+
         function setManualZipBusy(busy) {
           manualZipUploading = busy;
           document.querySelectorAll("[data-manual-zip-upload], #demo-journey-upload-manual-zip").forEach((button) => {
@@ -24644,7 +24658,7 @@
             button.textContent = busy ? "Uploaden…" : button.id === "demo-journey-upload-manual-zip" ? "ZIP kiezen" : "ZIP uploaden";
           });
           if (elements.processManualZip) {
-            elements.processManualZip.disabled = busy || !pendingManualZipFile || !factoryCustomerContext?.customer?.id;
+            elements.processManualZip.disabled = busy || !pendingManualZipFile || !manualZipCanProcess();
             elements.processManualZip.setAttribute("aria-busy", busy ? "true" : "false");
             elements.processManualZip.textContent = busy ? "ZIP verwerken…" : "ZIP verwerken";
           }
@@ -24668,10 +24682,10 @@
           }
           if (elements.manualZipSelection) elements.manualZipSelection.textContent = label;
           if (elements.removeManualZip) elements.removeManualZip.hidden = !file;
-          if (elements.processManualZip) elements.processManualZip.disabled = !file || manualZipUploading || !factoryCustomerContext?.customer?.id;
-          if (file) setMessage(elements.message, factoryCustomerContext?.customer?.id
-            ? `${file.name} is gekozen. Klik op ZIP verwerken om de preview aan te maken.`
-            : `${file.name} is gekozen. Selecteer een klant om deze ZIP veilig te verwerken.`, "info");
+          if (elements.processManualZip) elements.processManualZip.disabled = !file || manualZipUploading || !manualZipCanProcess();
+          if (file) setMessage(elements.message, manualZipCanProcess()
+            ? `${file.name} is gekozen. Klik op ZIP verwerken om de preview aan deze lead te koppelen.`
+            : `${file.name} is gekozen. Selecteer eerst een geldige lead of klant.`, "info");
         }
 
         function selectManualZipFiles(files = []) {
@@ -24750,9 +24764,9 @@
             if (elements.manualZipInput) elements.manualZipInput.value = "";
             return;
           }
-          const customer = factoryCustomerContext?.customer || null;
-          if (!customer?.id) {
-            setMessage(elements.message, "Selecteer eerst een geldige klant.", "warning");
+          const uploadContext = manualZipUploadContext();
+          if (!manualZipCanProcess()) {
+            setMessage(elements.message, "Selecteer eerst een geldige lead of klant.", "warning");
             if (elements.manualZipInput) elements.manualZipInput.value = "";
             return;
           }
@@ -24763,10 +24777,16 @@
               setMessage(elements.message, "2/5 Controleren · 3/5 Uitpakken · 4/5 Preview bouwen...", "info");
               const zipBase64 = uint8ToBase64(new Uint8Array(await file.arrayBuffer()));
               const data = await apiRequest(manualPreviewEndpoint, "POST", {
-                customerId: customer.id,
+                customerId: uploadContext.customerId,
+                leadId: uploadContext.leadId,
                 websiteId: factoryCustomerContext?.website?.id || "",
                 projectId: factoryCustomerContext?.project?.id || "",
-                demoJourneyId: journey?.id || "",
+                demoJourneyId: uploadContext.demoJourneyId,
+                businessName: elements.business?.value || "",
+                contactName: elements.contact?.value || "",
+                email: elements.email?.value || "",
+                phone: elements.phone?.value || "",
+                websiteUrl: elements.website?.value || "",
                 fileName: file.name,
                 zipBase64,
               });
@@ -25469,7 +25489,7 @@
             ].filter(Boolean).join("");
             const actions = [
               !viewed ? `<button class="button secondary button-small" type="button" data-view-preview-version="${escapeHtml(version.id)}">Bekijken</button>` : "",
-              !version.active && version.sourceType === "manual_zip" ? `<button class="button secondary button-small" type="button" data-use-customer-preview="${escapeHtml(version.id)}">Gebruik als klantpreview</button>` : "",
+              factoryCustomerContext?.customer?.id && !version.active && version.sourceType === "manual_zip" ? `<button class="button secondary button-small" type="button" data-use-customer-preview="${escapeHtml(version.id)}">Gebruik als klantpreview</button>` : "",
             ].filter(Boolean).join("");
             return `<article class="factory-preview-version-card ${viewed ? "is-viewed" : ""} ${version.active ? "is-active" : ""}" data-preview-source-type="${escapeHtml(version.sourceType)}"><header><div><small>${escapeHtml(version.sourceLabel)}</small><strong>${escapeHtml(api.versionLabel(version))}</strong></div><div class="factory-preview-version-badges">${badges}</div></header><div class="factory-preview-version-details"><span>${escapeHtml(formatDate(version.createdAt) || "Datum onbekend")}</span>${version.fileName ? `<span title="${escapeHtml(version.fileName)}">${escapeHtml(version.fileName)}</span>` : ""}</div>${actions ? `<footer>${actions}</footer>` : ""}</article>`;
           }).join("");

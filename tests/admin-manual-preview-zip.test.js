@@ -2,7 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { _private } = require("../functions/admin-manual-preview");
+const manualPreviewRoute = require("../functions/admin-manual-preview");
+const { _private } = manualPreviewRoute;
 
 function zip(entries) {
   const locals = [];
@@ -60,6 +61,67 @@ test("frontend sends the ZIP to server validation and does not require Demo Site
   assert.doesNotMatch(html, /async function uploadManualZipFile\(file\) \{\s*if \(!journey\?\.id\)/);
   assert.match(html, /ZIP succesvol verwerkt/);
   assert.match(html, /buildHistory = \{[\s\S]*activeVersion: normalizedVersion/);
+});
+
+test("lead-owned ZIP is stored on the Demo Journey before customer conversion", async () => {
+  const previousFetch = global.fetch;
+  const envKeys = ["APP_ENV", "SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"];
+  const previousEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+  const journeyId = "7dda90c7-d7b2-4810-9925-3672330f827a";
+  const leadId = "a8fd247e-9f23-47b4-8c32-c73fb2150f7f";
+  const versionId = "ebee37fd-2978-4f42-9508-d2cf94d15d89";
+  const adminId = "9856f024-6714-43c9-b2f3-d4289dd4fba0";
+  const calls = [];
+  let storedVersion = null;
+  process.env.APP_ENV = "test";
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_ANON_KEY = "anon-key";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-key";
+  global.fetch = async (url, options = {}) => {
+    const href = String(url);
+    const method = options.method || "GET";
+    calls.push({ href, method, body: options.body });
+    const response = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) });
+    if (href.endsWith("/auth/v1/user")) return response({ id: adminId, email: "admin@example.test" });
+    if (href.includes("/rest/v1/profiles?")) return response([{ id: adminId, role: "admin", status: "active" }]);
+    if (href.includes("/rest/v1/demo_journeys?") && method === "GET") return response([{ id: journeyId, lead_id: leadId, customer_id: null, business_name: "Heel je zelf" }]);
+    if (href.includes("/rest/v1/website_preview_versions?") && method === "GET") return response([]);
+    if (href.endsWith("/rest/v1/website_preview_versions") && method === "POST") {
+      const record = JSON.parse(options.body);
+      storedVersion = { ...record, id: versionId };
+      return response([storedVersion]);
+    }
+    if (href.includes("/rest/v1/website_preview_versions?") && method === "PATCH") {
+      storedVersion = { ...storedVersion, ...JSON.parse(options.body) };
+      return response([storedVersion]);
+    }
+    if (href.includes("/rest/v1/customer_timeline_events")) return response([]);
+    throw new Error(`Unexpected request: ${method} ${href}`);
+  };
+
+  try {
+    const response = await manualPreviewRoute.handler({
+      httpMethod: "POST",
+      headers: { authorization: "Bearer admin-session" },
+      body: JSON.stringify({
+        demoJourneyId: journeyId,
+        leadId,
+        fileName: "heeljezelf.zip",
+        zipBase64: zip([["index.html", "<h1>Heel je zelf</h1>"]]).toString("base64"),
+      }),
+    });
+    const body = JSON.parse(response.body);
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.source, "manual_zip");
+    assert.equal(storedVersion.demo_journey_id, journeyId);
+    assert.equal(storedVersion.customer_id, null);
+    assert.equal(storedVersion.is_active, false);
+    assert(calls.some((call) => call.href.includes(`demo_journey_id=eq.${journeyId}`)));
+    assert(!calls.some((call) => call.href.includes("/rest/v1/customers?")));
+  } finally {
+    global.fetch = previousFetch;
+    for (const [key, value] of Object.entries(previousEnv)) value === undefined ? delete process.env[key] : process.env[key] = value;
+  }
 });
 
 test("the actual Fuellinq regression ZIP is accepted and has a root index", () => {
