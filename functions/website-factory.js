@@ -1750,6 +1750,7 @@ function insertPreviewVersionRecord(context, record) {
     method: "POST",
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
     body: JSON.stringify(record),
+    timeoutMs: Object.hasOwn(record || {}, "generated_package") ? PACKAGE_SUPABASE_TIMEOUT_MS : DEFAULT_SUPABASE_TIMEOUT_MS,
   });
 }
 

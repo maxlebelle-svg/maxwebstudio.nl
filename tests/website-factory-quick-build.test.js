@@ -34,6 +34,7 @@ test("new lead can build with only a business name", () => {
 test("package persistence has a bounded extended timeout and retryable status is deployable", () => {
   assert.match(factoryBackend, /PACKAGE_SUPABASE_TIMEOUT_MS = 30000/);
   assert.match(factoryBackend, /generated_package"\) \? PACKAGE_SUPABASE_TIMEOUT_MS/);
+  assert.match(factoryBackend, /website_preview_versions[\s\S]*generated_package"\) \? PACKAGE_SUPABASE_TIMEOUT_MS/);
   assert.match(retryableStatusMigration, /website_build_jobs_status_check[\s\S]*'retryable'/);
 });
 
