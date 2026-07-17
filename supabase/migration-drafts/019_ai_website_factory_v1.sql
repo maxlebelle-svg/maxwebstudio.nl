@@ -33,6 +33,7 @@ create table if not exists public.website_build_jobs (
       'deploying',
       'completed',
       'quality_failed',
+      'retryable',
       'failed'
     )
   ),

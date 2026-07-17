@@ -49,6 +49,8 @@ const PREVIEW_RECOVERY_FIELDS = [
   "entry_file:generated_package->>entryFile", "package_meta:generated_package->meta",
 ].join(",");
 const RESUMABLE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "retryable"]);
+const DEFAULT_SUPABASE_TIMEOUT_MS = 8000;
+const PACKAGE_SUPABASE_TIMEOUT_MS = 15000;
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -1623,10 +1625,11 @@ async function readBuildJobById(context, id) {
   return rows[0] || null;
 }
 
-async function readBuildJobRuntimeById(context, id) {
+async function readBuildJobRuntimeById(context, id, timeoutMs = DEFAULT_SUPABASE_TIMEOUT_MS) {
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?select=${encodeURIComponent(BUILD_JOB_RUNTIME_FIELDS)}&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
+    timeoutMs,
   });
   return rows[0] || null;
 }
@@ -1692,7 +1695,7 @@ async function patchBuildJobWithConfirmation(context, id, record, confirms) {
   } catch (error) {
     if (error?.code !== "UPSTREAM_TIMEOUT" && Number(error?.status || 0) !== 504) throw error;
     const needsRuntime = Object.hasOwn(record || {}, "generated_package") || Object.hasOwn(record || {}, "quality_report");
-    const persisted = normalizeBuildJob(await (needsRuntime ? readBuildJobRuntimeById(context, id) : readBuildJobById(context, id)));
+    const persisted = normalizeBuildJob(await (needsRuntime ? readBuildJobRuntimeById(context, id, PACKAGE_SUPABASE_TIMEOUT_MS) : readBuildJobById(context, id)));
     if (typeof confirms === "function" && confirms(persisted)) {
       console.warn("Website Factory timed-out write confirmed from server state", {
         phase: "confirm_build_job_write",
@@ -1730,6 +1733,7 @@ function patchBuildJobRecord(context, id, record) {
     method: "PATCH",
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
     body: JSON.stringify(record),
+    timeoutMs: Object.hasOwn(record || {}, "generated_package") ? PACKAGE_SUPABASE_TIMEOUT_MS : DEFAULT_SUPABASE_TIMEOUT_MS,
   });
 }
 
@@ -1769,12 +1773,14 @@ async function createJourneyEvent(context, payload = {}) {
   });
 }
 
-async function supabaseFetch(url, options) {
+async function supabaseFetch(url, options = {}) {
+  const timeoutMs = Number(options.timeoutMs) || DEFAULT_SUPABASE_TIMEOUT_MS;
+  const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let response;
   try {
-    response = await fetch(url, { ...options, signal: controller.signal });
+    response = await fetch(url, { ...fetchOptions, signal: controller.signal });
   } catch (error) {
     if (error?.name === "AbortError") {
       const timeout = new Error("Supabase request timed out.");
@@ -1783,7 +1789,7 @@ async function supabaseFetch(url, options) {
       timeout.code = "UPSTREAM_TIMEOUT";
       timeout.phase = "fetch_factory_data";
       timeout.url = url;
-      timeout.method = options?.method || "GET";
+      timeout.method = fetchOptions.method || "GET";
       throw timeout;
     }
     throw error;

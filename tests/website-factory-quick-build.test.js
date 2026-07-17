@@ -14,6 +14,7 @@ const factoryHtml = fs.readFileSync(path.join(root, "public/admin-website-factor
 const factoryBackend = fs.readFileSync(path.join(root, "functions/website-factory.js"), "utf8");
 const demoBackend = fs.readFileSync(path.join(root, "functions/demo-journey.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
+const retryableStatusMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260717143000_allow_retryable_website_build_jobs.sql"), "utf8");
 
 function buildQuick(journey = {}, briefing = "") {
   const generatedPackage = buildWebsitePackage({
@@ -28,6 +29,12 @@ test("new lead can build with only a business name", () => {
   const { generatedPackage, quality } = buildQuick({}, "Doel: relevante aanvragen");
   assert.equal(generatedPackage.businessName, "FatTrek");
   assert.equal(quality.passed, true);
+});
+
+test("package persistence has a bounded extended timeout and retryable status is deployable", () => {
+  assert.match(factoryBackend, /PACKAGE_SUPABASE_TIMEOUT_MS = 15000/);
+  assert.match(factoryBackend, /generated_package"\) \? PACKAGE_SUPABASE_TIMEOUT_MS/);
+  assert.match(retryableStatusMigration, /website_build_jobs_status_check[\s\S]*'retryable'/);
 });
 
 test("new lead can build with business name and industry", () => {
