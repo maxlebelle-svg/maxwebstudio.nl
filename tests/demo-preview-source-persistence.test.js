@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const {
   PREVIEW_SOURCES,
@@ -15,6 +16,18 @@ const factoryBackend = fs.readFileSync(path.join(root, "functions/website-factor
 const demoSites = fs.readFileSync(path.join(root, "public/admin-demo-sites.html"), "utf8");
 const factoryUi = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
 const demoJourney = require("../functions/demo-journey.js");
+
+const demoSelectionContext = {};
+const demoSelectionBlock = demoSites.slice(
+  demoSites.indexOf("function savedDemoSiteMeta(record"),
+  demoSites.indexOf("function isSavedDemoSite")
+);
+vm.runInNewContext(`${demoSelectionBlock}\nthis.demoSelection = { demoPreviewVersionSource, validDemoPreviewVersions, resolveActiveDemoPreview };`, demoSelectionContext);
+const demoSelection = demoSelectionContext.demoSelection;
+
+function storedVersion(id, sourceType, version = 1) {
+  return { id, sourceType, version, previewUrl: `/preview/${id}`, fileCount: 1, renderable: true };
+}
 
 const factoryFiles = [{ path: "index.html", content: "factory" }];
 const manualPreview = { fileName: "manual.zip", files: [{ path: "index.html", content: "manual" }] };
@@ -91,10 +104,43 @@ test("Demo Sites receives version history and the generic public pointer in its 
 test("Demo Sites resolves concrete stored versions instead of removed journey package contents", () => {
   assert.match(demoSites, /savedDemo\.previewVersionId/);
   assert.match(demoSites, /publication\.previewVersionId/);
-  assert.match(demoSites, /Number\(version\.fileCount \|\| 0\) > 0/);
+  assert.match(demoSites, /Number\(version\?\.fileCount \|\| 0\) > 0/);
   assert.match(demoSites, /previewResolution\.previewUrl/);
   assert.match(demoSites, /previewVersionId: selectedVersion\.id/);
   assert.match(backend, /selectedPreview = requestedPreviewVersionId \? await resolveSelectedDemoPreview/);
+});
+
+test("Demo Sites is null-safe when selectedPreview and version entries are null", () => {
+  assert.equal(demoSelection.demoPreviewVersionSource(null), "");
+  assert.doesNotThrow(() => demoSelection.resolveActiveDemoPreview({ previewVersions: [null] }));
+  const result = demoSelection.resolveActiveDemoPreview({ previewVersions: [null] });
+  assert.equal(result.selectedVersion, null);
+  assert.equal(result.previewUrl, "");
+});
+
+test("Demo Sites automatically selects the only valid concrete preview", () => {
+  const only = storedVersion("factory-only", "website_factory", 4);
+  const result = demoSelection.resolveActiveDemoPreview({ previewVersions: [null, { id: "broken" }, only] });
+  assert.equal(result.selectedVersion.id, only.id);
+  assert.equal(result.previewUrl, only.previewUrl);
+  assert.equal(result.validVersions.length, 1);
+});
+
+test("Demo Sites requires a visible version selector when multiple valid previews exist", () => {
+  const result = demoSelection.resolveActiveDemoPreview({
+    previewVersions: [storedVersion("factory", "website_factory", 4), storedVersion("zip", "manual_zip", 2)],
+  });
+  assert.equal(result.selectedVersion, null);
+  assert.equal(result.validVersions.length, 2);
+  assert.match(demoSites, /previewResolution\.validVersions\.length > 1/);
+  assert.match(demoSites, /data-demo-preview-version=/);
+});
+
+test("Demo Sites version changes send the exact selected previewVersionId", () => {
+  const updateVersion = demoSites.slice(demoSites.indexOf("async function updatePreviewVersion"), demoSites.indexOf("function render()"));
+  assert.match(updateVersion, /String\(version\.id\) === String\(previewVersionId\)/);
+  assert.match(updateVersion, /previewVersionId: selectedVersion\.id/);
+  assert.doesNotMatch(updateVersion, /versionsBySource/);
 });
 
 test("public preview publication metadata is compact and contains the safe fallback URL", () => {

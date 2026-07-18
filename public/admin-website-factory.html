@@ -23648,7 +23648,7 @@
             ...history,
             jobs,
             previewVersions,
-            latestJob: responseJob || jobs[0] || history.latestJob || null,
+            latestJob: responseJob || history.latestJob || jobs[0] || null,
             activeVersion: responseVersion || previewVersions.find((version) => version.isActive) || history.activeVersion || previewVersions[0] || null,
           };
         }
@@ -25634,6 +25634,7 @@
           const packageMeta = latest?.generatedPackage?.meta || activeVersion?.generatedPackage?.meta || latestPackageMeta();
           const generatedPages = Array.isArray(packageMeta.generatedPages) ? packageMeta.generatedPages : [];
           const generatedSections = Array.isArray(packageMeta.generatedSections || packageMeta.templateSections) ? (packageMeta.generatedSections || packageMeta.templateSections) : [];
+          const activeBuildError = ["retryable", "failed", "quality_failed"].includes(String(latest?.status || "").toLowerCase()) ? latest?.errorMessage || "" : "";
           if (elements.buildState) {
             elements.buildState.textContent = latest ? buildStatusLabel(latest.status, capability) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
           }
@@ -25654,7 +25655,7 @@
               ["Preview score", Number.isFinite(Number(score)) ? `${score}/100` : "-"],
               ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
               ["Laatste buildtijd", latest?.finishedAt || latest?.updatedAt ? formatDate(latest.finishedAt || latest.updatedAt) : "-"],
-              ["Melding", latest?.errorMessage || buildHistory.warning || (absoluteUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
+              ["Melding", activeBuildError || buildHistory.warning || (absoluteUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
             ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           }
           if (elements.buildHistory) {
@@ -25709,7 +25710,7 @@
                 previewToken,
                 previewUrl: absoluteUrl,
                 lastFactoryResponse,
-                buildError: latest?.errorMessage || "",
+                buildError: activeBuildError,
               }
               : { message: "Developer Mode uitgeschakeld." };
             elements.buildDiagnostics.textContent = JSON.stringify(diagnostics, null, 2);

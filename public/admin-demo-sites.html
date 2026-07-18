@@ -23283,11 +23283,15 @@
         }
 
         function demoPreviewVersionSource(version = {}) {
-          return normalizeDemoPreviewSource(version.sourceType || version.previewSource || version.metadata?.previewSource);
+          return normalizeDemoPreviewSource(version?.sourceType || version?.previewSource || version?.metadata?.previewSource);
         }
 
         function availableDemoPreviewVersion(version = {}) {
-          return Boolean(version.id && version.previewUrl && Number(version.fileCount || 0) > 0 && version.renderable !== false);
+          return Boolean(version?.id && version?.previewUrl && Number(version?.fileCount || 0) > 0 && version?.renderable !== false);
+        }
+
+        function validDemoPreviewVersions(record = {}) {
+          return (Array.isArray(record.previewVersions) ? record.previewVersions : []).filter(availableDemoPreviewVersion);
         }
 
         function latestDemoPreviewVersion(versions = [], source = "") {
@@ -23298,27 +23302,29 @@
           const previewPackage = record.previewPackage || {};
           const savedDemo = savedDemoSiteMeta(record) || {};
           const versions = Array.isArray(record.previewVersions) ? record.previewVersions : [];
+          const validVersions = validDemoPreviewVersions(record);
           const manualVersion = latestDemoPreviewVersion(versions, "manual_zip");
           const factoryVersion = latestDemoPreviewVersion(versions, "website_factory");
-          const savedVersion = versions.find((version) => String(version.id) === String(savedDemo.previewVersionId || savedDemo.preview_version_id) && availableDemoPreviewVersion(version)) || null;
+          const savedVersion = versions.find((version) => String(version?.id) === String(savedDemo.previewVersionId || savedDemo.preview_version_id) && availableDemoPreviewVersion(version)) || null;
           const publication = record.publicPreviewPublication || {};
-          const publicationVersion = versions.find((version) => String(version.id) === String(publication.previewVersionId) && availableDemoPreviewVersion(version)) || null;
+          const publicationVersion = versions.find((version) => String(version?.id) === String(publication.previewVersionId) && availableDemoPreviewVersion(version)) || null;
           const publicationActive = Boolean(publication.publicPreviewEnabled && publication.publicPreviewUrl && publicationVersion);
           const publicationUpdatedAt = Date.parse(publication.updatedAt || publication.publishedAt || "") || 0;
           const savedUpdatedAt = Date.parse(savedDemo.updatedAt || savedDemo.savedAt || "") || 0;
           const publishedSelectionWins = publicationActive && (!savedVersion || publicationUpdatedAt >= savedUpdatedAt);
-          const selectedVersion = publishedSelectionWins ? publicationVersion : savedVersion;
+          const explicitVersion = publishedSelectionWins ? publicationVersion : savedVersion;
           const legacyPersistedSource = normalizeDemoPreviewSource(savedDemo.previewSource || savedDemo.preview_source || previewPackage.activePreviewSource);
-          const persistedSource = demoPreviewVersionSource(selectedVersion) || legacyPersistedSource;
+          const persistedSource = demoPreviewVersionSource(explicitVersion) || legacyPersistedSource;
           const legacyManualAvailable = Boolean((previewPackage.manualPreview || previewPackage.manual_preview)?.files?.length);
           const legacyFactoryAvailable = Boolean(previewPackage.files?.length);
           const manualAvailable = Boolean(manualVersion || legacyManualAvailable);
           const factoryAvailable = Boolean(factoryVersion || legacyFactoryAvailable);
-          const source = persistedSource || (manualAvailable ? "manual_zip" : factoryAvailable ? "website_factory" : "");
-          const selectedSourceVersion = source === "manual_zip" ? manualVersion : source === "website_factory" ? factoryVersion : null;
+          const implicitVersion = validVersions.length === 1 ? validVersions[0] : null;
+          const selectedVersion = explicitVersion || implicitVersion;
+          const source = demoPreviewVersionSource(selectedVersion) || persistedSource || (!validVersions.length && legacyManualAvailable ? "manual_zip" : !validVersions.length && legacyFactoryAvailable ? "website_factory" : "");
           const previewUrl = publishedSelectionWins
             ? publication.publicPreviewUrl
-            : selectedVersion?.previewUrl || selectedSourceVersion?.previewUrl || savedDemo.previewUrl || record.previewUrl || "";
+            : selectedVersion?.previewUrl || (!versions.length ? savedDemo.previewUrl || record.previewUrl || "" : "");
           return {
             source,
             persistedSource,
@@ -23328,6 +23334,7 @@
             isLegacyFallback: !persistedSource && Boolean(source),
             previewUrl,
             selectedVersion,
+            validVersions,
             versionsBySource: { manual_zip: manualVersion, website_factory: factoryVersion },
             publicPreviewPublication: publicationActive ? publication : null,
           };
@@ -23615,6 +23622,26 @@
           return data;
         }
 
+        async function updatePreviewVersion(record = {}, previewVersionId = "") {
+          const selectedVersion = validDemoPreviewVersions(record).find((version) => String(version.id) === String(previewVersionId)) || null;
+          if (!selectedVersion?.id) throw new Error("De gekozen previewversie is niet beschikbaar.");
+          const previewSource = demoPreviewVersionSource(selectedVersion);
+          if (!previewSource) throw new Error("De bron van deze previewversie ontbreekt.");
+          const data = await postJson(endpoints.journey, {
+            action: "update_demo_preview_source",
+            demoJourneyId: record.id,
+            previewSource,
+            previewVersionId: selectedVersion.id,
+          });
+          if (data.demoJourney?.id) records = records.map((item) => String(item.id) === String(record.id) ? {
+            ...data.demoJourney,
+            previewVersions: record.previewVersions,
+            publicPreviewPublication: record.publicPreviewPublication,
+          } : item);
+          render();
+          return data;
+        }
+
         function render() {
           const query = String(search?.value || "").trim().toLowerCase();
           const bucket = status?.value || "";
@@ -23686,6 +23713,14 @@
                       </select>
                       <small>Deze keuze bepaalt welke versie in Demo Sites wordt geopend. Publiek delen blijft een expliciete actie in Website Factory.</small>
                     </label>
+                    ${previewResolution.validVersions.length > 1 ? `<label class="demo-preview-source-field" for="demo-preview-version-${escapeHtml(record.id)}">
+                      <span>Previewversie</span>
+                      <select id="demo-preview-version-${escapeHtml(record.id)}" data-demo-preview-version="${escapeHtml(record.id)}">
+                        <option value=""${previewResolution.selectedVersion ? "" : " selected"}>Kies een geldige previewversie</option>
+                        ${previewResolution.validVersions.map((version) => `<option value="${escapeHtml(version.id)}"${String(version.id) === String(previewResolution.selectedVersion?.id || "") ? " selected" : ""}>V${escapeHtml(version.version || "-")} · ${demoPreviewVersionSource(version) === "manual_zip" ? "Handmatige ZIP" : "Website Factory"}</option>`).join("")}
+                      </select>
+                      <small>Meerdere geldige versies gevonden. De gekozen versie-ID wordt exact opgeslagen.</small>
+                    </label>` : ""}
                   </div>
                   ${previewSource && !previewResolution.available ? `<p class="admin-form-message warning demo-preview-source-warning">De gekozen previewbron is momenteel niet beschikbaar. Kies een andere bron om verder te gaan.</p>` : ""}
                   <div class="demo-library-status-strip">
@@ -24194,6 +24229,21 @@
         status?.addEventListener("change", render);
         refresh?.addEventListener("click", () => loadDemoSites());
         list?.addEventListener("change", async (event) => {
+          const versionSelect = event.target.closest("[data-demo-preview-version]");
+          if (versionSelect) {
+            const record = getRecordById(versionSelect.dataset.demoPreviewVersion);
+            if (!record || !versionSelect.value) return;
+            versionSelect.disabled = true;
+            setMessage("Previewversie opslaan...", "info");
+            try {
+              await updatePreviewVersion(record, versionSelect.value);
+              setMessage("Previewversie opgeslagen.", "success");
+            } catch (error) {
+              setMessage(error.message || "Previewversie kon niet worden opgeslagen.", "error");
+              render();
+            }
+            return;
+          }
           const sourceSelect = event.target.closest("[data-demo-preview-source]");
           if (sourceSelect) {
             const record = getRecordById(sourceSelect.dataset.demoPreviewSource);

@@ -985,7 +985,16 @@ async function runBuildJob(context, payload = {}) {
     }
     if (!resumeAfterPackage) {
       phase = "persist_generated_package";
-      await patchBuildJobWithConfirmation(context, job.id, { generated_package: generatedPackage }, (persisted) => isUsableGeneratedPackage(persisted.generatedPackage));
+      try {
+        await patchBuildJobWithConfirmation(context, job.id, { generated_package: generatedPackage }, (persisted) => isUsableGeneratedPackage(persisted.generatedPackage));
+      } catch (error) {
+        if (error?.code !== "57014") throw error;
+        console.warn("Website Factory package job copy skipped after database statement timeout", {
+          phase,
+          buildJobId: job.id,
+          requestId: cleanText(context.requestId),
+        });
+      }
     }
     if (!resumeAfterPackage || job.qualityReport?.passed !== true) {
       phase = "patch_build_job_quality_completed";
@@ -1041,6 +1050,7 @@ async function runBuildJob(context, payload = {}) {
       preview_url: previewUrl,
       preview_token: token,
       preview_score: qualityReport.score,
+      error_message: null,
       finished_at: new Date().toISOString(),
       build_logs: buildLogs(qualityLogs, {
         step: "completed",
@@ -1428,14 +1438,37 @@ async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}
     demoJourneyId ? readPreviewVersionSummaries(context, demoJourneyId) : Promise.resolve([]),
     demoJourneyId ? readJourneyState(context, demoJourneyId) : Promise.resolve(null),
   ]);
-  const latestJob = jobs[0] || null;
   const activeVersion = versions.find((version) => version.isActive) || versions[0] || null;
+  const latestJob = selectCanonicalBuildJob(jobs, activeVersion);
+  const canonicalJobs = latestJob?.id
+    ? jobs.map((job) => job.id === latestJob.id ? latestJob : job)
+    : jobs;
   return {
-    jobs,
+    jobs: canonicalJobs,
     previewVersions: versions,
     latestJob,
     activeVersion,
     serverState: deriveFactoryServerState({ journey: journeyRow ? mapJourney(journeyRow) : null, latestJob, activeVersion }),
+  };
+}
+
+function selectCanonicalBuildJob(jobs = [], activeVersion = null) {
+  const newestJob = jobs[0] || null;
+  if (!activeVersion?.id || activeVersion.renderable !== true) return newestJob;
+  const linkedJob = cleanText(activeVersion.buildJobId)
+    ? jobs.find((job) => cleanText(job.id) === cleanText(activeVersion.buildJobId))
+    : null;
+  const versionJob = linkedJob || jobs.find((job) => Number(job.previewVersion || 0) === Number(activeVersion.version || 0) && cleanText(job.status) === "completed");
+  if (!versionJob) return newestJob;
+  return {
+    ...versionJob,
+    status: "completed",
+    currentStep: "completed",
+    progress: 100,
+    previewUrl: activeVersion.previewUrl || versionJob.previewUrl,
+    previewToken: activeVersion.previewToken || versionJob.previewToken,
+    previewScore: activeVersion.previewScore ?? versionJob.previewScore,
+    errorMessage: "",
   };
 }
 
@@ -2780,5 +2813,5 @@ module.exports = {
   runBuildJob,
   sanitizeBuildResult,
   startOnboardingFactoryPipeline,
-  _private: { searchRows, deriveFactoryServerState, prepareEditorPackageBestEffort, markEditorCapabilityReadOnly, isUsableGeneratedPackage, mergeCustomerManualPreviewVersions },
+  _private: { searchRows, deriveFactoryServerState, selectCanonicalBuildJob, prepareEditorPackageBestEffort, markEditorCapabilityReadOnly, isUsableGeneratedPackage, mergeCustomerManualPreviewVersions },
 };

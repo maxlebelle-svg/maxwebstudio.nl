@@ -349,6 +349,51 @@ test("normal build stores one renderable preview version after Hero validation",
   }
 });
 
+test("database statement timeout on the job package copy continues once and creates one preview", async () => {
+  const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const job = { id: jobId, demo_journey_id: journeyId, status: "queued", current_step: "queued", progress: 5, preview_version: 1, build_logs: [], created_by: "admin-id" };
+  const journey = { id: journeyId, business_name: "Heel je Zelf", generated_briefing: "Branche: energetische praktijk", created_by: "admin-id" };
+  const previewWrites = [];
+  const jobWrites = [];
+  const buildPosts = [];
+  const previousFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    const target = String(url);
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (method === "GET" && target.includes("website_build_jobs")) return mockJson([job]);
+    if (method === "GET" && target.includes("demo_journeys")) return mockJson([journey]);
+    if (method === "GET" && target.includes("website_preview_versions")) return mockJson([]);
+    if (method === "POST" && target.includes("website_build_jobs")) { buildPosts.push(body); return mockJson([job], 201); }
+    if (method === "PATCH" && target.includes("website_build_jobs")) {
+      jobWrites.push(body);
+      if (Object.hasOwn(body, "generated_package")) return mockJson({ code: "57014", message: "canceling statement due to statement timeout" }, 500);
+      return mockJson(null, 204);
+    }
+    if (method === "POST" && target.includes("website_preview_versions")) { previewWrites.push(body); return mockJson(null, 201); }
+    if (method === "PATCH" && target.includes("website_preview_versions")) return mockJson(null, 204);
+    if (method === "PATCH" && target.includes("demo_journeys")) return mockJson([{ ...journey, ...body }]);
+    return mockJson({ message: "optional table unavailable" }, 500);
+  };
+  try {
+    const result = await runBuildJob({
+      supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role",
+      admin: { id: "admin-id", role: "super_admin" }, requestId: "REQ-57014",
+    }, { jobId, generatedBriefing: journey.generated_briefing });
+    assert.equal(result.job.status, "completed");
+    assert.equal(result.job.errorMessage, "");
+    assert.equal(previewWrites.length, 1);
+    assert.equal(previewWrites[0].id, jobId);
+    assert.equal(jobWrites.filter((record) => Object.hasOwn(record, "generated_package")).length, 1);
+    assert.equal(jobWrites.filter((record) => record.status === "completed").length, 1);
+    assert.equal(jobWrites.find((record) => record.status === "completed").error_message, null);
+    assert.equal(buildPosts.length, 0);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 test("retry reuses an active build job without creating a duplicate", async () => {
   const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
   const activeJob = {
@@ -732,6 +777,41 @@ test("completed job without a stored preview version is not reported as preview-
     assert.equal(history.latestJob.status, "completed");
     assert.equal(history.activeVersion, null);
     assert.equal(history.previewVersions.length, 0);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("renderable active preview selects its canonical completed job over a newer historical persist failure", async () => {
+  const journeyId = "9a735e10-18e7-4b83-8cc7-e2518fa7959d";
+  const failedJobId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const completedJobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const previousFetch = global.fetch;
+  global.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes("website_build_jobs")) return mockJson([
+      { id: failedJobId, demo_journey_id: journeyId, status: "retryable", current_step: "persist_generated_package", progress: 5, preview_version: 5, error_message: "oude persist-fout", created_at: "2026-07-18T06:11:17.000Z" },
+      { id: completedJobId, demo_journey_id: journeyId, status: "completed", current_step: "completed", progress: 100, preview_version: 4, error_message: "historische fout", created_at: "2026-07-18T02:48:17.000Z" },
+    ]);
+    if (target.includes("website_preview_versions")) return mockJson([{
+      id: completedJobId, demo_journey_id: journeyId, build_job_id: completedJobId, version: 4,
+      preview_url: "/preview/v4", preview_token: "safe", metadata: { renderable: true }, is_active: true,
+    }]);
+    if (target.includes("demo_journeys")) return mockJson([{ id: journeyId, generated_briefing: "Heel je Zelf" }]);
+    throw new Error(`Unexpected GET ${url}`);
+  };
+  try {
+    const history = await getBuildHistory({ supabaseUrl: "https://example.supabase.co", serviceRoleKey: "service-role", admin: { id: "admin-id", role: "super_admin" } }, { demoJourneyId: journeyId });
+    assert.equal(history.latestJob.id, completedJobId);
+    assert.equal(history.latestJob.status, "completed");
+    assert.equal(history.latestJob.errorMessage, "");
+    assert.equal(history.activeVersion.id, completedJobId);
+    assert.equal(history.serverState.previewRenderable, true);
+    assert.equal(history.serverState.buildCompleted, true);
+    assert.equal(history.serverState.buildRetryable, false);
+    assert.equal(history.serverState.errorMessage, "");
+    assert.equal(history.jobs[0].id, failedJobId);
+    assert.equal(history.jobs.filter((job) => job.id === completedJobId).length, 1);
   } finally {
     global.fetch = previousFetch;
   }
