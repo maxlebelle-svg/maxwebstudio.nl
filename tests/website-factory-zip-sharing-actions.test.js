@@ -159,3 +159,16 @@ test("20 delen en publiceren wijzigen de goedkeuringsstatus niet", () => {
   assert.match(patchBlock, /status: version\.approved_at \? "approved" : "ready_for_review"/);
   assert.doesNotMatch(html.slice(html.indexOf("function shareSelectedPreviewViaWhatsApp"), html.indexOf("async function refreshCustomerPreviewPublication")), /approval|approved/);
 });
+
+test("21 begeleide previewacties gebruiken de expliciete runtimebridge", () => {
+  const runtime = html.slice(html.indexOf("window.WebsiteFactoryRuntime = {"), html.indexOf("async function resetDemoForRegeneration"));
+  for (const action of ["openSelectedPreview", "copySelectedPreviewLink", "shareSelectedPreviewViaWhatsApp", "publishCustomerPreview", "activateSelectedManualPreview"]) {
+    assert.match(runtime, new RegExp(`${action}:`));
+  }
+  const guided = html.slice(html.indexOf("function initGuidedFactory()"), html.indexOf("if (document.readyState === \"loading\")", html.indexOf("function initGuidedFactory()")));
+  assert.match(guided, /WebsiteFactoryRuntime\?\.openSelectedPreview/);
+  assert.match(guided, /WebsiteFactoryRuntime\?\.copySelectedPreviewLink/);
+  assert.match(guided, /WebsiteFactoryRuntime\?\.shareSelectedPreviewViaWhatsApp/);
+  assert.match(guided, /WebsiteFactoryRuntime\?\.publishCustomerPreview/);
+  assert.doesNotMatch(guided, /addEventListener\("click", openSelectedPreview\)/);
+});

@@ -7,6 +7,7 @@ const { createTimelineEvent } = require("./services/timelineService");
 const crypto = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
 const { normalizeWebsiteInput } = require("./_website-input");
+const { fallbackPreviewUrl } = require("./_public-preview");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
@@ -477,12 +478,17 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   });
   const journeys = rows.map(mapJourney).filter((journey) => canAdminSeeJourney(journey, admin));
   const selected = journeys[0] || null;
-  const events = selected ? await readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id }) : [];
-  const factoryHistory = selected ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id }) : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-  const projectWorkspace = selected ? await readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id }) : null;
+  const [events, factoryHistory, projectWorkspace, publicPreviewPublication] = selected
+    ? await Promise.all([
+      readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id }),
+      readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id }),
+      readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id }),
+      readPublicPreviewPublicationSafe({ supabaseUrl, serviceRoleKey, journey: selected }),
+    ])
+    : [[], { jobs: [], previewVersions: [], latestJob: null, activeVersion: null }, null, null];
   const responseJourneys = journeys.map(sanitizeAdminJourney);
   const responseSelected = responseJourneys[0] || null;
-  return jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
+  return jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace, publicPreviewPublication });
 }
 
 async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -703,7 +709,15 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const savedDemoSite = previewPackage.savedDemoSite || previewPackage.saved_demo_site || {};
     const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source);
     if (!requestedSource) return jsonResponse(400, { success: false, error: "Kies Handmatige ZIP of Website Factory." });
-    const resolved = resolveActiveDemoPreview(previewPackage, requestedSource);
+    const requestedPreviewVersionId = cleanUuid(payload.previewVersionId || payload.preview_version_id);
+    const selectedPreview = requestedPreviewVersionId ? await resolveSelectedDemoPreview({
+      supabaseUrl,
+      serviceRoleKey,
+      journey: current,
+      previewVersionId: requestedPreviewVersionId,
+      previewSource: requestedSource,
+    }) : null;
+    const resolved = selectedPreview ? { available: true, previewPackage: selectedPreview.previewPackage } : resolveActiveDemoPreview(previewPackage, requestedSource);
     if (!resolved.available) {
       return jsonResponse(409, {
         success: false,
@@ -719,13 +733,15 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     if (protectedDemo && normalizePreviewSource(savedDemoSite.previewSource) !== requestedSource) {
       return jsonResponse(409, { success: false, code: "protected_demo_version", error: "Deze demo is al goedgekeurd of definitief. Maak eerst een nieuwe previewversie om de bestaande klantversie intact te houden." });
     }
-    const thumbnailPackage = requestedSource === PREVIEW_SOURCES.MANUAL ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage;
-    const previewUrl = cleanText(savedDemoSite.previewUrl || current.preview_url);
+    const thumbnailPackage = selectedPreview?.previewPackage || (requestedSource === PREVIEW_SOURCES.MANUAL ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage);
+    const previewUrl = cleanText(selectedPreview?.previewUrl || savedDemoSite.previewUrl || current.preview_url);
     const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage: thumbnailPackage, previewUrl, savedAt: updatedAt });
     const nextSavedDemoSite = {
       ...savedDemoSite,
       saved: true,
       previewSource: requestedSource,
+      previewVersionId: selectedPreview?.version?.id || savedDemoSite.previewVersionId || null,
+      previewVersion: Number(selectedPreview?.version?.version || savedDemoSite.previewVersion || 0) || null,
       sourceLabel: requestedSource === PREVIEW_SOURCES.MANUAL ? "Handmatige ZIP" : "Website Factory",
       previewUrl,
       thumbnailUrl: thumbnail.thumbnailUrl,
@@ -735,7 +751,16 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       updatedBy: admin.id,
     };
     const record = {
-      preview_package: { ...previewPackage, activePreviewSource: requestedSource, savedDemoSite: nextSavedDemoSite },
+      ...(selectedPreview ? { preview_url: previewUrl } : {}),
+      preview_package: {
+        ...previewPackage,
+        activePreviewSource: requestedSource,
+        savedDemoSite: nextSavedDemoSite,
+        linkedRecords: {
+          ...(previewPackage.linkedRecords || {}),
+          previewVersionId: nextSavedDemoSite.previewVersionId,
+        },
+      },
       updated_by: admin.id,
       updated_at: updatedAt,
     };
@@ -1247,6 +1272,46 @@ async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, jour
       warning: "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit.",
     };
   }
+}
+
+async function readPublicPreviewPublicationSafe({ supabaseUrl, serviceRoleKey, journey }) {
+  const relationshipType = journey?.customerId ? "customer" : journey?.leadId ? "lead" : "";
+  const relationshipId = cleanUuid(relationshipType === "customer" ? journey?.customerId : journey?.leadId);
+  if (!relationshipType || !relationshipId) return null;
+  const params = new URLSearchParams({
+    select: "id,relationship_type,relationship_id,public_slug,preview_version_id,enabled,published_at,revoked_at,updated_at",
+    relationship_type: `eq.${relationshipType}`,
+    relationship_id: `eq.${relationshipId}`,
+    order: "enabled.desc,updated_at.desc",
+    limit: "1",
+  });
+  try {
+    const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/public_preview_publications?${params.toString()}`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+    return sanitizePublicPreviewPublication(rows[0] || null);
+  } catch (error) {
+    if (isMissingPublicPreviewPublicationTable(error)) return null;
+    throw error;
+  }
+}
+
+function sanitizePublicPreviewPublication(publication = null) {
+  if (!publication?.id) return null;
+  const slug = cleanText(publication.public_slug);
+  const enabled = publication.enabled === true && !publication.revoked_at && Boolean(slug);
+  return {
+    relationshipType: cleanText(publication.relationship_type),
+    relationshipId: cleanText(publication.relationship_id),
+    previewVersionId: cleanText(publication.preview_version_id),
+    publicPreviewSlug: slug,
+    publicPreviewEnabled: enabled,
+    publicPreviewUrl: enabled ? fallbackPreviewUrl(slug) : "",
+    publishedAt: cleanText(publication.published_at),
+    revokedAt: cleanText(publication.revoked_at),
+    updatedAt: cleanText(publication.updated_at),
+  };
 }
 
 async function createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current, admin }) {
@@ -2210,7 +2275,15 @@ function isMissingFactoryTableError(error = {}) {
     || text.includes("website_preview_versions");
 }
 
+function isMissingPublicPreviewPublicationTable(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return text.includes("42p01")
+    || text.includes("pgrst205")
+    || text.includes("public_preview_publications");
+}
+
 exports._private = {
   resolveSelectedDemoPreview,
   storedPreviewVersionSource,
+  sanitizePublicPreviewPublication,
 };

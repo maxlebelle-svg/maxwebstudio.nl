@@ -23282,13 +23282,43 @@
           return "";
         }
 
+        function demoPreviewVersionSource(version = {}) {
+          return normalizeDemoPreviewSource(version.sourceType || version.previewSource || version.metadata?.previewSource);
+        }
+
+        function availableDemoPreviewVersion(version = {}) {
+          return Boolean(version.id && version.previewUrl && Number(version.fileCount || 0) > 0 && version.renderable !== false);
+        }
+
+        function latestDemoPreviewVersion(versions = [], source = "") {
+          return versions.find((version) => demoPreviewVersionSource(version) === source && availableDemoPreviewVersion(version)) || null;
+        }
+
         function resolveActiveDemoPreview(record = {}) {
           const previewPackage = record.previewPackage || {};
           const savedDemo = savedDemoSiteMeta(record) || {};
-          const persistedSource = normalizeDemoPreviewSource(savedDemo.previewSource || savedDemo.preview_source || previewPackage.activePreviewSource);
-          const manualAvailable = Boolean((previewPackage.manualPreview || previewPackage.manual_preview)?.files?.length);
-          const factoryAvailable = Boolean(previewPackage.files?.length);
+          const versions = Array.isArray(record.previewVersions) ? record.previewVersions : [];
+          const manualVersion = latestDemoPreviewVersion(versions, "manual_zip");
+          const factoryVersion = latestDemoPreviewVersion(versions, "website_factory");
+          const savedVersion = versions.find((version) => String(version.id) === String(savedDemo.previewVersionId || savedDemo.preview_version_id) && availableDemoPreviewVersion(version)) || null;
+          const publication = record.publicPreviewPublication || {};
+          const publicationVersion = versions.find((version) => String(version.id) === String(publication.previewVersionId) && availableDemoPreviewVersion(version)) || null;
+          const publicationActive = Boolean(publication.publicPreviewEnabled && publication.publicPreviewUrl && publicationVersion);
+          const publicationUpdatedAt = Date.parse(publication.updatedAt || publication.publishedAt || "") || 0;
+          const savedUpdatedAt = Date.parse(savedDemo.updatedAt || savedDemo.savedAt || "") || 0;
+          const publishedSelectionWins = publicationActive && (!savedVersion || publicationUpdatedAt >= savedUpdatedAt);
+          const selectedVersion = publishedSelectionWins ? publicationVersion : savedVersion;
+          const legacyPersistedSource = normalizeDemoPreviewSource(savedDemo.previewSource || savedDemo.preview_source || previewPackage.activePreviewSource);
+          const persistedSource = demoPreviewVersionSource(selectedVersion) || legacyPersistedSource;
+          const legacyManualAvailable = Boolean((previewPackage.manualPreview || previewPackage.manual_preview)?.files?.length);
+          const legacyFactoryAvailable = Boolean(previewPackage.files?.length);
+          const manualAvailable = Boolean(manualVersion || legacyManualAvailable);
+          const factoryAvailable = Boolean(factoryVersion || legacyFactoryAvailable);
           const source = persistedSource || (manualAvailable ? "manual_zip" : factoryAvailable ? "website_factory" : "");
+          const selectedSourceVersion = source === "manual_zip" ? manualVersion : source === "website_factory" ? factoryVersion : null;
+          const previewUrl = publishedSelectionWins
+            ? publication.publicPreviewUrl
+            : selectedVersion?.previewUrl || selectedSourceVersion?.previewUrl || savedDemo.previewUrl || record.previewUrl || "";
           return {
             source,
             persistedSource,
@@ -23296,6 +23326,10 @@
             factoryAvailable,
             available: source === "manual_zip" ? manualAvailable : source === "website_factory" ? factoryAvailable : false,
             isLegacyFallback: !persistedSource && Boolean(source),
+            previewUrl,
+            selectedVersion,
+            versionsBySource: { manual_zip: manualVersion, website_factory: factoryVersion },
+            publicPreviewPublication: publicationActive ? publication : null,
           };
         }
 
@@ -23563,12 +23597,20 @@
         async function updatePreviewSource(record = {}, previewSource = "") {
           const normalized = normalizeDemoPreviewSource(previewSource);
           if (!normalized) throw new Error("Kies Handmatige ZIP of Website Factory.");
+          const currentResolution = resolveActiveDemoPreview(record);
+          const selectedVersion = currentResolution.versionsBySource?.[normalized] || null;
+          if (!selectedVersion?.id) throw new Error("De gekozen previewversie is niet beschikbaar.");
           const data = await postJson(endpoints.journey, {
             action: "update_demo_preview_source",
             demoJourneyId: record.id,
             previewSource: normalized,
+            previewVersionId: selectedVersion.id,
           });
-          if (data.demoJourney?.id) records = records.map((item) => String(item.id) === String(record.id) ? data.demoJourney : item);
+          if (data.demoJourney?.id) records = records.map((item) => String(item.id) === String(record.id) ? {
+            ...data.demoJourney,
+            previewVersions: record.previewVersions,
+            publicPreviewPublication: record.publicPreviewPublication,
+          } : item);
           render();
           return data;
         }
@@ -23591,7 +23633,7 @@
             const savedDemo = savedDemoSiteMeta(record) || {};
             const previewResolution = resolveActiveDemoPreview(record);
             const previewSource = previewResolution.source;
-            const preview = sourceUrl(record.previewUrl || savedDemo.previewUrl, previewSource);
+            const preview = sourceUrl(previewResolution.previewUrl || record.previewUrl || savedDemo.previewUrl, previewSource);
             const thumbnail = savedDemoThumbnail(record);
             const demoName = savedDemo.businessName || record.businessName || "demo-site";
             const factoryHref = `admin-website-factory.html${savedDemo.customerId || record.customerId
@@ -23642,7 +23684,7 @@
                         <option value="manual_zip"${previewSource === "manual_zip" ? " selected" : ""}${previewResolution.manualAvailable ? "" : " disabled"}>Handmatige ZIP${previewResolution.manualAvailable ? "" : " — niet beschikbaar"}</option>
                         <option value="website_factory"${previewSource === "website_factory" ? " selected" : ""}${previewResolution.factoryAvailable ? "" : " disabled"}>Website Factory${previewResolution.factoryAvailable ? "" : " — niet beschikbaar"}</option>
                       </select>
-                      <small>Deze keuze bepaalt welke versie in Demo Sites en de klantpreview wordt geopend.</small>
+                      <small>Deze keuze bepaalt welke versie in Demo Sites wordt geopend. Publiek delen blijft een expliciete actie in Website Factory.</small>
                     </label>
                   </div>
                   ${previewSource && !previewResolution.available ? `<p class="admin-form-message warning demo-preview-source-warning">De gekozen previewbron is momenteel niet beschikbaar. Kies een andere bron om verder te gaan.</p>` : ""}
@@ -24131,6 +24173,13 @@
             if (!response.ok) throw new Error(data.error || "Demo-sites konden niet worden geladen.");
             if (generation !== requestGeneration) return;
             records = Array.isArray(data.records) ? data.records : [];
+            if (records[0]) {
+              records[0] = {
+                ...records[0],
+                previewVersions: Array.isArray(data.buildHistory?.previewVersions) ? data.buildHistory.previewVersions : [],
+                publicPreviewPublication: data.publicPreviewPublication || null,
+              };
+            }
             render();
             verifyPreviewFrames(generation);
             setMessage(`${records.filter(isSavedDemoSite).length} opgeslagen demo-sites geladen.`, "success");

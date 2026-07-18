@@ -24484,6 +24484,18 @@
 
         window.WebsiteFactoryRuntime = {
           quickBuild,
+          renderSelectedPreviewActions: (...args) => renderSelectedPreviewActions(...args),
+          openSelectedPreview: () => openSelectedPreview(),
+          copySelectedPreviewLink: () => copySelectedPreviewLink(),
+          shareSelectedPreviewViaWhatsApp: () => shareSelectedPreviewViaWhatsApp(),
+          publishCustomerPreview: () => publishCustomerPreview(),
+          activateSelectedManualPreview: async () => {
+            const context = selectedPreviewActionContext();
+            if (!context?.activateEnabled) return;
+            const customerLabel = factoryCustomerContext?.customer?.company || factoryCustomerContext?.customer?.name || "de geselecteerde klant";
+            if (!window.confirm(`${context.versionLabel} gebruiken als interne klantpreview voor ${customerLabel}?\n\nBekijken en opslaan in Demo Sites doen dit niet automatisch.`)) return;
+            await activateManualPreview(context.previewVersionId);
+          },
           getState: () => ({
             journey,
             buildHistory,
@@ -26814,7 +26826,7 @@
         }
 
         function syncPrimaryAction() {
-          renderSelectedPreviewActions();
+          window.WebsiteFactoryRuntime?.renderSelectedPreviewActions?.();
         }
 
         function syncGuidedZipProcess() {
@@ -26979,17 +26991,11 @@
 
           document.getElementById("factory-primary-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
           document.getElementById("factory-preview-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
-          document.getElementById("factory-preview-open-selected")?.addEventListener("click", openSelectedPreview);
-          document.getElementById("factory-preview-copy-link")?.addEventListener("click", copySelectedPreviewLink);
-          document.getElementById("factory-preview-share-whatsapp")?.addEventListener("click", shareSelectedPreviewViaWhatsApp);
-          document.getElementById("factory-preview-publish-customer")?.addEventListener("click", () => publishCustomerPreview());
-          document.getElementById("factory-preview-use-customer")?.addEventListener("click", async () => {
-            const context = selectedPreviewActionContext();
-            if (!context?.activateEnabled) return;
-            const customerLabel = factoryCustomerContext?.customer?.company || factoryCustomerContext?.customer?.name || "de geselecteerde klant";
-            if (!window.confirm(`${context.versionLabel} gebruiken als interne klantpreview voor ${customerLabel}?\n\nBekijken en opslaan in Demo Sites doen dit niet automatisch.`)) return;
-            await activateManualPreview(context.previewVersionId);
-          });
+          document.getElementById("factory-preview-open-selected")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.openSelectedPreview?.());
+          document.getElementById("factory-preview-copy-link")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.copySelectedPreviewLink?.());
+          document.getElementById("factory-preview-share-whatsapp")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.shareSelectedPreviewViaWhatsApp?.());
+          document.getElementById("factory-preview-publish-customer")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.publishCustomerPreview?.());
+          document.getElementById("factory-preview-use-customer")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.activateSelectedManualPreview?.());
           document.getElementById("factory-process-manual-zip")?.addEventListener("click", () => proxyClick("demo-journey-process-manual-zip"));
           document.querySelectorAll("[data-factory-proxy]").forEach((button) => button.addEventListener("click", () => proxyClick(button.dataset.factoryProxy)));
           document.getElementById("factory-quick-generate")?.addEventListener("click", runQuickBuild);
