@@ -50,6 +50,7 @@ const customerFields = "id,name,company,email,website,metadata,public_preview_sl
 const demoJourneyFields = "id,lead_id,customer_id,business_name,email,website_url,preview_url,preview_token,preview_package,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
 const publicLeadFields = "id,company_name,contact_name,status,lead_status,customer_id,converted_customer_id";
+const publicLeadFieldsWithoutCustomerId = "id,company_name,contact_name,status,lead_status,converted_customer_id";
 const legacyLeadFields = "id,converted_customer_id";
 const buildJobFields = "id,demo_journey_id,lead_id,customer_id,preview_url,preview_token";
 const publicPublicationFields = "id,relationship_type,relationship_id,public_slug,preview_version_id,enabled,published_at,revoked_at,created_at,updated_at,created_by";
@@ -271,9 +272,15 @@ function relationshipFromInput(input = {}) {
 
 async function readRelationshipRecord(context, relationship) {
   if (!relationship) return null;
-  const fields = relationship.type === "lead" ? publicLeadFields : customerFields;
-  const table = relationship.type === "lead" ? "leads" : "customers";
-  return readSingle(context, table, `select=${fields}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
+  if (relationship.type !== "lead") {
+    return readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
+  }
+  try {
+    return await readSingle(context, "leads", `select=${publicLeadFields}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return readSingle(context, "leads", `select=${publicLeadFieldsWithoutCustomerId}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
+  }
 }
 
 async function readPublicPublication(context, relationship, options = {}) {

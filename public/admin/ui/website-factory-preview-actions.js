@@ -67,6 +67,53 @@
     return url.toString().replace(/\/$/, "");
   }
 
+  function publicPreviewSlugCandidate(...values) {
+    for (const value of values) {
+      const slug = text(value)
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/&/g, " en ")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .replace(/-{2,}/g, "-")
+        .slice(0, 64)
+        .replace(/-+$/g, "");
+      if (slug.length >= 3 && PUBLIC_SLUG_PATTERN.test(slug)) return slug;
+    }
+    return "";
+  }
+
+  function publicPreviewPublishPayload(input = {}) {
+    const relationshipType = text(input.relationshipType).toLowerCase();
+    const relationshipId = text(input.relationshipId);
+    const leadId = text(input.leadId || relationshipId);
+    const demoJourneyId = text(input.demoJourneyId);
+    const previewVersionId = text(input.previewVersionId);
+    const slug = publicPreviewSlugCandidate(input.slug);
+    if (relationshipType !== "lead"
+      || !UUID_PATTERN.test(relationshipId)
+      || !UUID_PATTERN.test(leadId)
+      || !UUID_PATTERN.test(demoJourneyId)
+      || !UUID_PATTERN.test(previewVersionId)
+      || !slug) return null;
+    return {
+      action: "publish_public_preview",
+      relationshipType: "lead",
+      relationshipId,
+      leadId,
+      demoJourneyId,
+      previewVersionId,
+      slug,
+    };
+  }
+
+  function publicPreviewErrorMessage(error = {}, fallback = "De publieke salesdemo kon niet worden gedeeld.") {
+    const message = text(error.message) || fallback;
+    const requestId = text(error.requestId || error.request_id);
+    return requestId ? `${message} Request-id: ${requestId}` : message;
+  }
+
   function whatsappMessage(input = {}) {
     const previewUrl = text(input.previewUrl);
     if (!previewUrl) return "";
@@ -156,5 +203,18 @@
     };
   }
 
-  return { SOURCE_FACTORY, SOURCE_MANUAL, UUID_PATTERN, actionContext, safePublicPreviewUrl, safeShareUrl, sourceTypeOf, whatsappMessage, whatsappShareUrl };
+  return {
+    SOURCE_FACTORY,
+    SOURCE_MANUAL,
+    UUID_PATTERN,
+    actionContext,
+    publicPreviewErrorMessage,
+    publicPreviewPublishPayload,
+    publicPreviewSlugCandidate,
+    safePublicPreviewUrl,
+    safeShareUrl,
+    sourceTypeOf,
+    whatsappMessage,
+    whatsappShareUrl,
+  };
 });

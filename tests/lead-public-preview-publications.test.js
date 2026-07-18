@@ -91,6 +91,9 @@ async function withStore(seed, callback) {
     calls.push({ table, method, url: String(url), body: options.body ? JSON.parse(options.body) : null });
     const rows = store[table];
     if (!Array.isArray(rows)) return response([], 404, { code: "PGRST205", message: `Missing ${table}` });
+    if (table === "leads" && method === "GET" && parsed.searchParams.get("select")?.split(",").includes("customer_id") && store.__missingLeadCustomerId === true) {
+      return response([], 400, { code: "PGRST204", message: "Could not find the 'customer_id' column of 'leads' in the schema cache" });
+    }
     if (method === "GET") return response(rows.filter((row) => matches(row, parsed.searchParams)));
     if (method === "POST") {
       const record = { id: IDS.publication, ...JSON.parse(options.body || "{}") };
@@ -416,4 +419,130 @@ test("37 wisselen van relatie leegt de vorige publieke publicatiestatus", () => 
 test("38 alleen een previewkaart bekijken veroorzaakt geen publicatieverzoek", () => {
   const block = adminHtml.slice(adminHtml.indexOf("function renderSelectedPreviewActions"), adminHtml.indexOf("function setSelectedPreviewFeedback"));
   assert.doesNotMatch(block, /apiRequest\(/);
+});
+
+test("39 annuleren van de native bevestiging stopt voor de request", () => {
+  const block = adminHtml.slice(adminHtml.indexOf('if (context.relationshipType === "lead")'), adminHtml.indexOf('const customerLabel =', adminHtml.indexOf('if (context.relationshipType === "lead")')));
+  const confirmIndex = block.indexOf("if (!window.confirm(");
+  const requestIndex = block.indexOf('apiRequest(previewPublicationEndpoint, "POST"');
+  assert.ok(confirmIndex >= 0 && requestIndex > confirmIndex);
+  assert.match(block.slice(confirmIndex, requestIndex), /\) return;/);
+});
+
+test("40 bevestigen leidt in de leadtak tot exact één POST-request", () => {
+  const block = adminHtml.slice(adminHtml.indexOf('if (context.relationshipType === "lead")'), adminHtml.indexOf('const customerLabel =', adminHtml.indexOf('if (context.relationshipType === "lead")')));
+  assert.equal((block.match(/apiRequest\(previewPublicationEndpoint, "POST"/g) || []).length, 1);
+});
+
+test("41 leadpublicatiepayload bevat de exacte relatiecontext", () => {
+  const payload = actions.publicPreviewPublishPayload({ relationshipType: "lead", relationshipId: IDS.lead, leadId: IDS.lead, demoJourneyId: IDS.journey, previewVersionId: IDS.preview, slug: "heeljezelf" });
+  assert.equal(payload.relationshipType, "lead");
+  assert.equal(payload.relationshipId, IDS.lead);
+  assert.equal(payload.leadId, IDS.lead);
+  assert.equal(payload.demoJourneyId, IDS.journey);
+});
+
+test("42 leadpublicatiepayload gebruikt exact de bekeken previewVersionId", () => {
+  const payload = actions.publicPreviewPublishPayload({ relationshipType: "lead", relationshipId: IDS.lead, leadId: IDS.lead, demoJourneyId: IDS.journey, previewVersionId: IDS.preview, slug: "heeljezelf" });
+  assert.equal(payload.previewVersionId, IDS.preview);
+});
+
+test("43 slug heeljezelf wordt expliciet meegestuurd", () => {
+  assert.equal(actions.publicPreviewSlugCandidate("heeljezelf", "Heel je zelf"), "heeljezelf");
+  const payload = actions.publicPreviewPublishPayload({ relationshipType: "lead", relationshipId: IDS.lead, leadId: IDS.lead, demoJourneyId: IDS.journey, previewVersionId: IDS.preview, slug: "heeljezelf" });
+  assert.equal(payload.slug, "heeljezelf");
+  assert.match(adminHtml, /slug: publicSlug/);
+});
+
+test("44 ontbrekende publicatiecontext geeft een zichtbare fout en geen payload", () => {
+  assert.equal(actions.publicPreviewPublishPayload({ relationshipType: "lead", relationshipId: IDS.lead, previewVersionId: IDS.preview, slug: "heeljezelf" }), null);
+  assert.match(adminHtml, /De publieke demo mist een geldige lead-, preview- of slugcontext/);
+});
+
+test("45 backend accepteert een lead zonder customer_id-kolom of customerrecord", { concurrency: false }, async () => {
+  const seed = fixture({ __missingLeadCustomerId: true });
+  await withStore(seed, async (store) => {
+    const result = await publishLead(store);
+    assert.equal(result.publishedPreviewVersionId, IDS.preview);
+    assert.deepEqual(store.customers, []);
+  });
+});
+
+test("46 backend maakt exact één generieke leadpublicatie", { concurrency: false }, async () => {
+  await withStore(fixture(), async (store) => {
+    await publishLead(store);
+    assert.equal(store.public_preview_publications.length, 1);
+    assert.equal(store.public_preview_publications[0].relationship_type, "lead");
+  });
+});
+
+test("47 bevestigde leadpublicatie maakt geen customer aan", { concurrency: false }, async () => {
+  await withStore(fixture(), async (store) => {
+    await publishLead(store);
+    assert.equal(store.customers.length, 0);
+  });
+});
+
+test("48 bevestigde leadpublicatie muteert geen leadstatus", { concurrency: false }, async () => {
+  await withStore(fixture(), async (store) => {
+    const before = clone(store.leads[0]);
+    await publishLead(store);
+    assert.deepEqual(store.leads[0], before);
+  });
+});
+
+test("49 identieke tweede request blijft idempotent", { concurrency: false }, async () => {
+  await withStore(fixture(), async (store) => {
+    await publishLead(store);
+    const second = await publishLead(store);
+    assert.equal(second.alreadyPublished, true);
+    assert.equal(store.public_preview_publications.length, 1);
+  });
+});
+
+test("50 serverfout toont het Netlify request-id", () => {
+  assert.equal(actions.publicPreviewErrorMessage({ message: "Opslaan mislukt.", requestId: "req-123" }), "Opslaan mislukt. Request-id: req-123");
+  assert.match(adminHtml, /publicPreviewErrorMessage/);
+});
+
+test("51 UI toont geen succes voor server- en bevestigingsresponse", () => {
+  const block = adminHtml.slice(adminHtml.indexOf('if (context.relationshipType === "lead")'), adminHtml.indexOf('const customerLabel =', adminHtml.indexOf('if (context.relationshipType === "lead")')));
+  assert.ok(block.indexOf('const data = await apiRequest') < block.indexOf('is als publieke salesdemo gedeeld'));
+  assert.ok(block.indexOf('const confirmation = await apiRequest') < block.indexOf('is als publieke salesdemo gedeeld'));
+});
+
+test("52 successtatus wordt uit de bevestigde current-response gehydrateerd", () => {
+  const block = adminHtml.slice(adminHtml.indexOf('if (context.relationshipType === "lead")'), adminHtml.indexOf('const customerLabel =', adminHtml.indexOf('if (context.relationshipType === "lead")')));
+  assert.match(block, /action=current&relationshipType=lead/);
+  assert.match(block, /customerPreviewPublication = \{[\s\S]*confirmation\.previewVersion/);
+});
+
+test("53 resolver toont na publicatie exact de gekozen preview", { concurrency: false }, async () => {
+  await withStore(fixture(), async (store) => {
+    await publishLead(store);
+    const result = await render("heeljezelf");
+    assert.equal(result.statusCode, 200);
+    assert.match(result.body, /Heel je zelf/);
+  });
+});
+
+test("54 bestaande customerpublicatieactie blijft apart beschikbaar", () => {
+  assert.match(publicationSource, /publish_customer_preview/);
+  assert.match(adminHtml, /action: "publish_customer_preview"/);
+});
+
+test("55 Factory- en ZIP-context behouden hun exacte geselecteerde versie", () => {
+  const factory = actions.actionContext({ version: fixture().website_preview_versions[0], previewUrl: `https://maxwebstudio.nl/.netlify/functions/demo-preview?id=${IDS.journey}&source=factory&previewVersionId=${IDS.preview}`, leadId: IDS.lead, demoJourneyId: IDS.journey });
+  const zip = actions.actionContext({ version: { ...fixture().website_preview_versions[0], metadata: { previewSource: "manual_zip" }, previewUrl: `https://maxwebstudio.nl/.netlify/functions/manual-preview-render?version=${IDS.preview}&token=test&source=manual_zip&previewVersionId=${IDS.preview}`, previewToken: "test" }, previewUrl: `https://maxwebstudio.nl/.netlify/functions/manual-preview-render?version=${IDS.preview}&token=test&source=manual_zip&previewVersionId=${IDS.preview}`, leadId: IDS.lead, demoJourneyId: IDS.journey });
+  assert.equal(factory.previewVersionId, IDS.preview);
+  assert.equal(zip.previewVersionId, IDS.preview);
+  assert.equal(factory.sourceType, actions.SOURCE_FACTORY);
+  assert.equal(zip.sourceType, actions.SOURCE_MANUAL);
+});
+
+test("56 lange tokenized previewlinks blijven veilig bruikbaar", () => {
+  const url = `https://maxwebstudio.nl/.netlify/functions/demo-preview?id=${IDS.journey}&token=lang-token&source=factory&previewVersionId=${IDS.preview}`;
+  const context = actions.actionContext({ version: { ...fixture().website_preview_versions[0], previewUrl: url }, previewUrl: url, leadId: IDS.lead, demoJourneyId: IDS.journey });
+  assert.equal(context.shareUrl, url);
+  assert.equal(context.publishEnabled, true);
 });

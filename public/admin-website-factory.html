@@ -24989,19 +24989,35 @@
           if (context.relationshipType === "lead") {
             const lead = selectedLead() || {};
             const leadLabel = lead.companyName || lead.company_name || lead.company || lead.contactName || lead.contact_name || "de geselecteerde lead";
+            const actionApi = window.WebsiteFactoryPreviewActions;
+            const publicSlug = actionApi?.publicPreviewSlugCandidate?.(
+              customerPreviewPublication?.publicPreviewSlug,
+              journey?.businessName,
+              journey?.business_name,
+              lead.businessName,
+              lead.business_name,
+              lead.companyName,
+              lead.company_name,
+              lead.company,
+            ) || "";
+            const publishPayload = actionApi?.publicPreviewPublishPayload?.({
+              relationshipType: "lead",
+              relationshipId: context.relationshipId,
+              leadId: context.leadId,
+              demoJourneyId: context.demoJourneyId,
+              previewVersionId: context.previewVersionId,
+              slug: publicSlug,
+            });
+            if (!publishPayload) {
+              setMessage(elements.message, "De publieke demo mist een geldige lead-, preview- of slugcontext.", "error");
+              return;
+            }
             if (!window.confirm(`${context.versionLabel} als publieke salesdemo delen met ${leadLabel}?\n\nDe lead blijft een lead. De previewstatus, goedkeuring en klantpublicatie veranderen niet.`)) return;
             await withJourneyLock("publish_public_preview", [elements.publishCustomerPreview, elements.saveDemoSite, elements.generatePreview, document.getElementById("factory-preview-publish-customer")], async () => {
               renderCustomerPreviewPublication();
               setMessage(elements.message, `${context.versionLabel} als publieke salesdemo delen...`, "info");
               try {
-                const data = await apiRequest(previewPublicationEndpoint, "POST", {
-                  action: "publish_public_preview",
-                  relationshipType: "lead",
-                  relationshipId: context.relationshipId,
-                  leadId: context.leadId,
-                  demoJourneyId: context.demoJourneyId,
-                  previewVersionId: context.previewVersionId,
-                });
+                const data = await apiRequest(previewPublicationEndpoint, "POST", publishPayload);
                 if (data.publishedPreviewVersionId !== context.previewVersionId) throw new Error("De server heeft niet dezelfde previewversie gedeeld als de geselecteerde versie.");
                 const confirmation = await apiRequest(`${previewPublicationEndpoint}?action=current&relationshipType=lead&relationshipId=${encodeURIComponent(context.relationshipId)}&previewVersionId=${encodeURIComponent(context.previewVersionId)}`);
                 if (confirmation.publishedPreviewVersionId !== context.previewVersionId || confirmation.previewVersion?.id !== context.previewVersionId) {
@@ -25022,7 +25038,7 @@
                 renderCustomerPreviewPublication();
                 setMessage(elements.message, `${context.versionLabel} is als publieke salesdemo gedeeld. De lead is niet geconverteerd.`, "success");
               } catch (error) {
-                setMessage(elements.message, error.message || "De publieke salesdemo kon niet worden gedeeld.", "error");
+                setMessage(elements.message, actionApi?.publicPreviewErrorMessage?.(error) || error.message || "De publieke salesdemo kon niet worden gedeeld.", "error");
               } finally {
                 renderCustomerPreviewPublication();
               }
