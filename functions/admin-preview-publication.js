@@ -300,7 +300,9 @@ async function readPublicPublication(context, relationship, options = {}) {
 }
 
 async function validatePublicPreviewOwnership(context, relationship, previewVersionId, supplied = {}) {
-  const relationshipRecord = supplied.relationshipRecord || await readRelationshipRecord(context, relationship);
+  const relationshipRecord = supplied.relationshipRecord || (relationship?.type === "lead"
+    ? await readSingle(context, "leads", `select=id,company_name,contact_name,status,lead_status&id=eq.${encodeURIComponent(relationship.id)}&limit=1`)
+    : await readRelationshipRecord(context, relationship));
   if (!relationshipRecord?.id) {
     throw previewError("PREVIEW_RELATIONSHIP_MISMATCH", "De geselecteerde lead of klant kon niet worden gevalideerd.", 404);
   }
@@ -321,22 +323,13 @@ async function validatePublicPreviewOwnership(context, relationship, previewVers
     if (!journey?.id || cleanText(journey.lead_id) !== relationship.id) {
       throw previewError("PREVIEW_LEAD_MISMATCH", "Deze preview hoort niet bij de geselecteerde lead.", 409);
     }
-    const linkedCustomerIds = [relationshipRecord.customer_id, relationshipRecord.converted_customer_id].map(uuidOrEmpty).filter(Boolean);
-    if (version.customer_id && !linkedCustomerIds.includes(cleanText(version.customer_id))) {
-      throw previewError("PREVIEW_LEAD_MISMATCH", "Deze preview is aan een andere relatie gekoppeld.", 409);
-    }
     return { relationshipRecord, version, journey };
   }
 
   if (cleanText(version.customer_id) === relationship.id || cleanText(journey?.customer_id) === relationship.id) {
     return { relationshipRecord, version, journey };
   }
-  const journeyLead = journey?.lead_id ? await readLeadById(context, cleanText(journey.lead_id)) : null;
-  const convertedCustomerIds = [journeyLead?.customer_id, journeyLead?.converted_customer_id].map(uuidOrEmpty).filter(Boolean);
-  if (!convertedCustomerIds.includes(relationship.id)) {
-    throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de geselecteerde klant.", 409);
-  }
-  return { relationshipRecord, version, journey };
+  throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de geselecteerde klant.", 409);
 }
 
 async function assertPublicSlugAvailable(context, slug, options = {}) {

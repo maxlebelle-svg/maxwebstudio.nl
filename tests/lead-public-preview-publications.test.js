@@ -91,8 +91,10 @@ async function withStore(seed, callback) {
     calls.push({ table, method, url: String(url), body: options.body ? JSON.parse(options.body) : null });
     const rows = store[table];
     if (!Array.isArray(rows)) return response([], 404, { code: "PGRST205", message: `Missing ${table}` });
-    if (table === "leads" && method === "GET" && parsed.searchParams.get("select")?.split(",").includes("customer_id") && store.__missingLeadCustomerId === true) {
-      return response([], 400, { code: "PGRST204", message: "Could not find the 'customer_id' column of 'leads' in the schema cache" });
+    if (table === "leads" && method === "GET" && store.__missingLeadCustomerColumns === true) {
+      const query = decodeURIComponent(parsed.search);
+      const missingColumn = ["converted_customer_id", "customer_id"].find((column) => query.includes(column));
+      if (missingColumn) return response([], 400, { code: "42703", message: `column leads.${missingColumn} does not exist` });
     }
     if (method === "GET") return response(rows.filter((row) => matches(row, parsed.searchParams)));
     if (method === "POST") {
@@ -459,8 +461,8 @@ test("44 ontbrekende publicatiecontext geeft een zichtbare fout en geen payload"
   assert.match(adminHtml, /De publieke demo mist een geldige lead-, preview- of slugcontext/);
 });
 
-test("45 backend accepteert een lead zonder customer_id-kolom of customerrecord", { concurrency: false }, async () => {
-  const seed = fixture({ __missingLeadCustomerId: true });
+test("45 backend accepteert een lead zonder customer- of conversiekolommen en zonder customerrecord", { concurrency: false }, async () => {
+  const seed = fixture({ __missingLeadCustomerColumns: true });
   await withStore(seed, async (store) => {
     const result = await publishLead(store);
     assert.equal(result.publishedPreviewVersionId, IDS.preview);
@@ -545,4 +547,93 @@ test("56 lange tokenized previewlinks blijven veilig bruikbaar", () => {
   const context = actions.actionContext({ version: { ...fixture().website_preview_versions[0], previewUrl: url }, previewUrl: url, leadId: IDS.lead, demoJourneyId: IDS.journey });
   assert.equal(context.shareUrl, url);
   assert.equal(context.publishEnabled, true);
+});
+
+test("57 ownershipvalidatie vraagt geen fictieve leadconversiekolommen op", { concurrency: false }, async () => {
+  const seed = fixture({ __missingLeadCustomerColumns: true });
+  await withStore(seed, async (store, calls) => {
+    await publishLead(store);
+    const leadReads = calls.filter((call) => call.table === "leads" && call.method === "GET");
+    assert.equal(leadReads.length, 1);
+    assert.doesNotMatch(decodeURIComponent(leadReads[0].url), /converted_customer_id|customer_id/);
+  });
+});
+
+test("58 leadownership loopt exact via preview naar journey.lead_id", { concurrency: false }, async () => {
+  await withStore(fixture(), async (store, calls) => {
+    const result = await publishLead(store);
+    assert.equal(result.relationshipId, IDS.lead);
+    assert.equal(result.publishedPreviewVersionId, IDS.preview);
+    const journeyRead = calls.find((call) => call.table === "demo_journeys" && call.method === "GET");
+    assert.match(journeyRead.url, new RegExp(`id=eq\\.${IDS.journey}`));
+  });
+});
+
+test("59 lead zonder customer blijft een geldige publicatierelatie", { concurrency: false }, async () => {
+  const seed = fixture({ __missingLeadCustomerColumns: true });
+  await withStore(seed, async (store) => {
+    await publishLead(store);
+    assert.deepEqual(store.customers, []);
+    assert.equal(store.public_preview_publications[0].relationship_type, "lead");
+  });
+});
+
+test("60 preview zonder journey wordt voor een lead geweigerd", { concurrency: false }, async () => {
+  const seed = fixture();
+  seed.website_preview_versions[0].demo_journey_id = null;
+  await withStore(seed, async (store) => {
+    await assert.rejects(() => publishLead(store), (error) => error.code === "PREVIEW_LEAD_MISMATCH" && error.status === 409);
+    assert.equal(store.public_preview_publications.length, 0);
+  });
+});
+
+test("61 journey zonder lead wordt geweigerd", { concurrency: false }, async () => {
+  const seed = fixture();
+  seed.demo_journeys[0].lead_id = null;
+  await withStore(seed, async (store) => {
+    await assert.rejects(() => publishLead(store), (error) => error.code === "PREVIEW_LEAD_MISMATCH" && error.status === 409);
+    assert.equal(store.public_preview_publications.length, 0);
+  });
+});
+
+test("62 customerownership blijft via bestaande customerrelaties werken", { concurrency: false }, async () => {
+  const seed = fixture();
+  seed.customers.push({ id: IDS.customer, name: "Heel je zelf klant", company: "Heel je zelf", metadata: {} });
+  seed.website_preview_versions[0].customer_id = IDS.customer;
+  await withStore(seed, async (store) => {
+    const response = await publicationApi._private.publishPublicPreview(context, {
+      relationshipType: "customer",
+      relationshipId: IDS.customer,
+      customerId: IDS.customer,
+      previewVersionId: IDS.preview,
+      slug: "heeljezelf-klant",
+    });
+    const body = JSON.parse(response.body);
+    assert.equal(body.relationshipType, "customer");
+    assert.equal(body.relationshipId, IDS.customer);
+    assert.equal(store.public_preview_publications.length, 1);
+  });
+});
+
+test("63 succesvolle validatie gaat vóór de publicatieinsert", { concurrency: false }, async () => {
+  await withStore(fixture(), async (store, calls) => {
+    await publishLead(store);
+    const journeyReadIndex = calls.findIndex((call) => call.table === "demo_journeys" && call.method === "GET");
+    const insertIndex = calls.findIndex((call) => call.table === "public_preview_publications" && call.method === "POST");
+    assert.ok(journeyReadIndex >= 0 && insertIndex > journeyReadIndex);
+  });
+});
+
+test("64 productieachtige ontbrekende leadkolommen kunnen geen 42703 meer veroorzaken", { concurrency: false }, async () => {
+  const seed = fixture({ __missingLeadCustomerColumns: true });
+  await withStore(seed, async (store) => {
+    const result = await publishLead(store);
+    assert.equal(result.publishedPreviewVersionId, IDS.preview);
+  });
+});
+
+test("65 ownershipvalidatie bevat geen naam-, slug-, URL- of e-mailfallback", () => {
+  const start = publicationSource.indexOf("async function validatePublicPreviewOwnership");
+  const block = publicationSource.slice(start, publicationSource.indexOf("async function assertPublicSlugAvailable", start));
+  assert.doesNotMatch(block, /converted_customer_id|relationshipRecord\.customer_id|company_name\s*===|contact_name\s*===|website_url\s*===|email\s*===|public_slug/);
 });
