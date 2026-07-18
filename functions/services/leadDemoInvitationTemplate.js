@@ -45,6 +45,47 @@ function buildLeadDemoInvitationMail(input = {}) {
   return { subject, preheader, html, text, activationUrl, previewUrl, supportEmail };
 }
 
+function buildPublicDemoShareMail(input = {}) {
+  const contactName = displayName(input.contactName) || "daar";
+  const companyName = displayName(input.companyName) || "uw bedrijf";
+  const previewUrl = safeHttpsUrl(input.previewUrl);
+  const supportEmail = validEmail(input.supportEmail) ? clean(input.supportEmail).toLowerCase() : DEFAULT_SUPPORT_EMAIL;
+  if (!previewUrl) throw invalid("preview_url_invalid");
+
+  const subject = `Website-demo voor ${companyName}`;
+  const preheader = `Bekijk de vrijblijvende website-demo voor ${companyName}.`;
+  const text = [
+    `Hallo ${contactName},`,
+    "",
+    `Ik heb alvast een demo voor ${companyName} gemaakt.`,
+    "",
+    "U kunt de website hier bekijken:",
+    previewUrl,
+    "",
+    "Ik hoor graag wat u ervan vindt.",
+    "",
+    "Met vriendelijke groet,",
+    "Max Webstudio",
+  ].join("\n");
+
+  const html = `<!doctype html>
+<html lang="nl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>${escape(subject)}</title></head>
+<body style="margin:0;background:#07121f;font-family:Inter,Arial,sans-serif;color:#102033;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escape(preheader)}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#07121f;padding:32px 16px;"><tr><td align="center">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#fff;border-radius:18px;overflow:hidden;">
+      <tr><td style="padding:28px 30px;background:#0f2742;color:#fff;"><img src="https://maxwebstudio.nl/max-webstudio-logo-mark.svg" width="46" height="46" alt="Max Webstudio"><h1 style="margin:18px 0 0;font-size:28px;line-height:1.2;">Uw website-demo staat klaar</h1></td></tr>
+      <tr><td style="padding:30px;"><p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Hallo ${escape(contactName)},</p><p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Ik heb alvast een demo voor <strong>${escape(companyName)}</strong> gemaakt.</p><p style="margin:0 0 24px;font-size:16px;line-height:1.65;">U kunt de website rustig bekijken. Ik hoor graag wat u ervan vindt.</p><a class="mws-cta" href="${escape(previewUrl)}" style="display:inline-block;background:#28d39a;color:#07121f;text-decoration:none;font-weight:900;padding:14px 20px;border-radius:10px;">Bekijk de website-demo</a><p style="margin:24px 0 0;font-size:13px;line-height:1.55;color:#5b6b7c;">Deze openbare demo vraagt geen account en registreert geen goedkeuring of betaling.</p></td></tr>
+      <tr><td style="padding:22px 30px;background:#f2f6f8;font-size:13px;line-height:1.6;color:#526170;">Vragen? Mail ${escape(supportEmail)}.<br>Max Webstudio · maxwebstudio.nl</td></tr>
+    </table>
+  </td></tr></table>
+  <style>@media (max-width:620px){table{width:100%!important}td{box-sizing:border-box}.mws-cta{display:block!important;text-align:center!important}}</style>
+</body></html>`;
+
+  return { subject, preheader, html, text, previewUrl, supportEmail };
+}
+
 function safeHttpsUrl(value) {
   try {
     const url = new URL(clean(value));
@@ -64,4 +105,4 @@ function clean(value) { return String(value || "").trim(); }
 function escape(value) { return clean(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 function invalid(code) { return Object.assign(new Error("Lead demo invitation template is ongeldig."), { code, statusCode: 422 }); }
 
-module.exports = { buildLeadDemoInvitationMail, _private: { displayName, safeHttpsUrl, validEmail } };
+module.exports = { buildLeadDemoInvitationMail, buildPublicDemoShareMail, _private: { displayName, safeHttpsUrl, validEmail } };

@@ -36,7 +36,9 @@ async function resolveLeadScope(fetchImpl, config, authUserId) {
   if (!profile?.id || !lead?.id || !journey?.id) return null;
   if (!["demo_user", "customer"].includes(clean(profile.role).toLowerCase())) return null;
   if (["disabled", "archived"].includes(clean(profile.status).toLowerCase())) return null;
-  return { invitation, profile, lead, journey };
+  const previewVersion = await resolveInvitationPreview(fetchImpl, config, invitation, journey);
+  if (!previewVersion?.id) return null;
+  return { invitation, profile, lead, journey, previewVersion };
 }
 
 async function handleAction({ event, fetchImpl, timeline, config, authUser, scope, now }) {
@@ -61,13 +63,13 @@ async function handleAction({ event, fetchImpl, timeline, config, authUser, scop
     if (!feedback) throw httpError(400, "FEEDBACK_REQUIRED", "Vul uw feedback in.");
     await patch(fetchImpl, config, "demo_journeys", { id: `eq.${scope.journey.id}`, lead_id: `eq.${scope.lead.id}` }, { feedback, demo_status: "feedback_ontvangen", updated_by: authUser.id, updated_at: at });
     await createDemoEvent(fetchImpl, config, scope, authUser, { type: "customer_feedback", title: "Feedback ontvangen", description: "De lead heeft feedback op de demo gegeven.", at });
-    await safeTimeline(timeline, { leadId: scope.lead.id, eventType: "preview_feedback_received", title: "Demo-feedback ontvangen", description: "De lead heeft feedback op de eigen demo gegeven.", module: "lead_demo_portal", referenceType: "demo_journey", referenceId: scope.journey.id, actorName: clean(scope.lead.contact_name || scope.lead.name || authUser.email), actorRole: "lead", severity: "info", metadata: { dedupeKey: `lead-demo-feedback:${scope.journey.id}:${at}` } });
+    await safeTimeline(timeline, { leadId: scope.lead.id, eventType: "preview_feedback_received", title: "Demo-feedback ontvangen", description: "De lead heeft feedback op de eigen demo gegeven.", module: "lead_demo_portal", referenceType: "website_preview_version", referenceId: scope.previewVersion.id, actorName: clean(scope.lead.contact_name || scope.lead.name || authUser.email), actorRole: "lead", severity: "info", metadata: { dedupeKey: `lead-demo-feedback:${scope.journey.id}:${at}`, previewVersionId: scope.previewVersion.id } });
     return response(200, { success: true, status: "feedback_received" });
   }
   if (action === "approve") {
     await patch(fetchImpl, config, "demo_journeys", { id: `eq.${scope.journey.id}`, lead_id: `eq.${scope.lead.id}` }, { demo_status: "definitieve_versie_klaar", approval_status: "customer_approved", preview_approved_by: authUser.id, preview_approved_at: at, updated_by: authUser.id, updated_at: at });
     await createDemoEvent(fetchImpl, config, scope, authUser, { type: "preview_approved", title: "Demo goedgekeurd", description: "De lead heeft de demo goedgekeurd.", at });
-    await safeTimeline(timeline, { leadId: scope.lead.id, eventType: "preview_approved", title: "Demo goedgekeurd door lead", description: "De lead heeft de eigen demo goedgekeurd.", module: "lead_demo_portal", referenceType: "demo_journey", referenceId: scope.journey.id, actorName: clean(scope.lead.contact_name || scope.lead.name || authUser.email), actorRole: "lead", severity: "success", metadata: { dedupeKey: `lead-demo-approved:${scope.journey.id}` } });
+    await safeTimeline(timeline, { leadId: scope.lead.id, eventType: "preview_approved", title: "Demo goedgekeurd door lead", description: "De lead heeft exact de gekoppelde previewversie goedgekeurd.", module: "lead_demo_portal", referenceType: "website_preview_version", referenceId: scope.previewVersion.id, actorName: clean(scope.lead.contact_name || scope.lead.name || authUser.email), actorRole: "lead", severity: "success", metadata: { dedupeKey: `lead-demo-approved:${scope.journey.id}`, previewVersionId: scope.previewVersion.id } });
     return response(200, { success: true, status: "approved" });
   }
   throw httpError(400, "ACTION_INVALID", "Onbekende portalactie.");
@@ -81,7 +83,7 @@ async function portalPayload(fetchImpl, config, scope) {
     relationshipType: "lead",
     lead: { id: scope.lead.id, companyName: clean(scope.lead.company_name || scope.lead.company || scope.lead.name), contactName: clean(scope.lead.contact_name || scope.lead.name), email: clean(scope.lead.email) },
     invitation: { status: clean(scope.invitation.status), activatedAt: clean(scope.invitation.activated_at), sentAt: clean(scope.invitation.sent_at) },
-    demo: { id: scope.journey.id, status: clean(scope.journey.demo_status), approvalStatus: clean(scope.journey.approval_status), previewUrl: previewUrl(scope.journey, config.siteUrl), feedback: clean(scope.journey.feedback), updatedAt: clean(scope.journey.updated_at), versions: sanitizeVersions(scope.journey.preview_package) },
+    demo: { id: scope.journey.id, status: clean(scope.journey.demo_status), approvalStatus: clean(scope.journey.approval_status), previewVersionId: clean(scope.previewVersion.id), previewSource: previewSource(scope.previewVersion), version: Number(scope.previewVersion.version || 1), previewUrl: previewVersionUrl(scope.previewVersion, config.siteUrl), feedback: clean(scope.journey.feedback), updatedAt: clean(scope.journey.updated_at), versions: sanitizeVersions(scope.journey.preview_package) },
     events: Array.isArray(events) ? events.map((event) => ({ id: clean(event.id), type: clean(event.event_type), title: clean(event.title), description: clean(event.description), createdAt: clean(event.created_at) })) : [],
     customerModules: { invoices: false, onboarding: false, subscriptions: false, projects: false, assets: false },
     nextStep: "Bekijk de demo en geef feedback of keur het ontwerp goed.",
@@ -93,7 +95,40 @@ async function markViewed({ fetchImpl, timeline, config, authUser, scope, now })
   if (scope.invitation.opened_at) return;
   await patch(fetchImpl, config, "lead_demo_invitations", { id: `eq.${scope.invitation.id}`, auth_user_id: `eq.${authUser.id}`, opened_at: "is.null" }, { opened_at: at, updated_at: at });
   await createDemoEvent(fetchImpl, config, scope, authUser, { type: "preview_opened", title: "Demo bekeken", description: "De lead heeft de beveiligde demo geopend.", at });
-  await safeTimeline(timeline, { leadId: scope.lead.id, eventType: "preview_opened", title: "Demo bekeken door lead", description: "De lead heeft de eigen demo geopend.", module: "lead_demo_portal", referenceType: "demo_journey", referenceId: scope.journey.id, actorName: clean(scope.lead.contact_name || scope.lead.name || authUser.email), actorRole: "lead", severity: "info", metadata: { dedupeKey: `lead-demo-viewed:${scope.invitation.id}` } });
+  await safeTimeline(timeline, { leadId: scope.lead.id, eventType: "preview_opened", title: "Demo bekeken door lead", description: "De lead heeft de gekoppelde previewversie geopend.", module: "lead_demo_portal", referenceType: "website_preview_version", referenceId: scope.previewVersion.id, actorName: clean(scope.lead.contact_name || scope.lead.name || authUser.email), actorRole: "lead", severity: "info", metadata: { dedupeKey: `lead-demo-viewed:${scope.invitation.id}`, previewVersionId: scope.previewVersion.id } });
+}
+
+async function resolveInvitationPreview(fetchImpl, config, invitation, journey) {
+  const previewVersionId = clean(invitation?.metadata?.portalPreview?.previewVersionId);
+  if (previewVersionId) {
+    const version = await readOne(fetchImpl, config, "website_preview_versions", {
+      select: "id,demo_journey_id,version,preview_url,preview_token,generated_package,metadata,is_active,status,allow_feedback,allow_approval,approved_at,feedback_items",
+      id: `eq.${previewVersionId}`,
+      demo_journey_id: `eq.${journey.id}`,
+      limit: "1",
+    });
+    if (!version?.id || clean(version.demo_journey_id) !== clean(journey.id) || !previewVersionUrl(version, config.siteUrl)) return null;
+    return version;
+  }
+  const legacyUrl = previewUrl(journey, config.siteUrl);
+  if (!legacyUrl) return null;
+  return { id: `legacy:${journey.id}`, demo_journey_id: journey.id, version: 1, preview_url: legacyUrl, metadata: { previewSource: "website_factory" } };
+}
+
+function previewSource(version = {}) {
+  const source = clean(version.metadata?.previewSource).toLowerCase();
+  return ["manual", "manual_zip", "manual-zip", "zip"].includes(source) ? "manual_zip" : "website_factory";
+}
+
+function previewVersionUrl(version = {}, siteUrl = "") {
+  try {
+    const url = new URL(clean(version.preview_url), `${siteUrl}/`);
+    const site = new URL(siteUrl);
+    if (url.protocol !== "https:" || (url.hostname !== site.hostname && !url.hostname.endsWith(`.${site.hostname}`))) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 async function createDemoEvent(fetchImpl, config, scope, authUser, input) {
@@ -116,4 +151,4 @@ function clean(value) { return String(value || "").trim(); }
 function response(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }, body: JSON.stringify(body) }; }
 
 exports.handler = createHandler();
-exports._test = { createHandler, previewUrl, resolveLeadScope, sanitizeVersions };
+exports._test = { createHandler, previewSource, previewUrl, previewVersionUrl, resolveInvitationPreview, resolveLeadScope, sanitizeVersions };

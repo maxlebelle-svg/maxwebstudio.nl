@@ -5,7 +5,7 @@ const path = require("node:path");
 
 const { _test } = require("../functions/lead-preview-portal");
 
-const IDS = { user: "11111111-1111-4111-8111-111111111111", invite: "22222222-2222-4222-8222-222222222222", lead: "33333333-3333-4333-8333-333333333333", journey: "44444444-4444-4444-8444-444444444444", profile: "55555555-5555-4555-8555-555555555555" };
+const IDS = { user: "11111111-1111-4111-8111-111111111111", invite: "22222222-2222-4222-8222-222222222222", lead: "33333333-3333-4333-8333-333333333333", journey: "44444444-4444-4444-8444-444444444444", profile: "55555555-5555-4555-8555-555555555555", preview: "66666666-6666-4666-8666-666666666666" };
 
 function reply(status, body) { return { ok: status >= 200 && status < 300, status, text: async () => body == null ? "" : JSON.stringify(body) }; }
 
@@ -15,13 +15,14 @@ function setup(options = {}) {
     const parsed = new URL(url); const query = parsed.searchParams; const method = init.method || "GET"; const body = init.body ? JSON.parse(init.body) : null;
     calls.push({ path: parsed.pathname, query, method, body });
     if (parsed.pathname.endsWith("/auth/v1/user")) return reply(200, { id: IDS.user, email: "lisanne@example.test" });
-    if (parsed.pathname.endsWith("/rest/v1/lead_demo_invitations") && method === "GET") return reply(200, options.noInvitation ? [] : [{ id: IDS.invite, lead_id: IDS.lead, demo_journey_id: IDS.journey, auth_user_id: IDS.user, profile_id: IDS.profile, status: "activated", opened_at: options.opened ? "2026-07-14" : null }]);
+    if (parsed.pathname.endsWith("/rest/v1/lead_demo_invitations") && method === "GET") return reply(200, options.noInvitation ? [] : [{ id: IDS.invite, lead_id: IDS.lead, demo_journey_id: IDS.journey, auth_user_id: IDS.user, profile_id: IDS.profile, status: "activated", opened_at: options.opened ? "2026-07-14" : null, metadata: options.legacyPreview ? {} : { portalPreview: { previewVersionId: IDS.preview, previewSource: options.previewSource || "manual_zip", version: 4, publicPreviewUrl: "https://maxwebstudio.nl/preview/advies-post" } } }]);
     if (parsed.pathname.endsWith("/rest/v1/profiles") && method === "GET") return reply(200, [{ id: IDS.profile, auth_user_id: IDS.user, role: options.role || "demo_user", status: "active", metadata: { leadPortal: { leadId: IDS.lead } } }]);
     if (parsed.pathname.endsWith("/rest/v1/leads") && method === "GET") return reply(200, [{ id: IDS.lead, company_name: "Advies Post", contact_name: "Lisanne Post", email: "lisanne@example.test" }]);
     if (parsed.pathname.endsWith("/rest/v1/demo_journeys") && method === "GET") {
       if (options.wrongJourney) return reply(200, []);
       return reply(200, [{ id: IDS.journey, lead_id: IDS.lead, demo_status: "preview_verstuurd", approval_status: "pending", preview_token: "private-token", preview_package: { previewReview: { versions: [{ version: "V1", status: "ready" }] } }, updated_at: "2026-07-14" }]);
     }
+    if (parsed.pathname.endsWith("/rest/v1/website_preview_versions") && method === "GET") return reply(200, options.missingPreviewVersion ? [] : [{ id: IDS.preview, demo_journey_id: IDS.journey, version: 4, preview_url: "https://maxwebstudio.nl/.netlify/functions/manual-preview-render?version=66666666-6666-4666-8666-666666666666&token=private", metadata: { previewSource: options.previewSource || "manual_zip" }, status: "internal", allow_feedback: true, allow_approval: true }]);
     if (parsed.pathname.endsWith("/rest/v1/demo_journey_events") && method === "GET") return reply(200, [{ id: "event-1", event_type: "preview_ready", title: "Demo klaar", description: "Uw demo staat klaar.", created_at: "2026-07-14" }]);
     if (method === "PATCH" || method === "POST") return reply(200, [{}]);
     throw new Error(`Unexpected ${method} ${url}`);
@@ -39,9 +40,31 @@ async function run(options = {}, method = "GET", body = null) {
 test("leadportal toont uitsluitend canoniek gekoppelde eigen lead en demo", async () => {
   const { response } = await run({ opened: true }); const body = JSON.parse(response.body);
   assert.equal(response.statusCode, 200); assert.equal(body.relationshipType, "lead"); assert.equal(body.lead.id, IDS.lead); assert.equal(body.demo.id, IDS.journey);
-  assert.equal(body.demo.previewUrl, `https://maxwebstudio.nl/.netlify/functions/demo-preview?id=${IDS.journey}&token=private-token`);
+  assert.equal(body.demo.previewVersionId, IDS.preview); assert.equal(body.demo.previewSource, "manual_zip"); assert.equal(body.demo.version, 4);
+  assert.equal(body.demo.previewUrl, `https://maxwebstudio.nl/.netlify/functions/manual-preview-render?version=${IDS.preview}&token=private`);
   assert.deepEqual(body.customerModules, { invoices: false, onboarding: false, subscriptions: false, projects: false, assets: false });
   assert.equal("customerId" in body, false);
+});
+
+test("leadportal gebruikt exact de aan de uitnodiging gekoppelde Factory-preview", async () => {
+  const { response } = await run({ opened: true, previewSource: "website_factory" });
+  const body = JSON.parse(response.body);
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.demo.previewVersionId, IDS.preview);
+  assert.equal(body.demo.previewSource, "website_factory");
+});
+
+test("ontbrekende gekoppelde previewversie valt niet stil terug op een andere journey-preview", async () => {
+  const { response } = await run({ missingPreviewVersion: true });
+  assert.equal(response.statusCode, 403);
+  assert.equal(JSON.parse(response.body).code, "LEAD_PORTAL_DENIED");
+});
+
+test("legacy uitnodiging zonder previewpointer behoudt de bestaande tokenized fallback", async () => {
+  const { response } = await run({ opened: true, legacyPreview: true });
+  const body = JSON.parse(response.body);
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.demo.previewUrl, `https://maxwebstudio.nl/.netlify/functions/demo-preview?id=${IDS.journey}&token=private-token`);
 });
 
 test("account zonder leaduitnodiging en customercontext krijgen geen willekeurige lead", async () => {

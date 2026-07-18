@@ -13,6 +13,7 @@ const IDS = {
   action: "55555555-5555-4555-8555-555555555555",
   invitation: "66666666-6666-4666-8666-666666666666",
   outbox: "77777777-7777-4777-8777-777777777777",
+  preview: "99999999-9999-4999-8999-999999999999",
 };
 
 function reply(status, body) {
@@ -43,7 +44,12 @@ function fixture(options = {}) {
     calls.push({ url, path: parsed.pathname, method: init.method || "GET", body });
     if (parsed.pathname.endsWith("/rest/v1/leads")) return reply(200, lead ? [lead] : []);
     if (parsed.pathname.endsWith("/rest/v1/demo_journeys")) return reply(200, journey ? [journey] : []);
-    if (parsed.pathname.endsWith("/rest/v1/lead_demo_invitations") && (init.method || "GET") === "GET") return reply(200, options.invitationStatus ? [{ id: IDS.invitation, lead_id: IDS.lead, status: options.invitationStatus }] : []);
+    if (parsed.pathname.endsWith("/rest/v1/public_preview_publications")) return reply(200, options.publication === null ? [] : [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", relationship_type: "lead", relationship_id: IDS.lead, public_slug: "advies-post", preview_version_id: options.publishedPreviewVersionId || IDS.preview, enabled: true, revoked_at: null }]);
+    if (parsed.pathname.endsWith("/rest/v1/website_preview_versions")) return reply(200, options.previewVersion === null ? [] : [{ id: IDS.preview, demo_journey_id: IDS.journey, version: options.previewVersionNumber || 4, preview_url: "https://maxwebstudio.nl/.netlify/functions/demo-preview?id=abc", metadata: { previewSource: options.previewSource || "website_factory" }, status: "internal", generated_package: { files: [{ path: "index.html" }] } }]);
+    if (parsed.pathname.endsWith("/rest/v1/lead_demo_invitations") && (init.method || "GET") === "GET") {
+      if (parsed.searchParams.has("id")) return reply(200, [{ id: IDS.invitation, lead_id: IDS.lead, demo_journey_id: IDS.journey, status: options.invitationStatus || "planned", metadata: options.invitationMetadata || {} }]);
+      return reply(200, options.invitationStatus ? [{ id: IDS.invitation, lead_id: IDS.lead, demo_journey_id: IDS.journey, status: options.invitationStatus, metadata: options.invitationMetadata || {} }] : []);
+    }
     if (parsed.pathname.endsWith("/auth/v1/admin/users")) return reply(200, { users: existingUser ? [{ id: IDS.user, email: "lisanne@example.test", email_confirmed_at: options.active ? "2026-07-01" : null }] : [] });
     if (parsed.pathname.endsWith("/auth/v1/admin/generate_link")) return reply(200, { action_link: "https://example.supabase.co/auth/v1/verify?token=secret", user: { id: IDS.user, email: "lisanne@example.test" } });
     if (parsed.pathname.endsWith("/rest/v1/profiles") && (init.method || "GET") === "GET") return reply(200, options.profile ? [options.profile] : []);
@@ -53,6 +59,10 @@ function fixture(options = {}) {
       return reply(200, [{ invitation_id: IDS.invitation, outbox_id: IDS.outbox, duplicate: Boolean(options.duplicate) }]);
     }
     if (init.method === "DELETE") return reply(204, null);
+    if (parsed.pathname.endsWith("/rest/v1/lead_demo_invitations") && init.method === "PATCH") {
+      if (options.persistFailure && body.metadata) return reply(500, { code: "P0001", message: "metadata unavailable" });
+      return reply(200, [{ id: IDS.invitation, lead_id: IDS.lead, demo_journey_id: IDS.journey, status: body.status || options.invitationStatus || "planned", metadata: body.metadata || options.invitationMetadata || {} }]);
+    }
     if (init.method === "PATCH") return reply(200, [{}]);
     throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
   };
@@ -61,7 +71,7 @@ function fixture(options = {}) {
 }
 
 function event(payload = {}) {
-  return { httpMethod: "POST", headers: { authorization: "Bearer test" }, body: JSON.stringify({ leadId: IDS.lead, demoJourneyId: IDS.journey, actionKey: IDS.action, action: "invite", ...payload }) };
+  return { httpMethod: "POST", headers: { authorization: "Bearer test" }, body: JSON.stringify({ leadId: IDS.lead, demoJourneyId: IDS.journey, previewVersionId: IDS.preview, actionKey: IDS.action, action: "invite", ...payload }) };
 }
 
 async function run(options, payload) {
@@ -123,6 +133,49 @@ test("resend gebruikt dezelfde identiteit, recovery-link en nieuwe expliciete ac
   assert.equal(state.calls.find((call) => call.path.endsWith("generate_link")).body.type, "recovery");
 });
 
+test("uitnodiging koppelt exact de geselecteerde ZIP-preview duurzaam aan het bestaande invitationrecord", async () => {
+  const { state, response } = await run({ previewSource: "manual_zip", previewVersionNumber: 7 });
+  const body = JSON.parse(response.body);
+  assert.equal(response.statusCode, 202);
+  assert.equal(body.previewVersionId, IDS.preview);
+  assert.equal(body.previewSource, "manual_zip");
+  const invitationPatch = state.calls.find((call) => call.path.endsWith("/rest/v1/lead_demo_invitations") && call.method === "PATCH" && call.body.metadata);
+  assert.equal(invitationPatch.body.metadata.portalPreview.previewVersionId, IDS.preview);
+  assert.equal(invitationPatch.body.metadata.portalPreview.previewSource, "manual_zip");
+  assert.equal(invitationPatch.body.metadata.portalPreview.version, 7);
+});
+
+test("uitnodiging koppelt exact de geselecteerde Factory-preview zonder duplicate preview", async () => {
+  const { state, response } = await run({ previewSource: "website_factory" });
+  assert.equal(response.statusCode, 202);
+  assert.equal(JSON.parse(response.body).previewVersionId, IDS.preview);
+  assert.equal(state.calls.filter((call) => call.path.endsWith("/rest/v1/website_preview_versions") && call.method === "POST").length, 0);
+  assert.equal(state.calls.filter((call) => call.path.endsWith("/rest/v1/website_preview_versions") && call.method === "GET").length, 1);
+});
+
+test("publieke pointer moet exact overeenkomen met de geselecteerde preview", async () => {
+  const { response } = await run({ publishedPreviewVersionId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" });
+  assert.equal(response.statusCode, 409);
+  assert.equal(JSON.parse(response.body).code, "PREVIEW_POINTER_MISMATCH");
+});
+
+test("zonder actieve publieke demo stopt uitnodigen vóór identity- of customeraanmaak", async () => {
+  const { state, response } = await run({ publication: null });
+  assert.equal(response.statusCode, 409);
+  assert.equal(JSON.parse(response.body).code, "PUBLIC_PREVIEW_REQUIRED");
+  assert.equal(state.calls.some((call) => call.path.startsWith("/auth/v1/admin")), false);
+  assert.equal(state.calls.some((call) => call.path.endsWith("/rest/v1/customers")), false);
+});
+
+test("planning logt de journey-timeline en bewaart exact previewVersionId in de effectpayload", async () => {
+  const { state, response } = await run({});
+  assert.equal(response.statusCode, 202);
+  const rpc = state.calls.find((call) => call.path.endsWith("/rest/v1/rpc/plan_lead_demo_invitation"));
+  assert.match(rpc.body.p_event_key, /^lead\.demo_invitation_planned:/);
+  assert.equal(rpc.body.p_effect_payload.previewVersionId, IDS.preview);
+  assert.equal(rpc.body.p_effect_payload.demoJourneyId, IDS.journey);
+});
+
 test("herhaalde action key wordt als duplicate beantwoord en blijft één outboxplanning", async () => {
   const { response } = await run({ duplicate: true });
   assert.equal(response.statusCode, 202);
@@ -143,6 +196,13 @@ test("falende duurzame planning compenseert uitsluitend nieuw aangemaakte identi
   assert.equal(deletes.length, 2);
   assert.ok(deletes.some((call) => call.path.endsWith(`/auth/v1/admin/users/${IDS.user}`)));
   assert.ok(deletes.some((call) => call.path.endsWith("/rest/v1/profiles")));
+});
+
+test("fout na duurzame outboxplanning verwijdert geen reeds gekoppelde identiteit", async () => {
+  const { state, response } = await run({ existingUser: false, persistFailure: true });
+  assert.equal(response.statusCode, 503);
+  assert.equal(state.calls.some((call) => call.path.endsWith("plan_lead_demo_invitation")), true);
+  assert.equal(state.calls.filter((call) => call.method === "DELETE").length, 0);
 });
 
 test("leaduitnodiging bevat aparte multipart template zonder wachtwoord", () => {

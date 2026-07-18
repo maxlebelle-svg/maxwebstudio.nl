@@ -2,6 +2,8 @@ const crypto = require("crypto");
 const { verifyAdmin } = require("./_admin-auth");
 const { buildLeadDemoInvitationMail } = require("./services/leadDemoInvitationTemplate");
 const { sendTrackedEmail } = require("./services/resendMailService");
+const { normalizePreviewSource } = require("./_demo-preview-source");
+const { fallbackPreviewUrl, isValidPublicSlug } = require("./_public-preview");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,8 +25,8 @@ function createHandler(deps = {}) {
       try {
         const leadId = clean(event.queryStringParameters?.leadId);
         if (!UUID.test(leadId)) throw httpError(400, "LEAD_ID_INVALID", "Kies een geldige lead.");
-        const invitation = await readOne(fetchImpl, config, "lead_demo_invitations", { select: "id,lead_id,status,invitation_count,planned_at,sent_at,activated_at,opened_at,last_error_code,updated_at", lead_id: `eq.${leadId}`, limit: "1" });
-        return response(200, { success: true, status: invitation ? clean(invitation.status) : "not_invited", invitation: invitation || null, sender: senderReadiness(config) });
+        const invitation = await readOne(fetchImpl, config, "lead_demo_invitations", { select: "id,lead_id,demo_journey_id,auth_user_id,profile_id,status,invitation_count,planned_at,sent_at,activated_at,opened_at,last_error_code,metadata,updated_at", lead_id: `eq.${leadId}`, limit: "1" });
+        return response(200, { success: true, status: invitation ? clean(invitation.status) : "not_invited", invitation: sanitizeInvitation(invitation), sender: senderReadiness(config) });
       } catch (error) {
         return response(error.statusCode || 500, { success: false, code: error.code || "STATUS_FAILED", error: error.statusCode ? error.message : "De uitnodigingsstatus kon niet worden geladen." });
       }
@@ -32,6 +34,7 @@ function createHandler(deps = {}) {
 
     let createdAuthUserId = "";
     let createdProfileId = "";
+    let durableInvitationPlanned = false;
     try {
       const input = validateInput(parse(event.body));
       const lead = await readOne(fetchImpl, config, "leads", { select: "*", id: `eq.${input.leadId}`, limit: "1" });
@@ -40,6 +43,7 @@ function createHandler(deps = {}) {
       if (!EMAIL.test(email)) throw httpError(422, "LEAD_EMAIL_INVALID", "De lead heeft geen geldig e-mailadres.");
       const journey = await resolveJourney(fetchImpl, config, input, lead.id);
       assertJourneyReady(journey, lead.id);
+      const portalPreview = await resolvePortalPreview(fetchImpl, config, { leadId: lead.id, journeyId: journey.id, previewVersionId: input.previewVersionId });
 
       const existingUser = await findAuthUser(fetchImpl, config, email);
       let authUser = existingUser;
@@ -62,7 +66,7 @@ function createHandler(deps = {}) {
         contactName: clean(lead.contact_name || lead.name),
         companyName: clean(lead.company_name || lead.company || lead.name),
         activationUrl: forceRedirect(link.actionLink, redirectTo),
-        previewUrl: absolutePreviewUrl(journey.preview_url, config.siteUrl),
+        previewUrl: portalPreview.publicPreviewUrl,
         supportEmail: config.supportEmail,
       });
       const stable = crypto.createHash("sha256").update(`${lead.id}:${journey.id}:${input.actionKey}`).digest("hex");
@@ -91,6 +95,9 @@ function createHandler(deps = {}) {
           },
           leadId: lead.id,
           demoJourneyId: journey.id,
+          previewVersionId: portalPreview.previewVersionId,
+          previewSource: portalPreview.previewSource,
+          publicPreviewUrl: portalPreview.publicPreviewUrl,
           actionType: input.action,
           portalPath: "/lead-preview.html",
         },
@@ -98,8 +105,11 @@ function createHandler(deps = {}) {
       });
       const planned = Array.isArray(rows) ? rows[0] : rows;
       if (!planned?.outbox_id) throw httpError(503, "OUTBOX_NOT_CREATED", "De uitnodiging kon niet duurzaam worden gepland.");
+      durableInvitationPlanned = true;
 
-      const dispatch = await dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned, mail, lead, journey, profile, stable, occurredAt });
+      const persistedInvitation = await persistPortalPreview(fetchImpl, config, planned.invitation_id, portalPreview, occurredAt);
+
+      const dispatch = await dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned, mail, lead, journey, profile, portalPreview, stable, occurredAt });
       return response(202, {
         success: true,
         status: dispatch.status,
@@ -108,6 +118,10 @@ function createHandler(deps = {}) {
         outboxId: clean(planned.outbox_id),
         leadId: lead.id,
         demoJourneyId: journey.id,
+        previewVersionId: portalPreview.previewVersionId,
+        previewSource: portalPreview.previewSource,
+        publicPreviewUrl: portalPreview.publicPreviewUrl,
+        invitation: sanitizeInvitation(persistedInvitation),
         authUserId: authUser.id,
         createdAuthUser: !existingUser,
         createdProfile: profileResult.created,
@@ -116,14 +130,14 @@ function createHandler(deps = {}) {
         message: dispatch.sent ? "De demo-uitnodiging is veilig verzonden." : dispatch.status === "send_failed" ? "De uitnodiging is opgeslagen, maar verzending is mislukt. U kunt veilig opnieuw versturen." : "De demo-uitnodiging is duurzaam gepland voor verzending.",
       });
     } catch (error) {
-      await compensate(fetchImpl, runtimeConfig(process.env), { profileId: createdProfileId, authUserId: createdAuthUserId });
+      if (!durableInvitationPlanned) await compensate(fetchImpl, runtimeConfig(process.env), { profileId: createdProfileId, authUserId: createdAuthUserId });
       console.error("Lead demo invitation failed", { code: error.code || "INVITATION_FAILED", status: error.statusCode || 500 });
       return response(error.statusCode || 500, { success: false, code: error.code || "INVITATION_FAILED", error: error.statusCode ? error.message : "De demo-uitnodiging kon niet veilig worden gepland." });
     }
   };
 }
 
-async function dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned, mail, lead, journey, profile, stable, occurredAt }) {
+async function dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned, mail, lead, journey, profile, portalPreview, stable, occurredAt }) {
   if (planned.duplicate) return { status: "planned", sent: false };
   const production = [process.env.APP_ENV, process.env.APP_ENVIRONMENT, process.env.CONTEXT].map((value) => clean(value).toLowerCase()).some((value) => ["production", "prod"].includes(value));
   const enabled = ["1", "true", "yes", "on"].includes(clean(process.env.LEAD_DEMO_INVITATION_EMAIL_ENABLED).toLowerCase());
@@ -132,7 +146,7 @@ async function dispatchPlannedInvitation({ fetchImpl, sendMail, config, planned,
     to: clean(lead.email).toLowerCase(), from: config.fromEmail || undefined, replyTo: config.replyTo || undefined,
     subject: mail.subject, html: mail.html, text: mail.text, templateKey: "lead_demo_invitation", templateName: "Je website-demo staat klaar",
     leadId: lead.id, triggeredBy: "admin_lead_demo_invitation",
-    idempotencyKey: `lead.demo.invitation:${stable}`, metadata: { demoJourneyId: journey.id, profileId: profile.id, outboxId: planned.outbox_id },
+    idempotencyKey: `lead.demo.invitation:${stable}`, metadata: { demoJourneyId: journey.id, previewVersionId: portalPreview.previewVersionId, previewSource: portalPreview.previewSource, profileId: profile.id, outboxId: planned.outbox_id },
   });
   const sent = Boolean(result?.sent && result?.id);
   const status = sent ? "sent" : "send_failed";
@@ -156,6 +170,89 @@ function senderReadiness(config) {
 async function resolveJourney(fetchImpl, config, input, leadId) {
   if (input.demoJourneyId) return readOne(fetchImpl, config, "demo_journeys", { select: "*", id: `eq.${input.demoJourneyId}`, lead_id: `eq.${leadId}`, limit: "1" });
   return readOne(fetchImpl, config, "demo_journeys", { select: "*", lead_id: `eq.${leadId}`, order: "updated_at.desc", limit: "1" });
+}
+
+async function resolvePortalPreview(fetchImpl, config, input = {}) {
+  const publication = await readOne(fetchImpl, config, "public_preview_publications", {
+    select: "id,relationship_type,relationship_id,public_slug,preview_version_id,enabled,published_at,revoked_at,updated_at",
+    relationship_type: "eq.lead",
+    relationship_id: `eq.${input.leadId}`,
+    order: "enabled.desc,updated_at.desc",
+    limit: "1",
+  });
+  if (!publication?.id || publication.enabled !== true || publication.revoked_at || !isValidPublicSlug(clean(publication.public_slug))) {
+    throw httpError(409, "PUBLIC_PREVIEW_REQUIRED", "Publiceer eerst exact deze demo voordat u de lead voor het klantportaal uitnodigt.");
+  }
+  const publishedVersionId = clean(publication.preview_version_id);
+  const requestedVersionId = clean(input.previewVersionId || publishedVersionId);
+  if (!UUID.test(requestedVersionId) || requestedVersionId !== publishedVersionId) {
+    throw httpError(409, "PREVIEW_POINTER_MISMATCH", "De publieke demo wijkt af van de geselecteerde previewversie.");
+  }
+  const version = await readOne(fetchImpl, config, "website_preview_versions", {
+    select: "id,demo_journey_id,version,preview_url,preview_token,generated_package,metadata,is_active,status,allow_feedback,allow_approval",
+    id: `eq.${requestedVersionId}`,
+    demo_journey_id: `eq.${input.journeyId}`,
+    limit: "1",
+  });
+  if (!version?.id || clean(version.demo_journey_id) !== clean(input.journeyId)) {
+    throw httpError(409, "PREVIEW_OWNERSHIP_MISMATCH", "De geselecteerde preview hoort niet bij deze lead en demo-klantreis.");
+  }
+  const previewUrl = absolutePreviewUrl(version.preview_url, config.siteUrl);
+  if (!previewUrl) throw httpError(422, "DEMO_PREVIEW_MISSING", "De geselecteerde preview kan niet veilig worden geopend.");
+  const previewSource = normalizePreviewSource(version.metadata?.previewSource) || "website_factory";
+  return {
+    previewVersionId: version.id,
+    previewSource,
+    version: Number(version.version || 1),
+    previewUrl,
+    publicPreviewSlug: clean(publication.public_slug),
+    publicPreviewUrl: fallbackPreviewUrl(publication.public_slug),
+  };
+}
+
+async function persistPortalPreview(fetchImpl, config, invitationId, portalPreview, occurredAt) {
+  const current = await readOne(fetchImpl, config, "lead_demo_invitations", { select: "id,metadata", id: `eq.${invitationId}`, limit: "1" });
+  if (!current?.id) throw httpError(503, "INVITATION_NOT_PERSISTED", "De uitnodiging kon niet veilig aan de geselecteerde preview worden gekoppeld.");
+  const metadata = current.metadata && typeof current.metadata === "object" ? current.metadata : {};
+  const rows = await patchRows(fetchImpl, config, "lead_demo_invitations", { id: `eq.${invitationId}` }, {
+    metadata: {
+      ...metadata,
+      portalPreview: {
+        previewVersionId: portalPreview.previewVersionId,
+        previewSource: portalPreview.previewSource,
+        version: portalPreview.version,
+        publicPreviewSlug: portalPreview.publicPreviewSlug,
+        publicPreviewUrl: portalPreview.publicPreviewUrl,
+        selectedAt: occurredAt,
+      },
+    },
+    updated_at: occurredAt,
+  });
+  const persisted = Array.isArray(rows) ? rows[0] : rows;
+  if (!persisted?.id) throw httpError(503, "INVITATION_PREVIEW_NOT_PERSISTED", "De geselecteerde portalpreview kon niet veilig worden opgeslagen.");
+  return persisted;
+}
+
+function sanitizeInvitation(invitation = null) {
+  if (!invitation?.id) return null;
+  const portal = invitation.metadata?.portalPreview && typeof invitation.metadata.portalPreview === "object" ? invitation.metadata.portalPreview : {};
+  return {
+    id: clean(invitation.id),
+    leadId: clean(invitation.lead_id),
+    demoJourneyId: clean(invitation.demo_journey_id),
+    status: clean(invitation.status),
+    invitationCount: Number(invitation.invitation_count || 0),
+    plannedAt: clean(invitation.planned_at),
+    sentAt: clean(invitation.sent_at),
+    activatedAt: clean(invitation.activated_at),
+    openedAt: clean(invitation.opened_at),
+    lastErrorCode: clean(invitation.last_error_code),
+    previewVersionId: clean(portal.previewVersionId),
+    previewSource: normalizePreviewSource(portal.previewSource),
+    previewVersion: Number(portal.version || 0),
+    publicPreviewUrl: clean(portal.publicPreviewUrl),
+    updatedAt: clean(invitation.updated_at),
+  };
 }
 
 function assertJourneyReady(journey, leadId) {
@@ -223,7 +320,7 @@ function runtimeConfig(env) {
 function leadActivationRedirect(siteUrl) { return `${siteUrl}/account-activeren.html?mode=lead_demo`; }
 function absolutePreviewUrl(value, siteUrl) { try { const url = new URL(clean(value), `${siteUrl}/`); return url.protocol === "https:" ? url.toString() : ""; } catch { return ""; } }
 function forceRedirect(actionLink, redirectTo) { try { const url = new URL(clean(actionLink)); url.searchParams.set("redirect_to", redirectTo); return url.toString(); } catch { return ""; } }
-function validateInput(payload) { const leadId = clean(payload.leadId); const demoJourneyId = clean(payload.demoJourneyId); const actionKey = clean(payload.actionKey); const action = clean(payload.action || "invite").toLowerCase(); if (!UUID.test(leadId)) throw httpError(400, "LEAD_ID_INVALID", "Kies een geldige lead."); if (demoJourneyId && !UUID.test(demoJourneyId)) throw httpError(400, "DEMO_ID_INVALID", "Kies een geldige demo."); if (!UUID.test(actionKey)) throw httpError(400, "ACTION_KEY_INVALID", "De uitnodigingsactie mist een geldige unieke sleutel."); if (!ACTIONS.has(action)) throw httpError(400, "ACTION_INVALID", "Onbekende uitnodigingsactie."); return { leadId, demoJourneyId, actionKey, action }; }
+function validateInput(payload) { const leadId = clean(payload.leadId); const demoJourneyId = clean(payload.demoJourneyId); const previewVersionId = clean(payload.previewVersionId || payload.preview_version_id); const actionKey = clean(payload.actionKey); const action = clean(payload.action || "invite").toLowerCase(); if (!UUID.test(leadId)) throw httpError(400, "LEAD_ID_INVALID", "Kies een geldige lead."); if (demoJourneyId && !UUID.test(demoJourneyId)) throw httpError(400, "DEMO_ID_INVALID", "Kies een geldige demo."); if (previewVersionId && !UUID.test(previewVersionId)) throw httpError(400, "PREVIEW_VERSION_INVALID", "Kies een geldige previewversie."); if (!UUID.test(actionKey)) throw httpError(400, "ACTION_KEY_INVALID", "De uitnodigingsactie mist een geldige unieke sleutel."); if (!ACTIONS.has(action)) throw httpError(400, "ACTION_INVALID", "Onbekende uitnodigingsactie."); return { leadId, demoJourneyId, previewVersionId, actionKey, action }; }
 function parse(body) { try { return JSON.parse(body || "{}"); } catch { throw httpError(400, "INVALID_JSON", "Ongeldige JSON body."); } }
 function httpError(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function clean(value) { return String(value || "").trim(); }
@@ -237,4 +334,4 @@ async function request(fetchImpl, url, options = {}) { const headers = { ...(opt
 function response(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }, body: JSON.stringify(body) }; }
 
 exports.handler = createHandler();
-exports._test = { createHandler, absolutePreviewUrl, assertJourneyReady, buildLeadDemoInvitationMail, dispatchPlannedInvitation, forceRedirect, runtimeConfig, senderReadiness, validateInput };
+exports._test = { createHandler, absolutePreviewUrl, assertJourneyReady, buildLeadDemoInvitationMail, dispatchPlannedInvitation, forceRedirect, persistPortalPreview, resolvePortalPreview, runtimeConfig, sanitizeInvitation, senderReadiness, validateInput };

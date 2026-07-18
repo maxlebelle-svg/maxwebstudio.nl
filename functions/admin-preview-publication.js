@@ -1,6 +1,8 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { createTimelineEvent } = require("./services/timelineService");
+const { sendTrackedEmail } = require("./services/resendMailService");
+const { buildPublicDemoShareMail } = require("./services/leadDemoInvitationTemplate");
 const { createHash } = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
 const {
@@ -80,6 +82,7 @@ exports.handler = async (event) => {
       const payload = parsePayload(event.body);
       if (payload.action === "publish_customer_preview") return publishActiveCustomerPreview(context, payload);
       if (payload.action === "publish_public_preview") return publishPublicPreview(context, payload);
+      if (payload.action === "share_public_preview_email") return sharePublicPreviewEmail(context, payload);
       if (payload.action === "set_public_preview_slug") return setPublicPreviewSlug(context, payload);
       if (payload.action === "revoke_public_preview") return revokePublicPreview(context, payload);
       return publishPreviewVersion(context, payload);
@@ -118,6 +121,84 @@ async function listPreviewVersions(context, params = {}) {
     selectedProjectId,
   });
   return jsonResponse(200, { success: true, website: sanitizeWebsite(website), previewVersions: versions.map(sanitizeAdminVersion) });
+}
+
+async function sharePublicPreviewEmail(context, payload = {}) {
+  const relationship = relationshipFromInput(payload);
+  const previewVersionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
+  const actionKey = uuidOrEmpty(payload.actionKey || payload.action_key);
+  if (!relationship) throw previewError("PREVIEW_RELATIONSHIP_REQUIRED", "Selecteer eerst een geldige lead of klant.", 400);
+  if (!previewVersionId) throw previewError("PREVIEW_VERSION_REQUIRED", "Selecteer eerst een geldige previewversie.", 400);
+  if (!actionKey) throw previewError("PREVIEW_SHARE_ACTION_REQUIRED", "De deelactie mist een geldige unieke sleutel.", 400);
+
+  const publication = await readPublicPublication(context, relationship);
+  const details = publicPublicationDetails(publication || {});
+  if (!publication?.id || !details.publicPreviewEnabled || !details.publicPreviewUrl) {
+    throw previewError("PUBLIC_PREVIEW_NOT_AVAILABLE", "Publiceer eerst deze demo voordat u hem per e-mail deelt.", 409);
+  }
+  if (cleanText(publication.preview_version_id) !== previewVersionId) {
+    throw previewError("PREVIEW_POINTER_MISMATCH", "De publieke demo wijkt af van de geselecteerde previewversie.", 409);
+  }
+  const resolved = await validatePublicPreviewOwnership(context, relationship, previewVersionId);
+  const table = relationship.type === "lead" ? "leads" : "customers";
+  const select = relationship.type === "lead"
+    ? "id,company_name,contact_name,email,status,lead_status"
+    : "id,name,company,email,status,portal_status";
+  const recipient = await readSingle(context, table, `select=${select}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
+  const email = cleanText(recipient?.email).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw previewError("PREVIEW_SHARE_EMAIL_INVALID", "Deze relatie heeft geen geldig e-mailadres.", 422);
+  }
+  const mail = buildPublicDemoShareMail({
+    contactName: recipient.contact_name || recipient.name,
+    companyName: recipient.company_name || recipient.company || recipient.name,
+    previewUrl: details.publicPreviewUrl,
+    supportEmail: process.env.SUPPORT_EMAIL || "info@maxwebstudio.nl",
+  });
+  const sendMail = context.sendMail || sendTrackedEmail;
+  const result = await sendMail({
+    to: email,
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    templateKey: "public_preview_share",
+    templateName: "Publieke website-demo delen",
+    leadId: relationship.type === "lead" ? relationship.id : null,
+    customerId: relationship.type === "customer" ? relationship.id : null,
+    triggeredBy: "admin_demo_sites",
+    triggeredByUserId: uuidOrEmpty(context.admin?.profileId) || undefined,
+    idempotencyKey: `public.preview.share:${relationship.type}:${relationship.id}:${previewVersionId}:${actionKey}`,
+    metadata: {
+      relationshipType: relationship.type,
+      relationshipId: relationship.id,
+      previewVersionId,
+      publicPreviewSlug: details.publicPreviewSlug,
+      source: "demo_sites",
+    },
+  });
+  if (!result?.sent) throw previewError("PUBLIC_PREVIEW_EMAIL_FAILED", cleanText(result?.warning) || "De demo-e-mail kon niet worden verzonden.", 502);
+
+  await safeTimeline({
+    ...(relationship.type === "lead" ? { leadId: relationship.id } : { customerId: relationship.id }),
+    eventType: "preview_shared",
+    title: "Publieke demo per e-mail gedeeld",
+    description: `Previewversie ${Number(resolved.version?.version || 1)} is via de getrackte mailflow gedeeld.`,
+    module: "demo_sites",
+    referenceType: "website_preview_version",
+    referenceId: previewVersionId,
+    actorName: cleanText(context.admin?.email || "Max CRM"),
+    actorRole: cleanText(context.admin?.role || "admin"),
+    severity: "success",
+    metadata: { dedupeKey: `public-preview-email:${actionKey}`, channel: "email", previewVersionId, publicPreviewSlug: details.publicPreviewSlug },
+  });
+  return jsonResponse(200, {
+    success: true,
+    relationshipType: relationship.type,
+    relationshipId: relationship.id,
+    previewVersionId,
+    publicPreviewUrl: details.publicPreviewUrl,
+    email: { sent: true, id: cleanText(result.id), logId: cleanText(result.logId), to: email },
+  });
 }
 
 async function resolveCurrentPublishedPreview(context, params = {}) {
@@ -1230,6 +1311,7 @@ exports._private = {
   revokePublicPreview,
   resolveOwnership,
   sanitizeAdminVersion,
+  sharePublicPreviewEmail,
   setPublicPreviewSlug,
   transferPublicPreviewPublication,
   validatePublicPreviewOwnership,
