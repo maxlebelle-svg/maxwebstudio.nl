@@ -20,10 +20,18 @@ const IDS = {
   otherJourney: "66666666-6666-4666-8666-666666666666",
 };
 
+function factoryUrl(id = IDS.factory) {
+  return `https://maxwebstudio.nl/.netlify/functions/demo-preview?id=${IDS.journey}&token=test&source=factory&previewVersionId=${id}`;
+}
+
+function manualUrl(id = IDS.manual) {
+  return `https://maxwebstudio.nl/.netlify/functions/manual-preview-render?version=${id}&token=test&source=manual_zip&previewVersionId=${id}`;
+}
+
 function context(overrides = {}) {
   return actions.actionContext({
-    version: { id: IDS.factory, version: 2, sourceType: "factory_build", previewUrl: "/factory", renderable: true },
-    previewUrl: "/factory",
+    version: { id: IDS.factory, version: 2, sourceType: "factory_build", previewUrl: factoryUrl(), renderable: true },
+    previewUrl: factoryUrl(),
     demoJourneyId: IDS.journey,
     customerId: IDS.customer,
     websiteId: IDS.website,
@@ -39,7 +47,7 @@ test("1 Factory selected saves the selected Factory version", () => {
 });
 
 test("2 manual ZIP selected saves the selected ZIP version", () => {
-  const result = context({ version: { id: IDS.manual, version: 1, sourceType: "manual_zip", previewUrl: "/zip", renderable: true }, previewUrl: "/zip", websiteId: "" });
+  const result = context({ version: { id: IDS.manual, version: 1, sourceType: "manual_zip", previewUrl: manualUrl(), renderable: true }, previewUrl: manualUrl(), websiteId: "" });
   assert.equal(result.previewVersionId, IDS.manual);
   assert.equal(result.sourceType, actions.SOURCE_MANUAL);
   assert.equal(result.demoEnabled, true);
@@ -56,7 +64,7 @@ test("4 selected actions never silently use active Factory version", () => {
 });
 
 test("5 processed ZIP can be sent to the customer portal", () => {
-  assert.equal(context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: "/zip", renderable: true }, previewUrl: "/zip", websiteId: "" }).publishEnabled, true);
+  assert.equal(context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: manualUrl(), renderable: true }, previewUrl: manualUrl(), websiteId: "" }).publishEnabled, true);
 });
 
 test("6 Factory can still be sent to the customer portal", () => {
@@ -87,14 +95,14 @@ test("10 no customer disables the portal action", () => {
 });
 
 test("11 local unprocessed ZIP disables both commercial actions", () => {
-  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: "/zip", renderable: true }, previewUrl: "/zip", websiteId: "", localZipPending: true });
+  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: manualUrl(), renderable: true }, previewUrl: manualUrl(), websiteId: "", localZipPending: true });
   assert.equal(result.demoEnabled, false);
   assert.equal(result.publishEnabled, false);
   assert.match(result.explanation, /Verwerk de ZIP eerst/);
 });
 
 test("12 processed server-side ZIP enables actions", () => {
-  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: "/zip", renderable: true }, previewUrl: "/zip", websiteId: "" });
+  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: manualUrl(), renderable: true }, previewUrl: manualUrl(), websiteId: "" });
   assert.equal(result.serverStored, true);
   assert.equal(result.demoEnabled, true);
   assert.equal(result.publishEnabled, true);
@@ -108,7 +116,7 @@ test("13 duplicate Demo Sites save is idempotent", () => {
 });
 
 test("14 duplicate customer publication is idempotent", () => {
-  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: "/zip", renderable: true }, previewUrl: "/zip", websiteId: "", publishedPreviewVersionId: IDS.manual });
+  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: manualUrl(), renderable: true }, previewUrl: manualUrl(), websiteId: "", publishedPreviewVersionId: IDS.manual });
   assert.equal(result.published, true);
   assert.equal(result.publishLabel, "Actief in klantportaal");
   assert.equal(result.activateEnabled, false);
@@ -142,7 +150,7 @@ test("server resolves a valid selected ZIP only from its stored package and URL"
 });
 
 test("17 ZIP remains explicitly read-only", () => {
-  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: "/zip", renderable: true }, previewUrl: "/zip" });
+  const result = context({ version: { id: IDS.manual, sourceType: "manual_zip", previewUrl: manualUrl(), renderable: true }, previewUrl: manualUrl() });
   assert.equal(result.readOnly, true);
   assert.equal(result.editable, false);
   assert.match(html, /Deze ZIP-preview is alleen-lezen/);

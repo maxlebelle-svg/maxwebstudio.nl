@@ -268,6 +268,9 @@ async function publishPreviewVersion(context, payload = {}) {
   if (requestedSource && requestedSource !== storedSource) {
     throw previewError("PREVIEW_SOURCE_MISMATCH", "De geselecteerde previewbron komt niet overeen met de opgeslagen previewversie.", 409);
   }
+  if (storedSource === PREVIEW_SOURCES.MANUAL && !isAllowedManualPreviewUrl(version.preview_url, version.id, version.preview_token)) {
+    throw previewError("PREVIEW_URL_INVALID", "De opgeslagen ZIP-preview heeft geen toegestane publieke previewroute.", 409);
+  }
 
   const ownership = selectedWebsite?.id
     ? await resolveOwnership(context, version, { website: selectedWebsite, selectedCustomerId, selectedProjectId })
@@ -757,6 +760,25 @@ function uuidOrEmpty(value) {
   return uuidPattern.test(text) ? text : "";
 }
 
+function isAllowedManualPreviewUrl(value = "", previewVersionId = "", expectedPreviewToken = "") {
+  const rawUrl = cleanText(value);
+  const versionId = uuidOrEmpty(previewVersionId);
+  if (!rawUrl || !versionId || /^(javascript|data|blob):/i.test(rawUrl)) return false;
+  let url;
+  try {
+    url = new URL(rawUrl, "https://maxwebstudio.nl");
+  } catch {
+    return false;
+  }
+  const hostname = url.hostname.toLowerCase();
+  if (url.protocol !== "https:" || (hostname !== "maxwebstudio.nl" && !hostname.endsWith(".maxwebstudio.nl"))) return false;
+  const previewToken = cleanText(url.searchParams.get("token"));
+  return url.pathname === "/.netlify/functions/manual-preview-render"
+    && cleanText(url.searchParams.get("version")) === versionId
+    && Boolean(previewToken)
+    && (!cleanText(expectedPreviewToken) || previewToken === cleanText(expectedPreviewToken));
+}
+
 function cleanText(value = "") {
   return String(value || "").trim();
 }
@@ -814,4 +836,5 @@ exports._private = {
   publishPreviewVersion,
   resolveOwnership,
   sanitizeAdminVersion,
+  isAllowedManualPreviewUrl,
 };

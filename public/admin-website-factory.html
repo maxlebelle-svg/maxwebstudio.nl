@@ -568,7 +568,6 @@
                       <div class="factory-guided-preview-actions">
                         <a id="factory-guided-preview-url" aria-disabled="true">Preview nog niet beschikbaar</a>
                         <button id="factory-preview-editor-toggle" type="button" aria-pressed="false">Bewerken</button>
-                        <button type="button" data-factory-proxy="demo-journey-open-preview">Open preview</button>
                         <button type="button" data-factory-proxy="demo-journey-preview-refresh">Vernieuwen</button>
                         <details class="factory-preview-actions-menu" id="factory-preview-actions-menu">
                           <summary>Meer <span aria-hidden="true">⌄</span></summary>
@@ -585,18 +584,24 @@
                       <div class="factory-selected-preview-actions-copy">
                         <small>Acties voor geselecteerde preview</small>
                         <strong id="factory-selected-preview-action-label">Selecteer een previewversie</strong>
+                        <div class="factory-selected-preview-statuses" id="factory-selected-preview-statuses" aria-label="Previewstatus"></div>
                         <span id="factory-selected-preview-action-hint">Bekijken alleen verandert de actieve klantpreview niet.</span>
+                        <span class="factory-selected-preview-feedback" id="factory-selected-preview-feedback" role="status"></span>
                       </div>
                       <div class="factory-selected-preview-action-buttons">
-                        <button class="button primary" id="factory-preview-save-demo" type="button" disabled>Opslaan in Demo Sites</button>
+                        <button class="button secondary" id="factory-preview-open-selected" type="button" disabled>Open preview</button>
+                        <a class="button secondary" id="factory-preview-open-portal" href="klantportaal.html" target="_blank" rel="noopener noreferrer" hidden>Klantportaal openen</a>
+                        <button class="button secondary" id="factory-preview-copy-link" type="button" disabled>Previewlink kopiëren</button>
+                        <button class="button secondary" id="factory-preview-share-whatsapp" type="button" disabled>Delen via WhatsApp</button>
                         <button class="button secondary" id="factory-preview-use-customer" type="button" hidden disabled>Gebruik als klantpreview</button>
-                        <button class="button secondary" id="factory-preview-publish-customer" type="button" disabled>Doorzetten naar klantportaal</button>
+                        <button class="button primary" id="factory-preview-publish-customer" type="button" disabled>Doorzetten naar klantportaal</button>
+                        <button class="button secondary" id="factory-preview-save-demo" type="button" disabled>Opslaan in Demo Sites</button>
                       </div>
                     </div>
                     <div class="factory-editor-workspace">
                       <div class="factory-guided-preview-main">
                         <div class="factory-preview-load-error" id="factory-preview-load-error" role="alert" hidden><strong>Deze preview kon niet worden geladen.</strong><span>De andere beschikbare bron blijft selecteerbaar.</span><button class="button secondary button-small" id="factory-preview-retry" type="button">Opnieuw proberen</button></div>
-                        <div class="factory-preview-readonly-note" id="factory-preview-readonly-note" hidden>Deze ZIP-preview is alleen-lezen. Bewerk de bronbestanden en upload een nieuwe ZIP om wijzigingen door te voeren.</div>
+                        <div class="factory-preview-readonly-note" id="factory-preview-readonly-note" hidden><strong>Alleen-lezen.</strong> Deze ZIP-preview kan hier niet rechtstreeks worden bewerkt. U kunt hem wel publiceren, openen en delen.</div>
                         <div id="factory-guided-preview-slot"></div>
                         <div class="factory-guided-version-meta" id="factory-guided-version-meta"></div>
                         <section class="factory-preview-version-history" aria-labelledby="factory-preview-version-history-title">
@@ -23319,6 +23324,7 @@
             savedPreviewVersionId: savedDemo.previewVersionId || "",
             publishedPreviewVersionId,
             localZipPending: Boolean(pendingManualZipFile && (!version || sourceType === sourceApi?.SOURCE_MANUAL)),
+            siteOrigin: window.location.origin,
           }) || null;
         }
 
@@ -24598,17 +24604,33 @@
           const context = selectedPreviewActionContext();
           const label = document.getElementById("factory-selected-preview-action-label");
           const hint = document.getElementById("factory-selected-preview-action-hint");
+          const statuses = document.getElementById("factory-selected-preview-statuses");
+          const feedback = document.getElementById("factory-selected-preview-feedback");
           const saveButtons = [document.getElementById("factory-primary-save-demo"), document.getElementById("factory-preview-save-demo")].filter(Boolean);
           const publishButtons = [elements.publishCustomerPreview, document.getElementById("factory-preview-publish-customer")].filter(Boolean);
           const activateButton = document.getElementById("factory-preview-use-customer");
+          const openButton = document.getElementById("factory-preview-open-selected");
+          const portalLink = document.getElementById("factory-preview-open-portal");
+          const copyButton = document.getElementById("factory-preview-copy-link");
+          const whatsappButton = document.getElementById("factory-preview-share-whatsapp");
           const signature = JSON.stringify([context || {}, Array.from(journeyLocks).sort()]);
           const container = document.getElementById("factory-selected-preview-actions");
           if (!force && container?.dataset.signature === signature) return context;
+          const selectionChanged = Boolean(container?.dataset.signature && container.dataset.signature !== signature);
           if (container) container.dataset.signature = signature;
+          if (selectionChanged && feedback) feedback.textContent = "";
           if (label) label.textContent = context?.versionLabel || "Selecteer een previewversie";
+          if (statuses) {
+            const items = [
+              context?.readOnly ? '<span class="is-readonly">Alleen-lezen</span>' : "",
+              context?.saved ? '<span class="is-saved">Opgeslagen in Demo Sites</span>' : "",
+              context?.published ? '<span class="is-published">Actief in klantportaal</span>' : "",
+            ].filter(Boolean);
+            statuses.innerHTML = items.join("");
+          }
           if (hint) {
             hint.textContent = context?.published
-              ? "Deze versie is actief in het klantportaal. Bekijken van een andere versie verandert dit niet."
+              ? "Deze versie is actief in het klantportaal en kan direct worden gedeeld."
               : context?.saved
                 ? "Deze versie is opgeslagen in Demo Sites. Doorzetten blijft een aparte, expliciete handeling."
                 : context?.explanation || "Bekijken alleen verandert de actieve klantpreview niet.";
@@ -24617,20 +24639,111 @@
             button.textContent = context?.saveLabel || "Opslaan in Demo Sites";
             button.disabled = !context?.demoEnabled || context.saved || journeyLocks.has("save_demo_site");
             button.title = button.disabled && !context?.saved ? context?.explanation || "Selecteer eerst een verwerkte previewversie" : "Sla exact de geselecteerde previewversie op";
+            if (button.id === "factory-preview-save-demo") button.hidden = Boolean(context?.saved);
           });
           publishButtons.forEach((button) => {
             button.textContent = context?.publishLabel || "Doorzetten naar klantportaal";
             button.disabled = !context?.publishEnabled || context.published || journeyLocks.has("publish_customer_preview");
             button.title = button.disabled && !context?.published ? context?.explanation || "Selecteer eerst een klant en verwerkte previewversie" : "Zet exact de geselecteerde previewversie door";
+            if (button.id === "factory-preview-publish-customer") button.hidden = Boolean(context?.published);
+          });
+          if (openButton) {
+            openButton.hidden = Boolean(context?.published);
+            openButton.disabled = !context?.shareEnabled;
+            openButton.title = context?.shareEnabled ? "Open exact de geselecteerde previewversie" : context?.explanation || "Geen veilige publieke previewlink beschikbaar";
+          }
+          if (portalLink) portalLink.hidden = !context?.published;
+          [copyButton, whatsappButton].filter(Boolean).forEach((button) => {
+            button.disabled = !context?.shareEnabled;
+            button.title = context?.shareEnabled ? `Deel exact ${context.versionLabel}` : context?.explanation || "Geen veilige publieke previewlink beschikbaar";
           });
           if (activateButton) {
             const manual = context?.sourceType === window.WebsiteFactoryPreviewActions?.SOURCE_MANUAL;
-            activateButton.hidden = !manual;
+            activateButton.hidden = !manual || context?.published;
             activateButton.disabled = !context?.activateEnabled || journeyLocks.has("activate_manual_preview");
             activateButton.textContent = context?.activateEnabled ? "Gebruik als klantpreview" : "Geselecteerd als klantpreview";
             activateButton.title = context?.activateEnabled ? "Maak deze ZIP de interne actieve klantpreview" : context?.explanation || "Deze ZIP is al geselecteerd";
           }
           return context;
+        }
+
+        function setSelectedPreviewFeedback(message = "", type = "") {
+          const feedback = document.getElementById("factory-selected-preview-feedback");
+          if (!feedback) return;
+          feedback.textContent = message;
+          feedback.dataset.type = type;
+        }
+
+        function openSelectedPreviewWindow(url = "") {
+          if (!url) return false;
+          const opened = window.open(url, "_blank", "noopener,noreferrer");
+          if (opened) opened.opener = null;
+          return Boolean(opened);
+        }
+
+        function selectedPreviewShareNames() {
+          const customer = factoryCustomerContext?.customer || {};
+          return {
+            contactName: customer.contact_name || customer.contactName || customer.name || "",
+            companyName: customer.company || customer.company_name || "",
+          };
+        }
+
+        function openSelectedPreview() {
+          const context = selectedPreviewActionContext();
+          if (!context?.shareEnabled) {
+            setSelectedPreviewFeedback(context?.explanation || "Geen veilige publieke previewlink beschikbaar.", "warning");
+            return;
+          }
+          if (!openSelectedPreviewWindow(context.shareUrl)) setSelectedPreviewFeedback("De browser blokkeerde het nieuwe tabblad.", "warning");
+        }
+
+        function copySelectedPreviewFallback(value = "") {
+          const field = document.createElement("textarea");
+          field.value = value;
+          field.setAttribute("readonly", "");
+          field.style.position = "fixed";
+          field.style.opacity = "0";
+          document.body.appendChild(field);
+          field.select();
+          let copied = false;
+          try { copied = document.execCommand("copy"); } catch {}
+          field.remove();
+          return copied;
+        }
+
+        async function copySelectedPreviewLink() {
+          const context = selectedPreviewActionContext();
+          if (!context?.shareEnabled) {
+            setSelectedPreviewFeedback(context?.explanation || "Geen veilige publieke previewlink beschikbaar.", "warning");
+            return;
+          }
+          let copied = false;
+          try {
+            if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(context.shareUrl);
+              copied = true;
+            }
+          } catch {}
+          if (!copied) copied = copySelectedPreviewFallback(context.shareUrl);
+          if (copied) {
+            setSelectedPreviewFeedback("Previewlink gekopieerd.", "success");
+            return;
+          }
+          window.prompt("Kopieer deze previewlink:", context.shareUrl);
+          setSelectedPreviewFeedback("Selecteer de previewlink en kopieer hem handmatig.", "warning");
+        }
+
+        function shareSelectedPreviewViaWhatsApp() {
+          const context = selectedPreviewActionContext();
+          const actionApi = window.WebsiteFactoryPreviewActions;
+          if (!context?.shareEnabled || !actionApi) {
+            setSelectedPreviewFeedback(context?.explanation || "Geen veilige publieke previewlink beschikbaar.", "warning");
+            return;
+          }
+          const mobile = window.matchMedia?.("(pointer: coarse)")?.matches === true || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+          const shareUrl = actionApi.whatsappShareUrl({ ...selectedPreviewShareNames(), previewUrl: context.shareUrl, mobile });
+          if (!openSelectedPreviewWindow(shareUrl)) setSelectedPreviewFeedback("WhatsApp kon niet worden geopend.", "warning");
         }
 
         async function refreshCustomerPreviewPublication() {
@@ -26558,7 +26671,7 @@
             if (activeUrl) {
               previewUrl.href = activeUrl;
               previewUrl.target = "_blank";
-              previewUrl.rel = "noopener";
+              previewUrl.rel = "noopener noreferrer";
             } else {
               previewUrl.removeAttribute("href");
               previewUrl.removeAttribute("target");
@@ -26691,6 +26804,9 @@
 
           document.getElementById("factory-primary-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
           document.getElementById("factory-preview-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
+          document.getElementById("factory-preview-open-selected")?.addEventListener("click", openSelectedPreview);
+          document.getElementById("factory-preview-copy-link")?.addEventListener("click", copySelectedPreviewLink);
+          document.getElementById("factory-preview-share-whatsapp")?.addEventListener("click", shareSelectedPreviewViaWhatsApp);
           document.getElementById("factory-preview-publish-customer")?.addEventListener("click", () => publishCustomerPreview());
           document.getElementById("factory-preview-use-customer")?.addEventListener("click", async () => {
             const context = selectedPreviewActionContext();

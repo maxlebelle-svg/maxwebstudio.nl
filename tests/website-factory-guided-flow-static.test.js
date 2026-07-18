@@ -40,7 +40,7 @@ test("Factory 2.0 exposes distinct Builder and Preview Workspace modes", () => {
   assert.ok(previewWorkspace < imageWorkspace);
   assert.ok(previewWorkspace < legacyControls);
   assert.match(factory, /id="factory-guided-preview-url"/);
-  assert.match(factory, /data-factory-proxy="demo-journey-open-preview"/);
+  assert.match(factory, /id="factory-preview-open-selected"[^>]*>Open preview<\/button>/);
 });
 
 test("workspace navigation uses real tab panels and image counts are state driven", () => {

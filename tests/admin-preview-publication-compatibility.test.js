@@ -227,6 +227,8 @@ async function run() {
     demo_journey_id: null,
     version: 4,
     title: "Handmatige ZIP",
+    preview_url: `/.netlify/functions/manual-preview-render?version=${ids.previewManual}&token=manual-token`,
+    preview_token: "manual-token",
     generated_package: { files: [{ path: "index.html", content: "<h1>Manual</h1>", encoding: "utf8", size: 15 }], meta: { previewSource: "manual_zip" } },
     metadata: { previewSource: "manual_zip", manualZipContentHash: "manual-hash" },
     is_active: true,
