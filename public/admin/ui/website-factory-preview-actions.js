@@ -8,6 +8,7 @@
   const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const SOURCE_FACTORY = "website_factory";
   const SOURCE_MANUAL = "manual_zip";
+  const PUBLIC_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
   function text(value) {
     return String(value || "").trim();
@@ -49,6 +50,23 @@
     return url.toString();
   }
 
+  function safePublicPreviewUrl(input = {}) {
+    const slug = text(input.publicPreviewSlug);
+    const rawUrl = text(input.publicPreviewUrl);
+    if (!PUBLIC_SLUG_PATTERN.test(slug) || slug.length < 3 || slug.length > 64 || !rawUrl) return "";
+    let url;
+    try {
+      url = new URL(rawUrl, text(input.siteOrigin) || "https://maxwebstudio.nl");
+    } catch {
+      return "";
+    }
+    const hostname = url.hostname.toLowerCase();
+    const primary = hostname === "preview.maxwebstudio.nl" && url.pathname === `/${slug}`;
+    const fallback = (hostname === "maxwebstudio.nl" || hostname.endsWith(".maxwebstudio.nl")) && url.pathname === `/preview/${slug}`;
+    if (url.protocol !== "https:" || (!primary && !fallback) || url.search || url.hash) return "";
+    return url.toString().replace(/\/$/, "");
+  }
+
   function whatsappMessage(input = {}) {
     const previewUrl = text(input.previewUrl);
     if (!previewUrl) return "";
@@ -78,17 +96,20 @@
     const websiteId = text(input.websiteId);
     const savedPreviewVersionId = text(input.savedPreviewVersionId);
     const publishedPreviewVersionId = text(input.publishedPreviewVersionId);
+    const publicPreviewSlug = text(input.publicPreviewSlug);
     const localZipPending = input.localZipPending === true;
     const serverStored = UUID_PATTERN.test(previewVersionId) && Boolean(previewUrl) && version.renderable !== false && !localZipPending;
     const hasRepositoryScope = UUID_PATTERN.test(demoJourneyId);
     const hasCustomer = UUID_PATTERN.test(customerId);
     const manual = sourceType === SOURCE_MANUAL;
-    const shareUrl = safeShareUrl({ previewUrl, previewVersionId, sourceType, previewToken: version.previewToken || version.preview_token, siteOrigin: input.siteOrigin });
+    const published = Boolean(previewVersionId && publishedPreviewVersionId === previewVersionId);
+    const publicPreviewUrl = published ? safePublicPreviewUrl({ publicPreviewSlug, publicPreviewUrl: input.publicPreviewUrl, siteOrigin: input.siteOrigin }) : "";
+    const technicalShareUrl = safeShareUrl({ previewUrl, previewVersionId, sourceType, previewToken: version.previewToken || version.preview_token, siteOrigin: input.siteOrigin });
+    const shareUrl = publicPreviewUrl || technicalShareUrl;
     const shareEnabled = serverStored && Boolean(shareUrl);
     const demoEnabled = serverStored && hasRepositoryScope;
     const publishEnabled = serverStored && shareEnabled && hasCustomer && (manual || UUID_PATTERN.test(websiteId));
     const saved = Boolean(previewVersionId && savedPreviewVersionId === previewVersionId);
-    const published = Boolean(previewVersionId && publishedPreviewVersionId === previewVersionId);
     const versionLabel = `${manual ? "Handmatige ZIP" : "Website Factory"} · V${Number(version.version || 1)}`;
     let explanation = "";
     if (localZipPending) explanation = "Verwerk de ZIP eerst voordat deze kan worden opgeslagen of gepubliceerd.";
@@ -103,6 +124,9 @@
       readOnly: manual,
       status: text(version.status || "internal"),
       previewUrl,
+      publicPreviewSlug,
+      publicPreviewUrl,
+      usesPublicPreviewUrl: Boolean(publicPreviewUrl),
       shareUrl,
       shareEnabled,
       customerId,
@@ -123,5 +147,5 @@
     };
   }
 
-  return { SOURCE_FACTORY, SOURCE_MANUAL, UUID_PATTERN, actionContext, safeShareUrl, sourceTypeOf, whatsappMessage, whatsappShareUrl };
+  return { SOURCE_FACTORY, SOURCE_MANUAL, UUID_PATTERN, actionContext, safePublicPreviewUrl, safeShareUrl, sourceTypeOf, whatsappMessage, whatsappShareUrl };
 });

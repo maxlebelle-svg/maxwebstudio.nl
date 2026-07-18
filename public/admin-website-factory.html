@@ -23323,6 +23323,8 @@
             websiteId: version?.websiteId || factoryCustomerContext?.website?.id || projectWorkspace?.websiteId || "",
             savedPreviewVersionId: savedDemo.previewVersionId || "",
             publishedPreviewVersionId,
+            publicPreviewSlug: customerPreviewPublication?.publicPreviewSlug || "",
+            publicPreviewUrl: customerPreviewPublication?.publicPreviewUrl || "",
             localZipPending: Boolean(pendingManualZipFile && (!version || sourceType === sourceApi?.SOURCE_MANUAL)),
             siteOrigin: window.location.origin,
           }) || null;
@@ -24754,7 +24756,15 @@
           }
           try {
             const data = await apiRequest(`${previewPublicationEndpoint}?action=current&customerId=${encodeURIComponent(customerId)}`);
-            customerPreviewPublication = data.previewVersion ? { ...data.previewVersion, previewVersionId: data.publishedPreviewVersionId || data.previewVersion.id } : null;
+            customerPreviewPublication = data.previewVersion ? {
+              ...data.previewVersion,
+              previewVersionId: data.publishedPreviewVersionId || data.previewVersion.id,
+              publicPreviewSlug: data.publicPreviewSlug || "",
+              publicPreviewUrl: data.publicPreviewUrl || "",
+              fallbackPublicPreviewUrl: data.fallbackPublicPreviewUrl || "",
+              publicPreviewEnabled: data.publicPreviewEnabled === true,
+              publicPreviewRevokedAt: data.publicPreviewRevokedAt || "",
+            } : null;
           } catch (error) {
             if (["PREVIEW_POINTER_NOT_FOUND", "PREVIEW_POINTER_INVALID"].includes(error.code)) customerPreviewPublication = null;
             else console.warn("Actieve klantpreview kon niet worden geladen", { code: error.code || "REQUEST_FAILED" });
@@ -24771,12 +24781,20 @@
             return;
           }
           const sourceLabel = customerPreviewPublication.previewSource === "manual_zip" ? "Handmatige ZIP" : "Website Factory";
+          const publicUrl = customerPreviewPublication.publicPreviewUrl || "";
+          const publicSlug = customerPreviewPublication.publicPreviewSlug || "";
+          const publicEnabled = customerPreviewPublication.publicPreviewEnabled === true && Boolean(publicUrl);
+          let publicPrefix = "preview.maxwebstudio.nl/";
+          try {
+            const parsedPublicUrl = new URL(publicUrl);
+            publicPrefix = `${parsedPublicUrl.host}${parsedPublicUrl.pathname.startsWith("/preview/") ? "/preview/" : "/"}`;
+          } catch {}
           elements.customerPublicationStatus.dataset.publishedPreviewVersionId = customerPreviewPublication.previewVersionId || "";
           elements.customerPublicationStatus.dataset.publishedCustomerId = factoryCustomerContext?.customer?.id || "";
           elements.customerPublicationStatus.dataset.publishedWebsiteId = factoryCustomerContext?.website?.id || "";
           elements.customerPublicationStatus.dataset.publishedProjectId = factoryCustomerContext?.project?.id || "";
           elements.customerPublicationStatus.innerHTML = `
-            <div><strong>Preview gepubliceerd</strong><span>De geselecteerde websiteversie is nu zichtbaar in het klantportaal.</span></div>
+            <div class="factory-public-preview-summary"><strong>Publieke previewlink</strong><span>De geselecteerde websiteversie is nu zichtbaar in het klantportaal. ${publicEnabled ? "De korte link is klaar om professioneel te delen." : "De gedeelde link is ingetrokken."}</span></div>
             <dl>
               <div><dt>Klantportaal</dt><dd>Gepubliceerd</dd></div>
               <div><dt>Versie</dt><dd>V${escapeHtml(customerPreviewPublication.version || "-")}</dd></div>
@@ -24784,9 +24802,79 @@
               <div><dt>Gepubliceerd</dt><dd>${escapeHtml(formatDate(customerPreviewPublication.publishedAt))}</dd></div>
               <div><dt>Reviewstatus</dt><dd>${customerPreviewPublication.reviewStatus === "approved" ? "Goedgekeurd" : "Wacht op beoordeling"}</dd></div>
             </dl>
-            <div class="factory-primary-success"><a class="button secondary" href="klantportaal.html" target="_blank" rel="noopener">Open klantportaal</a><button class="button secondary" type="button" data-publication-continue>Verder bewerken</button></div>`;
+            <div class="factory-public-preview-link" data-public-preview-link>
+              <label for="factory-public-preview-slug">Korte link</label>
+              <div><span>${escapeHtml(publicPrefix)}</span><input id="factory-public-preview-slug" type="text" value="${escapeHtml(publicSlug)}" maxlength="64" spellcheck="false" readonly aria-label="Publieke previewnaam" /></div>
+              <small>${publicEnabled ? escapeHtml(publicUrl) : "Delen staat uit. Opnieuw publiceren activeert dezelfde link."}</small>
+            </div>
+            <div class="factory-primary-success factory-public-preview-actions">
+              <button class="button primary" type="button" data-public-preview-copy ${publicEnabled ? "" : "disabled"}>Link kopiëren</button>
+              <button class="button secondary" type="button" data-public-preview-whatsapp ${publicEnabled ? "" : "disabled"}>WhatsApp</button>
+              <a class="button secondary" href="${publicEnabled ? escapeHtml(publicUrl) : "#"}" target="_blank" rel="noopener noreferrer" ${publicEnabled ? "" : "hidden"}>Openen</a>
+              <button class="button secondary" type="button" data-public-preview-edit ${publicSlug ? "" : "disabled"}>Slug wijzigen</button>
+              <button class="button secondary is-danger" type="button" data-public-preview-revoke ${publicEnabled ? "" : "disabled"}>Delen intrekken</button>
+            </div>`;
           elements.customerPublicationStatus.hidden = false;
-          elements.customerPublicationStatus.querySelector("[data-publication-continue]")?.addEventListener("click", () => elements.customerPublicationStatus.hidden = true);
+          elements.customerPublicationStatus.querySelector("[data-public-preview-copy]")?.addEventListener("click", copyPublicPreviewLink);
+          elements.customerPublicationStatus.querySelector("[data-public-preview-whatsapp]")?.addEventListener("click", sharePublicPreviewViaWhatsApp);
+          elements.customerPublicationStatus.querySelector("[data-public-preview-edit]")?.addEventListener("click", togglePublicPreviewSlugEdit);
+          elements.customerPublicationStatus.querySelector("[data-public-preview-revoke]")?.addEventListener("click", revokePublicPreviewLink);
+        }
+
+        async function copyPublicPreviewLink() {
+          const value = customerPreviewPublication?.publicPreviewUrl || "";
+          if (!value) return;
+          let copied = false;
+          try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(value); copied = true; } } catch {}
+          if (!copied) copied = copySelectedPreviewFallback(value);
+          setMessage(elements.message, copied ? "Publieke previewlink gekopieerd." : "De previewlink kon niet worden gekopieerd.", copied ? "success" : "warning");
+        }
+
+        function sharePublicPreviewViaWhatsApp() {
+          const previewUrl = customerPreviewPublication?.publicPreviewUrl || "";
+          const actionApi = window.WebsiteFactoryPreviewActions;
+          if (!previewUrl || !actionApi) return;
+          const mobile = window.matchMedia?.("(pointer: coarse)")?.matches === true || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+          openSelectedPreviewWindow(actionApi.whatsappShareUrl({ ...selectedPreviewShareNames(), previewUrl, mobile }));
+        }
+
+        async function togglePublicPreviewSlugEdit(event) {
+          const button = event.currentTarget;
+          const input = elements.customerPublicationStatus?.querySelector("#factory-public-preview-slug");
+          if (!input) return;
+          if (input.readOnly) {
+            input.readOnly = false;
+            input.focus();
+            input.select();
+            button.textContent = "Slug opslaan";
+            return;
+          }
+          const slug = String(input.value || "").trim();
+          if (!window.confirm(`Publieke link wijzigen naar preview.maxwebstudio.nl/${slug}?\n\nDe oude link stopt direct met werken.`)) return;
+          button.disabled = true;
+          try {
+            const data = await apiRequest(previewPublicationEndpoint, "POST", { action: "set_public_preview_slug", customerId: factoryCustomerContext?.customer?.id || "", slug });
+            customerPreviewPublication = { ...customerPreviewPublication, ...data };
+            renderCustomerPreviewPublication();
+            setMessage(elements.message, "De publieke previewlink is gewijzigd.", "success");
+          } catch (error) {
+            input.readOnly = false;
+            button.disabled = false;
+            setMessage(elements.message, error.message || "De slug kon niet worden gewijzigd.", "error");
+          }
+        }
+
+        async function revokePublicPreviewLink() {
+          const publicUrl = customerPreviewPublication?.publicPreviewUrl || "deze publieke previewlink";
+          if (!window.confirm(`Delen intrekken voor ${publicUrl}?\n\nDe klant krijgt daarna een nette melding dat de preview is ingetrokken. De klantportaalpublicatie en goedkeuringsstatus blijven ongewijzigd.`)) return;
+          try {
+            const data = await apiRequest(previewPublicationEndpoint, "POST", { action: "revoke_public_preview", customerId: factoryCustomerContext?.customer?.id || "" });
+            customerPreviewPublication = { ...customerPreviewPublication, ...data };
+            renderCustomerPreviewPublication();
+            setMessage(elements.message, "De publieke previewlink is ingetrokken.", "success");
+          } catch (error) {
+            setMessage(elements.message, error.message || "Delen kon niet worden ingetrokken.", "error");
+          }
         }
 
         async function publishCustomerPreview() {
@@ -24829,6 +24917,11 @@
                 previewVersionId: confirmation.previewVersion.id,
                 previewSource: context.sourceType,
                 reviewStatus: confirmation.previewVersion.approvedAt ? "approved" : "ready_for_review",
+                publicPreviewSlug: confirmation.publicPreviewSlug || data.publicPreviewSlug || "",
+                publicPreviewUrl: confirmation.publicPreviewUrl || data.publicPreviewUrl || "",
+                fallbackPublicPreviewUrl: confirmation.fallbackPublicPreviewUrl || data.fallbackPublicPreviewUrl || "",
+                publicPreviewEnabled: confirmation.publicPreviewEnabled === true || data.publicPreviewEnabled === true,
+                publicPreviewRevokedAt: confirmation.publicPreviewRevokedAt || data.publicPreviewRevokedAt || "",
               };
               renderCustomerPreviewPublication();
               renderGuidedVersionMeta();

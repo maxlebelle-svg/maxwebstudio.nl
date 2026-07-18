@@ -3,6 +3,14 @@ const { corsHeaders } = require("./_cors");
 const { createTimelineEvent } = require("./services/timelineService");
 const { createHash } = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
+const {
+  candidateSlug,
+  fallbackPreviewUrl,
+  isValidPublicSlug,
+  preferredSlug,
+  publicPreviewUrl,
+  slugify,
+} = require("./_public-preview");
 
 const adminRoles = ["super_admin", "admin", "sales_manager"];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -38,7 +46,7 @@ const previewVersionFields = [
 ].join(",");
 const websiteFields = "id,customer_id,name,domain,status";
 const projectFields = "id,customer_id,website_id,name,status,updated_at";
-const customerFields = "id,name,company,email,website,metadata,updated_at";
+const customerFields = "id,name,company,email,website,metadata,public_preview_slug,public_preview_enabled,public_preview_created_at,public_preview_updated_at,public_preview_revoked_at,updated_at";
 const demoJourneyFields = "id,lead_id,customer_id,business_name,email,website_url,preview_url,preview_token,preview_package,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
 const legacyLeadFields = "id,converted_customer_id";
@@ -67,9 +75,10 @@ exports.handler = async (event) => {
     }
     if (event.httpMethod === "POST") {
       const payload = parsePayload(event.body);
-      return payload.action === "publish_customer_preview"
-        ? await publishActiveCustomerPreview(context, payload)
-        : await publishPreviewVersion(context, payload);
+      if (payload.action === "publish_customer_preview") return publishActiveCustomerPreview(context, payload);
+      if (payload.action === "set_public_preview_slug") return setPublicPreviewSlug(context, payload);
+      if (payload.action === "revoke_public_preview") return revokePublicPreview(context, payload);
+      return publishPreviewVersion(context, payload);
     }
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan." });
   } catch (error) {
@@ -131,7 +140,53 @@ async function resolveCurrentPublishedPreview(context, params = {}) {
     customerId,
     publishedPreviewVersionId: currentPreviewVersionId,
     previewVersion: sanitizeAdminVersion(version),
+    ...publicPreviewDetails(customer),
   });
+}
+
+async function setPublicPreviewSlug(context, payload = {}) {
+  const customerId = uuidOrEmpty(payload.customerId || payload.customer_id);
+  const requestedSlug = cleanText(payload.slug || payload.publicPreviewSlug || payload.public_preview_slug);
+  if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
+  if (!requestedSlug || requestedSlug !== slugify(requestedSlug) || !isValidPublicSlug(requestedSlug)) {
+    throw previewError("PUBLIC_PREVIEW_SLUG_INVALID", "Kies 3 tot 64 kleine letters, cijfers of koppeltekens. Deze naam is niet toegestaan.", 400);
+  }
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
+  if (!customer?.id) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze klant kon niet worden gevalideerd.", 404);
+  if (!uuidOrEmpty(customer.metadata?.publishedPreviewVersionId)) {
+    throw previewError("PREVIEW_POINTER_NOT_FOUND", "Publiceer eerst een klantpreview voordat u een publieke link instelt.", 409);
+  }
+  const collision = await readSingle(context, "customers", `select=id&public_preview_slug=eq.${encodeURIComponent(requestedSlug)}&limit=1`);
+  if (collision?.id && cleanText(collision.id) !== customerId) {
+    throw previewError("PUBLIC_PREVIEW_SLUG_TAKEN", "Deze previewnaam is al in gebruik. Kies een andere naam.", 409);
+  }
+  const now = new Date().toISOString();
+  const rows = await patchRows(context, "customers", `id=eq.${customerId}`, {
+    public_preview_slug: requestedSlug,
+    public_preview_enabled: true,
+    public_preview_created_at: customer.public_preview_created_at || now,
+    public_preview_updated_at: now,
+    public_preview_revoked_at: null,
+    updated_at: now,
+  });
+  const updated = rows[0] || { ...customer, public_preview_slug: requestedSlug, public_preview_enabled: true, public_preview_created_at: customer.public_preview_created_at || now, public_preview_updated_at: now, public_preview_revoked_at: null };
+  return jsonResponse(200, { success: true, customerId, ...publicPreviewDetails(updated) });
+}
+
+async function revokePublicPreview(context, payload = {}) {
+  const customerId = uuidOrEmpty(payload.customerId || payload.customer_id);
+  if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
+  if (!customer?.id) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze klant kon niet worden gevalideerd.", 404);
+  const now = new Date().toISOString();
+  const rows = await patchRows(context, "customers", `id=eq.${customerId}`, {
+    public_preview_enabled: false,
+    public_preview_updated_at: now,
+    public_preview_revoked_at: now,
+    updated_at: now,
+  });
+  const updated = rows[0] || { ...customer, public_preview_enabled: false, public_preview_updated_at: now, public_preview_revoked_at: now };
+  return jsonResponse(200, { success: true, customerId, ...publicPreviewDetails(updated) });
 }
 
 async function publishActiveCustomerPreview(context, payload = {}) {
@@ -281,12 +336,14 @@ async function publishPreviewVersion(context, payload = {}) {
 
   assertNoRelationConflict(version, ownership);
   if (version.published_to_portal === true && cleanText(ownership.customer.metadata?.publishedPreviewVersionId) === version.id) {
+    const sharedCustomer = await persistPublicPreviewPointer(context, ownership.customer, version.id, new Date().toISOString());
     return jsonResponse(200, {
       success: true,
       alreadyPublished: true,
       publishedPreviewVersionId: version.id,
       previewVersion: sanitizeAdminVersion(version),
       website: ownership.website ? sanitizeWebsite(ownership.website) : null,
+      ...publicPreviewDetails(sharedCustomer),
     });
   }
 
@@ -321,16 +378,7 @@ async function publishPreviewVersion(context, payload = {}) {
 
   const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, patch);
   const published = rows[0] || { ...version, ...patch };
-  const customerMetadata = isObject(ownership.customer.metadata) ? ownership.customer.metadata : {};
-  const pointerRows = await patchRows(context, "customers", `id=eq.${ownership.customer.id}`, {
-    metadata: {
-      ...customerMetadata,
-      publishedPreviewVersionId: version.id,
-      publishedPreviewUpdatedAt: now,
-    },
-    updated_at: now,
-  });
-  const pointerCustomer = pointerRows[0] || null;
+  const pointerCustomer = await persistPublicPreviewPointer(context, ownership.customer, version.id, now);
   if (cleanText(pointerCustomer?.metadata?.publishedPreviewVersionId) !== version.id) {
     throw previewError("PREVIEW_POINTER_NOT_PERSISTED", "De klantpreview kon niet als huidige versie worden vastgelegd.", 500);
   }
@@ -359,7 +407,60 @@ async function publishPreviewVersion(context, payload = {}) {
     publishedPreviewVersionId: version.id,
     previewVersion: sanitizeAdminVersion(published),
     website: ownership.website ? sanitizeWebsite(ownership.website) : null,
+    ...publicPreviewDetails(pointerCustomer),
   });
+}
+
+async function persistPublicPreviewPointer(context, customer = {}, versionId = "", now = new Date().toISOString()) {
+  const customerId = uuidOrEmpty(customer.id);
+  const publishedVersionId = uuidOrEmpty(versionId);
+  if (!customerId || !publishedVersionId) throw previewError("PREVIEW_POINTER_NOT_PERSISTED", "De publieke preview kon niet veilig worden gekoppeld.", 500);
+  const existingSlug = cleanText(customer.public_preview_slug);
+  const base = isValidPublicSlug(existingSlug) ? existingSlug : preferredSlug(customer);
+  const customerMetadata = isObject(customer.metadata) ? customer.metadata : {};
+
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const slug = existingSlug && isValidPublicSlug(existingSlug) ? existingSlug : candidateSlug(base, attempt);
+    const collision = await readSingle(context, "customers", `select=id&public_preview_slug=eq.${encodeURIComponent(slug)}&limit=1`);
+    if (collision?.id && cleanText(collision.id) !== customerId) continue;
+    const record = {
+      metadata: {
+        ...customerMetadata,
+        publishedPreviewVersionId: publishedVersionId,
+        publishedPreviewUpdatedAt: now,
+      },
+      public_preview_slug: slug,
+      public_preview_enabled: true,
+      public_preview_created_at: customer.public_preview_created_at || now,
+      public_preview_updated_at: now,
+      public_preview_revoked_at: null,
+      updated_at: now,
+    };
+    try {
+      const rows = await patchRows(context, "customers", `id=eq.${customerId}`, record);
+      return rows[0] || { ...customer, ...record };
+    } catch (error) {
+      if (error.code !== "23505" || existingSlug) throw error;
+    }
+  }
+  throw previewError("PUBLIC_PREVIEW_SLUG_UNAVAILABLE", "Er kon geen unieke publieke previewnaam worden gereserveerd.", 409);
+}
+
+function publicPreviewDetails(customer = {}) {
+  const slug = isValidPublicSlug(customer.public_preview_slug) ? customer.public_preview_slug : "";
+  const enabled = Boolean(slug && customer.public_preview_enabled === true && !customer.public_preview_revoked_at);
+  const fallbackUrl = slug ? fallbackPreviewUrl(slug) : "";
+  const brandedUrl = slug ? publicPreviewUrl(slug) : "";
+  const configuredBaseUrl = cleanText(process.env.PUBLIC_PREVIEW_BASE_URL);
+  return {
+    publicPreviewSlug: slug,
+    publicPreviewEnabled: enabled,
+    publicPreviewUrl: enabled ? (configuredBaseUrl ? publicPreviewUrl(slug, configuredBaseUrl) : fallbackUrl) : "",
+    brandedPublicPreviewUrl: enabled ? brandedUrl : "",
+    fallbackPublicPreviewUrl: enabled ? fallbackUrl : "",
+    publicPreviewRevokedAt: cleanText(customer.public_preview_revoked_at),
+    publicPreviewUpdatedAt: cleanText(customer.public_preview_updated_at),
+  };
 }
 
 async function resolveStandaloneManualOwnership(context, version = {}, selectedCustomerId = "", selectedProjectId = "") {
@@ -831,10 +932,14 @@ function jsonResponse(statusCode, body) {
 
 exports._private = {
   findPreviewVersionsForWebsite,
+  persistPublicPreviewPointer,
   previewFingerprint,
+  publicPreviewDetails,
   publishActiveCustomerPreview,
   publishPreviewVersion,
+  revokePublicPreview,
   resolveOwnership,
   sanitizeAdminVersion,
+  setPublicPreviewSlug,
   isAllowedManualPreviewUrl,
 };

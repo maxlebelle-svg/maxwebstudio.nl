@@ -97,6 +97,18 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+[[redirects]]
+  from = "https://preview.maxwebstudio.nl/:slug"
+  to = "/.netlify/functions/public-preview-render?slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/preview/:slug"
+  to = "/.netlify/functions/public-preview-render?slug=:slug"
+  status = 200
+  force = true
+
 [[headers]]
   for = "/*"
   [headers.values]
