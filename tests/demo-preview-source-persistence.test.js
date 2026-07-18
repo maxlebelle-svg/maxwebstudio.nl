@@ -16,8 +16,9 @@ const factoryBackend = fs.readFileSync(path.join(root, "functions/website-factor
 const demoSites = fs.readFileSync(path.join(root, "public/admin-demo-sites.html"), "utf8");
 const factoryUi = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
 const demoJourney = require("../functions/demo-journey.js");
+const demoCommercialActions = require("../public/admin/ui/demo-sites-commercial-actions");
 
-const demoSelectionContext = {};
+const demoSelectionContext = { window: { DemoSitesCommercialActions: demoCommercialActions } };
 const demoSelectionBlock = demoSites.slice(
   demoSites.indexOf("function savedDemoSiteMeta(record"),
   demoSites.indexOf("function isSavedDemoSite")

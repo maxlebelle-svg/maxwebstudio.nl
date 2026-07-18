@@ -9,9 +9,54 @@
   const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   function text(value) { return String(value || "").trim(); }
-  function source(value = "") {
+  function normalizeSource(value = "") {
     const normalized = text(value).toLowerCase();
-    return ["manual", "manual_zip", "manual-zip", "zip"].includes(normalized) ? "manual_zip" : normalized ? "website_factory" : "";
+    if (["manual", "manual_zip", "manual-zip", "zip"].includes(normalized)) return "manual_zip";
+    if (["factory", "factory_build", "factory-build", "website_factory", "website-factory"].includes(normalized)) return "factory";
+    return "";
+  }
+  function object(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
+  function previewVersionSource(version = {}) {
+    version = object(version);
+    const metadata = object(version.metadata);
+    const generatedPackage = object(version.generatedPackage || version.generated_package);
+    const packageMeta = object(version.packageMeta || version.package_meta || generatedPackage.meta);
+    const explicitSources = [...new Set([
+      version.sourceType,
+      version.source_type,
+      version.previewSource,
+      version.preview_source,
+      metadata.sourceType,
+      metadata.source_type,
+      metadata.previewSource,
+      metadata.preview_source,
+      packageMeta.sourceType,
+      packageMeta.source_type,
+      packageMeta.previewSource,
+      packageMeta.preview_source,
+    ].map(normalizeSource).filter(Boolean))];
+    if (explicitSources.length > 1) return "";
+    if (explicitSources.length === 1) return explicitSources[0];
+
+    const previewUrl = text(version.previewUrl || version.preview_url);
+    const manualEvidence = Boolean(
+      text(metadata.manualZipContentHash || metadata.manual_zip_content_hash)
+      || text(packageMeta.manualZipContentHash || packageMeta.manual_zip_content_hash)
+      || /\/\.netlify\/functions\/manual-preview-render(?:[/?#]|$)/i.test(previewUrl)
+    );
+    const factoryEvidence = Boolean(
+      text(version.buildJobId || version.build_job_id)
+      || /\/(?:\.netlify\/functions\/demo-preview|demo-preview(?:\.html)?)(?:[/?#]|$)/i.test(previewUrl)
+      || metadata.editorManifestAvailable === true
+      || Number(packageMeta.editorManifest?.version || 0) === 1
+      || Boolean(packageMeta.editorEnrichment || packageMeta.industryIntelligence)
+    );
+    if (manualEvidence === factoryEvidence) return "";
+    return manualEvidence ? "manual_zip" : "factory";
+  }
+  function source(value = "") {
+    const normalized = normalizeSource(value);
+    return normalized === "factory" ? "website_factory" : normalized;
   }
   function sourceLabel(value = "") { return source(value) === "manual_zip" ? "Handmatige ZIP" : "Website Factory"; }
 
@@ -32,7 +77,7 @@
       relationshipId,
       previewVersionId,
       previewVersion: Number(selectedVersion.version || 1),
-      previewSource: source(selectedVersion.sourceType || selectedVersion.previewSource || selectedVersion.metadata?.previewSource),
+      previewSource: source(previewVersionSource(selectedVersion)),
       publicPreviewUrl: published ? publicPreviewUrl : "",
       published,
       hasEmail: EMAIL.test(text(input.email).toLowerCase()),
@@ -87,5 +132,5 @@
     ];
   }
 
-  return { EMAIL, UUID, invitationAction, journeySteps, shareContext, source, sourceLabel, whatsappMessage, whatsappUrl };
+  return { EMAIL, UUID, invitationAction, journeySteps, normalizeSource, previewVersionSource, shareContext, source, sourceLabel, whatsappMessage, whatsappUrl };
 });

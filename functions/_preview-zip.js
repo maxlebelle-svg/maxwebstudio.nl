@@ -11,17 +11,52 @@ const SOURCE_VALUES = new Set([SOURCE_FACTORY, SOURCE_MANUAL]);
 
 function normalizePreviewSource(value = "") {
   const source = text(value).toLowerCase();
-  if (source === SOURCE_FACTORY || source === "website_factory" || source === "website-factory") return SOURCE_FACTORY;
-  if (source === SOURCE_MANUAL) return SOURCE_MANUAL;
+  if ([SOURCE_FACTORY, "factory_build", "factory-build", "website_factory", "website-factory"].includes(source)) return SOURCE_FACTORY;
+  if ([SOURCE_MANUAL, "manual", "manual-zip", "zip"].includes(source)) return SOURCE_MANUAL;
   return "";
 }
 
 function previewSourceForVersion(version = {}) {
-  const explicit = text(version.metadata?.previewSource || version.generated_package?.meta?.previewSource).toLowerCase();
-  const normalized = normalizePreviewSource(explicit);
-  if (normalized) return normalized;
-  if (version.metadata?.manualZipContentHash || version.generated_package?.meta?.contentHash || version.generated_package?.meta?.manualZipContentHash) return SOURCE_MANUAL;
-  return Array.isArray(version.generated_package?.files) && version.generated_package.files.length ? SOURCE_FACTORY : "";
+  const metadata = object(version.metadata);
+  const generatedPackage = object(version.generatedPackage || version.generated_package);
+  const packageMeta = object(version.packageMeta || version.package_meta || generatedPackage.meta);
+  const explicit = [
+    version.sourceType,
+    version.source_type,
+    version.previewSource,
+    version.preview_source,
+    metadata.sourceType,
+    metadata.source_type,
+    metadata.previewSource,
+    metadata.preview_source,
+    packageMeta.sourceType,
+    packageMeta.source_type,
+    packageMeta.previewSource,
+    packageMeta.preview_source,
+  ].map(normalizePreviewSource).filter(Boolean);
+  const explicitSources = [...new Set(explicit)];
+  if (explicitSources.length > 1) return "";
+  if (explicitSources.length === 1) return explicitSources[0];
+
+  const previewUrl = text(version.previewUrl || version.preview_url);
+  const manualEvidence = Boolean(
+    text(metadata.manualZipContentHash || metadata.manual_zip_content_hash)
+    || text(packageMeta.manualZipContentHash || packageMeta.manual_zip_content_hash)
+    || /\/\.netlify\/functions\/manual-preview-render(?:[/?#]|$)/i.test(previewUrl)
+  );
+  const factoryEvidence = Boolean(
+    text(version.buildJobId || version.build_job_id)
+    || /\/(?:\.netlify\/functions\/demo-preview|demo-preview(?:\.html)?)(?:[/?#]|$)/i.test(previewUrl)
+    || metadata.editorManifestAvailable === true
+    || Number(packageMeta.editorManifest?.version || 0) === 1
+    || Boolean(packageMeta.editorEnrichment || packageMeta.industryIntelligence)
+  );
+  if (manualEvidence === factoryEvidence) return "";
+  return manualEvidence ? SOURCE_MANUAL : SOURCE_FACTORY;
+}
+
+function object(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
 function preparePreviewPackage(value = {}) {

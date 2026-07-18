@@ -5,6 +5,7 @@ const { sendTrackedEmail } = require("./services/resendMailService");
 const { buildPublicDemoShareMail } = require("./services/leadDemoInvitationTemplate");
 const { createHash } = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
+const { previewSourceForVersion } = require("./_preview-zip");
 const {
   candidateSlug,
   fallbackPreviewUrl,
@@ -580,7 +581,7 @@ async function publishActiveCustomerPreview(context, payload = {}) {
   if (!ownership.customer?.id || cleanText(ownership.customer.id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
 
   const journeyPackage = journey?.preview_package && typeof journey.preview_package === "object" ? journey.preview_package : {};
-  const directManualPackage = previewSource === PREVIEW_SOURCES.MANUAL && normalizePreviewSource(selectedVersion.metadata?.previewSource) === PREVIEW_SOURCES.MANUAL
+  const directManualPackage = previewSource === PREVIEW_SOURCES.MANUAL && normalizePreviewSource(previewSourceForVersion(selectedVersion)) === PREVIEW_SOURCES.MANUAL
     ? selectedVersion.generated_package : null;
   const resolved = resolveActiveDemoPreview(journeyPackage, previewSource);
   const selectedPackage = directManualPackage || (previewSource === PREVIEW_SOURCES.MANUAL ? resolved.previewPackage : selectedVersion.generated_package);
@@ -682,7 +683,8 @@ async function publishPreviewVersion(context, payload = {}) {
     ? await readSingle(context, "website_preview_versions", `select=${previewVersionFields}&id=eq.${previewVersionId}&limit=1`)
     : selectedWebsite?.id ? (await findPreviewVersionsForWebsite(context, { website: selectedWebsite, selectedCustomerId, selectedProjectId }))[0] || null : null;
   if (!version?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen bestaande previewversie gevonden om te publiceren.", 404);
-  const storedSource = normalizePreviewSource(version.metadata?.previewSource || version.generated_package?.meta?.previewSource) || PREVIEW_SOURCES.FACTORY;
+  const storedSource = normalizePreviewSource(previewSourceForVersion(version));
+  if (!storedSource) throw previewError("PREVIEW_SOURCE_INVALID", `De bronmetadata van previewversie ${version.id} ontbreekt.`, 409);
   if (requestedSource && requestedSource !== storedSource) {
     throw previewError("PREVIEW_SOURCE_MISMATCH", "De geselecteerde previewbron komt niet overeen met de opgeslagen previewversie.", 409);
   }
@@ -827,7 +829,7 @@ function publicPreviewDetails(customer = {}) {
 }
 
 async function resolveStandaloneManualOwnership(context, version = {}, selectedCustomerId = "", selectedProjectId = "") {
-  const source = normalizePreviewSource(version.metadata?.previewSource || version.generated_package?.meta?.previewSource);
+  const source = normalizePreviewSource(previewSourceForVersion(version));
   const customerId = uuidOrEmpty(selectedCustomerId);
   if (source !== PREVIEW_SOURCES.MANUAL || !customerId || cleanText(version.customer_id) !== customerId || !Array.isArray(version.generated_package?.files) || !version.generated_package.files.length) {
     throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
@@ -1159,6 +1161,7 @@ function restHeaders(serviceRoleKey) {
 }
 
 function sanitizeAdminVersion(row = {}) {
+  const sourceType = previewSourceForVersion(row);
   const ownership = row._ownership || {};
   const legacy = Boolean(!cleanText(row.website_id) && cleanText(row.demo_journey_id));
   return {
@@ -1187,7 +1190,8 @@ function sanitizeAdminVersion(row = {}) {
     status: cleanText(row.status),
     approvedAt: cleanText(row.approved_at),
     feedbackCount: Array.isArray(row.feedback_items) ? row.feedback_items.length : 0,
-    previewSource: normalizePreviewSource(row.metadata?.previewSource),
+    sourceType: sourceType || null,
+    previewSource: normalizePreviewSource(sourceType),
     createdAt: cleanText(row.created_at),
   };
 }

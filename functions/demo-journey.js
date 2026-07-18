@@ -6,6 +6,7 @@ const { getBuildHistory, runBuildJob, sanitizeBuildResult } = require("./website
 const { createTimelineEvent } = require("./services/timelineService");
 const crypto = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
+const { SOURCE_FACTORY, SOURCE_MANUAL, previewSourceForVersion } = require("./_preview-zip");
 const { normalizeWebsiteInput } = require("./_website-input");
 const { fallbackPreviewUrl } = require("./_public-preview");
 
@@ -330,7 +331,10 @@ async function readCustomerPreviewVersion({ supabaseUrl, serviceRoleKey, journey
 }
 
 function storedPreviewVersionSource(version = {}) {
-  return normalizePreviewSource(version.metadata?.previewSource || version.generated_package?.meta?.previewSource) || PREVIEW_SOURCES.FACTORY;
+  const source = previewSourceForVersion(version);
+  if (source === SOURCE_FACTORY) return PREVIEW_SOURCES.FACTORY;
+  if (source === SOURCE_MANUAL) return PREVIEW_SOURCES.MANUAL;
+  return "";
 }
 
 async function resolveSelectedDemoPreview({ supabaseUrl, serviceRoleKey, journey, previewVersionId, previewSource }) {
@@ -1260,7 +1264,7 @@ async function readEvents({ supabaseUrl, serviceRoleKey, journeyId, customerOnly
 
 async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId }) {
   try {
-    return await getBuildHistory({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId });
+    return normalizeFactoryHistorySources(await getBuildHistory({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId }));
   } catch (error) {
     if (!isMissingFactoryTableError(error)) throw error;
     return {
@@ -1272,6 +1276,21 @@ async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, jour
       warning: "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit.",
     };
   }
+}
+
+function normalizeFactoryHistorySources(history = {}) {
+  const previewVersions = (Array.isArray(history.previewVersions) ? history.previewVersions : []).map(normalizeFactoryHistoryVersionSource);
+  const versionsById = new Map(previewVersions.map((version) => [cleanText(version?.id), version]));
+  const activeVersion = history.activeVersion?.id
+    ? versionsById.get(cleanText(history.activeVersion.id)) || normalizeFactoryHistoryVersionSource(history.activeVersion)
+    : history.activeVersion || null;
+  return { ...history, previewVersions, activeVersion };
+}
+
+function normalizeFactoryHistoryVersionSource(version = null) {
+  if (!version || typeof version !== "object") return version;
+  const sourceType = previewSourceForVersion(version);
+  return { ...version, sourceType: sourceType || null };
 }
 
 async function readPublicPreviewPublicationSafe({ supabaseUrl, serviceRoleKey, journey }) {
@@ -2283,6 +2302,8 @@ function isMissingPublicPreviewPublicationTable(error = {}) {
 }
 
 exports._private = {
+  normalizeFactoryHistorySources,
+  normalizeFactoryHistoryVersionSource,
   resolveSelectedDemoPreview,
   storedPreviewVersionSource,
   sanitizePublicPreviewPublication,

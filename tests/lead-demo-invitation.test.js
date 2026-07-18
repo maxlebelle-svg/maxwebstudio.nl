@@ -45,7 +45,7 @@ function fixture(options = {}) {
     if (parsed.pathname.endsWith("/rest/v1/leads")) return reply(200, lead ? [lead] : []);
     if (parsed.pathname.endsWith("/rest/v1/demo_journeys")) return reply(200, journey ? [journey] : []);
     if (parsed.pathname.endsWith("/rest/v1/public_preview_publications")) return reply(200, options.publication === null ? [] : [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", relationship_type: "lead", relationship_id: IDS.lead, public_slug: "advies-post", preview_version_id: options.publishedPreviewVersionId || IDS.preview, enabled: true, revoked_at: null }]);
-    if (parsed.pathname.endsWith("/rest/v1/website_preview_versions")) return reply(200, options.previewVersion === null ? [] : [{ id: IDS.preview, demo_journey_id: IDS.journey, version: options.previewVersionNumber || 4, preview_url: "https://maxwebstudio.nl/.netlify/functions/demo-preview?id=abc", metadata: { previewSource: options.previewSource || "website_factory" }, status: "internal", generated_package: { files: [{ path: "index.html" }] } }]);
+    if (parsed.pathname.endsWith("/rest/v1/website_preview_versions")) return reply(200, options.previewVersion === null ? [] : [{ id: IDS.preview, demo_journey_id: IDS.journey, build_job_id: options.legacyFactory ? IDS.preview : null, version: options.previewVersionNumber || 4, preview_url: "https://maxwebstudio.nl/.netlify/functions/demo-preview?id=abc", metadata: options.legacyFactory ? { editorManifestAvailable: true } : { previewSource: options.previewSource || "website_factory" }, status: "internal", generated_package: { files: [{ path: "index.html" }], meta: options.legacyFactory ? { editorManifest: { version: 1 } } : {} } }]);
     if (parsed.pathname.endsWith("/rest/v1/lead_demo_invitations") && (init.method || "GET") === "GET") {
       if (parsed.searchParams.has("id")) return reply(200, [{ id: IDS.invitation, lead_id: IDS.lead, demo_journey_id: IDS.journey, status: options.invitationStatus || "planned", metadata: options.invitationMetadata || {} }]);
       return reply(200, options.invitationStatus ? [{ id: IDS.invitation, lead_id: IDS.lead, demo_journey_id: IDS.journey, status: options.invitationStatus, metadata: options.invitationMetadata || {} }] : []);
@@ -151,6 +151,15 @@ test("uitnodiging koppelt exact de geselecteerde Factory-preview zonder duplicat
   assert.equal(JSON.parse(response.body).previewVersionId, IDS.preview);
   assert.equal(state.calls.filter((call) => call.path.endsWith("/rest/v1/website_preview_versions") && call.method === "POST").length, 0);
   assert.equal(state.calls.filter((call) => call.path.endsWith("/rest/v1/website_preview_versions") && call.method === "GET").length, 1);
+});
+
+test("uitnodiging koppelt een legacy Factory V4 via dezelfde bronresolver", async () => {
+  const { state, response } = await run({ legacyFactory: true });
+  assert.equal(response.statusCode, 202);
+  const body = JSON.parse(response.body);
+  assert.equal(body.previewVersionId, IDS.preview);
+  assert.equal(body.previewSource, "website_factory");
+  assert.equal(state.calls.some((call) => call.path.endsWith("/rest/v1/customers")), false);
 });
 
 test("publieke pointer moet exact overeenkomen met de geselecteerde preview", async () => {

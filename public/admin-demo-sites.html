@@ -23316,12 +23316,12 @@
         function normalizeDemoPreviewSource(value = "") {
           const source = String(value || "").trim().toLowerCase();
           if (["manual", "manual_zip", "manual-zip", "zip"].includes(source)) return "manual_zip";
-          if (["factory", "website_factory", "website-factory"].includes(source)) return "website_factory";
+          if (["factory", "factory_build", "factory-build", "website_factory", "website-factory"].includes(source)) return "website_factory";
           return "";
         }
 
         function demoPreviewVersionSource(version = {}) {
-          return normalizeDemoPreviewSource(version?.sourceType || version?.previewSource || version?.metadata?.previewSource);
+          return normalizeDemoPreviewSource(window.DemoSitesCommercialActions.previewVersionSource(version));
         }
 
         function availableDemoPreviewVersion(version = {}) {
@@ -23787,8 +23787,8 @@
         async function updatePreviewVersion(record = {}, previewVersionId = "") {
           const selectedVersion = validDemoPreviewVersions(record).find((version) => String(version.id) === String(previewVersionId)) || null;
           if (!selectedVersion?.id) throw new Error("De gekozen previewversie is niet beschikbaar.");
-          const previewSource = demoPreviewVersionSource(selectedVersion);
-          if (!previewSource) throw new Error("De bron van deze previewversie ontbreekt.");
+          const previewSource = window.DemoSitesCommercialActions.previewVersionSource(selectedVersion);
+          if (!previewSource) throw new Error(`De bron van previewversie ${selectedVersion.id} ontbreekt; expliciete en structurele bronmetadata zijn niet beschikbaar.`);
           const data = await postJson(endpoints.journey, {
             action: "update_demo_preview_source",
             demoJourneyId: record.id,
@@ -23879,7 +23879,11 @@
                       <span>Previewversie</span>
                       <select id="demo-preview-version-${escapeHtml(record.id)}" data-demo-preview-version="${escapeHtml(record.id)}">
                         <option value=""${previewResolution.selectedVersion ? "" : " selected"}>Kies een geldige previewversie</option>
-                        ${previewResolution.validVersions.map((version) => `<option value="${escapeHtml(version.id)}"${String(version.id) === String(previewResolution.selectedVersion?.id || "") ? " selected" : ""}>V${escapeHtml(version.version || "-")} · ${demoPreviewVersionSource(version) === "manual_zip" ? "Handmatige ZIP" : "Website Factory"}</option>`).join("")}
+                        ${previewResolution.validVersions.map((version) => {
+                          const versionSource = demoPreviewVersionSource(version);
+                          const sourceLabel = versionSource === "manual_zip" ? "Handmatige ZIP" : versionSource === "website_factory" ? "Website Factory" : "Bron onbekend";
+                          return `<option value="${escapeHtml(version.id)}"${String(version.id) === String(previewResolution.selectedVersion?.id || "") ? " selected" : ""}>V${escapeHtml(version.version || "-")} · ${sourceLabel}</option>`;
+                        }).join("")}
                       </select>
                       <small>Meerdere geldige versies gevonden. De gekozen versie-ID wordt exact opgeslagen.</small>
                     </label>` : ""}

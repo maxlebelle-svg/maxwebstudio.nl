@@ -3,6 +3,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { buildLeadDemoInvitationMail } = require("./services/leadDemoInvitationTemplate");
 const { sendTrackedEmail } = require("./services/resendMailService");
 const { normalizePreviewSource } = require("./_demo-preview-source");
+const { previewSourceForVersion } = require("./_preview-zip");
 const { fallbackPreviewUrl, isValidPublicSlug } = require("./_public-preview");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -199,7 +200,8 @@ async function resolvePortalPreview(fetchImpl, config, input = {}) {
   }
   const previewUrl = absolutePreviewUrl(version.preview_url, config.siteUrl);
   if (!previewUrl) throw httpError(422, "DEMO_PREVIEW_MISSING", "De geselecteerde preview kan niet veilig worden geopend.");
-  const previewSource = normalizePreviewSource(version.metadata?.previewSource) || "website_factory";
+  const previewSource = normalizePreviewSource(previewSourceForVersion(version));
+  if (!previewSource) throw httpError(409, "PREVIEW_SOURCE_MISSING", `De bronmetadata van previewversie ${version.id} ontbreekt.`);
   return {
     previewVersionId: version.id,
     previewSource,
