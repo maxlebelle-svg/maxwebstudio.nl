@@ -550,9 +550,9 @@
                     <div class="factory-guided-preview-toolbar">
                       <div><small>Preview Workspace</small><h3 id="factory-preview-workspace-title">Live preview</h3></div>
                       <div class="factory-guided-device-controls" aria-label="Previewapparaat">
-                        <button class="is-active" type="button" data-guided-preview-mode="desktop">Desktop</button>
-                        <button type="button" data-guided-preview-mode="tablet">Tablet</button>
-                        <button type="button" data-guided-preview-mode="mobile">Mobiel</button>
+                        <button class="is-active" type="button" aria-pressed="true" data-guided-preview-mode="desktop">Desktop</button>
+                        <button type="button" aria-pressed="false" data-guided-preview-mode="tablet">Tablet</button>
+                        <button type="button" aria-pressed="false" data-guided-preview-mode="mobile">Mobiel</button>
                       </div>
                       <div class="factory-preview-view-selector" id="factory-preview-view-selector" aria-label="Previewbron" hidden>
                         <span>Previewbron</span>
@@ -21307,6 +21307,8 @@
         let intakeMode = "guided";
         let previewSource = "factory";
         let viewedPreviewVersionId = "";
+        let previewDevice = "desktop";
+        let previewDeviceScopeKey = "";
         let previewLoadFailedId = "";
         let manualPreview = null;
         let manualZipUploading = false;
@@ -23351,6 +23353,48 @@
           return previewSourceApi()?.sessionKey(previewSessionScope()) || "websiteFactory:viewedPreviewVersion:general";
         }
 
+        function previewDeviceSessionKey() {
+          return `${previewSessionKey()}:device`;
+        }
+
+        function normalizePreviewDevice(mode) {
+          return ["desktop", "tablet", "mobile"].includes(mode) ? mode : "desktop";
+        }
+
+        function renderPreviewDeviceSelection() {
+          elements.previewControls?.querySelectorAll("[data-preview-mode]").forEach((control) => {
+            control.classList.toggle("is-active", control.dataset.previewMode === previewDevice);
+            control.setAttribute("aria-pressed", control.dataset.previewMode === previewDevice ? "true" : "false");
+          });
+          document.querySelectorAll("[data-guided-preview-mode]").forEach((control) => {
+            control.classList.toggle("is-active", control.dataset.guidedPreviewMode === previewDevice);
+            control.setAttribute("aria-pressed", control.dataset.guidedPreviewMode === previewDevice ? "true" : "false");
+          });
+          elements.previewShell?.setAttribute("data-preview-mode", previewDevice);
+        }
+
+        function setPreviewDevice(mode, options = {}) {
+          previewDevice = normalizePreviewDevice(mode);
+          previewDeviceScopeKey = previewDeviceSessionKey();
+          renderPreviewDeviceSelection();
+          if (options.remember !== false) {
+            try { window.sessionStorage.setItem(previewDeviceScopeKey, previewDevice); } catch {}
+          }
+          return previewDevice;
+        }
+
+        function ensurePreviewDeviceSelection() {
+          const scopeKey = previewDeviceSessionKey();
+          if (previewDeviceScopeKey !== scopeKey) {
+            let stored = "";
+            try { stored = window.sessionStorage.getItem(scopeKey) || ""; } catch {}
+            previewDevice = normalizePreviewDevice(stored);
+            previewDeviceScopeKey = scopeKey;
+          }
+          renderPreviewDeviceSelection();
+          return previewDevice;
+        }
+
         function selectedViewedPreviewVersion() {
           const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
           return versions.find((version) => version.id === viewedPreviewVersionId) || null;
@@ -24484,6 +24528,7 @@
 
         window.WebsiteFactoryRuntime = {
           quickBuild,
+          setPreviewDevice: (mode) => setPreviewDevice(mode),
           renderSelectedPreviewActions: (...args) => renderSelectedPreviewActions(...args),
           openSelectedPreview: () => openSelectedPreview(),
           copySelectedPreviewLink: () => copySelectedPreviewLink(),
@@ -24503,6 +24548,7 @@
             publicPreviewPublication: customerPreviewPublication,
             previewSource,
             viewedPreviewVersionId,
+            previewDevice,
             pipeline: normalizeFactoryServerState(),
             hasPreview: normalizeFactoryServerState().previewRenderable,
           }),
@@ -25752,6 +25798,7 @@
 
         function renderPreviewStage() {
           ensureViewedPreviewSelection();
+          ensurePreviewDeviceSelection();
           const source = activePreviewSource();
           const capability = previewCapabilityState(source);
           const api = previewSourceApi();
@@ -26254,11 +26301,7 @@
             if (!button) return;
             event.preventDefault();
             event.stopPropagation();
-            const mode = button.dataset.previewMode || "desktop";
-            elements.previewControls.querySelectorAll("[data-preview-mode]").forEach((control) => {
-              control.classList.toggle("is-active", control === button);
-            });
-            elements.previewShell?.setAttribute("data-preview-mode", mode);
+            setPreviewDevice(button.dataset.previewMode);
           });
           elements.previewRefresh?.addEventListener("click", (event) => {
             event.preventDefault();
@@ -27041,9 +27084,9 @@
             });
             document.getElementById("factory-preview-actions-menu")?.removeAttribute("open");
           });
-          document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", () => {
-            document.querySelectorAll("[data-guided-preview-mode]").forEach((item) => item.classList.toggle("is-active", item === button));
-            document.querySelector(`.factory-control-preview [data-preview-mode="${button.dataset.guidedPreviewMode}"]`)?.click();
+          document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", (event) => {
+            event.preventDefault();
+            window.WebsiteFactoryRuntime?.setPreviewDevice?.(button.dataset.guidedPreviewMode);
           }));
           document.querySelectorAll("[data-factory-action='versions']").forEach((button) => button.addEventListener("click", () => {
             activateFactoryTab("project");
