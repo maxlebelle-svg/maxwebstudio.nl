@@ -23428,7 +23428,7 @@
             try { window.sessionStorage.setItem(previewSessionKey(), version.id); } catch {}
           }
           renderPreviewStage();
-          renderGuidedVersionMeta();
+          window.WebsiteFactoryRuntime?.renderGuidedVersionMeta?.();
           renderPreviewVersionHistory();
           renderSelectedPreviewActions();
           return true;
@@ -25065,7 +25065,7 @@
                 publicPreviewRevokedAt: confirmation.publicPreviewRevokedAt || data.publicPreviewRevokedAt || "",
               };
               renderCustomerPreviewPublication();
-              renderGuidedVersionMeta();
+              window.WebsiteFactoryRuntime?.renderGuidedVersionMeta?.();
               setMessage(elements.message, `${context.versionLabel} is nu actief in het klantportaal.`, "success");
             } catch (error) {
               setMessage(elements.message, error.message || "De klantpreview kon niet worden gepubliceerd.", "error");
@@ -26869,6 +26869,10 @@
           if (target.dataset.signature === signature) return;
           target.dataset.signature = signature;
           target.innerHTML = `${differs ? '<p class="factory-preview-comparison-note">Je bekijkt een andere versie dan de actieve klantpreview.</p>' : ""}<div class="factory-guided-version-meta-grid">${meta.map(([label, content]) => `<div><small>${safe(label)}</small><strong>${safe(content)}</strong></div>`).join("")}</div>`;
+        }
+
+        if (window.WebsiteFactoryRuntime) {
+          window.WebsiteFactoryRuntime.renderGuidedVersionMeta = () => renderGuidedVersionMeta();
         }
 
         function syncPrimaryAction() {
