@@ -101,6 +101,9 @@
     const serverStored = UUID_PATTERN.test(previewVersionId) && Boolean(previewUrl) && version.renderable !== false && !localZipPending;
     const hasRepositoryScope = UUID_PATTERN.test(demoJourneyId);
     const hasCustomer = UUID_PATTERN.test(customerId);
+    const hasLead = UUID_PATTERN.test(leadId);
+    const relationshipType = hasCustomer ? "customer" : hasLead ? "lead" : "";
+    const relationshipId = relationshipType === "customer" ? customerId : relationshipType === "lead" ? leadId : "";
     const manual = sourceType === SOURCE_MANUAL;
     const published = Boolean(previewVersionId && publishedPreviewVersionId === previewVersionId);
     const publicPreviewUrl = published ? safePublicPreviewUrl({ publicPreviewSlug, publicPreviewUrl: input.publicPreviewUrl, siteOrigin: input.siteOrigin }) : "";
@@ -108,14 +111,15 @@
     const shareUrl = publicPreviewUrl || technicalShareUrl;
     const shareEnabled = serverStored && Boolean(shareUrl);
     const demoEnabled = serverStored && hasRepositoryScope;
-    const publishEnabled = serverStored && shareEnabled && hasCustomer && (manual || UUID_PATTERN.test(websiteId));
+    const publishEnabled = serverStored && shareEnabled && hasRepositoryScope && Boolean(relationshipId)
+      && (relationshipType === "lead" || manual || UUID_PATTERN.test(websiteId));
     const saved = Boolean(previewVersionId && savedPreviewVersionId === previewVersionId);
     const versionLabel = `${manual ? "Handmatige ZIP" : "Website Factory"} · V${Number(version.version || 1)}`;
     let explanation = "";
     if (localZipPending) explanation = "Verwerk de ZIP eerst voordat deze kan worden opgeslagen of gepubliceerd.";
     else if (!serverStored) explanation = "Selecteer eerst een verwerkte previewversie.";
     else if (!hasRepositoryScope) explanation = "Koppel de preview eerst aan een demo-aanvraag.";
-    else if (!hasCustomer) explanation = "Selecteer eerst een lead of klant.";
+    else if (!relationshipId) explanation = "Selecteer eerst een lead of klant.";
 
     return {
       previewVersionId,
@@ -130,6 +134,8 @@
       shareUrl,
       shareEnabled,
       customerId,
+      relationshipType,
+      relationshipId,
       demoJourneyId,
       leadId,
       projectId,
@@ -137,12 +143,15 @@
       serverStored,
       demoEnabled,
       publishEnabled,
-      activateEnabled: manual && publishEnabled && !published && version.active !== true && version.isActive !== true,
+      activateEnabled: relationshipType === "customer" && manual && publishEnabled && !published && version.active !== true && version.isActive !== true,
       saved,
       published,
       versionLabel,
       saveLabel: saved ? "Opgeslagen in Demo Sites" : "Opslaan in Demo Sites",
-      publishLabel: published ? "Actief in klantportaal" : "Doorzetten naar klantportaal",
+      publishLabel: relationshipType === "lead"
+        ? (published ? "Publieke demo gedeeld" : "Publieke demo delen")
+        : (published ? "Actief in klantportaal" : "Doorzetten naar klantportaal"),
+      publicationStatusLabel: relationshipType === "lead" ? "Publieke demo gedeeld" : "Actief in klantportaal",
       explanation: explanation || (!shareEnabled && serverStored ? "Voor deze preview is geen veilige publieke previewlink beschikbaar." : ""),
     };
   }

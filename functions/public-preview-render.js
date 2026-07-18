@@ -22,20 +22,10 @@ exports.handler = async (event) => {
   if (!requestedFile) return brandedError(404, "Dit previewbestand bestaat niet.");
 
   try {
-    const customers = await request(`${context.supabaseUrl}/rest/v1/customers?select=id,metadata,public_preview_slug,public_preview_enabled,public_preview_revoked_at&public_preview_slug=eq.${encodeURIComponent(slug)}&limit=1`, context.serviceRoleKey);
-    const customer = customers[0];
-    if (!customer?.id) return brandedError(404, "Deze preview bestaat niet of is niet meer beschikbaar.");
-    if (customer.public_preview_enabled !== true || customer.public_preview_revoked_at) {
-      return brandedError(410, "Deze gedeelde preview is ingetrokken.");
-    }
-
-    const versionId = uuid(customer.metadata?.publishedPreviewVersionId);
-    if (!versionId) return brandedError(404, "Deze preview bestaat niet of is niet meer beschikbaar.");
-    const versions = await request(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=id,customer_id,title,status,published_to_portal,generated_package&id=eq.${encodeURIComponent(versionId)}&customer_id=eq.${encodeURIComponent(customer.id)}&published_to_portal=eq.true&limit=1`, context.serviceRoleKey);
-    const version = versions[0];
-    if (!version?.id || !PUBLIC_STATUSES.has(text(version.status))) {
-      return brandedError(404, "Deze preview bestaat niet of is niet meer beschikbaar.");
-    }
+    const target = await resolvePublicTarget(context, slug);
+    if (target?.revoked) return brandedError(410, "Deze gedeelde preview is ingetrokken.");
+    const version = target?.version;
+    if (!version?.id) return brandedError(404, "Deze preview bestaat niet of is niet meer beschikbaar.");
 
     const files = Array.isArray(version.generated_package?.files) ? version.generated_package.files : [];
     const entry = safeFilePath(version.generated_package?.entryFile || "index.html");
@@ -57,6 +47,65 @@ exports.handler = async (event) => {
     return brandedError(error.status === 429 ? 429 : 503, "Deze preview is tijdelijk niet beschikbaar.");
   }
 };
+
+async function resolvePublicTarget(context, slug) {
+  const publication = await readGenericPublication(context, slug);
+  if (publication?.id) {
+    if (publication.enabled !== true || publication.revoked_at) return { revoked: true };
+    const versionId = uuid(publication.preview_version_id);
+    const relationshipId = uuid(publication.relationship_id);
+    const relationshipType = text(publication.relationship_type).toLowerCase();
+    if (!versionId || !relationshipId || !["lead", "customer"].includes(relationshipType)) return null;
+    const versions = await request(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=id,customer_id,demo_journey_id,title,status,published_to_portal,generated_package&id=eq.${encodeURIComponent(versionId)}&limit=1`, context.serviceRoleKey);
+    const version = versions[0];
+    if (!version?.id || text(version.status).toLowerCase() === "archived" || !Array.isArray(version.generated_package?.files) || !version.generated_package.files.length) return null;
+    if (!await genericOwnershipMatches(context, relationshipType, relationshipId, version)) return null;
+    return { version };
+  }
+  return resolveLegacyCustomerTarget(context, slug);
+}
+
+async function readGenericPublication(context, slug) {
+  try {
+    const rows = await request(`${context.supabaseUrl}/rest/v1/public_preview_publications?select=id,relationship_type,relationship_id,preview_version_id,enabled,revoked_at&public_slug=eq.${encodeURIComponent(slug)}&limit=1`, context.serviceRoleKey);
+    return rows[0] || null;
+  } catch (error) {
+    if (isMissingPublicationTable(error)) return null;
+    throw error;
+  }
+}
+
+async function genericOwnershipMatches(context, relationshipType, relationshipId, version) {
+  const journeyId = uuid(version.demo_journey_id);
+  const journeys = journeyId
+    ? await request(`${context.supabaseUrl}/rest/v1/demo_journeys?select=id,lead_id,customer_id&id=eq.${encodeURIComponent(journeyId)}&limit=1`, context.serviceRoleKey)
+    : [];
+  const journey = journeys[0] || null;
+  if (relationshipType === "lead") return Boolean(journey?.id && uuid(journey.lead_id) === relationshipId);
+  if (uuid(version.customer_id) === relationshipId || uuid(journey?.customer_id) === relationshipId) return true;
+  const leadId = uuid(journey?.lead_id);
+  if (!leadId) return false;
+  const leads = await request(`${context.supabaseUrl}/rest/v1/leads?select=id,customer_id,converted_customer_id&id=eq.${encodeURIComponent(leadId)}&limit=1`, context.serviceRoleKey);
+  const lead = leads[0];
+  return Boolean(lead?.id && [lead.customer_id, lead.converted_customer_id].map(uuid).includes(relationshipId));
+}
+
+async function resolveLegacyCustomerTarget(context, slug) {
+  const customers = await request(`${context.supabaseUrl}/rest/v1/customers?select=id,metadata,public_preview_slug,public_preview_enabled,public_preview_revoked_at&public_preview_slug=eq.${encodeURIComponent(slug)}&limit=1`, context.serviceRoleKey);
+  const customer = customers[0];
+  if (!customer?.id) return null;
+  if (customer.public_preview_enabled !== true || customer.public_preview_revoked_at) return { revoked: true };
+  const versionId = uuid(customer.metadata?.publishedPreviewVersionId);
+  if (!versionId) return null;
+  const versions = await request(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=id,customer_id,title,status,published_to_portal,generated_package&id=eq.${encodeURIComponent(versionId)}&customer_id=eq.${encodeURIComponent(customer.id)}&published_to_portal=eq.true&limit=1`, context.serviceRoleKey);
+  const version = versions[0];
+  return version?.id && PUBLIC_STATUSES.has(text(version.status)) ? { version } : null;
+}
+
+function isMissingPublicationTable(error = {}) {
+  const details = [error.code, error.message].map(text).join(" ").toLowerCase();
+  return error.code === "42P01" || error.code === "PGRST205" || details.includes("public_preview_publications");
+}
 
 function assetRoute(file = "") {
   return `?file=${encodeURIComponent(safeFilePath(file))}`;
@@ -161,4 +210,4 @@ function isText(path = "") { return /\.(html?|css|js|mjs|json|xml|txt|svg)$/i.te
 function contentType(path = "") { const lower = text(path).toLowerCase(); if (/\.html?$/.test(lower)) return "text/html; charset=utf-8"; if (lower.endsWith(".css")) return "text/css; charset=utf-8"; if (/\.m?js$/.test(lower)) return "application/javascript; charset=utf-8"; if (lower.endsWith(".svg")) return "image/svg+xml"; if (lower.endsWith(".png")) return "image/png"; if (/\.jpe?g$/.test(lower)) return "image/jpeg"; if (lower.endsWith(".webp")) return "image/webp"; if (lower.endsWith(".gif")) return "image/gif"; if (lower.endsWith(".ico")) return "image/x-icon"; if (lower.endsWith(".woff2")) return "font/woff2"; if (lower.endsWith(".woff")) return "font/woff"; if (lower.endsWith(".ttf")) return "font/ttf"; return "application/octet-stream"; }
 function escapeHtml(value = "") { return String(value || "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]); }
 
-exports._private = { PUBLIC_STATUSES, REQUEST_LIMIT, allowRequest, assetRoute, contentType, requestWindows, resolveFileReference, rewriteCss, rewriteHtml, safeFilePath };
+exports._private = { PUBLIC_STATUSES, REQUEST_LIMIT, allowRequest, assetRoute, contentType, genericOwnershipMatches, readGenericPublication, requestWindows, resolveFileReference, resolvePublicTarget, rewriteCss, rewriteHtml, safeFilePath };

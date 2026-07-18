@@ -84,7 +84,9 @@ async function renderWith({ customer = baseCustomer(), version = baseVersion(), 
   global.fetch = async (url) => {
     calls.push(String(url));
     const table = new URL(url).pathname.split("/").pop();
-    const body = table === "customers" ? (customer ? [customer] : []) : (version ? [version] : []);
+    const body = table === "public_preview_publications"
+      ? []
+      : table === "customers" ? (customer ? [customer] : []) : (version ? [version] : []);
     return { ok: true, status: 200, json: async () => body };
   };
   renderer._private.requestWindows.clear();
@@ -246,6 +248,9 @@ async function withPublicationStore(customer, callback, collisions = new Set()) 
   global.fetch = async (url, options = {}) => {
     const parsed = new URL(url);
     const method = options.method || "GET";
+    if (parsed.pathname.endsWith("/public_preview_publications")) {
+      return { ok: false, status: 404, text: async () => JSON.stringify({ code: "PGRST205", message: "public_preview_publications is not in the schema cache" }) };
+    }
     if (method === "PATCH") {
       Object.assign(stored, JSON.parse(options.body || "{}"));
       return { ok: true, status: 200, text: async () => JSON.stringify([stored]) };

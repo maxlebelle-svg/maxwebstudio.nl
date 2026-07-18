@@ -23995,6 +23995,7 @@
           events = Array.isArray(data.events) ? data.events : [];
           buildHistory = serverBuildHistory;
           projectWorkspace = data.projectWorkspace || null;
+          await refreshCustomerPreviewPublication();
           syncPreviewSourceFromJourney();
           ensureViewedPreviewSelection();
           loadIntakeLocally();
@@ -24022,6 +24023,7 @@
           projectWorkspace = null;
           websiteIntelligencePackage = null;
           manualPreview = null;
+          customerPreviewPublication = null;
           previewSource = "factory";
           viewedPreviewVersionId = "";
           previewLoadFailedId = "";
@@ -24626,16 +24628,22 @@
             const items = [
               context?.readOnly ? '<span class="is-readonly">Alleen-lezen</span>' : "",
               context?.saved ? '<span class="is-saved">Opgeslagen in Demo Sites</span>' : "",
-              context?.published ? '<span class="is-published">Actief in klantportaal</span>' : "",
+              context?.published
+                ? context.relationshipType === "lead"
+                  ? '<span class="is-published">Publieke demo gedeeld</span>'
+                  : '<span class="is-published">Actief in klantportaal</span>'
+                : "",
             ].filter(Boolean);
             statuses.innerHTML = items.join("");
           }
           if (hint) {
             hint.textContent = context?.published
-              ? "Deze versie is actief in het klantportaal en kan direct worden gedeeld."
+              ? context.relationshipType === "lead"
+                ? "Deze versie is als publieke salesdemo gedeeld. De lead blijft een lead."
+                : "Deze versie is actief in het klantportaal en kan direct worden gedeeld."
               : context?.saved
                 ? "Deze versie is opgeslagen in Demo Sites. Doorzetten blijft een aparte, expliciete handeling."
-                : context?.explanation || "Bekijken alleen verandert de actieve klantpreview niet.";
+                : context?.explanation || "Bekijken alleen verandert de actieve publieke preview niet.";
           }
           saveButtons.forEach((button) => {
             button.textContent = context?.saveLabel || "Opslaan in Demo Sites";
@@ -24645,8 +24653,10 @@
           });
           publishButtons.forEach((button) => {
             button.textContent = context?.publishLabel || "Doorzetten naar klantportaal";
-            button.disabled = !context?.publishEnabled || context.published || journeyLocks.has("publish_customer_preview");
-            button.title = button.disabled && !context?.published ? context?.explanation || "Selecteer eerst een klant en verwerkte previewversie" : "Zet exact de geselecteerde previewversie door";
+            button.disabled = !context?.publishEnabled || context.published || journeyLocks.has(context?.relationshipType === "lead" ? "publish_public_preview" : "publish_customer_preview");
+            button.title = button.disabled && !context?.published
+              ? context?.explanation || "Selecteer eerst een relatie en verwerkte previewversie"
+              : context?.relationshipType === "lead" ? "Deel exact deze previewversie als publieke salesdemo" : "Zet exact de geselecteerde previewversie door";
             if (button.id === "factory-preview-publish-customer") button.hidden = Boolean(context?.published);
           });
           if (openButton) {
@@ -24685,9 +24695,10 @@
 
         function selectedPreviewShareNames() {
           const customer = factoryCustomerContext?.customer || {};
+          const lead = selectedLead() || {};
           return {
-            contactName: customer.contact_name || customer.contactName || customer.name || "",
-            companyName: customer.company || customer.company_name || "",
+            contactName: customer.contact_name || customer.contactName || customer.name || lead.contactName || lead.contact_name || lead.name || "",
+            companyName: customer.company || customer.company_name || lead.companyName || lead.company_name || lead.company || "",
           };
         }
 
@@ -24750,15 +24761,23 @@
 
         async function refreshCustomerPreviewPublication() {
           const customerId = factoryCustomerContext?.customer?.id || "";
-          if (!customerId) {
+          const leadId = backendLeadId(selectedLead()?.leadId || selectedLead()?.id || journey?.leadId || journey?.lead_id || elements.lead?.value || "");
+          const relationshipType = customerId ? "customer" : leadId ? "lead" : "";
+          const relationshipId = customerId || leadId;
+          if (!relationshipId) {
             customerPreviewPublication = null;
             return null;
           }
           try {
-            const data = await apiRequest(`${previewPublicationEndpoint}?action=current&customerId=${encodeURIComponent(customerId)}`);
+            const currentPublicationUrl = relationshipType === "customer"
+              ? `${previewPublicationEndpoint}?action=current&customerId=${encodeURIComponent(customerId)}`
+              : `${previewPublicationEndpoint}?action=current&relationshipType=lead&relationshipId=${encodeURIComponent(relationshipId)}`;
+            const data = await apiRequest(currentPublicationUrl);
             customerPreviewPublication = data.previewVersion ? {
               ...data.previewVersion,
               previewVersionId: data.publishedPreviewVersionId || data.previewVersion.id,
+              relationshipType: data.relationshipType || relationshipType,
+              relationshipId: data.relationshipId || relationshipId,
               publicPreviewSlug: data.publicPreviewSlug || "",
               publicPreviewUrl: data.publicPreviewUrl || "",
               fallbackPublicPreviewUrl: data.fallbackPublicPreviewUrl || "",
@@ -24784,23 +24803,33 @@
           const publicUrl = customerPreviewPublication.publicPreviewUrl || "";
           const publicSlug = customerPreviewPublication.publicPreviewSlug || "";
           const publicEnabled = customerPreviewPublication.publicPreviewEnabled === true && Boolean(publicUrl);
+          const relationshipType = customerPreviewPublication.relationshipType || (factoryCustomerContext?.customer?.id ? "customer" : "lead");
+          const relationshipId = customerPreviewPublication.relationshipId || (relationshipType === "customer"
+            ? factoryCustomerContext?.customer?.id || ""
+            : backendLeadId(selectedLead()?.leadId || selectedLead()?.id || journey?.leadId || ""));
+          const isLeadPublication = relationshipType === "lead";
           let publicPrefix = "preview.maxwebstudio.nl/";
           try {
             const parsedPublicUrl = new URL(publicUrl);
             publicPrefix = `${parsedPublicUrl.host}${parsedPublicUrl.pathname.startsWith("/preview/") ? "/preview/" : "/"}`;
           } catch {}
           elements.customerPublicationStatus.dataset.publishedPreviewVersionId = customerPreviewPublication.previewVersionId || "";
+          elements.customerPublicationStatus.dataset.publishedRelationshipType = relationshipType;
+          elements.customerPublicationStatus.dataset.publishedRelationshipId = relationshipId;
           elements.customerPublicationStatus.dataset.publishedCustomerId = factoryCustomerContext?.customer?.id || "";
           elements.customerPublicationStatus.dataset.publishedWebsiteId = factoryCustomerContext?.website?.id || "";
           elements.customerPublicationStatus.dataset.publishedProjectId = factoryCustomerContext?.project?.id || "";
           elements.customerPublicationStatus.innerHTML = `
-            <div class="factory-public-preview-summary"><strong>Publieke previewlink</strong><span>De geselecteerde websiteversie is nu zichtbaar in het klantportaal. ${publicEnabled ? "De korte link is klaar om professioneel te delen." : "De gedeelde link is ingetrokken."}</span></div>
+            <div class="factory-public-preview-summary"><strong>${isLeadPublication ? "Publieke salesdemo" : "Publieke previewlink"}</strong><span>${isLeadPublication ? "De geselecteerde preview is rechtstreeks met deze lead gedeeld; er is geen klant aangemaakt." : "De geselecteerde websiteversie is nu zichtbaar in het klantportaal."} ${publicEnabled ? "De korte link is klaar om professioneel te delen." : "De gedeelde link is ingetrokken."}</span></div>
             <dl>
-              <div><dt>Klantportaal</dt><dd>Gepubliceerd</dd></div>
+              <div><dt>Relatie</dt><dd>${isLeadPublication ? "Lead" : "Klant"}</dd></div>
+              <div><dt>Publicatie</dt><dd>${isLeadPublication ? "Publieke demo" : "Klantportaal"}</dd></div>
               <div><dt>Versie</dt><dd>V${escapeHtml(customerPreviewPublication.version || "-")}</dd></div>
               <div><dt>Bron</dt><dd>${escapeHtml(sourceLabel)}</dd></div>
               <div><dt>Gepubliceerd</dt><dd>${escapeHtml(formatDate(customerPreviewPublication.publishedAt))}</dd></div>
-              <div><dt>Reviewstatus</dt><dd>${customerPreviewPublication.reviewStatus === "approved" ? "Goedgekeurd" : "Wacht op beoordeling"}</dd></div>
+              <div><dt>${isLeadPublication ? "Previewstatus" : "Reviewstatus"}</dt><dd>${isLeadPublication
+                ? escapeHtml(customerPreviewPublication.status || "internal")
+                : customerPreviewPublication.reviewStatus === "approved" ? "Goedgekeurd" : "Wacht op beoordeling"}</dd></div>
             </dl>
             <div class="factory-public-preview-link" data-public-preview-link>
               <label for="factory-public-preview-slug">Korte link</label>
@@ -24853,7 +24882,12 @@
           if (!window.confirm(`Publieke link wijzigen naar preview.maxwebstudio.nl/${slug}?\n\nDe oude link stopt direct met werken.`)) return;
           button.disabled = true;
           try {
-            const data = await apiRequest(previewPublicationEndpoint, "POST", { action: "set_public_preview_slug", customerId: factoryCustomerContext?.customer?.id || "", slug });
+            const data = await apiRequest(previewPublicationEndpoint, "POST", {
+              action: "set_public_preview_slug",
+              relationshipType: customerPreviewPublication?.relationshipType || (factoryCustomerContext?.customer?.id ? "customer" : "lead"),
+              relationshipId: customerPreviewPublication?.relationshipId || factoryCustomerContext?.customer?.id || backendLeadId(selectedLead()?.leadId || selectedLead()?.id || journey?.leadId || ""),
+              slug,
+            });
             customerPreviewPublication = { ...customerPreviewPublication, ...data };
             renderCustomerPreviewPublication();
             setMessage(elements.message, "De publieke previewlink is gewijzigd.", "success");
@@ -24866,9 +24900,14 @@
 
         async function revokePublicPreviewLink() {
           const publicUrl = customerPreviewPublication?.publicPreviewUrl || "deze publieke previewlink";
-          if (!window.confirm(`Delen intrekken voor ${publicUrl}?\n\nDe klant krijgt daarna een nette melding dat de preview is ingetrokken. De klantportaalpublicatie en goedkeuringsstatus blijven ongewijzigd.`)) return;
+          const isLeadPublication = customerPreviewPublication?.relationshipType === "lead";
+          if (!window.confirm(`Delen intrekken voor ${publicUrl}?\n\nDe openbare link toont daarna een nette melding. ${isLeadPublication ? "De leadstatus en previewstatus" : "De klantportaalpublicatie en goedkeuringsstatus"} blijven ongewijzigd.`)) return;
           try {
-            const data = await apiRequest(previewPublicationEndpoint, "POST", { action: "revoke_public_preview", customerId: factoryCustomerContext?.customer?.id || "" });
+            const data = await apiRequest(previewPublicationEndpoint, "POST", {
+              action: "revoke_public_preview",
+              relationshipType: customerPreviewPublication?.relationshipType || (factoryCustomerContext?.customer?.id ? "customer" : "lead"),
+              relationshipId: customerPreviewPublication?.relationshipId || factoryCustomerContext?.customer?.id || backendLeadId(selectedLead()?.leadId || selectedLead()?.id || journey?.leadId || ""),
+            });
             customerPreviewPublication = { ...customerPreviewPublication, ...data };
             renderCustomerPreviewPublication();
             setMessage(elements.message, "De publieke previewlink is ingetrokken.", "success");
@@ -24885,7 +24924,50 @@
             return;
           }
           if (context.published) {
-            setMessage(elements.message, `${context.versionLabel} is al actief in het klantportaal.`, "info");
+            setMessage(elements.message, `${context.versionLabel} is al ${context.relationshipType === "lead" ? "als publieke demo gedeeld" : "actief in het klantportaal"}.`, "info");
+            return;
+          }
+          if (context.relationshipType === "lead") {
+            const lead = selectedLead() || {};
+            const leadLabel = lead.companyName || lead.company_name || lead.company || lead.contactName || lead.contact_name || "de geselecteerde lead";
+            if (!window.confirm(`${context.versionLabel} als publieke salesdemo delen met ${leadLabel}?\n\nDe lead blijft een lead. De previewstatus, goedkeuring en klantpublicatie veranderen niet.`)) return;
+            await withJourneyLock("publish_public_preview", [elements.publishCustomerPreview, elements.saveDemoSite, elements.generatePreview, document.getElementById("factory-preview-publish-customer")], async () => {
+              renderCustomerPreviewPublication();
+              setMessage(elements.message, `${context.versionLabel} als publieke salesdemo delen...`, "info");
+              try {
+                const data = await apiRequest(previewPublicationEndpoint, "POST", {
+                  action: "publish_public_preview",
+                  relationshipType: "lead",
+                  relationshipId: context.relationshipId,
+                  leadId: context.leadId,
+                  demoJourneyId: context.demoJourneyId,
+                  previewVersionId: context.previewVersionId,
+                });
+                if (data.publishedPreviewVersionId !== context.previewVersionId) throw new Error("De server heeft niet dezelfde previewversie gedeeld als de geselecteerde versie.");
+                const confirmation = await apiRequest(`${previewPublicationEndpoint}?action=current&relationshipType=lead&relationshipId=${encodeURIComponent(context.relationshipId)}&previewVersionId=${encodeURIComponent(context.previewVersionId)}`);
+                if (confirmation.publishedPreviewVersionId !== context.previewVersionId || confirmation.previewVersion?.id !== context.previewVersionId) {
+                  throw new Error("De publieke salesdemo kon niet eenduidig worden bevestigd.");
+                }
+                customerPreviewPublication = {
+                  ...confirmation.previewVersion,
+                  previewVersionId: confirmation.previewVersion.id,
+                  relationshipType: "lead",
+                  relationshipId: context.relationshipId,
+                  previewSource: context.sourceType,
+                  publicPreviewSlug: confirmation.publicPreviewSlug || data.publicPreviewSlug || "",
+                  publicPreviewUrl: confirmation.publicPreviewUrl || data.publicPreviewUrl || "",
+                  fallbackPublicPreviewUrl: confirmation.fallbackPublicPreviewUrl || data.fallbackPublicPreviewUrl || "",
+                  publicPreviewEnabled: confirmation.publicPreviewEnabled === true || data.publicPreviewEnabled === true,
+                  publicPreviewRevokedAt: confirmation.publicPreviewRevokedAt || data.publicPreviewRevokedAt || "",
+                };
+                renderCustomerPreviewPublication();
+                setMessage(elements.message, `${context.versionLabel} is als publieke salesdemo gedeeld. De lead is niet geconverteerd.`, "success");
+              } catch (error) {
+                setMessage(elements.message, error.message || "De publieke salesdemo kon niet worden gedeeld.", "error");
+              } finally {
+                renderCustomerPreviewPublication();
+              }
+            });
             return;
           }
           const customerLabel = customer?.company || customer?.name || "de geselecteerde klant";

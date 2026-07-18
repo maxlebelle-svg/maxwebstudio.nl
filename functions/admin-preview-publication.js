@@ -49,8 +49,10 @@ const projectFields = "id,customer_id,website_id,name,status,updated_at";
 const customerFields = "id,name,company,email,website,metadata,public_preview_slug,public_preview_enabled,public_preview_created_at,public_preview_updated_at,public_preview_revoked_at,updated_at";
 const demoJourneyFields = "id,lead_id,customer_id,business_name,email,website_url,preview_url,preview_token,preview_package,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
+const publicLeadFields = "id,company_name,contact_name,status,lead_status,customer_id,converted_customer_id";
 const legacyLeadFields = "id,converted_customer_id";
 const buildJobFields = "id,demo_journey_id,lead_id,customer_id,preview_url,preview_token";
+const publicPublicationFields = "id,relationship_type,relationship_id,public_slug,preview_version_id,enabled,published_at,revoked_at,created_at,updated_at,created_by";
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -76,6 +78,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === "POST") {
       const payload = parsePayload(event.body);
       if (payload.action === "publish_customer_preview") return publishActiveCustomerPreview(context, payload);
+      if (payload.action === "publish_public_preview") return publishPublicPreview(context, payload);
       if (payload.action === "set_public_preview_slug") return setPublicPreviewSlug(context, payload);
       if (payload.action === "revoke_public_preview") return revokePublicPreview(context, payload);
       return publishPreviewVersion(context, payload);
@@ -117,8 +120,32 @@ async function listPreviewVersions(context, params = {}) {
 }
 
 async function resolveCurrentPublishedPreview(context, params = {}) {
-  const customerId = uuidOrEmpty(params.customerId || params.customer_id);
+  const relationship = relationshipFromInput(params);
   const expectedVersionId = uuidOrEmpty(params.previewVersionId || params.preview_version_id);
+  if (relationship) {
+    const publication = await readPublicPublication(context, relationship, { allowMissingTable: relationship.type === "customer" });
+    if (publication?.id) {
+      if (expectedVersionId && expectedVersionId !== cleanText(publication.preview_version_id)) {
+        throw previewError("PREVIEW_POINTER_MISMATCH", "De publieke preview wijkt af van de geselecteerde versie.", 409);
+      }
+      const resolved = await validatePublicPreviewOwnership(context, relationship, publication.preview_version_id);
+      return jsonResponse(200, {
+        success: true,
+        relationshipType: relationship.type,
+        relationshipId: relationship.id,
+        leadId: relationship.type === "lead" ? relationship.id : "",
+        customerId: relationship.type === "customer" ? relationship.id : "",
+        publishedPreviewVersionId: cleanText(publication.preview_version_id),
+        previewVersion: sanitizeAdminVersion(resolved.version),
+        ...publicPublicationDetails(publication),
+      });
+    }
+    if (relationship.type === "lead") {
+      throw previewError("PREVIEW_POINTER_NOT_FOUND", "Voor deze lead is nog geen publieke demo gepubliceerd.", 404);
+    }
+  }
+
+  const customerId = relationship?.type === "customer" ? relationship.id : uuidOrEmpty(params.customerId || params.customer_id);
   if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
   const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
   if (!customer?.id) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze klant kon niet worden gevalideerd.", 404);
@@ -145,21 +172,42 @@ async function resolveCurrentPublishedPreview(context, params = {}) {
 }
 
 async function setPublicPreviewSlug(context, payload = {}) {
-  const customerId = uuidOrEmpty(payload.customerId || payload.customer_id);
+  const relationship = relationshipFromInput(payload);
   const requestedSlug = cleanText(payload.slug || payload.publicPreviewSlug || payload.public_preview_slug);
-  if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
+  if (!relationship) throw previewError("PREVIEW_RELATIONSHIP_REQUIRED", "Selecteer eerst een geldige lead of klant.", 400);
   if (!requestedSlug || requestedSlug !== slugify(requestedSlug) || !isValidPublicSlug(requestedSlug)) {
     throw previewError("PUBLIC_PREVIEW_SLUG_INVALID", "Kies 3 tot 64 kleine letters, cijfers of koppeltekens. Deze naam is niet toegestaan.", 400);
   }
+  const publication = await readPublicPublication(context, relationship, { allowMissingTable: relationship.type === "customer" });
+  if (publication?.id) {
+    await assertPublicSlugAvailable(context, requestedSlug, { publicationId: publication.id, relationship });
+    const now = new Date().toISOString();
+    const rows = await patchRows(context, "public_preview_publications", `id=eq.${encodeURIComponent(publication.id)}`, {
+      public_slug: requestedSlug,
+      enabled: true,
+      revoked_at: null,
+      updated_at: now,
+    });
+    const updated = rows[0] || { ...publication, public_slug: requestedSlug, enabled: true, revoked_at: null, updated_at: now };
+    return jsonResponse(200, {
+      success: true,
+      relationshipType: relationship.type,
+      relationshipId: relationship.id,
+      leadId: relationship.type === "lead" ? relationship.id : "",
+      customerId: relationship.type === "customer" ? relationship.id : "",
+      publishedPreviewVersionId: cleanText(updated.preview_version_id),
+      ...publicPublicationDetails(updated),
+    });
+  }
+  if (relationship.type === "lead") throw previewError("PREVIEW_POINTER_NOT_FOUND", "Publiceer eerst een publieke demo voordat u de slug wijzigt.", 409);
+
+  const customerId = relationship.id;
   const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
   if (!customer?.id) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze klant kon niet worden gevalideerd.", 404);
   if (!uuidOrEmpty(customer.metadata?.publishedPreviewVersionId)) {
     throw previewError("PREVIEW_POINTER_NOT_FOUND", "Publiceer eerst een klantpreview voordat u een publieke link instelt.", 409);
   }
-  const collision = await readSingle(context, "customers", `select=id&public_preview_slug=eq.${encodeURIComponent(requestedSlug)}&limit=1`);
-  if (collision?.id && cleanText(collision.id) !== customerId) {
-    throw previewError("PUBLIC_PREVIEW_SLUG_TAKEN", "Deze previewnaam is al in gebruik. Kies een andere naam.", 409);
-  }
+  await assertPublicSlugAvailable(context, requestedSlug, { relationship });
   const now = new Date().toISOString();
   const rows = await patchRows(context, "customers", `id=eq.${customerId}`, {
     public_preview_slug: requestedSlug,
@@ -174,8 +222,30 @@ async function setPublicPreviewSlug(context, payload = {}) {
 }
 
 async function revokePublicPreview(context, payload = {}) {
-  const customerId = uuidOrEmpty(payload.customerId || payload.customer_id);
-  if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
+  const relationship = relationshipFromInput(payload);
+  if (!relationship) throw previewError("PREVIEW_RELATIONSHIP_REQUIRED", "Selecteer eerst een geldige lead of klant.", 400);
+  const publication = await readPublicPublication(context, relationship, { allowMissingTable: relationship.type === "customer" });
+  if (publication?.id) {
+    const now = new Date().toISOString();
+    const rows = await patchRows(context, "public_preview_publications", `id=eq.${encodeURIComponent(publication.id)}`, {
+      enabled: false,
+      revoked_at: now,
+      updated_at: now,
+    });
+    const updated = rows[0] || { ...publication, enabled: false, revoked_at: now, updated_at: now };
+    return jsonResponse(200, {
+      success: true,
+      relationshipType: relationship.type,
+      relationshipId: relationship.id,
+      leadId: relationship.type === "lead" ? relationship.id : "",
+      customerId: relationship.type === "customer" ? relationship.id : "",
+      publishedPreviewVersionId: cleanText(updated.preview_version_id),
+      ...publicPublicationDetails(updated),
+    });
+  }
+  if (relationship.type === "lead") throw previewError("PREVIEW_POINTER_NOT_FOUND", "Voor deze lead is nog geen publieke demo gepubliceerd.", 404);
+
+  const customerId = relationship.id;
   const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
   if (!customer?.id) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze klant kon niet worden gevalideerd.", 404);
   const now = new Date().toISOString();
@@ -187,6 +257,218 @@ async function revokePublicPreview(context, payload = {}) {
   });
   const updated = rows[0] || { ...customer, public_preview_enabled: false, public_preview_updated_at: now, public_preview_revoked_at: now };
   return jsonResponse(200, { success: true, customerId, ...publicPreviewDetails(updated) });
+}
+
+function relationshipFromInput(input = {}) {
+  const explicitType = cleanText(input.relationshipType || input.relationship_type).toLowerCase();
+  const leadId = uuidOrEmpty(input.leadId || input.lead_id);
+  const customerId = uuidOrEmpty(input.customerId || input.customer_id);
+  const explicitId = uuidOrEmpty(input.relationshipId || input.relationship_id);
+  const type = ["lead", "customer"].includes(explicitType) ? explicitType : customerId ? "customer" : leadId ? "lead" : "";
+  const id = explicitId || (type === "lead" ? leadId : type === "customer" ? customerId : "");
+  return type && id ? { type, id } : null;
+}
+
+async function readRelationshipRecord(context, relationship) {
+  if (!relationship) return null;
+  const fields = relationship.type === "lead" ? publicLeadFields : customerFields;
+  const table = relationship.type === "lead" ? "leads" : "customers";
+  return readSingle(context, table, `select=${fields}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
+}
+
+async function readPublicPublication(context, relationship, options = {}) {
+  if (!relationship) return null;
+  try {
+    return await readSingle(context, "public_preview_publications", [
+      `select=${publicPublicationFields}`,
+      `relationship_type=eq.${encodeURIComponent(relationship.type)}`,
+      `relationship_id=eq.${encodeURIComponent(relationship.id)}`,
+      "order=enabled.desc,updated_at.desc",
+      "limit=1",
+    ].join("&"));
+  } catch (error) {
+    if (options.allowMissingTable && isMissingPublicPublicationSchema(error)) return null;
+    throw error;
+  }
+}
+
+async function validatePublicPreviewOwnership(context, relationship, previewVersionId, supplied = {}) {
+  const relationshipRecord = supplied.relationshipRecord || await readRelationshipRecord(context, relationship);
+  if (!relationshipRecord?.id) {
+    throw previewError("PREVIEW_RELATIONSHIP_MISMATCH", "De geselecteerde lead of klant kon niet worden gevalideerd.", 404);
+  }
+  const version = supplied.version || await readSingle(context, "website_preview_versions", `select=${previewVersionFields}&id=eq.${encodeURIComponent(previewVersionId)}&limit=1`);
+  if (!version?.id) throw previewError("PREVIEW_NOT_FOUND", "De geselecteerde previewversie bestaat niet.", 404);
+  const files = Array.isArray(version.generated_package?.files) ? version.generated_package.files : [];
+  if (!files.length) throw previewError("PREVIEW_NOT_PROCESSED", "De geselecteerde preview is nog niet verwerkt en kan niet worden gedeeld.", 409);
+  if (cleanText(version.status).toLowerCase() === "archived") {
+    throw previewError("PREVIEW_NOT_SHAREABLE", "Een gearchiveerde preview kan niet publiek worden gedeeld.", 409);
+  }
+
+  const journeyId = uuidOrEmpty(version.demo_journey_id);
+  const journey = journeyId
+    ? await readSingle(context, "demo_journeys", `select=${demoJourneyFields}&id=eq.${encodeURIComponent(journeyId)}&limit=1`)
+    : null;
+
+  if (relationship.type === "lead") {
+    if (!journey?.id || cleanText(journey.lead_id) !== relationship.id) {
+      throw previewError("PREVIEW_LEAD_MISMATCH", "Deze preview hoort niet bij de geselecteerde lead.", 409);
+    }
+    const linkedCustomerIds = [relationshipRecord.customer_id, relationshipRecord.converted_customer_id].map(uuidOrEmpty).filter(Boolean);
+    if (version.customer_id && !linkedCustomerIds.includes(cleanText(version.customer_id))) {
+      throw previewError("PREVIEW_LEAD_MISMATCH", "Deze preview is aan een andere relatie gekoppeld.", 409);
+    }
+    return { relationshipRecord, version, journey };
+  }
+
+  if (cleanText(version.customer_id) === relationship.id || cleanText(journey?.customer_id) === relationship.id) {
+    return { relationshipRecord, version, journey };
+  }
+  const journeyLead = journey?.lead_id ? await readLeadById(context, cleanText(journey.lead_id)) : null;
+  const convertedCustomerIds = [journeyLead?.customer_id, journeyLead?.converted_customer_id].map(uuidOrEmpty).filter(Boolean);
+  if (!convertedCustomerIds.includes(relationship.id)) {
+    throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de geselecteerde klant.", 409);
+  }
+  return { relationshipRecord, version, journey };
+}
+
+async function assertPublicSlugAvailable(context, slug, options = {}) {
+  let genericCollision = null;
+  try {
+    genericCollision = await readSingle(context, "public_preview_publications", `select=id,relationship_type,relationship_id&public_slug=eq.${encodeURIComponent(slug)}&limit=1`);
+  } catch (error) {
+    if (!isMissingPublicPublicationSchema(error)) throw error;
+  }
+  if (genericCollision?.id && cleanText(genericCollision.id) !== cleanText(options.publicationId)) {
+    throw previewError("PUBLIC_PREVIEW_SLUG_TAKEN", "Deze previewnaam is al in gebruik. Kies een andere naam.", 409);
+  }
+  const legacyCollision = await readSingle(context, "customers", `select=id&public_preview_slug=eq.${encodeURIComponent(slug)}&limit=1`);
+  const sameLegacyCustomer = options.relationship?.type === "customer" && cleanText(legacyCollision?.id) === options.relationship.id;
+  if (legacyCollision?.id && !sameLegacyCustomer) {
+    throw previewError("PUBLIC_PREVIEW_SLUG_TAKEN", "Deze previewnaam is al in gebruik. Kies een andere naam.", 409);
+  }
+  return true;
+}
+
+async function publishPublicPreview(context, payload = {}) {
+  const relationship = relationshipFromInput(payload);
+  const previewVersionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
+  if (!relationship) throw previewError("PREVIEW_RELATIONSHIP_REQUIRED", "Selecteer eerst een geldige lead of klant.", 400);
+  if (!previewVersionId) throw previewError("PREVIEW_VERSION_INVALID", "Selecteer eerst een geldige previewversie.", 400);
+
+  const resolved = await validatePublicPreviewOwnership(context, relationship, previewVersionId);
+  const existing = await readPublicPublication(context, relationship);
+  const requestedSlug = cleanText(payload.slug || payload.publicSlug || payload.public_slug);
+  if (requestedSlug && (requestedSlug !== slugify(requestedSlug) || !isValidPublicSlug(requestedSlug))) {
+    throw previewError("PUBLIC_PREVIEW_SLUG_INVALID", "Kies 3 tot 64 kleine letters, cijfers of koppeltekens. Deze naam is niet toegestaan.", 400);
+  }
+  const preferred = relationship.type === "lead"
+    ? preferredSlug({ company: resolved.relationshipRecord.company_name, name: resolved.relationshipRecord.contact_name })
+    : preferredSlug(resolved.relationshipRecord);
+  const baseSlug = existing?.public_slug || requestedSlug || preferred;
+  const now = new Date().toISOString();
+
+  if (existing?.id) {
+    await assertPublicSlugAvailable(context, cleanText(existing.public_slug), { publicationId: existing.id, relationship });
+    const rows = await patchRows(context, "public_preview_publications", `id=eq.${encodeURIComponent(existing.id)}`, {
+      preview_version_id: previewVersionId,
+      enabled: true,
+      published_at: now,
+      revoked_at: null,
+      updated_at: now,
+    });
+    const updated = rows[0] || { ...existing, preview_version_id: previewVersionId, enabled: true, published_at: now, revoked_at: null, updated_at: now };
+    return jsonResponse(200, {
+      success: true,
+      alreadyPublished: cleanText(existing.preview_version_id) === previewVersionId && existing.enabled === true,
+      relationshipType: relationship.type,
+      relationshipId: relationship.id,
+      leadId: relationship.type === "lead" ? relationship.id : "",
+      customerId: relationship.type === "customer" ? relationship.id : "",
+      publishedPreviewVersionId: previewVersionId,
+      previewVersion: sanitizeAdminVersion(resolved.version),
+      ...publicPublicationDetails(updated),
+    });
+  }
+
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const slug = attempt ? candidateSlug(baseSlug, attempt) : baseSlug;
+    try {
+      await assertPublicSlugAvailable(context, slug, { relationship });
+      const rows = await insertRows(context, "public_preview_publications", {
+        relationship_type: relationship.type,
+        relationship_id: relationship.id,
+        public_slug: slug,
+        preview_version_id: previewVersionId,
+        enabled: true,
+        published_at: now,
+        revoked_at: null,
+        created_at: now,
+        updated_at: now,
+        created_by: uuidOrEmpty(context.admin.profileId) || null,
+      });
+      const created = rows[0];
+      if (!created?.id) throw previewError("PUBLIC_PREVIEW_NOT_PERSISTED", "De publieke preview kon niet worden opgeslagen.", 500);
+      return jsonResponse(200, {
+        success: true,
+        relationshipType: relationship.type,
+        relationshipId: relationship.id,
+        leadId: relationship.type === "lead" ? relationship.id : "",
+        customerId: relationship.type === "customer" ? relationship.id : "",
+        publishedPreviewVersionId: previewVersionId,
+        previewVersion: sanitizeAdminVersion(resolved.version),
+        ...publicPublicationDetails(created),
+      });
+    } catch (error) {
+      if (!["PUBLIC_PREVIEW_SLUG_TAKEN", "23505"].includes(error.code)) throw error;
+    }
+  }
+  throw previewError("PUBLIC_PREVIEW_SLUG_UNAVAILABLE", "Er kon geen unieke publieke previewnaam worden gereserveerd.", 409);
+}
+
+async function transferPublicPreviewPublication(context, input = {}) {
+  const leadId = uuidOrEmpty(input.leadId || input.lead_id);
+  const customerId = uuidOrEmpty(input.customerId || input.customer_id);
+  if (!leadId || !customerId) throw previewError("PREVIEW_RELATIONSHIP_REQUIRED", "Lead en klant zijn vereist voor overdracht.", 400);
+  const lead = await readRelationshipRecord(context, { type: "lead", id: leadId });
+  const customer = await readRelationshipRecord(context, { type: "customer", id: customerId });
+  if (!lead?.id || !customer?.id) throw previewError("PREVIEW_RELATIONSHIP_MISMATCH", "Lead of klant kon niet worden gevalideerd.", 404);
+  if (![lead.customer_id, lead.converted_customer_id].map(uuidOrEmpty).filter(Boolean).includes(customerId)) {
+    throw previewError("PREVIEW_TRANSFER_MISMATCH", "Deze lead is niet via de bestaande flow aan deze klant gekoppeld.", 409);
+  }
+  const source = await readPublicPublication(context, { type: "lead", id: leadId });
+  if (!source?.id) throw previewError("PREVIEW_POINTER_NOT_FOUND", "Deze lead heeft geen publieke preview om over te dragen.", 404);
+  const target = await readPublicPublication(context, { type: "customer", id: customerId });
+  if (target?.id && target.id !== source.id && target.enabled === true) {
+    throw previewError("PREVIEW_TRANSFER_CONFLICT", "Deze klant heeft al een actieve publieke preview.", 409);
+  }
+  await validatePublicPreviewOwnership(context, { type: "lead", id: leadId }, source.preview_version_id, { relationshipRecord: lead });
+  const now = new Date().toISOString();
+  const rows = await patchRows(context, "public_preview_publications", `id=eq.${encodeURIComponent(source.id)}`, {
+    relationship_type: "customer",
+    relationship_id: customerId,
+    updated_at: now,
+  });
+  return rows[0] || { ...source, relationship_type: "customer", relationship_id: customerId, updated_at: now };
+}
+
+function publicPublicationDetails(publication = {}) {
+  const slug = isValidPublicSlug(publication.public_slug) ? publication.public_slug : "";
+  const enabled = Boolean(slug && publication.enabled === true && !publication.revoked_at);
+  const fallbackUrl = slug ? fallbackPreviewUrl(slug) : "";
+  const brandedUrl = slug ? publicPreviewUrl(slug) : "";
+  const configuredBaseUrl = cleanText(process.env.PUBLIC_PREVIEW_BASE_URL);
+  return {
+    relationshipType: cleanText(publication.relationship_type),
+    relationshipId: cleanText(publication.relationship_id),
+    publicPreviewSlug: slug,
+    publicPreviewEnabled: enabled,
+    publicPreviewUrl: enabled ? (configuredBaseUrl ? publicPreviewUrl(slug, configuredBaseUrl) : fallbackUrl) : "",
+    brandedPublicPreviewUrl: enabled ? brandedUrl : "",
+    fallbackPublicPreviewUrl: enabled ? fallbackUrl : "",
+    publicPreviewRevokedAt: cleanText(publication.revoked_at),
+    publicPreviewUpdatedAt: cleanText(publication.updated_at),
+  };
 }
 
 async function publishActiveCustomerPreview(context, payload = {}) {
@@ -890,7 +1172,12 @@ function isObject(value) {
 
 function isMissingPreviewSchema(error = {}) {
   const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
-  return text.includes("website_preview_versions") || text.includes("schema cache") || text.includes("pgrst205");
+  return text.includes("website_preview_versions") || text.includes("public_preview_publications") || text.includes("schema cache") || text.includes("pgrst205");
+}
+
+function isMissingPublicPublicationSchema(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return error.code === "42P01" || error.code === "PGRST205" || text.includes("public_preview_publications");
 }
 
 function isMissingColumnError(error = {}) {
@@ -901,7 +1188,7 @@ function isMissingColumnError(error = {}) {
 function safeError(error = {}) {
   if (error.publicMessage) return error.publicMessage;
   return isMissingPreviewSchema(error)
-    ? "Previewpublicatie-tabellen ontbreken nog. Voer migratie 20260711133000_preview_publication_portal_review uit."
+    ? "Previewpublicatie-tabellen ontbreken nog. Voer de vereiste previewmigraties gecontroleerd uit."
     : error.message || "Previewpublicatie kon niet worden verwerkt.";
 }
 
@@ -934,12 +1221,17 @@ exports._private = {
   findPreviewVersionsForWebsite,
   persistPublicPreviewPointer,
   previewFingerprint,
+  publicPublicationDetails,
   publicPreviewDetails,
+  publishPublicPreview,
   publishActiveCustomerPreview,
   publishPreviewVersion,
+  readPublicPublication,
   revokePublicPreview,
   resolveOwnership,
   sanitizeAdminVersion,
   setPublicPreviewSlug,
+  transferPublicPreviewPublication,
+  validatePublicPreviewOwnership,
   isAllowedManualPreviewUrl,
 };
