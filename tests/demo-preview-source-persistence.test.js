@@ -104,10 +104,18 @@ test("Demo Sites receives version history and the generic public pointer in its 
 test("Demo Sites resolves concrete stored versions instead of removed journey package contents", () => {
   assert.match(demoSites, /savedDemo\.previewVersionId/);
   assert.match(demoSites, /publication\.previewVersionId/);
-  assert.match(demoSites, /Number\(version\?\.fileCount \|\| 0\) > 0/);
+  assert.match(demoSites, /version\?\.renderable === true/);
   assert.match(demoSites, /previewResolution\.previewUrl/);
   assert.match(demoSites, /previewVersionId: selectedVersion\.id/);
   assert.match(backend, /selectedPreview = requestedPreviewVersionId \? await resolveSelectedDemoPreview/);
+});
+
+test("Demo Sites accepts compact renderable preview summaries without package files", () => {
+  const compact = { ...storedVersion("compact-factory", "website_factory", 4), fileCount: 0 };
+  const result = demoSelection.resolveActiveDemoPreview({ previewVersions: [compact] });
+  assert.equal(result.available, true);
+  assert.equal(result.selectedVersion.id, compact.id);
+  assert.equal(result.previewUrl, compact.previewUrl);
 });
 
 test("Demo Sites is null-safe when selectedPreview and version entries are null", () => {

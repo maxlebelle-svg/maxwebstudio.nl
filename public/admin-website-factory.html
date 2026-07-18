@@ -24500,6 +24500,7 @@
             journey,
             buildHistory,
             projectWorkspace,
+            publicPreviewPublication: customerPreviewPublication,
             previewSource,
             viewedPreviewVersionId,
             pipeline: normalizeFactoryServerState(),
@@ -26804,9 +26805,10 @@
           const versions = runtime.buildHistory?.previewVersions || [];
           const viewedVersion = versions.find((version) => version.id === runtime.viewedPreviewVersionId) || null;
           const viewed = api?.normalize(viewedVersion || {}) || null;
-          const publishedPreviewVersionId = customerPreviewPublication?.previewVersionId || customerPreviewPublication?.id || "";
+          const publicPreviewPublication = runtime.publicPreviewPublication || null;
+          const publishedPreviewVersionId = publicPreviewPublication?.previewVersionId || publicPreviewPublication?.id || "";
           const publishedVersion = versions.find((version) => version.id === publishedPreviewVersionId)
-            || (customerPreviewPublication ? { ...customerPreviewPublication, sourceType: customerPreviewPublication.previewSource } : null);
+            || (publicPreviewPublication ? { ...publicPreviewPublication, sourceType: publicPreviewPublication.previewSource } : null);
           const active = api?.normalize(publishedVersion || runtime.buildHistory?.activeVersion || {}) || null;
           const viewedLabel = viewed?.id ? api.versionLabel(viewed) : "Geen preview";
           const activeLabel = active?.id ? api.versionLabel(active) : "Geen actieve klantpreview";
@@ -26823,7 +26825,7 @@
           const signature = JSON.stringify([meta, differs]);
           if (target.dataset.signature === signature) return;
           target.dataset.signature = signature;
-          target.innerHTML = `${differs ? '<p class="factory-preview-comparison-note">Je bekijkt een andere versie dan de actieve klantpreview.</p>' : ""}<div class="factory-guided-version-meta-grid">${meta.map(([label, content]) => `<div><small>${label}</small><strong>${escapeHtml(content)}</strong></div>`).join("")}</div>`;
+          target.innerHTML = `${differs ? '<p class="factory-preview-comparison-note">Je bekijkt een andere versie dan de actieve klantpreview.</p>' : ""}<div class="factory-guided-version-meta-grid">${meta.map(([label, content]) => `<div><small>${safe(label)}</small><strong>${safe(content)}</strong></div>`).join("")}</div>`;
         }
 
         function syncPrimaryAction() {

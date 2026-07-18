@@ -23287,7 +23287,7 @@
         }
 
         function availableDemoPreviewVersion(version = {}) {
-          return Boolean(version?.id && version?.previewUrl && Number(version?.fileCount || 0) > 0 && version?.renderable !== false);
+          return Boolean(version?.id && version?.previewUrl && version?.renderable === true);
         }
 
         function validDemoPreviewVersions(record = {}) {

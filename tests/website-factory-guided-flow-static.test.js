@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const factory = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
@@ -91,6 +92,40 @@ test("status cards and process steps are derived from current Factory state", ()
   for (const label of ["Briefing", "Research", "Afbeeldingen", "Content", "SEO", "Mail", "Project", "Preview", "Timeline", "Live zetten"]) {
     assert.match(factory, new RegExp(label));
   }
+});
+
+test("guided Factory reads publication state only through its runtime bridge", () => {
+  const runtimeBlock = factory.slice(factory.indexOf("window.WebsiteFactoryRuntime = {"), factory.indexOf("async function resetDemoForRegeneration"));
+  const guidedBlock = factory.slice(factory.indexOf("function renderGuidedVersionMeta()"), factory.indexOf("function syncPrimaryAction()"));
+  assert.match(runtimeBlock, /publicPreviewPublication: customerPreviewPublication/);
+  assert.match(guidedBlock, /const publicPreviewPublication = runtime\.publicPreviewPublication \|\| null/);
+  assert.doesNotMatch(guidedBlock, /customerPreviewPublication/);
+  assert.doesNotMatch(guidedBlock, /escapeHtml/);
+  assert.match(guidedBlock, /<strong>\$\{safe\(content\)\}<\/strong>/);
+});
+
+test("guided version metadata executes without cross-script ReferenceErrors", () => {
+  const safeDeclaration = factory.slice(factory.indexOf("const safe =", factory.indexOf("<script>", factory.indexOf("</script>", 26000))), factory.indexOf("const classForState", 26670));
+  const renderFunction = factory.slice(factory.indexOf("function renderGuidedVersionMeta()"), factory.indexOf("function syncPrimaryAction()"));
+  const target = { dataset: {}, innerHTML: "" };
+  const context = {
+    document: { getElementById: (id) => id === "factory-guided-version-meta" ? target : null },
+    window: {
+      WebsiteFactoryRuntime: { getState: () => ({
+        buildHistory: { previewVersions: [{ id: "v1", version: 1, sourceType: "manual_zip", createdAt: "2026-07-18T07:00:00.000Z" }] },
+        viewedPreviewVersionId: "v1",
+        publicPreviewPublication: { previewVersionId: "v1", previewSource: "manual_zip" },
+      }) },
+      WebsiteFactoryPreviewSources: {
+        normalize: (version) => version,
+        versionLabel: (version) => `V${version.version || 1}`,
+        typeLabel: () => "Handmatige ZIP",
+      },
+    },
+  };
+  assert.doesNotThrow(() => vm.runInNewContext(`${safeDeclaration}\n${renderFunction}\nrenderGuidedVersionMeta();`, context));
+  assert.match(target.innerHTML, /Actieve klantpreview/);
+  assert.match(target.innerHTML, /Handmatige ZIP/);
 });
 
 test("journey recovery protects active server context and a real reset clears derived UI", () => {
