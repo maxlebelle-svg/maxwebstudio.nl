@@ -23888,6 +23888,7 @@
                       <small>Meerdere geldige versies gevonden. De gekozen versie-ID wordt exact opgeslagen.</small>
                     </label>` : ""}
                   </div>
+                  ${record.previewHistoryWarning ? `<p class="admin-form-message warning demo-preview-source-warning">${escapeHtml(record.previewHistoryWarning)} <button class="button secondary" type="button" data-retry-preview-history="${escapeHtml(record.id)}">Versiehistorie opnieuw laden</button></p>` : ""}
                   ${previewSource && !previewResolution.available ? `<p class="admin-form-message warning demo-preview-source-warning">De gekozen previewbron is momenteel niet beschikbaar. Kies een andere bron om verder te gaan.</p>` : ""}
                   <div class="demo-library-status-strip">
                     <span data-demo-strip-icon="✓">${escapeHtml(statusLabel(record.demoStatus))}</span>
@@ -24469,13 +24470,14 @@
                 ...records[0],
                 previewVersions: Array.isArray(data.buildHistory?.previewVersions) ? data.buildHistory.previewVersions : [],
                 publicPreviewPublication: data.publicPreviewPublication || null,
+                previewHistoryWarning: data.buildHistory?.historyDegraded ? data.buildHistory.warning || "De versiehistorie kon niet worden geladen." : "",
               };
             }
             await Promise.all(records.map((record) => loadInvitationState(record)));
             if (generation !== requestGeneration) return;
             render();
             verifyPreviewFrames(generation);
-            setMessage(`${records.filter(isSavedDemoSite).length} opgeslagen demo-sites geladen.`, "success");
+            setMessage(data.buildHistory?.historyDegraded ? "Demo-sites geladen; de versiehistorie reageerde te traag." : `${records.filter(isSavedDemoSite).length} opgeslagen demo-sites geladen.`, data.buildHistory?.historyDegraded ? "warning" : "success");
           } catch (error) {
             if (error.name === "AbortError" || generation !== requestGeneration) return;
             setMessage(error.message || "Demo-sites konden niet worden geladen.", "error");
@@ -24532,6 +24534,10 @@
             setMessage(error.message || "Afhandelstatus kon niet worden opgeslagen.", "error");
             render();
           }
+        });
+        list?.addEventListener("click", (event) => {
+          if (!event.target.closest("[data-retry-preview-history]")) return;
+          loadDemoSites();
         });
         list?.addEventListener("click", async (event) => {
           const commercialCopy = event.target.closest("[data-demo-commercial-copy]");

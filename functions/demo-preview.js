@@ -3,10 +3,11 @@ const { corsHeaders: sharedCorsHeaders } = require("./_cors");
 const { resolveActiveDemoPreview } = require("./_demo-preview-source");
 const { injectEditorRuntime, parseEditorContext, requestOrigin, UUID_PATTERN } = require("./_preview-editor-runtime");
 const { normalizePreviewSource, previewSourceForVersion } = require("./_preview-zip");
+const { binaryAssetResponse, contentTypeForPreviewAsset, isMediaPreviewAsset, rewriteCssAssetReferences, rewriteHtmlAssetAttributes } = require("./_preview-assets");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return response(204, "", {});
-  if (event.httpMethod !== "GET") return response(405, "Methode niet toegestaan.", { "Content-Type": "text/plain; charset=utf-8" });
+  if (!["GET", "HEAD"].includes(event.httpMethod)) return response(405, "Methode niet toegestaan.", { "Content-Type": "text/plain; charset=utf-8" });
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -90,26 +91,25 @@ exports.handler = async (event) => {
     });
   }
 
-  const file = previewPackage.files.find((item) => item.path === filePath) || previewPackage.files.find((item) => item.path.endsWith("index.html")) || previewPackage.files[0];
+  const file = previewPackage.files.find((item) => item.path === filePath)
+    || (!requestedFilePath ? previewPackage.files.find((item) => item.path.endsWith("index.html")) || previewPackage.files[0] : null);
+  if (!file) return response(404, "Previewbestand niet gevonden.", { "Content-Type": "text/plain; charset=utf-8" });
   if (file?.encoding === "base64" && !isTextPreviewFile(file.path)) {
-    return {
-      statusCode: 200,
-      isBase64Encoded: true,
-      headers: { ...corsHeaders(), "Content-Type": contentTypeFor(file.path), "Cache-Control": "no-store" },
-      body: file.content || "",
-    };
+    return binaryAssetResponse({ event, buffer: Buffer.from(file.content || "", "base64"), contentType: contentTypeFor(file.path), headers: { ...corsHeaders(), ...previewSecurityHeaders(), "Cache-Control": "no-store" }, rangeEnabled: isMediaPreviewAsset(file.path) });
   }
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
   const resolvedPreviewVersionId = cleanText(previewVersion?.id || requestedPreviewVersionId);
   let content = file?.path?.endsWith(".html")
-    ? rewritePreviewHtml(inlinePreviewPackageAssets(fileContent, previewPackage, { id, token, source: resolvedSource, previewVersionId: resolvedPreviewVersionId }), id, token, resolvedSource, resolvedPreviewVersionId)
+    ? rewritePreviewHtml(inlinePreviewPackageAssets(fileContent, previewPackage, { id, token, source: resolvedSource, previewVersionId: resolvedPreviewVersionId }), id, token, resolvedSource, resolvedPreviewVersionId, file.path)
     : file?.path?.endsWith(".css")
-      ? rewritePreviewAssetReferences(fileContent, id, token, resolvedSource, resolvedPreviewVersionId)
+      ? rewritePreviewAssetReferences(fileContent, id, token, resolvedSource, resolvedPreviewVersionId, file.path)
     : fileContent;
   if (file?.path?.endsWith(".html") && editorContext) content = injectEditorRuntime(content, editorContext, requestOrigin(event));
-  return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
+  const responseContent = content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>";
+  return response(200, event.httpMethod === "HEAD" ? "" : responseContent, {
     "Content-Type": contentTypeFor(file?.path),
     "Cache-Control": "no-store",
+    ...(event.httpMethod === "HEAD" ? { "Content-Length": String(Buffer.byteLength(responseContent)) } : {}),
   });
 };
 
@@ -218,20 +218,12 @@ function previewAssetUrl(file = "", id = "", token = "", source = "", previewVer
   return `/api/demo-preview?${query.toString()}`;
 }
 
-function rewritePreviewHtml(html = "", id = "", token = "", source = "", previewVersionId = "") {
-  const assetUrl = (file) => previewAssetUrl(file, id, token, source, previewVersionId);
-  return rewritePreviewAssetReferences(String(html || ""), id, token, source, previewVersionId)
-    .replaceAll('href="styles.css"', `href="${assetUrl("styles.css")}"`)
-    .replaceAll('src="script.js"', `src="${assetUrl("script.js")}"`)
-    .replace(/(src|href)="(?!https?:|mailto:|tel:|#|\/)([^"#?]+\.(css|js|json|svg|png|jpe?g|webp|gif|ico|woff2?|ttf))"/gi, (_match, attribute, file) => `${attribute}="${assetUrl(file)}"`)
-    .replace(/href="([^"#?]+\.html)"/g, (_match, file) => `href="${assetUrl(file)}"`);
+function rewritePreviewHtml(html = "", id = "", token = "", source = "", previewVersionId = "", currentFile = "index.html") {
+  return rewriteHtmlAssetAttributes(rewritePreviewAssetReferences(String(html || ""), id, token, source, previewVersionId, currentFile), { currentFile, route: (file) => previewAssetUrl(file, id, token, source, previewVersionId) });
 }
 
-function rewritePreviewAssetReferences(content = "", id = "", token = "", source = "", previewVersionId = "") {
-  const assetUrl = (file) => previewAssetUrl(file, id, token, source, previewVersionId);
-  return String(content || "")
-    .replace(/(src|href)="(assets\/[^"]+)"/g, (_match, attribute, file) => `${attribute}="${assetUrl(file)}"`)
-    .replace(/url\(["']?(assets\/[^"')]+)["']?\)/g, (_match, file) => `url("${assetUrl(file)}")`);
+function rewritePreviewAssetReferences(content = "", id = "", token = "", source = "", previewVersionId = "", currentFile = "index.html") {
+  return rewriteCssAssetReferences(content, { currentFile, route: (file) => previewAssetUrl(file, id, token, source, previewVersionId) });
 }
 
 async function supabaseFetch(url, options) {
@@ -272,7 +264,7 @@ function jsonResponse(statusCode, body) {
 }
 
 function corsHeaders() {
-  return sharedCorsHeaders({ methods: "GET, OPTIONS" });
+  return sharedCorsHeaders({ methods: "GET, HEAD, OPTIONS" });
 }
 
 function previewSecurityHeaders() {
@@ -286,22 +278,7 @@ function previewSecurityHeaders() {
 }
 
 function contentTypeFor(path = "") {
-  const lower = cleanText(path).toLowerCase();
-  if (lower.endsWith(".css")) return "text/css; charset=utf-8";
-  if (lower.endsWith(".js")) return "application/javascript; charset=utf-8";
-  if (lower.endsWith(".json")) return "application/json; charset=utf-8";
-  if (lower.endsWith(".svg")) return "image/svg+xml; charset=utf-8";
-  if (lower.endsWith(".xml")) return "application/xml; charset=utf-8";
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  if (lower.endsWith(".webp")) return "image/webp";
-  if (lower.endsWith(".gif")) return "image/gif";
-  if (lower.endsWith(".ico")) return "image/x-icon";
-  if (lower.endsWith(".woff")) return "font/woff";
-  if (lower.endsWith(".woff2")) return "font/woff2";
-  if (lower.endsWith(".ttf")) return "font/ttf";
-  if (lower.endsWith(".txt") || lower.endsWith(".md")) return "text/plain; charset=utf-8";
-  return "text/html; charset=utf-8";
+  return contentTypeForPreviewAsset(path, "text/html; charset=utf-8");
 }
 
 function isTextPreviewFile(path = "") {
@@ -326,4 +303,6 @@ exports._private = {
   hasRenderablePackage,
   inlinePreviewPackageAssets,
   resolvePreviewFilePath,
+  rewritePreviewAssetReferences,
+  rewritePreviewHtml,
 };

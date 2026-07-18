@@ -2,6 +2,7 @@
 
 const { corsHeaders } = require("./_cors");
 const { isValidPublicSlug, slugFromEvent } = require("./_public-preview");
+const { binaryAssetResponse, contentTypeForPreviewAsset, isMediaPreviewAsset, resolveRelativePreviewPath, rewriteCssAssetReferences, rewriteHtmlAssetAttributes } = require("./_preview-assets");
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PUBLIC_STATUSES = new Set(["ready_for_review", "feedback_received", "revision_in_progress", "approved"]);
@@ -11,7 +12,7 @@ const requestWindows = new Map();
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return response(204, "", "text/plain; charset=utf-8");
-  if (event.httpMethod !== "GET") return brandedError(405, "Deze pagina is niet beschikbaar.");
+  if (!["GET", "HEAD"].includes(event.httpMethod)) return brandedError(405, "Deze pagina is niet beschikbaar.");
   if (!allowRequest(event)) return brandedError(429, "Te veel verzoeken. Probeer het over een minuut opnieuw.", { "Retry-After": "60" });
 
   const context = getContext();
@@ -35,13 +36,13 @@ exports.handler = async (event) => {
 
     const type = contentType(file.path);
     if (file.encoding === "base64" && !isText(file.path)) {
-      return { statusCode: 200, isBase64Encoded: true, headers: responseHeaders(type), body: text(file.content) };
+      return binaryAssetResponse({ event, buffer: Buffer.from(text(file.content), "base64"), contentType: type, headers: responseHeaders(type), rangeEnabled: isMediaPreviewAsset(file.path) });
     }
     const raw = file.encoding === "base64" ? Buffer.from(text(file.content), "base64").toString("utf8") : String(file.content || "");
     const body = /\.html?$/i.test(file.path || "")
       ? rewriteHtml(raw, requestedFile)
       : /\.css$/i.test(file.path || "") ? rewriteCss(raw, requestedFile) : raw;
-    return response(200, body, type);
+    return response(200, event.httpMethod === "HEAD" ? "" : body, type, event.httpMethod === "HEAD" ? { "Content-Length": String(Buffer.byteLength(body)) } : {});
   } catch (error) {
     console.error("Public preview render failed", { message: error.message, status: error.status || 500, code: error.code || "PUBLIC_PREVIEW_FAILED" });
     return brandedError(error.status === 429 ? 429 : 503, "Deze preview is tijdelijk niet beschikbaar.");
@@ -82,12 +83,7 @@ async function genericOwnershipMatches(context, relationshipType, relationshipId
     : [];
   const journey = journeys[0] || null;
   if (relationshipType === "lead") return Boolean(journey?.id && uuid(journey.lead_id) === relationshipId);
-  if (uuid(version.customer_id) === relationshipId || uuid(journey?.customer_id) === relationshipId) return true;
-  const leadId = uuid(journey?.lead_id);
-  if (!leadId) return false;
-  const leads = await request(`${context.supabaseUrl}/rest/v1/leads?select=id,customer_id,converted_customer_id&id=eq.${encodeURIComponent(leadId)}&limit=1`, context.serviceRoleKey);
-  const lead = leads[0];
-  return Boolean(lead?.id && [lead.customer_id, lead.converted_customer_id].map(uuid).includes(relationshipId));
+  return uuid(version.customer_id) === relationshipId || uuid(journey?.customer_id) === relationshipId;
 }
 
 async function resolveLegacyCustomerTarget(context, slug) {
@@ -112,29 +108,15 @@ function assetRoute(file = "") {
 }
 
 function rewriteHtml(value = "", currentFile = "index.html") {
-  return rewriteCss(String(value || ""), currentFile)
-    .replace(/(src|href)=["'](?!https?:|mailto:|tel:|#|data:|javascript:)([^"']+)["']/gi, (_match, attribute, file) => `${attribute}="${assetRoute(resolveFileReference(file, currentFile))}"`);
+  return rewriteHtmlAssetAttributes(rewriteCss(String(value || ""), currentFile), { currentFile, route: assetRoute });
 }
 
 function rewriteCss(value = "", currentFile = "index.html") {
-  return String(value || "").replace(/url\(["']?(?!https?:|data:)([^"')]+)["']?\)/gi, (_match, file) => `url("${assetRoute(resolveFileReference(file, currentFile))}")`);
+  return rewriteCssAssetReferences(value, { currentFile, route: assetRoute });
 }
 
 function resolveFileReference(value = "", currentFile = "index.html") {
-  const reference = text(value).replace(/\\/g, "/").split(/[?#]/)[0];
-  const baseParts = reference.startsWith("/") ? [] : safeFilePath(currentFile).split("/").slice(0, -1);
-  const parts = [...baseParts, ...reference.replace(/^\.?\//, "").split("/")];
-  const resolved = [];
-  for (const part of parts) {
-    if (!part || part === ".") continue;
-    if (part === "..") {
-      if (!resolved.length) return "";
-      resolved.pop();
-    } else {
-      resolved.push(part);
-    }
-  }
-  return safeFilePath(resolved.join("/"));
+  return resolveRelativePreviewPath(value, currentFile);
 }
 
 function safeFilePath(value = "") {
@@ -169,7 +151,7 @@ function brandedError(statusCode, message, extraHeaders = {}) {
 
 function responseHeaders(type, extra = {}) {
   return {
-    ...corsHeaders({ methods: "GET, OPTIONS" }),
+    ...corsHeaders({ methods: "GET, HEAD, OPTIONS" }),
     "Content-Type": type,
     "Cache-Control": "private, no-store, max-age=0, must-revalidate",
     "X-Content-Type-Options": "nosniff",
@@ -207,7 +189,7 @@ function getContext() {
 function uuid(value = "") { const clean = text(value); return UUID_PATTERN.test(clean) ? clean : ""; }
 function text(value = "") { return String(value || "").trim(); }
 function isText(path = "") { return /\.(html?|css|js|mjs|json|xml|txt|svg)$/i.test(path); }
-function contentType(path = "") { const lower = text(path).toLowerCase(); if (/\.html?$/.test(lower)) return "text/html; charset=utf-8"; if (lower.endsWith(".css")) return "text/css; charset=utf-8"; if (/\.m?js$/.test(lower)) return "application/javascript; charset=utf-8"; if (lower.endsWith(".svg")) return "image/svg+xml"; if (lower.endsWith(".png")) return "image/png"; if (/\.jpe?g$/.test(lower)) return "image/jpeg"; if (lower.endsWith(".webp")) return "image/webp"; if (lower.endsWith(".gif")) return "image/gif"; if (lower.endsWith(".ico")) return "image/x-icon"; if (lower.endsWith(".woff2")) return "font/woff2"; if (lower.endsWith(".woff")) return "font/woff"; if (lower.endsWith(".ttf")) return "font/ttf"; return "application/octet-stream"; }
+function contentType(path = "") { return contentTypeForPreviewAsset(path); }
 function escapeHtml(value = "") { return String(value || "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]); }
 
 exports._private = { PUBLIC_STATUSES, REQUEST_LIMIT, allowRequest, assetRoute, contentType, genericOwnershipMatches, readGenericPublication, requestWindows, resolveFileReference, resolvePublicTarget, rewriteCss, rewriteHtml, safeFilePath };

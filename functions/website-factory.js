@@ -48,6 +48,11 @@ const PREVIEW_RECOVERY_FIELDS = [
   "feedback_items", "approved_at", "published_to_portal", "published_at",
   "entry_file:generated_package->>entryFile", "package_meta:generated_package->meta",
 ].join(",");
+const PREVIEW_SUMMARY_FIELDS = [
+  "id", "demo_journey_id", "build_job_id", "customer_id", "version", "title", "preview_url", "preview_token",
+  "preview_score", "metadata", "is_active", "status", "created_by", "created_at", "feedback_items", "approved_at",
+  "published_to_portal", "published_at",
+].join(",");
 const RESUMABLE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "retryable"]);
 const DEFAULT_SUPABASE_TIMEOUT_MS = 8000;
 const PACKAGE_SUPABASE_TIMEOUT_MS = 30000;
@@ -1433,11 +1438,17 @@ function sanitizeBuildResult(result = {}) {
 }
 
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
-  const [jobs, versions, journeyRow] = await Promise.all([
+  const [jobs, versionResult, journeyRow] = await Promise.all([
     readBuildJobSummaries(context, { demoJourneyId, leadId, limit: 25 }),
-    demoJourneyId ? readPreviewVersionSummaries(context, demoJourneyId) : Promise.resolve([]),
+    demoJourneyId ? readPreviewVersionSummaries(context, demoJourneyId)
+      .then((versions) => ({ versions, degraded: false, warning: "" }))
+      .catch((error) => {
+        if (!isUpstreamTimeout(error)) throw error;
+        return { versions: [], degraded: true, warning: "De versiehistorie reageerde te traag. De opgeslagen preview blijft beschikbaar; laad de versiehistorie opnieuw." };
+      }) : Promise.resolve({ versions: [], degraded: false, warning: "" }),
     demoJourneyId ? readJourneyState(context, demoJourneyId) : Promise.resolve(null),
   ]);
+  const versions = versionResult.versions;
   const activeVersion = versions.find((version) => version.isActive) || versions[0] || null;
   const latestJob = selectCanonicalBuildJob(jobs, activeVersion);
   const canonicalJobs = latestJob?.id
@@ -1448,8 +1459,14 @@ async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}
     previewVersions: versions,
     latestJob,
     activeVersion,
+    historyDegraded: versionResult.degraded,
+    warning: versionResult.warning,
     serverState: deriveFactoryServerState({ journey: journeyRow ? mapJourney(journeyRow) : null, latestJob, activeVersion }),
   };
+}
+
+function isUpstreamTimeout(error = {}) {
+  return error?.code === "UPSTREAM_TIMEOUT" || Number(error?.status || 0) === 504 || error?.name === "UpstreamTimeoutError";
 }
 
 function selectCanonicalBuildJob(jobs = [], activeVersion = null) {
@@ -1536,7 +1553,7 @@ async function readBuildJobSummaries(context, { demoJourneyId = "", leadId = "",
 }
 
 async function readPreviewVersionSummaries(context, demoJourneyId) {
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=${encodeURIComponent(PREVIEW_RECOVERY_FIELDS)}&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&order=version.desc`, {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=${encodeURIComponent(PREVIEW_SUMMARY_FIELDS)}&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&order=version.desc`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
   });

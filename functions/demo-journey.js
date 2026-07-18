@@ -492,7 +492,8 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     : [[], { jobs: [], previewVersions: [], latestJob: null, activeVersion: null }, null, null];
   const responseJourneys = journeys.map(sanitizeAdminJourney);
   const responseSelected = responseJourneys[0] || null;
-  return jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace, publicPreviewPublication });
+  const safeFactoryHistory = previewHistoryFallback(factoryHistory, selected, publicPreviewPublication);
+  return jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: safeFactoryHistory, buildStatus: safeFactoryHistory.latestJob || null, projectWorkspace, publicPreviewPublication });
 }
 
 async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -1291,6 +1292,42 @@ function normalizeFactoryHistoryVersionSource(version = null) {
   if (!version || typeof version !== "object") return version;
   const sourceType = previewSourceForVersion(version);
   return { ...version, sourceType: sourceType || null };
+}
+
+function previewHistoryFallback(history = {}, journey = null, publication = null) {
+  if (!history?.historyDegraded || !journey) return history;
+  const previewPackage = journey.previewPackage && typeof journey.previewPackage === "object" ? journey.previewPackage : {};
+  const savedDemo = journey.savedDemoSite || previewPackage.savedDemoSite || previewPackage.saved_demo_site || {};
+  const candidates = [];
+  const add = ({ id, previewUrl, previewSource, version = 0, isActive = false } = {}) => {
+    const versionId = cleanUuid(id);
+    const url = cleanText(previewUrl);
+    const source = normalizePreviewSource(previewSource);
+    if (!versionId || !url || !source || candidates.some((item) => item.id === versionId)) return;
+    candidates.push({
+      id: versionId,
+      demoJourneyId: journey.id,
+      version: Number(version || 0) || 1,
+      previewUrl: url,
+      previewToken: "",
+      metadata: { previewSource: source, renderable: true, historyFallback: true },
+      sourceType: source === PREVIEW_SOURCES.FACTORY ? SOURCE_FACTORY : SOURCE_MANUAL,
+      renderable: true,
+      isActive: Boolean(isActive),
+      active: Boolean(isActive),
+      status: "internal",
+    });
+  };
+  add({ id: savedDemo.previewVersionId || savedDemo.preview_version_id, previewUrl: savedDemo.previewUrl || savedDemo.preview_url || journey.previewUrl, previewSource: savedDemo.previewSource || savedDemo.preview_source, version: savedDemo.previewVersion || savedDemo.preview_version, isActive: true });
+  const manual = previewPackage.manualPreview || previewPackage.manual_preview || {};
+  add({ id: manual.previewVersionId || manual.preview_version_id || manual.versionId, previewUrl: manual.previewUrl || manual.preview_url, previewSource: "manual_zip", version: manual.version });
+  const publicationSource = cleanText(publication?.previewVersionId) === cleanText(savedDemo.previewVersionId || savedDemo.preview_version_id)
+    ? savedDemo.previewSource || savedDemo.preview_source
+    : publication?.previewSource;
+  add({ id: publication?.previewVersionId, previewUrl: publication?.publicPreviewUrl, previewSource: publicationSource, version: publication?.previewVersion, isActive: true });
+  const previewVersions = candidates.length ? candidates : Array.isArray(history.previewVersions) ? history.previewVersions : [];
+  const activeVersion = previewVersions.find((item) => item.isActive) || previewVersions[0] || null;
+  return { ...history, previewVersions, activeVersion, fallbackUsed: Boolean(candidates.length) };
 }
 
 async function readPublicPreviewPublicationSafe({ supabaseUrl, serviceRoleKey, journey }) {
@@ -2307,4 +2344,5 @@ exports._private = {
   resolveSelectedDemoPreview,
   storedPreviewVersionSource,
   sanitizePublicPreviewPublication,
+  previewHistoryFallback,
 };
