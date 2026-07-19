@@ -837,15 +837,18 @@ function normalizePromotedPreview(row = {}, generatedPackage = null) {
 }
 
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
+  const observeReadPhase = typeof context.observeReadPhase === "function"
+    ? context.observeReadPhase
+    : async (_phase, operation) => operation();
   const query = new URLSearchParams({ select: "*", order: "created_at.desc", limit: "25" });
   if (demoJourneyId) query.set("demo_journey_id", `eq.${demoJourneyId}`);
   if (leadId && cleanUuid(leadId)) query.set("lead_id", `eq.${cleanUuid(leadId)}`);
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
+  const rows = await observeReadPhase("build_jobs", () => supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
-  });
+  }));
   const jobs = rows.map(normalizeBuildJob);
-  const versions = demoJourneyId ? await readPreviewVersions(context, demoJourneyId) : [];
+  const versions = demoJourneyId ? await observeReadPhase("preview_versions", () => readPreviewVersions(context, demoJourneyId)) : [];
   return { jobs, previewVersions: versions, latestJob: jobs[0] || null, activeVersion: versions.find((version) => version.isActive) || versions[0] || null };
 }
 

@@ -384,6 +384,7 @@ function buildLaunchState(current = {}, now = "") {
 }
 
 async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
+  const observeReadPhase = createReadPhaseObserver();
   const params = event.queryStringParameters || {};
   const leadId = cleanUuid(params.leadId || params.lead_id);
   const id = cleanText(params.id);
@@ -392,15 +393,15 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   if (id) query.set("id", `eq.${id}`);
   if (leadId) query.set("lead_id", `eq.${leadId}`);
   if (customerId) query.set("customer_id", `eq.${customerId}`);
-  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/demo_journeys?${query.toString()}`, {
+  const rows = await observeReadPhase("journey", () => supabaseFetch(`${supabaseUrl}/rest/v1/demo_journeys?${query.toString()}`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
-  });
+  }));
   const journeys = rows.map(mapJourney).filter((journey) => canAdminSeeJourney(journey, admin));
   const selected = journeys[0] || null;
-  const events = selected ? await readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id }) : [];
-  const factoryHistory = selected ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id }) : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-  const projectWorkspace = selected ? await readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id }) : null;
+  const events = selected ? await observeReadPhase("events", () => readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id })) : [];
+  const factoryHistory = selected ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id, observeReadPhase }) : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+  const projectWorkspace = selected ? await observeReadPhase("project_workspace", () => readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id })) : null;
   const responseJourneys = journeys.map(sanitizeAdminJourney);
   const responseSelected = responseJourneys[0] || null;
   return jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
@@ -1132,9 +1133,9 @@ async function readEvents({ supabaseUrl, serviceRoleKey, journeyId, customerOnly
   return rows.map(mapEvent);
 }
 
-async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId }) {
+async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId, observeReadPhase }) {
   try {
-    return await getBuildHistory({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId });
+    return await getBuildHistory({ supabaseUrl, serviceRoleKey, admin, observeReadPhase }, { demoJourneyId: journeyId });
   } catch (error) {
     if (!isMissingFactoryTableError(error)) throw error;
     return {
@@ -1146,6 +1147,56 @@ async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, jour
       warning: "Website Factory-opslag is nog niet ingericht. Laat de Website Factory-coreconfiguratie controleren.",
     };
   }
+}
+
+function createReadPhaseObserver({ logger = console.info, clock = () => process.hrtime.bigint() } = {}) {
+  const allowedPhases = new Set(["journey", "events", "build_jobs", "preview_versions", "project_workspace"]);
+  return async (phase, operation) => {
+    if (!allowedPhases.has(phase) || typeof operation !== "function") throw new Error("Invalid demo journey read phase.");
+    const startedAt = clock();
+    safeReadPhaseLog(logger, readPhaseLog("demo_journey_read_phase_started", phase, 0));
+    try {
+      const result = await operation();
+      safeReadPhaseLog(logger, readPhaseLog("demo_journey_read_phase_completed", phase, elapsedMilliseconds(startedAt, clock())));
+      return result;
+    } catch (error) {
+      safeReadPhaseLog(logger, readPhaseLog(
+        "demo_journey_read_phase_failed",
+        phase,
+        elapsedMilliseconds(startedAt, clock()),
+        safeUpstreamStatus(error?.status),
+        safeUpstreamCode(error?.code),
+      ));
+      throw error;
+    }
+  };
+}
+
+function safeReadPhaseLog(logger, payload) {
+  try {
+    logger(payload);
+  } catch {
+    // Observability must never affect application behavior.
+  }
+}
+
+function readPhaseLog(event, phase, elapsedMs, upstreamStatus = null, upstreamCode = null) {
+  return { event, phase, elapsedMs, upstreamStatus, upstreamCode };
+}
+
+function elapsedMilliseconds(startedAt, finishedAt) {
+  if (typeof startedAt !== "bigint" || typeof finishedAt !== "bigint") return 0;
+  return Math.max(0, Math.round(Number(finishedAt - startedAt) / 1e6));
+}
+
+function safeUpstreamStatus(value) {
+  const status = Number(value);
+  return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;
+}
+
+function safeUpstreamCode(value) {
+  const code = cleanText(value);
+  return /^[a-z0-9_-]{1,64}$/i.test(code) ? code : null;
 }
 
 async function createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current, admin }) {
@@ -2058,5 +2109,6 @@ function isMissingFactoryTableError(error = {}) {
 }
 
 exports._test = {
+  createReadPhaseObserver,
   normalizeAdminPrincipal,
 };
