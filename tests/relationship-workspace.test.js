@@ -27,6 +27,52 @@ test("workspace enforces roles, archive state and mixed customer integrity", () 
   assert.throws(() => assertIntegrity({ customer: { id: "a" } }, { websites: [{ customer_id: "b" }], projects: [], quotes: [], subscriptions: [] }), /dezelfde relatie/);
 });
 
+test("workspace accepts the uniform legacy admin principal", async () => {
+  const previous = {
+    adminToken: process.env.ADMIN_TOKEN,
+    allowLegacy: process.env.ALLOW_LEGACY_ADMIN_TOKEN,
+    appEnv: process.env.APP_ENV,
+    appEnvironment: process.env.APP_ENVIRONMENT,
+    supabaseUrl: process.env.SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  };
+  const originalFetch = global.fetch;
+  process.env.ADMIN_TOKEN = "legacy-fixture";
+  process.env.ALLOW_LEGACY_ADMIN_TOKEN = "true";
+  process.env.APP_ENV = "test";
+  process.env.APP_ENVIRONMENT = "test";
+  process.env.SUPABASE_URL = "https://staging.example.test";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-fixture";
+  global.fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/rest/v1/leads") {
+      return response(200, [{ id: "50000000-0000-4000-8000-000000000001", company_name: "Synthetic BV", status: "active" }]);
+    }
+    if (url.pathname.startsWith("/rest/v1/")) return response(200, []);
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  try {
+    const result = await require("../functions/admin-relationship-workspace").handler({
+      httpMethod: "GET",
+      headers: { authorization: `Bearer ${process.env.ADMIN_TOKEN}` },
+      queryStringParameters: { entityType: "lead", id: "50000000-0000-4000-8000-000000000001" },
+    });
+    const body = JSON.parse(result.body);
+    assert.equal(result.statusCode, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.permissions.role, "super_admin");
+  } finally {
+    global.fetch = originalFetch;
+    restore("ADMIN_TOKEN", previous.adminToken);
+    restore("ALLOW_LEGACY_ADMIN_TOKEN", previous.allowLegacy);
+    restore("APP_ENV", previous.appEnv);
+    restore("APP_ENVIRONMENT", previous.appEnvironment);
+    restore("SUPABASE_URL", previous.supabaseUrl);
+    restore("SUPABASE_SERVICE_ROLE_KEY", previous.serviceRoleKey);
+  }
+});
+
 test("workspace never exposes private storage paths", () => {
   const safe = sanitizeFile({ id: "f", storage_path: "private/customer/file.png", location: "bucket", metadata: { source: "customer_portal" } });
   assert.equal(safe.storage_path, undefined);
@@ -43,3 +89,16 @@ test("workspace shell exposes all required module entry points and responsive na
   assert.match(palette, /admin-relatie-workspace\.html\?entityType=/);
   assert.match(active, /admin-relatie-workspace\.html\?entityType=/);
 });
+
+function restore(key, value) {
+  if (value === undefined) delete process.env[key];
+  else process.env[key] = value;
+}
+
+function response(status, body) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+  };
+}

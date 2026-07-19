@@ -14,7 +14,15 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
   const legacyToken = process.env.ADMIN_TOKEN || "";
 
   if (!options.disableLegacyToken && legacyToken && bearer && bearer === legacyToken && legacyAdminTokenAllowed()) {
-    return { success: true, source: "legacy_admin_token" };
+    return {
+      success: true,
+      source: "legacy_admin_token",
+      admin: {
+        id: "system:legacy-admin-token",
+        role: "super_admin",
+        status: "active",
+      },
+    };
   }
 
   if (!bearer) {
