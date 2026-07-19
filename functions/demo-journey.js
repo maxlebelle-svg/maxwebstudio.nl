@@ -103,7 +103,7 @@ exports.handler = async (event) => {
       fallbackMessage: missing
         ? "Demo klantreis tabellen ontbreken nog. Rol migration 018_demo_journey_workflow uit op de actieve Supabase database."
         : missingFactory
-          ? "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit op de actieve Supabase database."
+          ? "Website Factory-opslag is nog niet ingericht. Laat de Website Factory-coreconfiguratie controleren."
           : responseModule === "website_factory"
             ? "Website Factory kon de preview niet bouwen."
             : "Demo klantreis kon niet worden verwerkt.",
@@ -852,6 +852,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         demoJourneyId: journeyId,
         generatedBriefing: briefing,
         packageType,
+        intake: payload.intake || payload.intake_json || sourceJourney.intake || {},
+        assetMetadata: payload.assetMetadata || payload.asset_metadata || sourceJourney.assetMetadata || [],
         websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
         googleReviews: payload.googleReviews || payload.google_reviews || [],
         googleRating: payload.googleRating || payload.google_rating || "",
@@ -1125,7 +1127,7 @@ async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, jour
       latestJob: null,
       activeVersion: null,
       setupRequired: true,
-      warning: "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit.",
+      warning: "Website Factory-opslag is nog niet ingericht. Laat de Website Factory-coreconfiguratie controleren.",
     };
   }
 }
@@ -2034,7 +2036,9 @@ function isMissingFactoryTableError(error = {}) {
     || text.includes("pgrst205")
     || text.includes("schema cache")
     || text.includes("website_build_jobs")
-    || text.includes("website_preview_versions");
+    || text.includes("website_preview_versions")
+    || text.includes("promote_website_factory_preview")
+    || text.includes("pgrst202");
 }
 
 exports._test = {

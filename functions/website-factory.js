@@ -9,16 +9,17 @@ const {
   buildWebsitePackage,
   isBuildStatus,
   makePreviewToken,
-  nextPreviewVersion,
   normalizeBuildJob,
   normalizePreviewVersion,
   previewUrlFor,
   runQualityCheck,
+  sha256Json,
 } = require("./_website-factory-core");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const WEBSITE_FACTORY_GENERATOR_VERSION = "website-factory-core-v1";
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -86,7 +87,7 @@ async function handler(event) {
       module: "website_factory",
       reason: missing ? "missing_website_factory_tables" : "website_factory_failed",
       fallbackMessage: missing
-        ? "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit op de actieve Supabase database."
+        ? "Website Factory-opslag is nog niet ingericht. Laat de Website Factory-coreconfiguratie controleren."
         : "Website Factory kon niet worden verwerkt.",
       setupRequired: missing,
     }));
@@ -636,22 +637,40 @@ async function createBuildJob(context, payload = {}) {
     throw error;
   }
   assertCanSeeJourney(journey, context.admin);
-  const history = await getBuildHistory(context, { demoJourneyId });
-  const previewVersion = nextPreviewVersion(history.previewVersions, history.jobs);
-  const now = new Date().toISOString();
-  const rows = await insertBuildJob(context, {
+  const mappedJourney = mapJourney(journey);
+  const briefing = cleanText(payload.generatedBriefing || payload.generated_briefing || mappedJourney.generatedBriefing);
+  if (!briefing) {
+    const error = new Error("Briefing ontbreekt voor websitegeneratie.");
+    error.status = 400;
+    throw error;
+  }
+  const packageType = normalizePackageType(payload.packageType || payload.package_type || mappedJourney.packageType);
+  const requestFingerprint = factoryRequestFingerprint({ journey: mappedJourney, payload, briefing, packageType });
+  const idempotencyKey = `factory:${WEBSITE_FACTORY_GENERATOR_VERSION}:${requestFingerprint}`;
+  const existing = await readBuildJobByFingerprint(context, demoJourneyId, requestFingerprint);
+  if (existing) return { job: normalizeBuildJob(existing), journey: mappedJourney, reused: true };
+
+  let rows;
+  try {
+    rows = await insertBuildJob(context, {
     demo_journey_id: demoJourneyId,
     lead_id: cleanUuid(journey.lead_id) || null,
     customer_id: cleanUuid(journey.customer_id) || null,
     status: "queued",
-    current_step: "queued",
-    progress: 5,
-    preview_version: previewVersion,
-    build_logs: buildLogs({ step: "queued", message: `Preview V${previewVersion} build job aangemaakt.`, at: now }),
+    package_type: packageType,
+    generator_version: WEBSITE_FACTORY_GENERATOR_VERSION,
+    request_fingerprint: requestFingerprint,
+    idempotency_key: idempotencyKey,
     created_by: context.admin.id,
-    started_at: now,
-  });
-  return { job: normalizeBuildJob(rows[0] || {}), journey: mapJourney(journey) };
+    updated_by: context.admin.id,
+    });
+  } catch (error) {
+    if (!isUniqueConflict(error)) throw error;
+    const concurrent = await readBuildJobByFingerprint(context, demoJourneyId, requestFingerprint);
+    if (!concurrent) throw error;
+    return { job: normalizeBuildJob(concurrent), journey: mappedJourney, reused: true };
+  }
+  return { job: normalizeBuildJob(rows[0] || {}), journey: mappedJourney, reused: false };
 }
 
 async function runBuildJob(context, payload = {}) {
@@ -661,7 +680,7 @@ async function runBuildJob(context, payload = {}) {
   try {
     const existingJob = cleanText(payload.jobId || payload.job_id) ? await readBuildJobById(context, payload.jobId || payload.job_id) : null;
     const setup = existingJob
-      ? { job: normalizeBuildJob(existingJob), journey: mapJourney(await readJourney(context, existingJob.demo_journey_id)) }
+      ? { job: normalizeBuildJob(existingJob), journey: mapJourney(await readJourney(context, existingJob.demo_journey_id)), reused: true }
       : await createBuildJob(context, payload);
     job = setup.job;
     journey = setup.journey;
@@ -672,34 +691,32 @@ async function runBuildJob(context, payload = {}) {
       throw error;
     }
     assertCanSeeJourney({ id: journey.id, created_by: journey.createdBy, assigned_to: journey.assignedTo, updated_by: journey.updatedBy }, context.admin);
-    const logs = buildLogs(job.buildLogs, { step: "briefing", message: "Briefing gevalideerd." });
-    phase = "patch_build_job_briefing";
-    await patchBuildJob(context, job.id, { status: "briefing", current_step: "briefing", progress: 20, build_logs: logs });
-
-    const briefing = cleanText(payload.generatedBriefing || payload.generated_briefing || journey.generatedBriefing);
-    if (!briefing) {
-      return failBuild(context, job, "Briefing ontbreekt voor websitegeneratie.", logs);
+    if (job.status === "succeeded") {
+      phase = "reuse_succeeded_build";
+      const existingPreview = await readPreviewByBuildJob(context, job.id);
+      const previewVersion = existingPreview || await promoteSucceededBuild(context, job, journey);
+      const updatedJourney = mapJourney(await readJourney(context, journey.id));
+      await createPreviewJourneyEventOnce(context, journey.id, previewVersion).catch((eventError) => {
+        console.error("Website Factory preview event deferred", { buildJobId: job.id, message: eventError.message });
+      });
+      return { job, journey: updatedJourney, previewVersion };
     }
 
-    const packageType = normalizePackageType(payload.packageType || payload.package_type || journey.packageType);
-    const previousPackage = normalizePackageType(journey.previewPackage?.meta?.packageType || journey.previewPackage?.packageType || journey.previewPackage?.meta?.packageId || "");
-    const packageChanged = Boolean(previousPackage && packageType && previousPackage !== packageType);
-    const buildingLogs = buildLogs(logs, {
-      step: "building",
-      message: packageChanged
-        ? `Website package wordt opnieuw gegenereerd: ${previousPackage} naar ${packageType}.`
-        : "Website package wordt gegenereerd.",
-      previousPackage,
-      newPackage: packageType,
-      previewVersion: job.previewVersion,
-    });
-    phase = "patch_build_job_building";
-    await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
+    phase = "claim_build_job";
+    const claimedRows = await claimBuildJob(context, job.id);
+    if (!claimedRows.length) {
+      const currentJob = normalizeBuildJob(await readBuildJobById(context, job.id));
+      return { job: currentJob, journey, previewVersion: currentJob.status === "succeeded" ? await readPreviewByBuildJob(context, job.id) : null };
+    }
+    job = normalizeBuildJob(claimedRows[0]);
+    const briefing = cleanText(payload.generatedBriefing || payload.generated_briefing || journey.generatedBriefing);
+    if (!briefing) throw buildError("Briefing ontbreekt voor websitegeneratie.", "validate_briefing", "missing_briefing", 400);
+
     phase = "generate_website_package";
     const generatedPackage = buildWebsitePackage({
       journey: {
         ...journey,
-        packageType,
+        packageType: job.packageType,
         websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
         googleReviews: payload.googleReviews || payload.google_reviews || [],
         googleRating: payload.googleRating || payload.google_rating || "",
@@ -707,112 +724,50 @@ async function runBuildJob(context, payload = {}) {
         googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || "",
       },
       briefing,
-      version: job.previewVersion,
+      version: 1,
+      generatedAt: job.createdAt,
     });
-
-    const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
-    phase = "patch_build_job_quality_check";
-    await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, generated_package: generatedPackage, build_logs: qualityLogs });
     phase = "run_quality_check";
     const qualityReport = runQualityCheck({ generatedPackage, journey });
     if (!qualityReport.passed) {
-      const failed = await patchBuildJob(context, job.id, {
-        status: "quality_failed",
-        current_step: "quality_check",
-        progress: 85,
-        preview_score: qualityReport.score,
-        quality_report: qualityReport,
-        generated_package: generatedPackage,
-        error_message: qualityReport.summary,
-        finished_at: new Date().toISOString(),
-        build_logs: buildLogs(qualityLogs, { step: "quality_failed", message: qualityReport.summary }),
-      });
-      return { job: normalizeBuildJob(failed[0] || {}), journey, previewVersion: null };
+      throw buildError(qualityReport.summary, "quality_check", "quality_check_failed", 422);
     }
-
-    const token = makePreviewToken();
-    const previewUrl = previewUrlFor({ journeyId: journey.id, token });
-    phase = "patch_build_job_deploying";
-    await patchBuildJob(context, job.id, {
-      status: "deploying",
-      current_step: "create_preview_version",
-      progress: 90,
-      preview_url: previewUrl,
-      preview_token: token,
-      preview_score: qualityReport.score,
-      quality_report: qualityReport,
+    phase = "persist_succeeded_package";
+    const packageChecksum = sha256Json(generatedPackage);
+    const completedRows = await patchBuildJobByStatus(context, job.id, "running", {
+      status: "succeeded",
       generated_package: generatedPackage,
-      build_logs: buildLogs(qualityLogs, { step: "deploying", message: "Interne previewversie wordt opgeslagen." }),
+      package_checksum: packageChecksum,
+      error_phase: null,
+      error_code: null,
+      error_message: null,
+      updated_by: context.admin.id,
     });
-
-    phase = "create_preview_version";
-    const previewVersion = await createPreviewVersion(context, {
-      demoJourneyId: journey.id,
-      buildJobId: job.id,
-      version: job.previewVersion,
-      previewUrl,
-      previewToken: token,
-      previewScore: qualityReport.score,
-      qualityReport,
-      generatedPackage,
-      packageType: generatedPackage.packageType,
-      createdBy: context.admin.id,
-    });
-    phase = "patch_build_job_completed";
-    const completedRows = await patchBuildJob(context, job.id, {
-      status: "completed",
-      current_step: "completed",
-      progress: 100,
-      preview_url: previewUrl,
-      preview_token: token,
-      preview_score: qualityReport.score,
-      finished_at: new Date().toISOString(),
-      build_logs: buildLogs(qualityLogs, {
-        step: "completed",
-        message: `Preview V${job.previewVersion} klaar met score ${qualityReport.score}.`,
-        previousPackage,
-        newPackage: generatedPackage.packageType,
-        previewVersion: job.previewVersion,
-      }),
-    });
-    phase = "update_demo_journey_preview";
-    const updatedJourney = await updateDemoJourneyPreview(context, {
-      demoJourneyId: journey.id,
-      generatedBriefing: briefing,
-      previewUrl,
-      previewToken: token,
-      generatedPackage,
-      packageType: generatedPackage.packageType,
-      status: "interne_preview_klaar",
-    });
-    const latestZipFilename = zipFilenameFor({
-      businessName: updatedJourney.businessName || journey.businessName,
-      websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
-      version: job.previewVersion,
-    });
-    phase = "upsert_project_workspace";
-    await upsertProjectWorkspace(context, {
-      leadId: updatedJourney.leadId || journey.leadId,
-      customerId: updatedJourney.customerId || journey.customerId,
-      demoJourneyId: updatedJourney.id || journey.id,
-      businessName: updatedJourney.businessName || journey.businessName,
-      websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
-      latestPreviewUrl: previewUrl,
-      latestPreviewVersion: job.previewVersion,
-      latestZipFilename,
-      updatedBy: context.admin.id,
-      createdBy: context.admin.id,
-    });
+    if (!completedRows.length) throw buildError("Buildstatus kon niet veilig worden afgerond.", phase, "build_state_conflict", 409);
+    job = normalizeBuildJob(completedRows[0]);
+    phase = "promote_preview";
+    const previewVersion = await promoteSucceededBuild(context, job, journey);
+    const updatedJourney = mapJourney(await readJourney(context, journey.id));
     phase = "create_preview_event";
-    await createJourneyEvent(context, {
-      demoJourneyId: journey.id,
-      type: "preview",
-      title: "Preview klaar",
-      description: `Interne preview V${job.previewVersion} staat klaar voor controle.`,
-      visible: false,
+    await createPreviewJourneyEventOnce(context, journey.id, previewVersion).catch((eventError) => {
+      console.error("Website Factory preview event deferred", { buildJobId: job.id, message: eventError.message });
     });
-    return { job: normalizeBuildJob(completedRows[0] || {}), journey: updatedJourney, previewVersion };
+    return { job, journey: updatedJourney, previewVersion };
   } catch (error) {
+    if (job?.id) {
+      try {
+        const failedRows = await patchBuildJobByStatuses(context, job.id, ["queued", "running", "succeeded"], {
+          status: "failed",
+          error_phase: cleanText(error.phase || phase),
+          error_code: cleanText(error.code || "website_factory_build_failed"),
+          error_message: cleanText(error.message || "Website Factory build mislukt."),
+          updated_by: context.admin.id,
+        });
+        if (failedRows[0]) job = normalizeBuildJob(failedRows[0]);
+      } catch (markError) {
+        console.error("Website Factory failed status could not be persisted", { buildJobId: job.id, message: markError.message });
+      }
+    }
     error.module = "website_factory";
     error.reason = isMissingFactoryTableError(error) ? "missing_website_factory_tables" : "website_factory_build_failed";
     error.phase = error.phase || phase;
@@ -823,16 +778,58 @@ async function runBuildJob(context, payload = {}) {
   }
 }
 
-async function failBuild(context, job, message, logs = []) {
-  const rows = await patchBuildJob(context, job.id, {
-    status: "failed",
-    current_step: "failed",
-    progress: Math.max(Number(job.progress || 0), 20),
-    error_message: message,
-    finished_at: new Date().toISOString(),
-    build_logs: buildLogs(logs, { step: "failed", message }),
+function factoryRequestFingerprint({ journey = {}, payload = {}, briefing = "", packageType = "" } = {}) {
+  return sha256Json({
+    demoJourneyId: cleanText(journey.id),
+    packageType: normalizePackageType(packageType),
+    briefing: cleanText(briefing),
+    intake: payload.intake || payload.intakeJson || payload.intake_json || journey.previewPackage?.intake || journey.previewPackage?.intakeJson || null,
+    assetSelection: payload.assetSelection || payload.asset_selection || payload.assetMetadata || payload.asset_metadata || journey.previewPackage?.assetSelection || null,
+    generatorVersion: WEBSITE_FACTORY_GENERATOR_VERSION,
+    journeyInput: {
+      businessName: cleanText(journey.businessName),
+      contactName: cleanText(journey.contactName),
+      email: cleanText(journey.email).toLowerCase(),
+      phone: cleanText(journey.phone),
+      websiteUrl: cleanText(journey.websiteUrl),
+      internalNotes: cleanText(journey.internalNotes),
+    },
+    websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
+    googleReviews: payload.googleReviews || payload.google_reviews || [],
+    googleRating: cleanText(payload.googleRating || payload.google_rating),
+    googleRatingTotal: cleanText(payload.googleRatingTotal || payload.google_rating_total),
+    googleMapsUrl: cleanText(payload.googleMapsUrl || payload.google_maps_url),
   });
-  return { job: normalizeBuildJob(rows[0] || {}), journey: null, previewVersion: null };
+}
+
+function buildError(message, phase, code, status = 500) {
+  const error = new Error(message);
+  error.phase = phase;
+  error.code = code;
+  error.status = status;
+  return error;
+}
+
+async function promoteSucceededBuild(context, job, journey) {
+  const token = makePreviewToken();
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/rpc/promote_website_factory_preview`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      p_build_job_id: job.id,
+      p_preview_url: previewUrlFor({ journeyId: journey.id, token }),
+      p_preview_token: token,
+      p_created_by: context.admin.id,
+    }),
+  });
+  return normalizePromotedPreview(rows[0] || {});
+}
+
+function normalizePromotedPreview(row = {}) {
+  return {
+    ...normalizePreviewVersion({ ...row, id: row.preview_version_id }),
+    created: Boolean(row.created),
+  };
 }
 
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
@@ -855,33 +852,20 @@ async function createPreviewVersion(context, payload = {}) {
     error.status = 400;
     throw error;
   }
-  try {
-    await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}`, {
-      method: "PATCH",
-      headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: false }),
-    });
-  } catch (error) {
-    if (!isMissingColumnError(error)) throw error;
-  }
-  const rows = await insertPreviewVersion(context, {
-    demo_journey_id: demoJourneyId,
-    build_job_id: cleanText(payload.buildJobId || payload.build_job_id) || null,
-    customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
-    project_id: cleanUuid(payload.projectId || payload.project_id) || null,
-    website_id: cleanUuid(payload.websiteId || payload.website_id) || null,
-    version: Number(payload.version || 1),
-    title: cleanText(payload.title || payload.customerTitle || payload.customer_title || "Website-preview"),
-    preview_url: cleanText(payload.previewUrl || payload.preview_url),
-    preview_token: cleanText(payload.previewToken || payload.preview_token),
-    preview_score: Number(payload.previewScore || payload.preview_score || 0),
-    quality_report: payload.qualityReport || payload.quality_report || {},
-    generated_package: payload.generatedPackage || payload.generated_package || {},
-    is_active: true,
-    status: "internal",
-    created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
+  const buildJobId = cleanText(payload.buildJobId || payload.build_job_id);
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/rpc/promote_website_factory_preview`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      p_build_job_id: buildJobId,
+      p_preview_url: cleanText(payload.previewUrl || payload.preview_url),
+      p_preview_token: cleanText(payload.previewToken || payload.preview_token),
+      p_created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
+    }),
   });
-  return normalizePreviewVersion(rows[0] || {});
+  const preview = normalizePromotedPreview(rows[0] || {});
+  if (preview.demoJourneyId !== demoJourneyId) throw buildError("Build en demo journey horen niet bij elkaar.", "promote_preview", "journey_build_mismatch", 409);
+  return preview;
 }
 
 async function updateDemoJourneyPreview(context, payload = {}) {
@@ -944,6 +928,28 @@ async function readBuildJobById(context, id) {
   return rows[0] || null;
 }
 
+async function readBuildJobByFingerprint(context, demoJourneyId, requestFingerprint) {
+  const query = new URLSearchParams({
+    select: "*",
+    demo_journey_id: `eq.${demoJourneyId}`,
+    request_fingerprint: `eq.${requestFingerprint}`,
+    limit: "1",
+  });
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function readPreviewByBuildJob(context, buildJobId) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=*&build_job_id=eq.${encodeURIComponent(buildJobId)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] ? normalizePreviewVersion(rows[0]) : null;
+}
+
 async function readPreviewVersions(context, demoJourneyId) {
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=*&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&order=version.desc`, {
     method: "GET",
@@ -960,41 +966,31 @@ async function readPreviewVersionsByCustomer(context, customerId) {
   return rows.map(normalizePreviewVersion);
 }
 
-async function patchBuildJob(context, id, record) {
-  try {
-    return await patchBuildJobRecord(context, id, record);
-  } catch (error) {
-    if (!isMissingColumnError(error)) throw error;
-    const fallbackRecord = stripFactoryOptionalColumns(record, ["status", "current_step", "progress", "preview_version", "preview_url"]);
-    if (!Object.keys(fallbackRecord).length) throw error;
-    return patchBuildJobRecord(context, id, fallbackRecord);
-  }
+function claimBuildJob(context, id) {
+  return patchBuildJobByStatuses(context, id, ["queued", "failed"], {
+    status: "running",
+    error_phase: null,
+    error_code: null,
+    error_message: null,
+    updated_by: context.admin.id,
+  });
 }
 
-async function insertBuildJob(context, record) {
-  try {
-    return await insertBuildJobRecord(context, record);
-  } catch (error) {
-    if (!isMissingColumnError(error)) throw error;
-    return insertBuildJobRecord(context, stripFactoryOptionalColumns(record, ["demo_journey_id", "status", "current_step", "progress", "preview_version"]));
-  }
+function patchBuildJobByStatus(context, id, status, record) {
+  return patchBuildJobByStatuses(context, id, [status], record);
 }
 
-async function insertPreviewVersion(context, record) {
-  try {
-    return await insertPreviewVersionRecord(context, record);
-  } catch (error) {
-    if (!isMissingColumnError(error)) throw error;
-    return insertPreviewVersionRecord(context, stripFactoryOptionalColumns(record, ["demo_journey_id", "version", "preview_url"]));
-  }
-}
-
-function patchBuildJobRecord(context, id, record) {
-  return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?id=eq.${encodeURIComponent(id)}`, {
+function patchBuildJobByStatuses(context, id, statuses, record) {
+  const encodedStatuses = statuses.join(",");
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?id=eq.${encodeURIComponent(id)}&status=in.(${encodeURIComponent(encodedStatuses)})`, {
     method: "PATCH",
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
     body: JSON.stringify(record),
   });
+}
+
+function insertBuildJob(context, record) {
+  return insertBuildJobRecord(context, record);
 }
 
 function insertBuildJobRecord(context, record) {
@@ -1003,19 +999,6 @@ function insertBuildJobRecord(context, record) {
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
     body: JSON.stringify(record),
   });
-}
-
-function insertPreviewVersionRecord(context, record) {
-  return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions`, {
-    method: "POST",
-    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
-    body: JSON.stringify(record),
-  });
-}
-
-function stripFactoryOptionalColumns(record = {}, keepKeys = []) {
-  const keep = new Set(keepKeys);
-  return Object.fromEntries(Object.entries(record).filter(([key]) => keep.has(key)));
 }
 
 async function createJourneyEvent(context, payload = {}) {
@@ -1030,6 +1013,29 @@ async function createJourneyEvent(context, payload = {}) {
       visible_to_customer: Boolean(payload.visible),
       created_by: context.admin.id,
     }),
+  });
+}
+
+async function createPreviewJourneyEventOnce(context, demoJourneyId, previewVersion) {
+  const description = `Interne preview V${previewVersion.version} staat klaar voor controle.`;
+  const query = new URLSearchParams({
+    select: "id",
+    demo_journey_id: `eq.${demoJourneyId}`,
+    event_type: "eq.preview",
+    description: `eq.${description}`,
+    limit: "1",
+  });
+  const existing = await supabaseFetch(`${context.supabaseUrl}/rest/v1/demo_journey_events?${query.toString()}`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  if (existing.length) return existing[0];
+  return createJourneyEvent(context, {
+    demoJourneyId,
+    type: "preview",
+    title: "Preview klaar",
+    description,
+    visible: false,
   });
 }
 
@@ -1193,7 +1199,9 @@ function isMissingFactoryTableError(error = {}) {
     || text.includes("pgrst205")
     || text.includes("schema cache")
     || text.includes("website_build_jobs")
-    || text.includes("website_preview_versions");
+    || text.includes("website_preview_versions")
+    || text.includes("promote_website_factory_preview")
+    || text.includes("pgrst202");
 }
 
 function isMissingColumnError(error = {}) {
@@ -1993,4 +2001,8 @@ module.exports = {
   getBuildHistory,
   runBuildJob,
   startOnboardingFactoryPipeline,
+  _test: {
+    factoryRequestFingerprint,
+    normalizePromotedPreview,
+  },
 };

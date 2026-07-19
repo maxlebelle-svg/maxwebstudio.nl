@@ -8,7 +8,7 @@ const { buildVmTegelwerkenDemo, isVmTegelwerkenJourney } = require("./website-fa
 
 const WEBSITE_FACTORY_MANIFESTS = loadWebsiteFactoryManifests();
 
-const BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "completed", "quality_failed", "failed"]);
+const BUILD_STATUSES = new Set(["queued", "running", "succeeded", "failed"]);
 const PACKAGE_RULES = {
   starter: {
     label: "Starter Website",
@@ -231,7 +231,7 @@ function profile(key, keywords, config) {
   return Object.freeze({ key, keywords: Object.freeze(keywords), ...config });
 }
 
-function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
+function buildWebsitePackage({ journey = {}, briefing = "", version = 1, generatedAt = "" }) {
   const businessName = cleanText(journey.businessName || journey.business_name) || "Demo bedrijf";
   const contactName = cleanText(journey.contactName || journey.contact_name) || "Contactpersoon";
   const email = cleanText(journey.email).toLowerCase();
@@ -240,7 +240,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const internalNotes = cleanText(journey.internalNotes || journey.internal_notes);
   const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
   if (isVmTegelwerkenJourney({ businessName, websiteUrl, briefing: combinedBriefing })) {
-    return buildVmTegelwerkenDemo({ version });
+    return buildVmTegelwerkenDemo({ version, generatedAt });
   }
   const websiteAnalysis = journey.websiteAnalysis && typeof journey.websiteAnalysis === "object" ? journey.websiteAnalysis : null;
   const currentWebsite = normalizeCurrentWebsiteSnapshot(websiteAnalysis?.currentWebsite || journey.currentWebsite || journey.current_website);
@@ -439,7 +439,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
 
   return {
     version,
-    generatedAt: new Date().toISOString(),
+    generatedAt: cleanText(generatedAt) || new Date().toISOString(),
     businessName,
     packageType,
     files: [
@@ -723,6 +723,18 @@ function makePreviewToken() {
   return crypto.randomBytes(18).toString("hex");
 }
 
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().filter((key) => value[key] !== undefined).map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value === undefined ? null : value);
+}
+
+function sha256Json(value) {
+  return crypto.createHash("sha256").update(stableJson(value)).digest("hex");
+}
+
 function normalizeBuildJob(row = {}) {
   return {
     id: cleanText(row.id),
@@ -733,6 +745,10 @@ function normalizeBuildJob(row = {}) {
     leadId: cleanText(row.lead_id),
     customerId: cleanText(row.customer_id),
     status: cleanText(row.status),
+    packageType: cleanText(row.package_type),
+    generatorVersion: cleanText(row.generator_version),
+    requestFingerprint: cleanText(row.request_fingerprint),
+    idempotencyKey: cleanText(row.idempotency_key),
     currentStep: cleanText(row.current_step),
     progress: Number(row.progress || 0),
     previewVersion: Number(row.preview_version || 1),
@@ -741,11 +757,14 @@ function normalizeBuildJob(row = {}) {
     previewScore: row.preview_score === null || row.preview_score === undefined ? null : Number(row.preview_score),
     qualityReport: row.quality_report && typeof row.quality_report === "object" ? row.quality_report : null,
     generatedPackage: row.generated_package && typeof row.generated_package === "object" ? row.generated_package : null,
+    packageChecksum: cleanText(row.package_checksum),
     metadata: row.metadata && typeof row.metadata === "object" ? row.metadata : {},
     publishedToPortal: Boolean(row.published_to_portal),
     publishedAt: cleanText(row.published_at),
     buildLogs: Array.isArray(row.build_logs) ? row.build_logs : [],
     errorMessage: cleanText(row.error_message),
+    errorPhase: cleanText(row.error_phase),
+    errorCode: cleanText(row.error_code),
     startedAt: cleanText(row.started_at),
     finishedAt: cleanText(row.finished_at),
     createdBy: cleanText(row.created_by),
@@ -765,6 +784,7 @@ function normalizePreviewVersion(row = {}) {
     previewScore: row.preview_score === null || row.preview_score === undefined ? null : Number(row.preview_score),
     qualityReport: row.quality_report && typeof row.quality_report === "object" ? row.quality_report : null,
     generatedPackage: row.generated_package && typeof row.generated_package === "object" ? row.generated_package : null,
+    packageChecksum: cleanText(row.package_checksum),
     isActive: row.is_active !== false,
     createdAt: cleanText(row.created_at),
     createdBy: cleanText(row.created_by),
@@ -1740,4 +1760,6 @@ module.exports = {
   normalizePreviewVersion,
   previewUrlFor,
   runQualityCheck,
+  sha256Json,
+  stableJson,
 };
