@@ -2,6 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders: sharedCorsHeaders } = require("./_cors");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { resolveActiveDemoPreview } = require("./_demo-preview-source");
+const { recordDemoPreviewOpen } = require("./services/demoInvitationService");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return response(204, "", {});
@@ -15,6 +16,7 @@ exports.handler = async (event) => {
   const token = cleanText(event.queryStringParameters?.token);
   const format = cleanText(event.queryStringParameters?.format).toLowerCase();
   const source = cleanText(event.queryStringParameters?.source).toLowerCase();
+  const invitationReference = cleanText(event.queryStringParameters?.invitation);
   const filePath = cleanText(event.queryStringParameters?.file) || "index.html";
   if (!id) return response(400, "Preview id ontbreekt.", { "Content-Type": "text/plain; charset=utf-8" });
 
@@ -26,7 +28,7 @@ exports.handler = async (event) => {
   if (!row) return response(404, "Preview niet gevonden.", { "Content-Type": "text/plain; charset=utf-8" });
 
   const storedToken = cleanText(row.preview_token);
-  if (storedToken && token !== storedToken) {
+  if (!storedToken || token !== storedToken) {
     const adminCheck = await verifyAdmin(event, jsonResponse, {
       module: "demo_preview",
       action: "read",
@@ -82,6 +84,14 @@ exports.handler = async (event) => {
     };
   }
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
+  if (filePath === "index.html") {
+    await recordDemoPreviewOpen({
+      config: { supabaseUrl, serviceRoleKey },
+      journeyId: row.id,
+      previewToken: token,
+      invitationReference,
+    });
+  }
   const content = file?.path?.endsWith(".html")
     ? rewritePreviewHtml(fileContent, id, token, source)
     : file?.path?.endsWith(".css")

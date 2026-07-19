@@ -13,7 +13,7 @@ async function sendTrackedEmail(input = {}) {
     status: "pending",
   };
 
-  const log = await safeCreateLog(payload);
+  const log = input.suppressEmailLog ? null : await safeCreateLog(payload);
 
   if (provider !== "resend") {
     const warning = `Email skipped: unsupported EMAIL_PROVIDER ${provider}`;
@@ -24,7 +24,7 @@ async function sendTrackedEmail(input = {}) {
     });
     if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning, failed: true }));
     console.log(warning);
-    return { sent: false, warning, logId: log?.id || "" };
+    return { sent: false, deliveryUnknown: false, errorCode: "unsupported_provider", warning, logId: log?.id || "" };
   }
 
   if (!process.env.RESEND_API_KEY) {
@@ -36,15 +36,17 @@ async function sendTrackedEmail(input = {}) {
     });
     if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning, failed: true }));
     console.log(warning);
-    return { sent: false, warning, logId: log?.id || "" };
+    return { sent: false, deliveryUnknown: false, errorCode: "missing_resend_api_key", warning, logId: log?.id || "" };
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const providerFetch = typeof input.providerFetch === "function" ? input.providerFetch : fetch;
+    const response = await providerFetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         "Content-Type": "application/json",
+        ...(cleanText(input.idempotencyKey) ? { "Idempotency-Key": cleanText(input.idempotencyKey) } : {}),
       },
       body: JSON.stringify({
         from,
@@ -71,6 +73,8 @@ async function sendTrackedEmail(input = {}) {
       if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning: message, failed: true }));
       return {
         sent: false,
+        deliveryUnknown: false,
+        errorCode: cleanText(data.name) || `resend_${response.status}`,
         warning: "Email failed: Resend rejected the message",
         logId: log?.id || "",
       };
@@ -86,7 +90,7 @@ async function sendTrackedEmail(input = {}) {
       await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", providerMessageId: cleanText(data.id) }));
     }
 
-    return { sent: true, id: cleanText(data.id), logId: log?.id || "" };
+    return { sent: true, deliveryUnknown: false, id: cleanText(data.id), logId: log?.id || "" };
   } catch (error) {
     console.error("Email failed", { message: error.message });
     await safeUpdateLog(log?.id, {
@@ -97,6 +101,8 @@ async function sendTrackedEmail(input = {}) {
     if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning: error.message, failed: true }));
     return {
       sent: false,
+      deliveryUnknown: true,
+      errorCode: "provider_request_ambiguous",
       warning: "Email failed: provider request error",
       logId: log?.id || "",
     };

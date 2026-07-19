@@ -4,6 +4,7 @@ const { sendEmail } = require("./email");
 const { readProjectWorkspace, upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { getBuildHistory, runBuildJob } = require("./website-factory");
 const { createTimelineEvent } = require("./services/timelineService");
+const { sendDemoInvitation } = require("./services/demoInvitationService");
 const crypto = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
 
@@ -464,27 +465,33 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   }
 
   if (action === "send_email") {
-    const template = buildEmailTemplate(payload.emailType || payload.demoStatus || current?.demo_status, current ? mapJourney(current) : payload);
-    const approvalError = emailApprovalError(template.type, current ? mapJourney(current) : payload);
-    if (approvalError) return jsonResponse(403, { success: false, error: approvalError, template });
-    if (!template.to) return jsonResponse(400, { success: false, error: "E-mailadres ontbreekt voor deze demo-klantreis." });
-    const result = await sendEmail({
-      to: template.to,
-      subject: template.subject,
-      text: template.body,
-      html: textToHtml(template.body),
-    });
-    if (current?.id) {
-      await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record: {
-        last_email_status: result.sent ? `sent:${template.type}` : result.warning || "email_not_sent",
-        last_email_sent_at: result.sent ? new Date().toISOString() : null,
-        next_email_type: nextEmailType(template.type),
-        updated_by: admin.id,
-        updated_at: new Date().toISOString(),
-      } });
-      await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "email", title: result.sent ? "Mail verstuurd" : "Mail niet verstuurd", description: template.subject, visible: false, createdBy: admin.id });
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-klantreis op." });
+    const emailType = cleanText(payload.emailType || payload.templateId || "day3_preview_ready");
+    if (!['day3_preview_ready', 'demo_preview_invitation'].includes(emailType)) {
+      return jsonResponse(400, { success: false, error: "Alleen de persoonlijke demo-uitnodiging gebruikt dit betrouwbare verzendcontract." });
     }
-    return jsonResponse(result.sent ? 200 : 503, { success: result.sent, sent: result.sent, warning: result.warning || "", template });
+    const journey = mapJourney(current);
+    const approvalError = emailApprovalError("day3_preview_ready", journey);
+    if (approvalError) return jsonResponse(403, { success: false, error: approvalError });
+    const result = await sendDemoInvitation({
+      config: { supabaseUrl, serviceRoleKey },
+      journeyId: current.id,
+      previewVersionId: payload.previewVersionId || payload.preview_version_id,
+      templateId: "demo_preview_invitation",
+      templateVersion: payload.templateVersion || payload.template_version || 1,
+      recipient: journey.email,
+      createdBy: admin.id,
+      requestingUserId: cleanUuid(admin.id),
+    });
+    const statusCode = result.state === "sent" || result.state === "already_sent" ? 200
+      : result.state === "already_processing" ? 202
+        : result.state === "delivery_unknown" ? 409 : 422;
+    return jsonResponse(statusCode, {
+      success: Boolean(result.success), sent: Boolean(result.sent), state: result.state,
+      emailLogId: result.emailLogId, providerMessageId: result.providerMessageId,
+      previewVersionId: result.previewVersionId, previewVersion: result.previewVersion,
+      previewChecksum: result.previewChecksum, warning: result.warning || "",
+    });
   }
 
   if (action === "send_upsell_proposal") {

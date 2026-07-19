@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+
 const EMAIL_LOG_FIELDS = [
   "id",
   "created_at",
@@ -6,6 +8,8 @@ const EMAIL_LOG_FIELDS = [
   "status",
   "provider",
   "provider_message_id",
+  "message_type",
+  "idempotency_key",
   "from_email",
   "from_name",
   "to_email",
@@ -29,7 +33,7 @@ const EMAIL_LOG_FIELDS = [
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const allowedStatuses = new Set(["pending", "sent", "failed", "delivered", "bounced", "complained", "opened", "clicked"]);
+const allowedStatuses = new Set(["planned", "sending", "sent", "failed", "delivery_unknown", "cancelled", "pending", "delivered", "bounced", "complained", "opened", "clicked"]);
 
 function getSupabaseConfig() {
   const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
@@ -154,14 +158,17 @@ function normalizeLogRecord(input = {}) {
   const metadata = normalizeMetadata(input.metadata);
   const attachments = Array.isArray(input.attachments) ? input.attachments : [];
   const now = new Date().toISOString();
+  const normalizedRecipient = cleanEmail(input.toEmail || input.to_email || to.email) || cleanText(input.toEmail || input.to_email || to.email).toLowerCase();
   return {
     direction: cleanText(input.direction) || "outbound",
     status: normalizeStatus(input.status) || "pending",
     provider: cleanText(input.provider) || "resend",
     provider_message_id: cleanText(input.providerMessageId || input.provider_message_id) || null,
+    message_type: cleanText(input.messageType || input.message_type) || "generic",
     from_email: cleanEmail(input.fromEmail || input.from_email || from.email) || null,
     from_name: cleanText(input.fromName || input.from_name || from.name) || null,
-    to_email: cleanEmail(input.toEmail || input.to_email || to.email) || cleanText(input.toEmail || input.to_email || to.email),
+    to_email: normalizedRecipient,
+    normalized_recipient_email: normalizedRecipient,
     to_name: cleanText(input.toName || input.to_name || to.name) || null,
     reply_to: cleanText(input.replyTo || input.reply_to) || null,
     subject: cleanText(input.subject),
@@ -175,6 +182,8 @@ function normalizeLogRecord(input = {}) {
     project_id: uuidOrNull(input.projectId || input.project_id),
     triggered_by: cleanText(input.triggeredBy || input.triggered_by) || null,
     triggered_by_user_id: uuidOrNull(input.triggeredByUserId || input.triggered_by_user_id),
+    created_by: cleanText(input.createdBy || input.created_by || input.triggeredBy || input.triggered_by) || "mail_service",
+    idempotency_key: cleanText(input.idempotencyKey || input.idempotency_key) || crypto.createHash("sha256").update(crypto.randomUUID()).digest("hex"),
     error_message: cleanText(input.errorMessage || input.error_message) || null,
     error_code: cleanText(input.errorCode || input.error_code) || null,
     metadata: {
