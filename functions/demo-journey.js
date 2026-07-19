@@ -60,6 +60,7 @@ exports.handler = async (event) => {
     });
     if (!adminCheck.success) return adminCheck.response;
     admin = normalizeAdminPrincipal(adminCheck);
+    const observeAdminGet = event.httpMethod === "GET" ? createPostReadObserver() : null;
 
     const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -67,7 +68,7 @@ exports.handler = async (event) => {
       return jsonResponse(500, { success: false, error: "Demo klantreis API is nog niet geconfigureerd." });
     }
 
-    if (event.httpMethod === "GET") return await readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin });
+    if (event.httpMethod === "GET") return await readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin, observePostRead: observeAdminGet });
     if (event.httpMethod === "POST") return await upsertJourney({ event, supabaseUrl, serviceRoleKey, admin });
     if (event.httpMethod === "PATCH") return await upsertJourney({ event, supabaseUrl, serviceRoleKey, admin });
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan voor demo klantreis." });
@@ -383,7 +384,7 @@ function buildLaunchState(current = {}, now = "") {
   };
 }
 
-async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
+async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin, observePostRead }) {
   const observeReadPhase = createReadPhaseObserver();
   const params = event.queryStringParameters || {};
   const leadId = cleanUuid(params.leadId || params.lead_id);
@@ -402,9 +403,15 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const events = selected ? await observeReadPhase("events", () => readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id })) : [];
   const factoryHistory = selected ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id, observeReadPhase }) : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
   const projectWorkspace = selected ? await observeReadPhase("project_workspace", () => readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id })) : null;
+  observePostRead("demo_journey_reads_completed");
+  observePostRead("demo_journey_response_build_started");
   const responseJourneys = journeys.map(sanitizeAdminJourney);
   const responseSelected = responseJourneys[0] || null;
-  return jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
+  const response = jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
+  const responseBytes = Buffer.byteLength(response.body, "utf8");
+  observePostRead("demo_journey_response_build_completed", { responseBytes });
+  observePostRead("demo_journey_handler_returning", { responseBytes });
+  return response;
 }
 
 async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -1172,6 +1179,29 @@ function createReadPhaseObserver({ logger = console.info, clock = () => process.
   };
 }
 
+function createPostReadObserver({ logger = console.info, clock = () => process.hrtime.bigint() } = {}) {
+  const allowedEvents = new Set([
+    "demo_journey_reads_completed",
+    "demo_journey_response_build_started",
+    "demo_journey_response_build_completed",
+    "demo_journey_handler_returning",
+  ]);
+  const totalStartedAt = clock();
+  let previousAt = totalStartedAt;
+  return (event, { responseBytes = null } = {}) => {
+    if (!allowedEvents.has(event)) return;
+    const currentAt = clock();
+    const payload = {
+      event,
+      elapsedMs: elapsedMilliseconds(previousAt, currentAt),
+      totalElapsedMs: elapsedMilliseconds(totalStartedAt, currentAt),
+      responseBytes: safeResponseBytes(responseBytes),
+    };
+    previousAt = currentAt;
+    safeReadPhaseLog(logger, payload);
+  };
+}
+
 function safeReadPhaseLog(logger, payload) {
   try {
     logger(payload);
@@ -1197,6 +1227,12 @@ function safeUpstreamStatus(value) {
 function safeUpstreamCode(value) {
   const code = cleanText(value);
   return /^[a-z0-9_-]{1,64}$/i.test(code) ? code : null;
+}
+
+function safeResponseBytes(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const bytes = Number(value);
+  return Number.isSafeInteger(bytes) && bytes >= 0 ? bytes : null;
 }
 
 async function createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current, admin }) {
@@ -2109,6 +2145,7 @@ function isMissingFactoryTableError(error = {}) {
 }
 
 exports._test = {
+  createPostReadObserver,
   createReadPhaseObserver,
   normalizeAdminPrincipal,
 };
