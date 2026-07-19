@@ -2,11 +2,34 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const { runBuildJob } = require("../functions/website-factory");
+const demoJourney = require("../functions/demo-journey");
 
 const journeyId = "11111111-1111-4111-8111-111111111111";
 const admin = { id: "system:rc15-test", role: "super_admin", status: "active" };
 const context = { supabaseUrl: "https://local.test", serviceRoleKey: "local-service-key", admin };
 const briefing = "Branche: schilder\nDiensten: binnenschilderwerk, buitenschilderwerk\nDoelgroep: woningeigenaren\nRegio: Amsterdam";
+const originalAuthEnv = {
+  ADMIN_TOKEN: process.env.ADMIN_TOKEN,
+  ALLOW_LEGACY_ADMIN_TOKEN: process.env.ALLOW_LEGACY_ADMIN_TOKEN,
+  APP_ENV: process.env.APP_ENV,
+  APP_ENVIRONMENT: process.env.APP_ENVIRONMENT,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+};
+
+process.env.ADMIN_TOKEN = "rc15c-local-admin-fixture";
+process.env.ALLOW_LEGACY_ADMIN_TOKEN = "true";
+process.env.APP_ENV = "test";
+process.env.APP_ENVIRONMENT = "test";
+process.env.SUPABASE_URL = context.supabaseUrl;
+process.env.SUPABASE_SERVICE_ROLE_KEY = context.serviceRoleKey;
+
+test.after(() => {
+  for (const [key, value] of Object.entries(originalAuthEnv)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 function response(status, data) {
   return {
@@ -42,6 +65,15 @@ function factoryDatabase() {
     const method = options.method || "GET";
 
     if (url.pathname === "/rest/v1/demo_journeys" && method === "GET") return response(200, [state.journey]);
+
+    if (url.pathname === "/rest/v1/demo_journeys" && method === "PATCH") {
+      Object.assign(state.journey, body);
+      return response(200, [state.journey]);
+    }
+
+    if (url.pathname === "/rest/v1/project_workspaces") {
+      return response(404, { code: "PGRST205", message: "Could not find project_workspaces in the schema cache" });
+    }
 
     if (url.pathname === "/rest/v1/website_build_jobs" && method === "GET") {
       const id = (url.searchParams.get("id") || "").replace(/^eq\./, "");
@@ -128,7 +160,7 @@ test("successful retry reuses one build, one preview, one checksum and one event
   t.after(() => { global.fetch = previousFetch; });
 
   const first = await runBuildJob(context, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType: "starter" });
-  const reopenedChecksum = JSON.parse(JSON.stringify(database.previews[0])).package_checksum;
+  const reopened = JSON.parse(JSON.stringify({ job: database.jobs[0], preview: database.previews[0] }));
   const retry = await runBuildJob(context, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType: "starter" });
 
   assert.equal(first.job.status, "succeeded");
@@ -136,7 +168,57 @@ test("successful retry reuses one build, one preview, one checksum and one event
   assert.equal(first.previewVersion.id, retry.previewVersion.id);
   assert.equal(first.previewVersion.version, 1);
   assert.equal(first.previewVersion.packageChecksum, first.job.packageChecksum);
-  assert.equal(reopenedChecksum, first.job.packageChecksum);
+  assert.equal(reopened.job.id, retry.job.id);
+  assert.equal(reopened.job.request_fingerprint, retry.job.requestFingerprint);
+  assert.equal(reopened.preview.id, retry.previewVersion.id);
+  assert.equal(reopened.preview.version, retry.previewVersion.version);
+  assert.equal(reopened.preview.preview_url, retry.previewVersion.previewUrl);
+  assert.equal(reopened.preview.preview_token, retry.previewVersion.previewToken);
+  assert.deepEqual(reopened.preview.generated_package, retry.previewVersion.generatedPackage);
+  assert.equal(reopened.preview.package_checksum, retry.job.packageChecksum);
+  assert.equal(reopened.preview.is_active, true);
+  assert.equal(database.jobs.length, 1);
+  assert.equal(database.previews.length, 1);
+  assert.equal(database.events.length, 1);
+});
+
+test("generate_preview retry without previewUrl preserves the promoted journey URL", async (t) => {
+  const database = factoryDatabase();
+  const previousFetch = global.fetch;
+  global.fetch = database.fetch;
+  t.after(() => { global.fetch = previousFetch; });
+  const event = {
+    httpMethod: "POST",
+    path: "/.netlify/functions/demo-journey",
+    headers: { authorization: `Bearer ${process.env.ADMIN_TOKEN}`, "content-type": "application/json" },
+    queryStringParameters: {},
+    body: JSON.stringify({
+      action: "generate_preview",
+      id: journeyId,
+      generatedBriefing: briefing,
+      packageType: "starter",
+    }),
+  };
+
+  const firstResponse = await demoJourney.handler(event);
+  assert.equal(firstResponse.statusCode, 200);
+  const beforeRetry = JSON.parse(JSON.stringify({
+    journey: database.journey,
+    job: database.jobs[0],
+    preview: database.previews[0],
+  }));
+  assert.ok(beforeRetry.journey.preview_url);
+
+  const retryResponse = await demoJourney.handler(event);
+  assert.equal(retryResponse.statusCode, 200);
+  assert.equal(database.journey.preview_url, beforeRetry.journey.preview_url);
+  assert.equal(database.journey.preview_token, beforeRetry.journey.preview_token);
+  assert.deepEqual(database.journey.preview_package, beforeRetry.journey.preview_package);
+  assert.equal(database.jobs[0].id, beforeRetry.job.id);
+  assert.equal(database.jobs[0].request_fingerprint, beforeRetry.job.request_fingerprint);
+  assert.equal(database.jobs[0].package_checksum, beforeRetry.job.package_checksum);
+  assert.equal(database.previews[0].id, beforeRetry.preview.id);
+  assert.equal(database.previews[0].version, 1);
   assert.equal(database.jobs.length, 1);
   assert.equal(database.previews.length, 1);
   assert.equal(database.events.length, 1);

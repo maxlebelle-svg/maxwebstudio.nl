@@ -941,6 +941,8 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
     error.status = 400;
     throw error;
   }
+  const previewUrlProvided = Object.hasOwn(payload, "previewUrl") || Object.hasOwn(payload, "preview_url");
+  const previewUrl = Object.hasOwn(payload, "previewUrl") ? payload.previewUrl : payload.preview_url;
   const record = {
     lead_id: cleanUuid(payload.leadId || payload.lead_id) || null,
     customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
@@ -951,7 +953,7 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
     website_url: cleanText(payload.websiteUrl || payload.website_url || payload.website),
     demo_status: status,
     generated_briefing: cleanText(payload.generatedBriefing || payload.generated_briefing),
-    preview_url: cleanText(payload.previewUrl || payload.preview_url),
+    preview_url: cleanText(previewUrl),
     feedback: cleanText(payload.feedback),
     internal_notes: cleanText(payload.internalNotes || payload.internal_notes || payload.notes),
     follow_up_at: cleanText(payload.followUpAt || payload.follow_up_at) || null,
@@ -976,6 +978,7 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
       throw error;
     }
   }
+  if (!previewUrlProvided) delete record.preview_url;
   Object.keys(record).forEach((key) => {
     if (record[key] === "" && !["email", "phone", "website_url", "preview_url", "feedback", "internal_notes", "generated_briefing"].includes(key)) delete record[key];
   });

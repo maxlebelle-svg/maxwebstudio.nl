@@ -108,6 +108,51 @@ test("legacy save, reopen and retry stay structured and idempotent without proje
   assert.equal(database.journeys[0].id, database.journeyId);
   assert.equal(database.events.length, 1);
   assert.equal(JSON.parse(retry.body).journey.id, database.journeyId);
+  assert.equal(Object.hasOwn(database.journeyWrites[0], "preview_url"), false);
+  assert.equal(Object.hasOwn(database.journeyWrites[1], "preview_url"), false);
+});
+
+test("preview URL is preserved when absent and only changed when explicitly supplied", async () => {
+  const database = fakeDatabase();
+  global.fetch = database.fetch;
+  const basePayload = {
+    leadId: "50000000-0000-4000-8000-000000000001",
+    businessName: "Preview Retry BV",
+    generatedBriefing: "Bouw een betrouwbare testpreview.",
+    demoStatus: "interne_preview_klaar",
+  };
+  const originalPreviewUrl = "/.netlify/functions/demo-preview?token=original-preview-token";
+  const replacementPreviewUrl = "/.netlify/functions/demo-preview?token=replacement-preview-token";
+
+  const created = await demoJourney.handler(event("POST", { ...basePayload, previewUrl: originalPreviewUrl }));
+  assert.equal(created.statusCode, 200);
+  assert.equal(database.journeys[0].preview_url, originalPreviewUrl);
+
+  const retry = await demoJourney.handler(event("POST", basePayload));
+  assert.equal(retry.statusCode, 200);
+  assert.equal(database.journeys[0].preview_url, originalPreviewUrl);
+  assert.equal(database.journeys.length, 1);
+  assert.equal(database.events.length, 1);
+  assert.equal(Object.hasOwn(database.journeyWrites[1], "preview_url"), false);
+
+  const replaced = await demoJourney.handler(event("PATCH", { ...basePayload, previewUrl: replacementPreviewUrl }));
+  assert.equal(replaced.statusCode, 200);
+  assert.equal(database.journeys[0].preview_url, replacementPreviewUrl);
+  assert.equal(database.journeyWrites[2].preview_url, replacementPreviewUrl);
+
+  const clearedWithNull = await demoJourney.handler(event("PATCH", { ...basePayload, previewUrl: null }));
+  assert.equal(clearedWithNull.statusCode, 200);
+  assert.equal(database.journeys[0].preview_url, "");
+  assert.equal(database.journeyWrites[3].preview_url, "");
+
+  const restored = await demoJourney.handler(event("PATCH", { ...basePayload, preview_url: originalPreviewUrl }));
+  assert.equal(restored.statusCode, 200);
+  assert.equal(database.journeys[0].preview_url, originalPreviewUrl);
+
+  const clearedWithEmptyText = await demoJourney.handler(event("PATCH", { ...basePayload, previewUrl: "   " }));
+  assert.equal(clearedWithEmptyText.statusCode, 200);
+  assert.equal(database.journeys[0].preview_url, "");
+  assert.equal(database.events.length, 1);
 });
 
 test("normal Supabase admin bearer auth remains accepted", async () => {
@@ -167,6 +212,7 @@ function fakeDatabase(options = {}) {
     journeyId: "f866b859-88f9-4fbd-aee2-11d337e5a88d",
     journeys: [],
     events: [],
+    journeyWrites: [],
     authUserReads: 0,
     profileReads: 0,
   };
@@ -200,6 +246,7 @@ function fakeDatabase(options = {}) {
       const record = JSON.parse(request.body || "{}");
       if (hasDraftColumns(record)) return json({ code: "PGRST204", message: "Unknown draft column" }, 400);
       if (options.failJourneyWrites) return json({ message: "journey write failed" }, 500);
+      state.journeyWrites.push(JSON.parse(JSON.stringify(record)));
       const timestamp = new Date(Date.UTC(2026, 6, 19, 8, 0, clock++)).toISOString();
       if (method === "POST") {
         const row = {
