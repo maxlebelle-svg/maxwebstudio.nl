@@ -60,6 +60,22 @@ test("read phases emit one safe started/completed pair while preserving main con
   }
   assert.ok(database.maxConcurrent > 1);
   assert.equal(logs.some((entry) => entry.event === "demo_journey_read_phase_failed"), false);
+  const postLogs = postReadLogs(logs);
+  assert.deepEqual(postLogs.map((entry) => entry.event), [
+    "demo_journey_reads_completed",
+    "demo_journey_response_build_started",
+    "demo_journey_response_build_completed",
+    "demo_journey_handler_returning",
+  ]);
+  assert.deepEqual(postLogs.map((entry) => entry.responseBytes), [
+    null,
+    null,
+    Buffer.byteLength(response.body, "utf8"),
+    Buffer.byteLength(response.body, "utf8"),
+  ]);
+  for (let index = 1; index < postLogs.length; index += 1) {
+    assert.ok(postLogs[index].totalElapsedMs >= postLogs[index - 1].totalElapsedMs);
+  }
   assertSafeLogs(logs);
 });
 
@@ -79,8 +95,38 @@ test("upstream failure identifies the phase without changing concurrent main beh
   const failed = logs.find((entry) => entry.phase === "events" && entry.event === "demo_journey_read_phase_failed");
   assert.equal(failed.upstreamStatus, 502);
   assert.equal(failed.upstreamCode, "UPSTREAM_TIMEOUT");
+  assert.deepEqual(postReadLogs(logs), []);
   assert.equal(Object.hasOwn(body, "readPhase"), false);
   assertSafeLogs(logs);
+});
+
+test("post-read logger failures cannot change the successful response", async (t) => {
+  const eventNames = [
+    "demo_journey_reads_completed",
+    "demo_journey_response_build_started",
+    "demo_journey_response_build_completed",
+    "demo_journey_handler_returning",
+  ];
+  const baselineDatabase = observableDatabase({ missingWorkspace: true });
+  global.fetch = baselineDatabase.fetch;
+  console.info = () => {};
+  const baseline = await demoJourney.handler(readEvent());
+
+  for (const eventName of eventNames) {
+    await t.test(eventName, async () => {
+      const database = observableDatabase({ missingWorkspace: true });
+      global.fetch = database.fetch;
+      console.info = (entry) => {
+        if (entry.event === eventName) throw new Error("post-read logger failed");
+      };
+
+      const response = await demoJourney.handler(readEvent());
+
+      assert.deepEqual(response, baseline);
+      assert.deepEqual(database.calls, baselineDatabase.calls);
+      assert.ok(database.maxConcurrent > 1);
+    });
+  }
 });
 
 test("a pending upstream call only emits started until controlled release", async () => {
@@ -256,14 +302,29 @@ function readEvent() {
 }
 
 function assertSafeLogs(logs) {
-  const allowedKeys = ["event", "phase", "elapsedMs", "upstreamStatus", "upstreamCode"].sort();
   for (const entry of logs) {
-    assert.deepEqual(Object.keys(entry).sort(), allowedKeys);
+    const allowedKeys = entry.event.startsWith("demo_journey_read_phase_")
+      ? ["event", "phase", "elapsedMs", "upstreamStatus", "upstreamCode"]
+      : ["event", "elapsedMs", "totalElapsedMs", "responseBytes"];
+    assert.deepEqual(Object.keys(entry).sort(), allowedKeys.sort());
     const serialized = JSON.stringify(entry);
     for (const forbidden of ["https://", "?", adminToken, serviceRoleKey, journeyId, leadId, "authorization", "headers", "body", "Synthetic fixture"]) {
       assert.equal(serialized.includes(forbidden), false);
     }
   }
+}
+
+function readLogs(logs) {
+  return logs.filter((entry) => entry.event.startsWith("demo_journey_read_phase_"));
+}
+
+function postReadLogs(logs) {
+  return logs.filter((entry) => [
+    "demo_journey_reads_completed",
+    "demo_journey_response_build_started",
+    "demo_journey_response_build_completed",
+    "demo_journey_handler_returning",
+  ].includes(entry.event));
 }
 
 function json(body, status = 200) {
