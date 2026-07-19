@@ -1438,9 +1438,12 @@ function sanitizeBuildResult(result = {}) {
 }
 
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
+  const observeReadPhase = typeof context.observeReadPhase === "function"
+    ? context.observeReadPhase
+    : async (_phase, operation) => operation();
   const [jobs, versionResult, journeyRow] = await Promise.all([
-    readBuildJobSummaries(context, { demoJourneyId, leadId, limit: 25 }),
-    demoJourneyId ? readPreviewVersionSummaries(context, demoJourneyId)
+    observeReadPhase("build_jobs", () => readBuildJobSummaries(context, { demoJourneyId, leadId, limit: 25 })),
+    demoJourneyId ? observeReadPhase("preview_versions", () => readPreviewVersionSummaries(context, demoJourneyId))
       .then((versions) => ({ versions, degraded: false, warning: "" }))
       .catch((error) => {
         if (!isUpstreamTimeout(error)) throw error;
