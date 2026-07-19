@@ -9,6 +9,8 @@ const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = re
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
+const legacyAdminPrincipalId = "system:legacy-admin-token";
+const allowedPrincipalStatuses = new Set(["active", "invited"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const demoStatuses = [
   "geen_demo",
@@ -46,24 +48,27 @@ exports.handler = async (event) => {
   if (isClientRequest && event.httpMethod === "GET") return readCustomerJourney(event);
   if (isClientRequest && event.httpMethod === "POST") return saveCustomerFeedback(event);
 
-  const adminCheck = await verifyAdmin(event, jsonResponse, {
-    module: "demo_journey",
-    action: event.httpMethod.toLowerCase(),
-    allowedRoles: staffRoles,
-    allowedStatuses: ["active", "invited"],
-  });
-  if (!adminCheck.success) return adminCheck.response;
-
-  const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse(500, { success: false, error: "Demo klantreis API is nog niet geconfigureerd." });
-  }
-
+  let adminCheck = null;
+  let admin = null;
   try {
-    if (event.httpMethod === "GET") return readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
-    if (event.httpMethod === "POST") return upsertJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
-    if (event.httpMethod === "PATCH") return upsertJourney({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
+    adminCheck = await verifyAdmin(event, jsonResponse, {
+      module: "demo_journey",
+      action: event.httpMethod.toLowerCase(),
+      allowedRoles: staffRoles,
+      allowedStatuses: [...allowedPrincipalStatuses],
+    });
+    if (!adminCheck.success) return adminCheck.response;
+    admin = normalizeAdminPrincipal(adminCheck);
+
+    const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    if (!supabaseUrl || !serviceRoleKey) {
+      return jsonResponse(500, { success: false, error: "Demo klantreis API is nog niet geconfigureerd." });
+    }
+
+    if (event.httpMethod === "GET") return await readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin });
+    if (event.httpMethod === "POST") return await upsertJourney({ event, supabaseUrl, serviceRoleKey, admin });
+    if (event.httpMethod === "PATCH") return await upsertJourney({ event, supabaseUrl, serviceRoleKey, admin });
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan voor demo klantreis." });
   } catch (error) {
     const missing = isMissingTableError(error);
@@ -80,16 +85,13 @@ exports.handler = async (event) => {
       method: event.httpMethod,
       path: event.path || "",
       query: event.queryStringParameters || {},
-      role: adminCheck.admin?.role || "",
+      role: admin?.role || adminCheck?.admin?.role || "",
       status: error.status || 500,
       code: error.code || "",
-      message: error.message,
-      details: error.details || "",
-      hint: error.hint || "",
-      url: error.url || "",
-      responseText: error.responseText || "",
-      responseJson: error.responseJson || null,
-      stack: error.stack || "",
+      message: redactSensitiveText(error.message),
+      details: redactSensitiveText(error.details),
+      hint: redactSensitiveText(error.hint),
+      url: redactSensitiveText(error.url),
     });
     const responseModule = error.module || "demo_journey";
     const responseReason = error.reason || (missing ? "missing_demo_journeys_table" : missingFactory ? "missing_website_factory_tables" : "demo_journey_api_failed");
@@ -109,6 +111,32 @@ exports.handler = async (event) => {
     }));
   }
 };
+
+function normalizeAdminPrincipal(adminCheck = {}) {
+  const authSource = cleanText(adminCheck.source);
+  const source = authSource === "legacy_admin_token"
+    ? {
+      id: legacyAdminPrincipalId,
+      role: "super_admin",
+      status: "active",
+    }
+    : adminCheck.admin || {};
+  const principal = {
+    ...source,
+    id: cleanText(source.id),
+    role: normalizeRole(source.role),
+    status: normalizeStatus(source.status),
+    auth_source: authSource,
+  };
+  if (!principal.id || !staffRoles.includes(principal.role) || !allowedPrincipalStatuses.has(principal.status) || !principal.auth_source) {
+    const error = new Error("De geautoriseerde admincontext is ongeldig.");
+    error.status = 500;
+    error.code = "INVALID_ADMIN_PRINCIPAL";
+    error.reason = "invalid_admin_principal";
+    throw error;
+  }
+  return principal;
+}
 
 async function readCustomerJourney(event) {
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -1104,10 +1132,8 @@ async function readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, jour
 
 async function createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current, admin }) {
   if (!journey.id) return;
-  if (!current) {
-    await createEvent({ supabaseUrl, serviceRoleKey, journeyId: journey.id, type: "created", title: "Demo-aanvraag ontvangen", description: "De demo-klantreis is aangemaakt.", visible: true, createdBy: admin.id });
-    return;
-  }
+  await createEventOnce({ supabaseUrl, serviceRoleKey, journeyId: journey.id, type: "created", title: "Demo-aanvraag ontvangen", description: "De demo-klantreis is aangemaakt.", visible: true, createdBy: admin.id });
+  if (!current) return;
   if (current.demoStatus !== journey.demoStatus) {
     const customerTitle = customerTimelineStep(journey.demoStatus);
     await createEvent({ supabaseUrl, serviceRoleKey, journeyId: journey.id, type: "status", title: statusLabel(journey.demoStatus), description: "Status bijgewerkt in het salesportaal.", visible: false, createdBy: admin.id });
@@ -1115,6 +1141,21 @@ async function createStatusEvents({ supabaseUrl, serviceRoleKey, journey, curren
       await createEvent({ supabaseUrl, serviceRoleKey, journeyId: journey.id, type: "customer_status", title: customerTitle, description: customerTimelineDescription(journey.demoStatus), visible: customerVisibleStatuses.has(journey.demoStatus), createdBy: admin.id });
     }
   }
+}
+
+async function createEventOnce({ supabaseUrl, serviceRoleKey, journeyId, type, title, description, visible, createdBy }) {
+  const params = new URLSearchParams({
+    select: "id",
+    demo_journey_id: `eq.${journeyId}`,
+    event_type: `eq.${cleanText(type)}`,
+    limit: "1",
+  });
+  const existing = await supabaseFetch(`${supabaseUrl}/rest/v1/demo_journey_events?${params.toString()}`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  if (existing.length) return existing[0];
+  return createEvent({ supabaseUrl, serviceRoleKey, journeyId, type, title, description, visible, createdBy });
 }
 
 async function createEvent({ supabaseUrl, serviceRoleKey, journeyId, type, title, description, visible, createdBy }) {
@@ -1601,7 +1642,10 @@ function jsonResponse(statusCode, body) {
 }
 
 function errorResponse({ error = {}, developerMode = false, module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
-  const message = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
+  const rawMessage = redactSensitiveText(error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.");
+  const publicMessage = developerMode || Number(error.status || 500) < 500
+    ? rawMessage
+    : fallbackMessage || "Aanvraag kon niet worden verwerkt.";
   const isPreviewAction = cleanText(error.action) === "generate_preview" || module === "website_factory";
   const previewDetails = [
     error.phase ? `Fase: ${error.phase}` : "",
@@ -1617,16 +1661,16 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
     module,
     phase: error.phase || "",
     reason,
-    message,
-    error: developerMode ? message : fallbackMessage || message,
+    message: publicMessage,
+    error: developerMode ? rawMessage : fallbackMessage || publicMessage,
     userMessage: setupRequired
       ? fallbackMessage
       : isPreviewAction
         ? previewUserMessage
         : "De demo-klantreis kon niet worden opgeslagen. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
     code: error.code || "",
-    details: developerMode ? cleanText(error.details) : "",
-    hint: developerMode ? cleanText(error.hint) : "",
+    details: developerMode ? redactSensitiveText(error.details) : "",
+    hint: developerMode ? redactSensitiveText(error.hint) : "",
     setupRequired: Boolean(setupRequired),
     diagnostics: {
       module,
@@ -1639,14 +1683,33 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
       status: error.status || 500,
       code: error.code || "",
       method: error.method || "",
-      url: developerMode ? cleanText(error.url) : "",
-      responseText: developerMode ? cleanText(error.responseText) : "",
-      responseJson: developerMode ? error.responseJson || null : null,
-      requestBody: developerMode ? cleanText(error.requestBody) : "",
+      url: developerMode ? redactSensitiveText(error.url) : "",
+      responseText: developerMode ? redactSensitiveText(error.responseText) : "",
+      responseJson: developerMode ? redactSensitiveValue(error.responseJson) : null,
+      requestBody: developerMode ? redactSensitiveText(error.requestBody) : "",
     },
   };
-  if (developerMode && error.stack) body.stack = error.stack;
   return body;
+}
+
+function redactSensitiveText(value = "") {
+  let text = cleanText(value);
+  [process.env.ADMIN_TOKEN, process.env.SUPABASE_SERVICE_ROLE_KEY, process.env.SUPABASE_ANON_KEY]
+    .map(cleanText)
+    .filter((secret) => secret.length >= 8)
+    .forEach((secret) => {
+      text = text.split(secret).join("[REDACTED]");
+    });
+  return text;
+}
+
+function redactSensitiveValue(value) {
+  if (value === null || value === undefined) return null;
+  try {
+    return JSON.parse(redactSensitiveText(JSON.stringify(value)));
+  } catch {
+    return redactSensitiveText(value);
+  }
 }
 
 function isDeveloperRequest(event = {}) {
@@ -1973,3 +2036,7 @@ function isMissingFactoryTableError(error = {}) {
     || text.includes("website_build_jobs")
     || text.includes("website_preview_versions");
 }
+
+exports._test = {
+  normalizeAdminPrincipal,
+};
