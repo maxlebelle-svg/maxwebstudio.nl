@@ -405,9 +405,10 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin, obs
   const projectWorkspace = selected ? await observeReadPhase("project_workspace", () => readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id })) : null;
   observePostRead("demo_journey_reads_completed");
   observePostRead("demo_journey_response_build_started");
+  const responseFactoryHistory = projectBuildHistoryMetadata(factoryHistory);
   const responseJourneys = journeys.map(sanitizeAdminJourney);
   const responseSelected = responseJourneys[0] || null;
-  const response = jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
+  const response = jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: responseFactoryHistory, buildStatus: responseFactoryHistory.latestJob || null, projectWorkspace });
   const responseBytes = Buffer.byteLength(response.body, "utf8");
   observePostRead("demo_journey_response_build_completed", { responseBytes });
   observePostRead("demo_journey_handler_returning", { responseBytes });
@@ -1623,6 +1624,130 @@ function sanitizeAdminJourney(journey = null) {
   };
 }
 
+const demoJourneyPackageMetaFields = [
+  "packageId",
+  "packageName",
+  "packageLabel",
+  "packagePositioning",
+  "packageType",
+  "packageRules",
+  "packageManifest",
+  "industryId",
+  "industryName",
+  "industryManifest",
+  "industryProfileLabel",
+  "resolvedRules",
+  "resolvedComponents",
+  "assetRequirements",
+  "manifestSources",
+  "template",
+  "templateUsed",
+  "templateSections",
+  "generatedPages",
+  "generatedSections",
+  "warnings",
+  "previewSource",
+];
+
+function projectGeneratedPackageMetadata(packageValue = null) {
+  if (!packageValue || typeof packageValue !== "object" || Array.isArray(packageValue)) return null;
+  const files = Array.isArray(packageValue.files)
+    ? packageValue.files.map(projectGeneratedFileMetadata)
+    : [];
+  const projected = {};
+  for (const field of ["version", "generatedAt", "businessName", "packageType"]) {
+    if (Object.hasOwn(packageValue, field)) projected[field] = cloneMetadataValue(packageValue[field]);
+  }
+  projected.files = files;
+  projected.meta = projectGeneratedPackageMeta(packageValue.meta);
+  projected.hasGeneratedPackage = true;
+  projected.generatedPackageBytes = files.reduce((total, file) => total + file.bytes, 0);
+  projected.contentIncluded = false;
+  return projected;
+}
+
+function projectGeneratedFileMetadata(file = {}) {
+  const source = file && typeof file === "object" && !Array.isArray(file) ? file : {};
+  const path = cleanText(source.path);
+  const content = source.content;
+  return {
+    path,
+    mime: cleanText(source.mime || contentTypeForPreviewPath(path)),
+    encoding: cleanText(source.encoding || "utf8").toLowerCase(),
+    bytes: generatedFileBytes(source),
+    hasContent: typeof content === "string"
+      ? content.length > 0
+      : Buffer.isBuffer(content)
+        ? content.length > 0
+        : content !== null && content !== undefined,
+  };
+}
+
+function generatedFileBytes(file = {}) {
+  const explicit = file.bytes ?? file.size;
+  if (explicit !== undefined && explicit !== null && explicit !== "") {
+    const number = Number(explicit);
+    if (Number.isFinite(number) && number >= 0) return Math.floor(number);
+  }
+  if (typeof file.content === "string") return Buffer.byteLength(file.content, "utf8");
+  if (Buffer.isBuffer(file.content)) return file.content.length;
+  return 0;
+}
+
+function projectGeneratedPackageMeta(meta = null) {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return {};
+  return Object.fromEntries(demoJourneyPackageMetaFields
+    .filter((field) => Object.hasOwn(meta, field))
+    .map((field) => [field, cloneMetadataValue(meta[field])]));
+}
+
+function cloneMetadataValue(value) {
+  if (Array.isArray(value)) return value.map(cloneMetadataValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, cloneMetadataValue(nested)]));
+  }
+  return value;
+}
+
+function projectBuildHistoryMetadata(buildHistory = {}) {
+  const source = buildHistory && typeof buildHistory === "object" && !Array.isArray(buildHistory) ? buildHistory : {};
+  const sourceJobs = Array.isArray(source.jobs) ? source.jobs : [];
+  const sourceVersions = Array.isArray(source.previewVersions) ? source.previewVersions : [];
+  const jobs = sourceJobs.map(projectBuildRecordMetadata);
+  const previewVersions = sourceVersions.map(projectBuildRecordMetadata);
+  const latestJob = projectHistoryAlias(source.latestJob, sourceJobs, jobs);
+  const activeVersion = projectHistoryAlias(source.activeVersion, sourceVersions, previewVersions);
+  const { jobs: _jobs, previewVersions: _previewVersions, latestJob: _latestJob, activeVersion: _activeVersion, ...rest } = source;
+  return {
+    ...cloneMetadataValue(rest),
+    jobs,
+    previewVersions,
+    latestJob,
+    activeVersion,
+  };
+}
+
+function projectBuildRecordMetadata(record = null) {
+  if (!record || typeof record !== "object" || Array.isArray(record)) return record || null;
+  const projected = { ...record };
+  if (Object.hasOwn(record, "generatedPackage")) {
+    projected.generatedPackage = projectGeneratedPackageMetadata(record.generatedPackage);
+  }
+  if (Object.hasOwn(record, "generated_package")) {
+    projected.generated_package = projectGeneratedPackageMetadata(record.generated_package);
+  }
+  return projected;
+}
+
+function projectHistoryAlias(alias, sourceRecords, projectedRecords) {
+  if (!alias) return null;
+  const indexByReference = sourceRecords.findIndex((record) => record === alias);
+  if (indexByReference >= 0) return projectedRecords[indexByReference];
+  const aliasId = cleanText(alias.id);
+  const indexById = aliasId ? sourceRecords.findIndex((record) => cleanText(record?.id) === aliasId) : -1;
+  return indexById >= 0 ? projectedRecords[indexById] : projectBuildRecordMetadata(alias);
+}
+
 function sanitizePreviewPackageForResponse(previewPackage = null) {
   if (!previewPackage || typeof previewPackage !== "object") return previewPackage || null;
   const sanitized = { ...previewPackage };
@@ -2148,4 +2273,6 @@ exports._test = {
   createPostReadObserver,
   createReadPhaseObserver,
   normalizeAdminPrincipal,
+  projectBuildHistoryMetadata,
+  projectGeneratedPackageMetadata,
 };

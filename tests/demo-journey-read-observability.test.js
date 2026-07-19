@@ -41,8 +41,8 @@ test.after(() => {
   }
 });
 
-test("read phases remain sequential and emit one safe started/completed pair", async () => {
-  const database = observableDatabase({ missingWorkspace: true });
+test("read phases remain sequential and emit one safe started/completed pair", async (t) => {
+  const database = observableDatabase({ missingWorkspace: true, generatedContent: "zwaar pakket é🚀" });
   const logs = [];
   global.fetch = database.fetch;
   console.info = (entry) => logs.push(entry);
@@ -54,6 +54,16 @@ test("read phases remain sequential and emit one safe started/completed pair", a
   assert.equal(body.success, true);
   assert.equal(body.journey.id, journeyId);
   assert.equal(body.projectWorkspace, null);
+  assert.equal(body.demoJourney.id, journeyId);
+  assert.equal(body.records[0].id, journeyId);
+  assert.equal(body.events.length, 1);
+  assert.equal(Array.isArray(body.templates), true);
+  assert.equal(body.buildHistory.latestJob.generatedPackage.files[0].path, "index.html");
+  assert.equal(body.buildHistory.latestJob.generatedPackage.files[0].bytes, Buffer.byteLength("zwaar pakket é🚀", "utf8"));
+  assert.equal(body.buildHistory.latestJob.generatedPackage.contentIncluded, false);
+  assert.deepEqual(body.buildStatus, body.buildHistory.latestJob);
+  assert.equal(hasKeyRecursively(body.buildHistory, "content"), false);
+  t.diagnostic(`projected handler response bytes: ${Buffer.byteLength(response.body, "utf8")}`);
   assert.deepEqual(database.calls, ["journey", "events", "build_jobs", "preview_versions", "project_workspace"]);
   assert.equal(database.maxConcurrent, 1);
   assert.deepEqual(readLogs(logs).map(({ event, phase }) => [event, phase]), [
@@ -273,8 +283,8 @@ function observableDatabase(options = {}) {
       if (options.failPhase === phase) return json({ code: "UPSTREAM_TIMEOUT", message: "Safe upstream failure" }, 502);
       if (phase === "journey") return json([journeyRow()]);
       if (phase === "events") return json([{ id: "event-fixture", demo_journey_id: journeyId, event_type: "created", created_at: "2026-07-19T08:00:00.000Z" }]);
-      if (phase === "build_jobs") return json([{ id: "build-fixture", demo_journey_id: journeyId, status: "succeeded", created_at: "2026-07-19T08:00:00.000Z" }]);
-      if (phase === "preview_versions") return json([{ id: "preview-fixture", demo_journey_id: journeyId, version: 2, is_active: true, package_checksum: "a".repeat(64) }]);
+      if (phase === "build_jobs") return json([{ id: "build-fixture", demo_journey_id: journeyId, status: "succeeded", generated_package: generatedPackage(options.generatedContent), created_at: "2026-07-19T08:00:00.000Z" }]);
+      if (phase === "preview_versions") return json([{ id: "preview-fixture", demo_journey_id: journeyId, version: 2, is_active: true, package_checksum: "a".repeat(64), generated_package: generatedPackage(options.generatedContent) }]);
       if (phase === "project_workspace" && options.missingWorkspace) {
         return json({ code: "PGRST205", message: "Could not find project_workspaces in the schema cache" }, 404);
       }
@@ -305,6 +315,20 @@ function journeyRow() {
     created_by: "system:legacy-admin-token",
     updated_at: "2026-07-19T08:00:00.000Z",
   };
+}
+
+function generatedPackage(content) {
+  return content === undefined ? null : {
+    version: 2,
+    files: [{ path: "index.html", content }],
+    meta: { template: "premium", customerWishes: "must not leave the function" },
+  };
+}
+
+function hasKeyRecursively(value, target) {
+  if (Array.isArray(value)) return value.some((item) => hasKeyRecursively(item, target));
+  if (!value || typeof value !== "object") return false;
+  return Object.keys(value).some((key) => key === target || hasKeyRecursively(value[key], target));
 }
 
 function readEvent() {
