@@ -112,7 +112,7 @@ function factoryDatabase() {
     if (url.pathname === "/rest/v1/rpc/promote_website_factory_preview" && method === "POST") {
       if (state.failPromotion) return response(500, { code: "forced_promotion_failure", message: "forced promotion failure" });
       const existing = state.previews.find((preview) => preview.build_job_id === body.p_build_job_id);
-      if (existing) return response(200, [{ ...existing, preview_version_id: existing.id, created: false }]);
+      if (existing) return response(200, [{ ...existing, generated_package: null, preview_version_id: existing.id, created: false }]);
       const job = state.jobs.find((candidate) => candidate.id === body.p_build_job_id);
       state.previews.forEach((preview) => { preview.is_active = false; });
       const preview = {
@@ -133,9 +133,10 @@ function factoryDatabase() {
         preview_url: preview.preview_url,
         preview_token: preview.preview_token,
         preview_package: preview.generated_package,
+        generated_briefing: job.generated_package.meta.customerWishes,
         demo_status: "interne_preview_klaar",
       });
-      return response(200, [{ ...preview, preview_version_id: preview.id, created: true }]);
+      return response(200, [{ ...preview, generated_package: null, preview_version_id: preview.id, created: true }]);
     }
 
     if (url.pathname === "/rest/v1/demo_journey_events" && method === "GET") {
@@ -168,6 +169,7 @@ test("successful retry reuses one build, one preview, one checksum and one event
   assert.equal(first.previewVersion.id, retry.previewVersion.id);
   assert.equal(first.previewVersion.version, 1);
   assert.equal(first.previewVersion.packageChecksum, first.job.packageChecksum);
+  assert.deepEqual(first.previewVersion.generatedPackage, first.job.generatedPackage);
   assert.equal(reopened.job.id, retry.job.id);
   assert.equal(reopened.job.request_fingerprint, retry.job.requestFingerprint);
   assert.equal(reopened.preview.id, retry.previewVersion.id);
@@ -237,6 +239,7 @@ test("changed input creates version 2 while a failed version 3 promotion preserv
   assert.equal(database.previews[1].is_active, true);
   assert.notEqual(first.job.requestFingerprint, second.job.requestFingerprint);
   assert.notEqual(first.job.packageChecksum, second.job.packageChecksum);
+  assert.equal(database.journey.generated_briefing, `${briefing}\nStijl: premium`);
 
   database.failPromotion = true;
   await assert.rejects(
@@ -246,6 +249,7 @@ test("changed input creates version 2 while a failed version 3 promotion preserv
   assert.equal(database.previews.length, 2);
   assert.equal(database.previews[1].is_active, true);
   assert.equal(database.journey.preview_token, database.previews[1].preview_token);
+  assert.equal(database.journey.generated_briefing, `${briefing}\nStijl: premium`);
   assert.equal(database.jobs[2].status, "failed");
   assert.equal(database.jobs[2].error_phase, "promote_preview");
 
@@ -257,4 +261,52 @@ test("changed input creates version 2 while a failed version 3 promotion preserv
   assert.equal(resumed.job.packageChecksum, failedChecksum);
   assert.equal(resumed.previewVersion.version, 3);
   assert.equal(database.previews.length, 3);
+  assert.equal(database.journey.generated_briefing, `${briefing}\nStijl: minimalistisch`);
+});
+
+test("concurrent identical builds converge on one build and one active preview", async (t) => {
+  const database = factoryDatabase();
+  const previousFetch = global.fetch;
+  global.fetch = database.fetch;
+  t.after(() => { global.fetch = previousFetch; });
+
+  const [first, retry] = await Promise.all([
+    runBuildJob(context, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType: "starter" }),
+    runBuildJob(context, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType: "starter" }),
+  ]);
+
+  assert.equal(first.job.id, retry.job.id);
+  assert.equal(database.jobs.length, 1);
+  assert.equal(database.previews.length, 1);
+  assert.equal(database.previews.filter((preview) => preview.is_active).length, 1);
+  assert.equal(database.events.length, 1);
+});
+
+test("generate_preview does not publish changed briefing when promotion fails", async (t) => {
+  const database = factoryDatabase();
+  const previousFetch = global.fetch;
+  global.fetch = database.fetch;
+  t.after(() => { global.fetch = previousFetch; });
+
+  await runBuildJob(context, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType: "starter" });
+  const activeBriefing = database.journey.generated_briefing;
+  database.failPromotion = true;
+  const event = {
+    httpMethod: "POST",
+    path: "/.netlify/functions/demo-journey",
+    headers: { authorization: `Bearer ${process.env.ADMIN_TOKEN}`, "content-type": "application/json" },
+    queryStringParameters: {},
+    body: JSON.stringify({
+      action: "generate_preview",
+      id: journeyId,
+      generatedBriefing: `${briefing}\nStijl: editorial`,
+      packageType: "premium",
+    }),
+  };
+
+  const failed = await demoJourney.handler(event);
+  assert.equal(failed.statusCode, 500);
+  assert.equal(database.journey.generated_briefing, activeBriefing);
+  assert.equal(database.previews.length, 1);
+  assert.equal(database.previews[0].is_active, true);
 });

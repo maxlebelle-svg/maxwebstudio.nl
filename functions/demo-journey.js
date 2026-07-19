@@ -838,11 +838,17 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         },
       });
     }
+    const preparationRecord = journeyPayload(
+      { ...payload, id: journeyId, demoStatus: sourceJourney.demoStatus || "briefing_klaar", generatedBriefing: briefing },
+      admin,
+      { create: false },
+    );
+    delete preparationRecord.generated_briefing;
     await patchJourneySafe({
       supabaseUrl,
       serviceRoleKey,
       id: journeyId,
-      record: journeyPayload({ ...payload, id: journeyId, demoStatus: sourceJourney.demoStatus || "briefing_klaar", generatedBriefing: briefing }, admin, { create: false }),
+      record: preparationRecord,
     });
     if (!journeyId) return jsonResponse(500, { success: false, error: "Demo-klantreis kon niet worden voorbereid voor preview." });
 

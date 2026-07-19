@@ -822,12 +822,16 @@ async function promoteSucceededBuild(context, job, journey) {
       p_created_by: context.admin.id,
     }),
   });
-  return normalizePromotedPreview(rows[0] || {});
+  return normalizePromotedPreview(rows[0] || {}, job.generatedPackage);
 }
 
-function normalizePromotedPreview(row = {}) {
+function normalizePromotedPreview(row = {}, generatedPackage = null) {
   return {
-    ...normalizePreviewVersion({ ...row, id: row.preview_version_id }),
+    ...normalizePreviewVersion({
+      ...row,
+      id: row.preview_version_id,
+      generated_package: row.generated_package || generatedPackage,
+    }),
     created: Boolean(row.created),
   };
 }
@@ -863,7 +867,10 @@ async function createPreviewVersion(context, payload = {}) {
       p_created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
     }),
   });
-  const preview = normalizePromotedPreview(rows[0] || {});
+  let preview = normalizePromotedPreview(rows[0] || {});
+  if (!preview.generatedPackage) {
+    preview = await readPreviewByBuildJob(context, buildJobId) || preview;
+  }
   if (preview.demoJourneyId !== demoJourneyId) throw buildError("Build en demo journey horen niet bij elkaar.", "promote_preview", "journey_build_mismatch", 409);
   return preview;
 }
@@ -1202,6 +1209,11 @@ function isMissingFactoryTableError(error = {}) {
     || text.includes("website_preview_versions")
     || text.includes("promote_website_factory_preview")
     || text.includes("pgrst202");
+}
+
+function isUniqueConflict(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return error.status === 409 || error.code === "23505" || text.includes("duplicate") || text.includes("unique");
 }
 
 function isMissingColumnError(error = {}) {

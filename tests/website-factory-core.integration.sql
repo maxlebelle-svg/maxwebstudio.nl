@@ -116,7 +116,8 @@ begin
     idempotency_key, generated_package, package_checksum, created_by, updated_by
   ) values (
     journey_one, 'succeeded', 'premium', 'factory-v1', repeat('2', 64),
-    'request-two', '{"site":"version-two"}'::jsonb, checksum_two, 'test:owner', 'test:owner'
+    'request-two', '{"site":"version-two","meta":{"customerWishes":"Branche: schilder\\nStijl: premium"}}'::jsonb,
+    checksum_two, 'test:owner', 'test:owner'
   ) returning id into build_two;
 
   select preview_version_id, version into preview_two, returned_version
@@ -126,13 +127,18 @@ begin
      or not exists (select 1 from public.website_preview_versions where id = preview_two and is_active) then
     raise exception 'version 2 promotion did not preserve inactive version 1';
   end if;
+  if (select generated_briefing from public.demo_journeys where id = journey_one)
+     <> E'Branche: schilder\\nStijl: premium' then
+    raise exception 'version 2 briefing was not promoted atomically';
+  end if;
 
   insert into public.website_build_jobs (
     demo_journey_id, status, package_type, generator_version, request_fingerprint,
     idempotency_key, generated_package, package_checksum, created_by, updated_by
   ) values (
     journey_one, 'succeeded', 'business', 'factory-v1', repeat('3', 64),
-    'request-three', '{"site":"version-three"}'::jsonb, checksum_three, 'test:owner', 'test:owner'
+    'request-three', '{"site":"version-three","meta":{"customerWishes":"Branche: schilder\\nStijl: editorial"}}'::jsonb,
+    checksum_three, 'test:owner', 'test:owner'
   ) returning id into build_three;
 
   begin
@@ -168,7 +174,9 @@ begin
   perform set_config('rc15.fail_journey_update', 'off', true);
   if not exists (select 1 from public.website_preview_versions where id = preview_two and is_active)
      or exists (select 1 from public.website_preview_versions where build_job_id = build_three)
-     or (select preview_token from public.demo_journeys where id = journey_one) <> 'token-two' then
+     or (select preview_token from public.demo_journeys where id = journey_one) <> 'token-two'
+     or (select generated_briefing from public.demo_journeys where id = journey_one)
+        <> E'Branche: schilder\\nStijl: premium' then
     raise exception 'journey update failure did not preserve version 2';
   end if;
 
