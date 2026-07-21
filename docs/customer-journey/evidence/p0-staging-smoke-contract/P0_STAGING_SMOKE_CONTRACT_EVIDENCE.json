@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-21T19:09:57Z",
+  "status": "PASS_P0_STAGING_SMOKE_CONTRACT_READY",
+  "scope": {
+    "localOnly": true,
+    "baseCommit": "7bdfb15d659a2f9da5d0816732ad19828bcb296d",
+    "branch": "codex/p0-staging-smoke-contract",
+    "pushes": 0,
+    "deploys": 0,
+    "remoteConfigurationChanges": 0,
+    "stagingWrites": 0,
+    "productionActions": 0
+  },
+  "contract": {
+    "modeVariable": "OUTBOUND_PROVIDER_MODE",
+    "modeValue": "suppress",
+    "secretVariable": "P0_STAGING_SMOKE_HMAC_SECRET",
+    "secretMinimumBytes": 32,
+    "header": "x-mws-p0-smoke-auth",
+    "algorithm": "HMAC-SHA-256",
+    "bodyBound": true,
+    "nonceMinimumCharacters": 16,
+    "nonceMaximumCharacters": 64,
+    "maximumClockSkewSeconds": 300,
+    "constantTimeComparison": true,
+    "frontendExposure": false
+  },
+  "targetLock": {
+    "site": "maxwebstudio-staging",
+    "siteId": "67b2b8af-83fc-4c61-9cd8-2f78842b7615",
+    "supabaseProject": "maxwebstudio-test",
+    "supabaseProjectId": "xlxpuuycigeqhgxqtzni",
+    "wrongTargetFailsClosed": true,
+    "wrongTargetFailsWithoutSmokeHeader": true
+  },
+  "outboundInventory": {
+    "resendDeliveries": ["lead_notification", "lead_customer_confirmation"],
+    "smsCalls": 0,
+    "whatsappCalls": 0,
+    "whatsappLinksOnly": true,
+    "crmWebhookCalls": 0,
+    "backgroundDeliveryJobs": 0,
+    "providerRetrySchedulers": 0,
+    "reconciliationStartsDelivery": false
+  },
+  "suppressedResult": {
+    "provider": "resend",
+    "reason": "staging_smoke",
+    "expectedDeliveryCount": 2,
+    "providerHttpCalls": 0,
+    "emailLogsCreated": 0,
+    "deliveryJobsCreated": 0,
+    "retriesScheduled": 0
+  },
+  "activeInternalFlow": {
+    "validation": true,
+    "abuseHmac": true,
+    "limiter": true,
+    "transactionalLeadStorage": true,
+    "idempotency": true,
+    "businessEvent": true,
+    "reconciliationWhenAmbiguous": true,
+    "timeline": true,
+    "smokeEnvironment": "test",
+    "smokeMetadata": true,
+    "honeypotBeforeSmokeAuthentication": true
+  },
+  "validation": {
+    "smokeContract": { "passed": 11, "failed": 0 },
+    "targetedP0AndSmoke": { "passed": 69, "failed": 0 },
+    "fullIsolatedSuite": { "passed": 256, "failed": 0 },
+    "javascriptSyntax": true,
+    "shellSyntax": true,
+    "html5Parse": true,
+    "gitDiffCheck": true,
+    "frontendLeakCheck": true,
+    "secretScan": true
+  },
+  "fileIdentityBeforeEvidence": {
+    "functions/send-lead.js": "3b2ffc9550d10c4c01babcb822253b154c83ad9b10feffe7fc25d835604a984b",
+    "functions/services/p0StagingSmokeControl.js": "e7c72a230e21d620e885ee6278ed754d06e8b802a48bc35a0cf6bc4dc72959d9",
+    "tests/p0-staging-smoke-contract.test.js": "630ed0190d7bc4ab2bdc10b28de9cd1226760d6152c25c81b0f219fcb62e855d",
+    ".env.example": "cd016fc11f5da6fab42c0648e31e250b0c341b1277b4cb9c2c1f532ffae391a6",
+    ".env.local.example": "cd016fc11f5da6fab42c0648e31e250b0c341b1277b4cb9c2c1f532ffae391a6"
+  },
+  "incrementalFiles": [
+    ".env.example",
+    ".env.local.example",
+    "functions/send-lead.js",
+    "functions/services/p0StagingSmokeControl.js",
+    "tests/p0-staging-smoke-contract.test.js",
+    "docs/customer-journey/P0_STAGING_SMOKE_CONTRACT_REPORT.md",
+    "docs/customer-journey/evidence/p0-staging-smoke-contract/P0_STAGING_SMOKE_CONTRACT_EVIDENCE.json"
+  ],
+  "nextGate": "READ_ONLY_P0_STAGING_SMOKE_CONTRACT_READINESS_REVIEW"
+}

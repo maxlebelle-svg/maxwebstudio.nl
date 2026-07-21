@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "status": "STOPPED_P0_STAGING_READINESS_GAPS",
+  "capturedAt": "2026-07-21T18:12:29+02:00",
+  "scope": "p0_full_code_review_and_read_only_staging_readiness",
+  "review": {
+    "applicationCodeChanged": false,
+    "migrationsChanged": false,
+    "testsChanged": false,
+    "documentationOnly": true,
+    "blockers": 4,
+    "acceptedResiduals": 2,
+    "nonBlockingFindings": 1
+  },
+  "blockers": [
+    {
+      "id": "P0-READINESS-001",
+      "area": "browser_validation",
+      "summary": "HTML maxlength counts UTF-16 code units while JavaScript and PostgreSQL validation count Unicode codepoints",
+      "classification": "code_contract"
+    },
+    {
+      "id": "P0-READINESS-002",
+      "area": "post_storage_notifications",
+      "summary": "getCompanySettings can throw outside the notification degradation boundary after storage is proven",
+      "classification": "code_contract"
+    },
+    {
+      "id": "P0-READINESS-003",
+      "area": "staging_target_and_config",
+      "summary": "Netlify staging site is not linked and the required current HMAC secret is absent or unproven",
+      "classification": "configuration"
+    },
+    {
+      "id": "P0-READINESS-004",
+      "area": "release_isolation",
+      "summary": "Current dirty worktree cannot prove an application staging deploy contains only the approved P0 change",
+      "classification": "release_governance"
+    }
+  ],
+  "acceptedResiduals": [
+    {
+      "id": "P0-READINESS-R01",
+      "summary": "Catalog inspection principal was postgres with transaction_read_only off; every executed database statement was pre-inspected SELECT or CTE only"
+    },
+    {
+      "id": "P0-READINESS-R02",
+      "summary": "A process interruption after commit but before notifications is not repaired by normal idempotent replay; transactional lead storage remains intact"
+    }
+  ],
+  "stagingTarget": {
+    "supabaseProjectName": "maxwebstudio-test",
+    "supabaseProjectRef": "xlxpuuycigeqhgxqtzni",
+    "supabaseTargetLocked": true,
+    "netlifySiteLinked": false,
+    "productionContacted": false
+  },
+  "foundationMigration": {
+    "version": "20260721040000",
+    "filename": "20260721040000_lead_intake_abuse_control.sql",
+    "bytes": 12199,
+    "sha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a",
+    "byteIdenticalRoots": 3,
+    "historyPresent": false,
+    "candidateObjectsPresent": false,
+    "dryRunSelectedMigrations": ["20260721040000"],
+    "databaseReady": true,
+    "applied": false
+  },
+  "stagingPrestate": {
+    "capturedAt": "2026-07-21T16:10:24.651253Z",
+    "migrationHistoryRows": 16,
+    "latestMigrationVersion": "20260721030000",
+    "candidateTableCount": 0,
+    "candidateIndexCount": 0,
+    "candidateFunctionCount": 0,
+    "leadRpcDefinitionsMatchPriorEvidence": true,
+    "relevantRelationRlsAndAclsMatch": true,
+    "relevantTriggersMatch": true,
+    "policyCount": 80,
+    "policyDigestMd5": "6e9ef1fc7fb2e5b2a0b34830f60c46f4",
+    "publicSchemaAclMatch": true,
+    "defaultAclSnapshotMatch": true,
+    "r2b1FunctionCountMatched": 8,
+    "r2b2FunctionCountMatched": 6,
+    "applicationRowsRead": false,
+    "principal": "postgres",
+    "transactionReadOnly": false,
+    "statementsWereSelectOnly": true
+  },
+  "configuration": {
+    "supabaseUrlPresent": true,
+    "supabaseUrlMatchesStagingRef": true,
+    "serviceRolePresentInStagingFile": true,
+    "serviceRolePlausibleInStagingFile": false,
+    "serviceRolePresentInLocalFile": true,
+    "remoteServiceRolePlacementVerified": false,
+    "hmacCurrentPresent": false,
+    "hmacPreviousPresent": false,
+    "hmacPreviousRequiredOnlyDuringRotation": true,
+    "proxyIpHeaderVerifiedInRuntime": false,
+    "abortSignalTimeoutVerifiedInRuntime": false,
+    "secretValuesExposed": false
+  },
+  "securityDiff": {
+    "unexpectedMigrationHistory": false,
+    "unexpectedCandidateObjects": false,
+    "leadRpcDrift": false,
+    "rlsOrAclDrift": false,
+    "policyDrift": false,
+    "triggerDrift": false,
+    "r2b1Drift": false,
+    "r2b2Drift": false,
+    "databaseVerdict": "READY_FOR_SEPARATELY_APPROVED_SINGLE_MIGRATION_APPLY"
+  },
+  "requiredSeparateApprovals": [
+    "database_apply",
+    "staging_application_deploy",
+    "operational_staging_smoke"
+  ],
+  "actions": {
+    "stagingReadOnlyContact": true,
+    "remoteDatabaseReads": true,
+    "remoteDatabaseWrites": 0,
+    "sqlDdlOrDml": false,
+    "migrationApply": false,
+    "remoteFixtures": false,
+    "stagingDeploy": false,
+    "operationalRemoteSmoke": false,
+    "productionContacted": false,
+    "commitPerformed": false,
+    "pushPerformed": false,
+    "deployPerformed": false
+  },
+  "nextGate": "fix_four_blockers_then_repeat_code_review_and_read_only_staging_readiness"
+}

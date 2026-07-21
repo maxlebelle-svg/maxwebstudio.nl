@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_P0_ABUSE_CONTROL_LOCAL_FOUNDATION_INTEGRATION_APPROVAL_REQUIRED",
+  "capturedAt": "2026-07-21T17:49:46+02:00",
+  "scope": "local_design_authoring_validation_only",
+  "migration": {
+    "version": "20260721040000",
+    "filename": "20260721040000_lead_intake_abuse_control.sql",
+    "bytes": 12199,
+    "sha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a",
+    "copies": 3,
+    "byteIdentical": true,
+    "appendOnly": true
+  },
+  "objects": {
+    "tablesAdded": ["public.lead_intake_abuse_requests"],
+    "functionsAdded": [
+      "public.mws_check_lead_intake_abuse_v1(text,text,text,text,text)",
+      "public.mws_cleanup_lead_intake_abuse_v1(integer)"
+    ],
+    "indexesAdded": 3,
+    "policiesAdded": 0,
+    "existingObjectsChanged": 0,
+    "defaultPrivilegesChanged": false
+  },
+  "privacy": {
+    "rawPiiColumns": 0,
+    "rawPiiLogged": false,
+    "fingerprint": "HMAC-SHA-256(current/previous secret, coarsened trusted network prefix + low-cardinality user-agent class)",
+    "idempotencyReference": "domain-separated HMAC-SHA-256",
+    "retentionHours": 48,
+    "physicalCleanupSchedulerAuthorized": false
+  },
+  "limits": {
+    "shortWindowMinutes": 15,
+    "shortWindowUniqueMax": 5,
+    "dailyWindowHours": 24,
+    "dailyWindowUniqueMax": 20,
+    "replayIncrementsUniqueCount": false
+  },
+  "localIntegrationContract": {
+    "wiredIntoSendLead": false,
+    "uniqueAllowedReachesCreateCallback": true,
+    "replayAllowedReachesCreateCallback": true,
+    "rateLimitedReachesCreateCallback": false,
+    "idempotencyConflictReachesCreateCallback": false,
+    "malformedDecisionFailsClosed": true,
+    "publicErrorsExposeProviderDetails": false
+  },
+  "databaseValidation": {
+    "bootstrapApply": "PASS",
+    "bootstrapSecondRun": "UP_TO_DATE",
+    "existingApply": "PASS",
+    "existingSecondRun": "UP_TO_DATE",
+    "functionalFixture": "PASS",
+    "expiredCleanup": "PASS",
+    "fixtureCleanup": "PASS",
+    "parallelUnique": { "attempts": 6, "allowed": 5, "limited": 1, "rows": 5 },
+    "parallelReplay": { "attempts": 8, "allowed": 8, "uniqueAllowed": 1, "rows": 1 },
+    "secretRotationReplay": "PASS"
+  },
+  "security": {
+    "tableOwner": "postgres",
+    "rlsEnabled": true,
+    "rlsForced": false,
+    "directApplicationTableAccess": false,
+    "decisionSecurityDefiner": true,
+    "decisionSearchPath": "pg_catalog",
+    "decisionExecute": ["postgres", "service_role"],
+    "cleanupExecute": ["postgres"],
+    "publicExecute": false,
+    "anonExecute": false,
+    "authenticatedExecute": false
+  },
+  "tests": {
+    "targetedNode": { "status": "PASS", "passed": 11, "failed": 0 },
+    "fullRepository": { "status": "PASS_WITH_KNOWN_NON_P0_FAILURES", "passed": 327, "failed": 5, "total": 332 },
+    "knownNonP0FoundationExpectationFailures": 5
+  },
+  "quality": {
+    "javascriptSyntax": "PASS",
+    "shellSyntax": "PASS",
+    "jsonParse": "PASS",
+    "diffCheck": "PASS",
+    "secretScan": "PASS_NO_SECRET_PATTERNS_FOUND"
+  },
+  "actions": {
+    "stagingContacted": false,
+    "productionContacted": false,
+    "remoteDatabaseConnections": 0,
+    "remoteWrites": 0,
+    "commitPerformed": false,
+    "pushPerformed": false,
+    "deployPerformed": false
+  },
+  "nextGate": "separate_local_P0_integration_hardening_approval"
+}

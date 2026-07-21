@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_P0_LOCAL_INTEGRATION_STAGING_REVIEW_REQUIRED",
+  "capturedAt": "2026-07-21T18:04:40+02:00",
+  "scope": "local_p0_lead_intake_integration_hardening_only",
+  "foundationMigration": {
+    "version": "20260721040000",
+    "bytes": 12199,
+    "sha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a",
+    "changedDuringIntegration": false,
+    "byteIdenticalRoots": 3
+  },
+  "flow": [
+    "method",
+    "request_size",
+    "json",
+    "honeypot",
+    "contract_validation",
+    "stable_idempotency",
+    "hmac_fingerprint",
+    "atomic_abuse_rpc",
+    "single_create_rpc",
+    "ambiguous_only_reconciliation",
+    "timeline",
+    "notifications",
+    "pii_free_outcome"
+  ],
+  "timeoutsMs": { "create": 8000, "reconciliation": 3000, "limiter": 3000 },
+  "callGuarantees": {
+    "maximumCreateCallsPerHandlerInvocation": 1,
+    "createRetries": 0,
+    "definitiveCreateErrorStartsReconciliation": false,
+    "ambiguousCreateErrorStartsReconciliation": true,
+    "abuseBlockCreateCalls": 0,
+    "abuseBlockTimelineCalls": 0,
+    "abuseBlockProviderCalls": 0,
+    "storageFailureTimelineCalls": 0,
+    "storageFailureProviderCalls": 0,
+    "normalIdempotentReplayNotificationCalls": 0
+  },
+  "validation": {
+    "requestBytes": 131072,
+    "nameCharacters": 240,
+    "companyCharacters": 240,
+    "phoneCharacters": 80,
+    "emailCharacters": 320,
+    "notesCharacters": 4000,
+    "sourceCharacters": 120,
+    "externalSourceIdCharacters": 255,
+    "metadataBytes": 65536,
+    "unicodeCodepointParity": "PASS",
+    "silentTruncation": false,
+    "frontendParity": "PASS"
+  },
+  "kpiClassifications": [
+    "created",
+    "duplicate",
+    "idempotentReplay",
+    "reconciledCreated",
+    "reconciledDuplicate",
+    "validationRejected",
+    "abuseRejected",
+    "storageFailed",
+    "notificationDegraded"
+  ],
+  "tests": {
+    "targetedP0": { "passed": 43, "failed": 0, "total": 43 },
+    "fullRepository": { "passed": 359, "failed": 5, "total": 364, "knownFoundationFailures": 5 },
+    "databaseExisting": "PASS",
+    "databaseBootstrap": "PASS",
+    "databaseSecondRuns": "UP_TO_DATE",
+    "databaseConcurrency": "PASS",
+    "frontendRegression": "PASS",
+    "piiFreeLogging": "PASS"
+  },
+  "cleanup": {
+    "fixturesRemaining": 0,
+    "temporaryClustersCleaned": true,
+    "remoteContact": false
+  },
+  "actions": {
+    "stagingContacted": false,
+    "productionContacted": false,
+    "remoteDatabaseConnections": 0,
+    "remoteWrites": 0,
+    "commitPerformed": false,
+    "pushPerformed": false,
+    "deployPerformed": false,
+    "p1ToP5Changed": false
+  },
+  "nextGate": "separate_code_review_and_read_only_staging_readiness"
+}
