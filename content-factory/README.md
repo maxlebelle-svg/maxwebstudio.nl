@@ -2,9 +2,9 @@
 
 Een schaalbare, versieerbare contentbibliotheek waarmee de Website Factory vanuit één branche en een kleine bedrijfsbriefing direct professionele demo-inhoud kan samenstellen. De Content Factory staat volledig los van de productiecode van Release 1.0.
 
-## Meerlagige Content Library v2-alpha
+## Meerlagige Content Library v2
 
-De volgende architectuurlaag composeert branche, visuele stijl, merkpersoonlijkheid, light/dark-thema, contentblokken, kanaal en fotografie onafhankelijk van elkaar. Daardoor kan één branche tientallen verschillende websites en marketinguitingen voeden zonder combinaties vooraf te kopiëren. Website Factory en Social Studio kunnen hetzelfde kanaalneutrale blueprint gebruiken via `public/v2/`.
+De stabiele v2-architectuur composeert branche, subspecialisatie, visuele stijl, merkpersoonlijkheid, light/dark-thema, contentdoel, regio, contentblokken, kanaal en fotografie onafhankelijk van elkaar. Daardoor kan één branche tientallen verschillende websites en marketinguitingen voeden zonder combinaties vooraf te kopiëren. Website Factory en Social Studio kunnen hetzelfde kanaalneutrale blueprint gebruiken via `public/v2/`.
 
 Zie [Content Library v2-architectuur](./docs/CONTENT_LIBRARY_V2_ARCHITECTURE.md) voor het datamodel, de systeemgrenzen en de gefaseerde route naar echte fotografie.
 
@@ -35,7 +35,7 @@ content-factory/
 │   ├── engine.mjs                 content generation engine
 │   └── cli.mjs                    command-line ingang
 ├── public/v1/                     stabiele publieke leesinterface
-├── public/v2/                     kanaalneutraal compositiecontract (alpha)
+├── public/v2/                     stabiel kanaalneutraal compositiecontract
 ├── content-factory-adapter/v1/    versioned Website Factory-adapter
 ├── generated/
 │   ├── catalog.json               centrale lichte index

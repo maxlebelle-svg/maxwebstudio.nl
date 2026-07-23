@@ -2,13 +2,14 @@
 
 ## Besluit
 
-De Content Library modelleert niet langer één groot brancheobject dat alle teksten, stijlen en beelden bevat. De bibliotheek bestaat uit onafhankelijke, versioneerbare dimensies die pas bij een concrete aanvraag deterministisch worden samengevoegd.
+De Content Library modelleert niet langer één groot brancheobject dat alle teksten, stijlen en beelden bevat. De bibliotheek bestaat uit onafhankelijke, versioneerbare dimensies die pas bij een concrete aanvraag deterministisch worden samengevoegd. Het resulterende v2-contract is bevroren als `2.0.0`.
 
 ```text
 Branche ───────────────┐
+Subspecialisatie ──────┤
 Visuele stijl ─────────┤
 Merkpersoonlijkheid ───┤
-Thema ─────────────────┼─> Compositieresolver ─> kanaalneutraal blueprint
+Thema, doel en regio ───┼─> Compositieresolver ─> kanaalneutraal blueprint
 Contentblok ───────────┤                         ├─> Website Factory-adapter
 Kanaal ────────────────┤                         ├─> Social Studio-adapter
 Assetslot ─────────────┘                         ├─> Nieuwsbrief-adapter
@@ -29,6 +30,10 @@ Definieert vormtaal: typografie, layoutdichtheid, hoeken, schaduwen, iconen, fot
 
 `dark` en `light` zijn bewust een aparte themadimensie. Daardoor hoeft iedere stijl niet dubbel te worden opgeslagen en kan bijvoorbeeld zowel `premium + dark` als `premium + light` bestaan.
 
+### 2a. Subspecialisatie
+
+Een subspecialisatie hangt onder een bestaande hoofdbranche en voegt onderwerpen, fotografieobjecten en SEO-context toe zonder een nieuwe branch te maken. De eerste catalogus bevat 50 subspecialisaties voor tien prioriteitsbranches. Een ongeldige combinatie, zoals `loodgieter + sushi`, wordt fail-closed geweigerd.
+
 ### 3. Merkpersoonlijkheid
 
 Definieert hoe het merk spreekt en bewijs opbouwt. De eerste catalogus bevat `familiebedrijf`, `innovatief`, `jong`, `traditioneel`, `lokaal`, `persoonlijk` en `corporate`. Persoonlijkheid beïnvloedt verhaalhoek, bewijsprioriteiten, CTA-stijl, blokvolgorde en fotografie-instructies, maar overschrijft nooit branchefeiten.
@@ -44,6 +49,8 @@ Content is opgebouwd uit semantische blokken: hero, USP's, diensten, about, CTA,
 - welk publicatiebeleid geldt.
 
 Blokken bevatten geen renderer-HTML. Hierdoor kunnen Website Factory en Social Studio hetzelfde bronblok anders presenteren zonder inhoud te dupliceren.
+
+Hero's bevatten daarnaast messaging-intenties zoals conversie, storytelling, lokaal, prijs, portfolio en emotie. CTA's bevatten actie-intenties zoals afspraak, offerte, bellen, WhatsApp, demo, terugbellen en reserveren. Het contentdoel bepaalt welke intenties voorrang krijgen.
 
 ### 5. Fotografie
 
@@ -98,20 +105,23 @@ Nieuwe uitbreidingen blijven additief:
 - een nieuw kanaal vereist blokbindings en een adapter;
 - een nieuwe componentvariant wijzigt alleen het betreffende blokcontract.
 
+## Quality Score
+
+De Quality Score is uitlegbaar en regelgebaseerd. Hij meet onder andere volledigheid, specificiteit, kanaalfit, conversiearchitectuur, SEO, leesbaarheid en publicatieveiligheid. Iedere score bevat de onderliggende checks. `ai_confidence` blijft `null/not_measured` totdat een echte model- of menselijke evaluatie beschikbaar is.
+
 ## Versies en grenzen
 
 - v1 blijft de bestaande gegenereerde content- en Website Factory-adapter leveren.
-- v2-alpha introduceert het kanaalneutrale compositiecontract.
+- v2 is bevroren als stabiel kanaalneutraal compositiecontract `2.0.0`.
+- Adapter v2 is integratiegereed maar niet in productie geactiveerd.
 - productie-integratie volgt pas na contractstabilisatie en regressietests.
 - er zijn geen databasewijzigingen en geen productiewijzigingen nodig voor dit ontwerp.
 - echte bulkcontent en beeldgeneratie zijn vervolgfases, niet onderdeel van de architectuurfase.
 
 ## Volgende gecontroleerde fasen
 
-1. Catalogi redactioneel beoordelen en v2-contract bevriezen.
-2. Blokinhoud losmaken van rendererpresentatie en voorzien van kwaliteitslabels.
-3. Website Factory-adapter v2 bouwen op het kanaalneutrale blueprint.
-4. Social Studio-adapter op exact hetzelfde blueprint bouwen.
-5. Een kleine gecertificeerde beeldset produceren voor prioriteitsbranches en stijlen.
-6. Pas na kwaliteitsmeting de productiequeue gefaseerd opschalen.
-
+1. Adapter v2 via een aparte integratie achter een featureflag op de bestaande renderer aansluiten.
+2. Een vergelijkingstest uitvoeren tussen v1- en v2-demo's.
+3. Social Studio-adapter op exact hetzelfde blueprint bouwen.
+4. Een kleine gecertificeerde beeldset produceren voor prioriteitsbranches en stijlen.
+5. Pas na kwaliteitsmeting de productiequeue gefaseerd opschalen.
