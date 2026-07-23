@@ -1,14 +1,17 @@
 {
   "name": "@maxwebstudio/content-factory",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Deterministische, uitbreidbare contentbibliotheek voor de Max Webstudio Website Factory.",
   "exports": {
     ".": "./public/v1/index.mjs",
+    "./v2": "./public/v2/index.mjs",
     "./adapter/v1": "./content-factory-adapter/v1/index.mjs",
     "./schemas/adapter-v1-input": "./schemas/content-factory-adapter-v1-input.schema.json",
-    "./schemas/adapter-v1-output": "./schemas/content-factory-adapter-v1-output.schema.json"
+    "./schemas/adapter-v1-output": "./schemas/content-factory-adapter-v1-output.schema.json",
+    "./schemas/composition-v2-request": "./schemas/composition-request.schema.json",
+    "./schemas/composition-v2-blueprint": "./schemas/composition-blueprint.schema.json"
   },
   "scripts": {
     "build": "node ./src/cli.mjs build",
