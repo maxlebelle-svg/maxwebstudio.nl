@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "project": "maxwebstudio",
+  "projectRef": "yxxahurphdbblkuxoeje",
+  "latestMigration": "20260722135000",
+  "table": "public.email_logs",
+  "rowCount": 56,
+  "targetColumnsAbsent": [
+    "created_by",
+    "idempotency_key",
+    "message_type",
+    "normalized_recipient_email"
+  ],
+  "legacyRecipientNullCount": 0,
+  "legacyRecipientInvalidCount": 0,
+  "legacyIdempotencyBackfillUnique": true,
+  "rlsEnabled": true,
+  "forceRls": false,
+  "policyCount": 1,
+  "policyDigestMd5": "f4729e986679877c0a53bd65c8e1b76f",
+  "aclDigestMd5": "a5706ca697ace8a5f132a909777e5f0d",
+  "productionEvidenceMode": "target-locked database-enforced read-only",
+  "productionChangesPerformed": false
+}

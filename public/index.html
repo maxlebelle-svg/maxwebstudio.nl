@@ -798,6 +798,9 @@
             Bericht / wensen
             <textarea name="message" rows="5" placeholder="Bijvoorbeeld: een website met portfolio, pakketten en een duidelijke aanvraagflow." required></textarea>
           </label>
+          <div hidden aria-hidden="true">
+            <label>Laat dit veld leeg<input type="text" name="_gotcha" tabindex="-1" autocomplete="off" /></label>
+          </div>
           <label class="checkbox-row">
             <input type="checkbox" name="termsAccepted" id="terms-accepted" />
             <span>Ik ga akkoord met de <a href="algemene-voorwaarden.html">algemene voorwaarden</a> en heb de <a href="privacyverklaring.html">privacyverklaring</a> gelezen.</span>
@@ -1009,6 +1012,7 @@
 
     <script type="module" src="src/services/companySettingsDomService.js"></script>
     <script type="module" src="src/components/demoPortfolioEngine.js"></script>
-    <script src="script.js?v=7.9.7"></script>
+    <script src="src/lead-intake-validation.js?v=1.0.1"></script>
+    <script src="script.js?v=7.9.8"></script>
   </body>
 </html>

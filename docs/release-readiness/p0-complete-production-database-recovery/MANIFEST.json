@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "release": "Complete P0 Production Database Recovery Release",
+  "status": "PACKAGED_AND_LOCALLY_VALIDATED",
+  "productionTarget": {
+    "project": "maxwebstudio",
+    "projectRef": "yxxahurphdbblkuxoeje",
+    "baselineLatestMigration": "20260718190000"
+  },
+  "migrationVersions": [
+    "20260722130000",
+    "20260722131000",
+    "20260722132000",
+    "20260722133000",
+    "20260722134000",
+    "20260722135000"
+  ],
+  "executionOrder": [
+    "supabase/migrations/20260722130000_p0_recover_business_events.sql",
+    "supabase/migrations/20260722131000_p0_recover_transactional_lead_intake.sql",
+    "supabase/migrations/20260722132000_p0_recover_security_hardening.sql",
+    "supabase/migrations/20260722133000_p0_recover_lead_intake_abuse_control.sql",
+    "supabase/migrations/20260722134000_p0_remove_verified_staging_smoke_objects.sql",
+    "supabase/migrations/20260722135000_p0_recover_sales_manager_lead_policy.sql"
+  ],
+  "supersededMigrations": [
+    "20260722120000",
+    "20260722121000",
+    "20260722122000",
+    "20260722123000",
+    "20260722124000",
+    "20260722125000",
+    "20260722126000"
+  ],
+  "releaseFiles": [
+    "supabase/migrations/20260722130000_p0_recover_business_events.sql",
+    "supabase/migrations/20260722131000_p0_recover_transactional_lead_intake.sql",
+    "supabase/migrations/20260722132000_p0_recover_security_hardening.sql",
+    "supabase/migrations/20260722133000_p0_recover_lead_intake_abuse_control.sql",
+    "supabase/migrations/20260722134000_p0_remove_verified_staging_smoke_objects.sql",
+    "supabase/migrations/20260722135000_p0_recover_sales_manager_lead_policy.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722130000.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722131000.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722132000.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722133000.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722134000.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722135000.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/PRECONDITIONS.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/CATALOG_FINGERPRINT.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/TARGET_AND_HISTORY_EVIDENCE.sql",
+    "docs/release-readiness/p0-complete-production-database-recovery/DEPENDENCY_MATRIX.json",
+    "docs/release-readiness/p0-complete-production-database-recovery/RUNTIME_CONFIGURATION.json",
+    "docs/release-readiness/p0-complete-production-database-recovery/ROLLBACK_RECOVERY.md",
+    "docs/release-readiness/p0-complete-production-database-recovery/EXECUTION_RUNBOOK.md",
+    "docs/release-readiness/p0-complete-production-database-recovery/LOCAL_VALIDATION.json",
+    "docs/release-readiness/p0-complete-production-database-recovery/RELEASE_REPORT.md",
+    "scripts/p0-build-complete-production-database-recovery-release.mjs",
+    "scripts/p0-complete-production-database-recovery-local-validation.zsh",
+    "tests/fixtures/p0-complete-production-database-recovery-baseline.sql",
+    "tests/fixtures/p0-complete-production-database-recovery-functional.sql",
+    "tests/fixtures/p0-production-poststate-staging-nonce.sql",
+    "tests/p0-complete-production-database-recovery-release.test.js",
+    "docs/release-readiness/p0-complete-production-database-recovery/FILESET.json",
+    "docs/release-readiness/p0-complete-production-database-recovery/MANIFEST.json"
+  ],
+  "hashedFileCount": 28,
+  "releaseFileCount": 30,
+  "filesetSha256": "f0f9fc71719a7d1c155120bf6989c8b563776e52bf8f27dada7fe6ee73515aa6",
+  "sourceSemantics": {
+    "aliases": [
+      [
+        "company",
+        "company_name"
+      ],
+      [
+        "name",
+        "contact_name"
+      ],
+      [
+        "website_url",
+        "website"
+      ]
+    ],
+    "independent": [
+      "source",
+      "external_source"
+    ]
+  },
+  "gateState": {
+    "gateA": "PASS",
+    "gateBAuthorized": false,
+    "gateCAuthorized": false,
+    "gateDAuthorized": false
+  },
+  "selfHashAlgorithm": "SHA-256 over canonical compact JSON with selfHash=null",
+  "selfHash": "714faf2197a499be4cb1873d5275f92be46f67e90ac0426912735937fe695b3b",
+  "productionContactedReadOnly": true,
+  "productionChangesPerformed": false,
+  "productionExecutionAuthorized": false
+}

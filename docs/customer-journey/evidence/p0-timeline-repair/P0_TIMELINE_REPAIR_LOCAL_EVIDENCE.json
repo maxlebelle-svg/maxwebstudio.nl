@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-22T00:00:00Z",
+  "status": "PASS_P0_TIMELINE_REPAIR_LOCAL_STAGING_REVIEW_REQUIRED",
+  "lineage": {
+    "gate3ADeployId": "6a5fea25b659e168ce2e19d6",
+    "basisCommit": "7bdfb15d659a2f9da5d0816732ad19828bcb296d",
+    "snapshotCommit": "1da026be7edc6258a3ed6762c9bf3d9ceba89078",
+    "historicalManifest": "docs/customer-journey/P0_RELEASE_UNIT_MANIFEST_NONCE_REPLAY_7BDFB15.json",
+    "historicalManifestSha256": "588ec57aeba79e1fd71ed0487f60df7560a539b3c0e8624ca1ca8123200e6c7b",
+    "historicalLockedFiles": 33,
+    "historicalHashMismatches": 0
+  },
+  "repair": {
+    "changedRuntimeEntrypoints": ["functions/send-lead.js"],
+    "removedLegacySideEffect": "createTimelineEvent",
+    "legacyTimelineCallsOnSuccess": 0,
+    "extraBusinessEventCallsOutsideCreateRpc": 0,
+    "createRpcCallsOnSuccess": 1,
+    "canonicalCreationEvent": "lead.created",
+    "canonicalCreationEventSource": "mws_create_lead_transactional_v1",
+    "migrationAdded": false
+  },
+  "responseContract": {
+    "legacyProjectionAbsentBefore": {"httpStatus": 202, "classification": "notificationDegraded"},
+    "legacyProjectionAbsentAfter": {"httpStatus": 200, "classification": "created"},
+    "settingsException": {"httpStatus": 202, "classification": "notificationDegraded"},
+    "providerException": {"httpStatus": 202, "classification": "notificationDegraded"},
+    "providerSentFalse": {"httpStatus": 202, "classification": "notificationDegraded"}
+  },
+  "tests": {
+    "targetedHandlerAndPublic": {"passed": 53, "failed": 0},
+    "timelineSmokeAndPublic": {"passed": 70, "failed": 0},
+    "completeIsolatedSuite": {"passed": 263, "failed": 0},
+    "javascriptSyntax": "pass",
+    "htmlStructuralAndRegression": "pass",
+    "gitDiffCheck": "pass",
+    "secretScan": "pass"
+  },
+  "workspaceCleanup": {
+    "adminLeadsSelectsArchivedAt": false,
+    "adminLeadsFiltersArchivedAt": false,
+    "uiOpenFilterExcludes": ["won", "lost", "geen_interesse"],
+    "uiOpenFilterExcludesArchived": false,
+    "codeChanged": false,
+    "nextSmokeInactiveCombination": {
+      "status": "archived",
+      "lead_status": "lost",
+      "call_status": "geen_interesse",
+      "archived_at": "set when column is present"
+    },
+    "requiredPostSmokeAssertions": [
+      "exact database row is inactive",
+      "admin-leads maps call status to geen_interesse and lifecycle to lost",
+      "open Sales Workspace list and KPI exclude the lead ID",
+      "no duplicate lead row exists",
+      "canonical business event remains append-only"
+    ]
+  },
+  "integrity": {
+    "releaseFileCount": 37,
+    "historicalReleaseFileCount": 34,
+    "functionEntrypointsBefore": 70,
+    "functionEntrypointsAfter": 70,
+    "functionInventorySha256": "537ee61b028d9cd804e65d5bc47e0b77473af722f29eabbf36de62528246cd4c",
+    "migration040000Sha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a",
+    "migration050000Sha256": "a733d0eefb976524bc69b06487f440310641f19d101cb21b3f9fb2ff58e2819a",
+    "unrelatedNavigationHunkIncluded": false
+  },
+  "remoteActions": {
+    "stagingContact": false,
+    "productionContact": false,
+    "deploy": false,
+    "configurationChange": false,
+    "databaseApply": false,
+    "databaseWrite": false,
+    "commit": false,
+    "push": false,
+    "providerAction": false
+  }
+}

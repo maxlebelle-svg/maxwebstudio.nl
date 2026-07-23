@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "executionOrder": [
+    "supabase/migrations/20260722136000_p0_email_logs_additive_compatibility.sql"
+  ],
+  "files": [
+    {
+      "path": "supabase/migrations/20260722136000_p0_email_logs_additive_compatibility.sql",
+      "bytes": 7458,
+      "sha256": "be0028b4ade10ede39d6da66c18a6a1fa10446120d4e1a9a06e74e33b6423cb0"
+    },
+    {
+      "path": "docs/release-readiness/p0-email-logs-additive-compatibility/PRECONDITIONS.sql",
+      "bytes": 2580,
+      "sha256": "b4c52ca8a194cd0e42b83eff540e528183dff9a740fe055934b02323157a699d"
+    },
+    {
+      "path": "docs/release-readiness/p0-email-logs-additive-compatibility/POSTCONDITIONS.sql",
+      "bytes": 3741,
+      "sha256": "13cbb4d588895b7b466d712520f7952c257ba6a57c223d347c84c2bf369b6d65"
+    },
+    {
+      "path": "docs/release-readiness/p0-email-logs-additive-compatibility/EXPECTED_PRODUCTION_PRESTATE.json",
+      "bytes": 707,
+      "sha256": "cf113c6abe4bfc8d18d021b33a834abb6936996d29c8c37f026d8b52f7128178"
+    },
+    {
+      "path": "docs/release-readiness/p0-email-logs-additive-compatibility/ROLLBACK_RECOVERY.md",
+      "bytes": 864,
+      "sha256": "e661ed64650168a6b5a6dddeb18840fc903835a66522d239557c2fd3f5589e8f"
+    },
+    {
+      "path": "docs/release-readiness/p0-email-logs-additive-compatibility/LOCAL_VALIDATION.json",
+      "bytes": 1211,
+      "sha256": "155f33c81b23e1840436fdb3a45d335d5cbd7945c5e1b2ee509226cb1da23832"
+    },
+    {
+      "path": "docs/release-readiness/p0-email-logs-additive-compatibility/RELEASE_REPORT.md",
+      "bytes": 2233,
+      "sha256": "54971799f672653fec3c7b1bebdd2bdc8c4db3d33474153e562c1e687d9d845d"
+    },
+    {
+      "path": "scripts/p0-build-email-logs-additive-compatibility-release.mjs",
+      "bytes": 2947,
+      "sha256": "8ac2778b039ad3720f12daccb917b9ad465d539291f6f8afabc946b4dcb87cd7"
+    },
+    {
+      "path": "scripts/p0-email-logs-additive-compatibility-local-validation.zsh",
+      "bytes": 10914,
+      "sha256": "6f36b3328748cea3f9f950d503369f2b33c788e3740dc313038c9d12dc4bbcf5"
+    },
+    {
+      "path": "tests/fixtures/p0-email-logs-additive-compatibility-baseline.sql",
+      "bytes": 3542,
+      "sha256": "def9aa925b51cfb4fc214015e8f2e5f5026692a91b3bf040dbd309b13a9bae6d"
+    },
+    {
+      "path": "tests/p0-email-logs-additive-compatibility-release.test.js",
+      "bytes": 6020,
+      "sha256": "9128419b1c4d3e27bec4c7917b7b6f1f46a99dcc9d1028ed3c1924eeb8a83eea"
+    }
+  ]
+}

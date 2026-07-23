@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "productionContact": false,
+  "networkListeners": 0,
+  "baseline": "contract-equivalent catalog slice for production migration 20260718190000",
+  "migrationVersions": [
+    "20260722130000",
+    "20260722131000",
+    "20260722132000",
+    "20260722133000",
+    "20260722134000",
+    "20260722135000"
+  ],
+  "functionalContracts": {
+    "transactionalCreate": "PASS",
+    "idempotentReplay": "PASS",
+    "timeoutReconciliation": "PASS",
+    "leadCreatedEventCount": 1,
+    "abuseControl": "PASS",
+    "aclAndSearchPaths": "PASS",
+    "stagingSmokeObjectCount": 0
+  },
+  "helperSemantics": {
+    "targetLockedProductionReadOnlyAudit": "PASS",
+    "auditQuerySha256": "f377b5ac1e392656e05b9f66987acbce0582a021fa8082b7b177e97337438a83",
+    "canonicalSource": "current production semantics",
+    "currentAppRoleStatuses": ["active", "invited"],
+    "currentProfileIdStatuses": ["active", "invited"],
+    "staffRoles": ["super_admin", "admin", "sales_manager", "sales_partner", "designer", "developer", "support"],
+    "demoContextRequiresActiveProfile": true,
+    "ownsCustomerRejectsNullAndArchived": true,
+    "bodyPreservation": "PASS",
+    "postMigrationExecuteRoles": ["authenticated", "service_role"]
+  },
+  "compatibilityContracts": {
+    "legacyRowsPreserved": 27,
+    "legacyDigestMatch": true,
+    "legacyIndexesPreserved": true,
+    "legacyRlsAclPreserved": true,
+    "notesMaximumLengthPreserved": 6223,
+    "conflictingDualInput": "PASS_FAIL_CLOSED",
+    "sourceAndExternalSourceIndependent": true
+  },
+  "salesManagerPolicyHardening": {
+    "selectAllowed": true,
+    "updateAllowed": true,
+    "insertBlocked": true,
+    "deleteBlocked": true,
+    "adminPartnerPolicyDefinitionsPreserved": true
+  },
+  "secondExecution": {
+    "events": "FAIL_CLOSED",
+    "intake": "FAIL_CLOSED",
+    "security": "IDEMPOTENT_NOOP",
+    "abuse": "FAIL_CLOSED",
+    "nonceCleanup": "IDEMPOTENT_ABSENT_NOOP",
+    "policy": "FAIL_CLOSED"
+  },
+  "runtimeContractTests": { "passed": 58, "failed": 0 },
+  "packagingTests": { "passed": 8, "failed": 0 },
+  "catalogFingerprintSha256": "c4ad980d4bd34799df83011126b0d85b8259fed5b11e37a20000de47e3a84491",
+  "databaseNamePortable": true,
+  "targetIdentityEvidenceGenerated": true,
+  "temporaryClusterRemoved": true
+}

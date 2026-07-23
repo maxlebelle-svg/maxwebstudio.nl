@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "database": "isolated Unix-socket-only PostgreSQL cluster",
+  "productionContact": false,
+  "baselineRows": 56,
+  "legacyRowsPreserved": 56,
+  "idsAndCreatedAtPreserved": true,
+  "legacyNonTimestampContentPreserved": true,
+  "legacyNonTimestampContentDigest": "dec84f36d737cc518d48fd7487d3bbcb",
+  "identityCreatedAtDigest": "dd7376f134636424a00ec65d6d82404a",
+  "updatedAt": {
+    "classification": "ACCEPTABLE_UPDATED_AT_MIGRATION_EFFECT",
+    "transactionallyUniform": true,
+    "notBeforeCreatedAt": true,
+    "triggerVerified": true
+  },
+  "runtimeEquivalentInsert": "PASS",
+  "runtimeEquivalentInsertRolledBack": true,
+  "secondExecution": "FAIL_CLOSED",
+  "negativeTests": {
+    "unnormalizableRecipient": "PASS_FAIL_CLOSED",
+    "duplicateIdempotencyKey": "PASS_FAIL_CLOSED",
+    "missingRequiredFields": "PASS_FAIL_CLOSED",
+    "unexpectedExistingTargetColumn": "PASS_FAIL_CLOSED",
+    "rowCountDrift": "PASS_FAIL_CLOSED"
+  },
+  "security": {
+    "rlsPreserved": true,
+    "policyDigestPreserved": true,
+    "aclDigestPreserved": true,
+    "newGrants": 0
+  },
+  "packagingTests": {
+    "passed": 8,
+    "failed": 0
+  },
+  "temporaryClusterRemoved": true
+}
