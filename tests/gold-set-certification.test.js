@@ -50,17 +50,21 @@ test("blind review package exposes A/B and no adapter mapping", () => {
   assert.equal(fs.existsSync(path.join(evidenceRoot, "REVEALED_MAPPING.json")), false);
 });
 
-test("certification stops honestly while Truth and human gates are incomplete", () => {
+test("certification stops honestly while uitsluitend de menselijke gates nog openstaan", () => {
   assert.equal(report.status, "STOPPED_GOLD_SET_CERTIFICATION");
   assert.equal(report.certified, false);
   assert.equal(report.gates.frozen_manifest, true);
-  assert.equal(report.gates.no_hallucination, false);
+  assert.equal(report.gates.automated_gold_set, true);
+  assert.equal(report.gates.no_hallucination, true);
   assert.equal(report.gates.blind_human_assessment, false);
   assert.equal(report.gates.customer_success, false);
   assert.equal(report.cases.length, 24);
   assert.equal(report.cases.filter((item) => !item.no_regression.passed).length, 0);
-  assert.equal(report.cases.filter((item) => item.objective_checks.v2.truth_evidence.blockers.includes("unverified_generated_projects")).length, 24);
-  assert.equal(report.cases.filter((item) => item.objective_checks.v2.truth_evidence.blockers.includes("unverified_rendered_testimonials")).length, 23);
+  assert.equal(report.cases.filter((item) => item.objective_checks.v2.truth_evidence.blockers.length > 0).length, 0);
+  assert.equal(report.cases.filter((item) => item.objective_checks.v2.truth_evidence.blockers.includes("unverified_generated_projects")).length, 0);
+  assert.equal(report.cases.filter((item) => item.objective_checks.v2.truth_evidence.blockers.includes("unverified_rendered_testimonials")).length, 0);
+  assert.equal(report.cases.filter((item) => item.objective_checks.v2.truth_evidence.blockers.includes("unverified_experience")).length, 0);
+  assert.equal(report.cases.filter((item) => !item.deterministic.v1 || !item.deterministic.v2).length, 0);
 });
 
 test("assessment contract requires every case, paired scores and paired decisions", () => {

@@ -26,22 +26,16 @@
   },
   "gates": {
     "frozen_manifest": true,
-    "automated_gold_set": false,
-    "no_hallucination": false,
+    "automated_gold_set": true,
+    "no_hallucination": true,
     "blind_human_assessment": false,
     "customer_success": false
   },
   "blockers": [
-    "automated_gold_set_gate_failed",
-    "no_hallucination_gate_failed",
     "blind_human_assessments_pending",
     "customer_success_gate_pending_or_failed"
   ],
-  "truth_blocker_counts": {
-    "unverified_generated_projects": 24,
-    "unverified_rendered_testimonials": 23,
-    "unverified_experience": 5
-  },
+  "truth_blocker_counts": {},
   "human_assessment": {
     "ready": false,
     "reviewer_count": 0,
@@ -85,16 +79,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -106,20 +97,14 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials",
-              "unverified_experience"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
-            "rendered_claim_flags": [
-              "unverified_experience"
-            ]
+            "unverified_rendered_testimonials": false,
+            "rendered_claim_flags": []
           }
         }
       },
@@ -132,8 +117,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "e38af1140c4f1ad878ce777d7ed953d3347d21f7fc7e79765badaf4506d92b2d",
-        "v2": "f915d75219c8f1a6c15f9bfd686506874be4d42a108e85c634adfea876fbac9b"
+        "v1": "ddefa94db2141ed40f29695cc1c7c153914a0edf504a3a0cf5bb809cdace9026",
+        "v2": "8af2d5d8959573cee28e7bdb8ab9d15f71b356c51e684aaee7a25204c369f3f2"
       }
     },
     {
@@ -170,16 +155,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -191,16 +173,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -214,8 +193,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "e5fdf3227ecc0701532f654991d6b0144e43f77315c55d6b01e99f1cd794e3d9",
-        "v2": "133f8edbfae693308bf8b210167d58e7dfcf12bf4987ffb5ab518faf60bb292a"
+        "v1": "61b61f02b2474ac2096f471c9e362e62da342ca9451a3214eff7d6d8af41c09d",
+        "v2": "8b235d546c2b411c23b52dd6c0dc64676b6067286bc60b3b5effd57e1c148b20"
       }
     },
     {
@@ -252,16 +231,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -273,16 +249,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -296,8 +269,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "9868e86b2d23fab7712f9c1a483d71af470c5c5e776a0d1d606be2f826865427",
-        "v2": "6cf2c8eb6a1206b608a8b9bd16165ac6e886d69d302cb09764a2a905b7801f3b"
+        "v1": "dc6049aaf053407fbe2f3959a4024b2380c459ebbdeed6747b6cf27c8e9479be",
+        "v2": "d295edb0e568166bb04ce8cb6a9af652f0f0937acf465e5a6dba1a1a31358b8f"
       }
     },
     {
@@ -334,16 +307,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -355,16 +325,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -378,8 +345,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "f7ea8e2b89f5e962952558139c8b72b44b121113fcd31bef63837390c08077c3",
-        "v2": "365fddf6038c6048f391d58049479d57a1aaef18ecc634712b0eb7d47f66f4d1"
+        "v1": "6951f048a845fb15d0cf4ac4ac42beb70ae356252888ebe1b77ceda53b76e2d8",
+        "v2": "d13e9185fc7c6ac6b31852d6482ae6703ceb396ce14decae8367ff9788e32e79"
       }
     },
     {
@@ -416,16 +383,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -437,16 +401,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -459,8 +420,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "d93accea863b243cc96efb123d08fad4808564cf8e283806e11b4ae87fe4d9cb",
-        "v2": "00252ced9c33dc913f9cbe4bb8a3fca38ca9ea8f587f81ee53a623c5c41c0fa3"
+        "v1": "80f2891bc148818ab52f10447abbcf5cf0e06a2d51a955c44583f17b678d98d3",
+        "v2": "4e58d5699b053d76927b3df9513201b7bd1a53926dc893c357eaa03c03e7f8a7"
       }
     },
     {
@@ -497,16 +458,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -518,20 +476,14 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials",
-              "unverified_experience"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
-            "rendered_claim_flags": [
-              "unverified_experience"
-            ]
+            "unverified_rendered_testimonials": false,
+            "rendered_claim_flags": []
           }
         }
       },
@@ -541,8 +493,8 @@
         "improvements": []
       },
       "render_signatures": {
-        "v1": "f032d9b3f10ed966bb7f557409658ea9b9a6ef83f77ead5d1dbe25656a03480a",
-        "v2": "ae1d99bad435d864e33218df9597ccbad5c9023a651965331535dcb43039e7f7"
+        "v1": "1426f4c36cd985343c162251b1bc8e0e02ee85c54aff39d3a68fd6bdb559d167",
+        "v2": "fdcad010ad3e2f4be9353058fba66c5606de973c4d7e00d2a6f7b219e81fd514"
       }
     },
     {
@@ -579,16 +531,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -600,16 +549,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -622,8 +568,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "3d3e0144b919665c5ee13f8cf49a6f0ca345fc57dc4926430e0e5031a429ae00",
-        "v2": "e4c3a7ac3fa4280d32a42ae2f2bc16129b3ac4c7df4cd6ea277fafa430b9557f"
+        "v1": "e6fa86aa0f82bf954011c2a2cba6ac22e18446bbf067222ef36441859dd8fe4f",
+        "v2": "b97ead923d5e617dc740a188609d8997a4cc59dbc4a47de687152eb1845a78d2"
       }
     },
     {
@@ -660,16 +606,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -681,16 +624,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -703,8 +643,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "04397c103cd7bb1f5d7f4b565699c218c0ae2825c3f8d3949410fc14b079bcd2",
-        "v2": "3ee687b424a4507ce02634922d42f156a06980173bd8998e60f9430805d672df"
+        "v1": "c59544ab5c72aa70fddb62477eab08e6a0501f53a9a09e2143581e1b70bb12bc",
+        "v2": "9604e3cfc1f2ca09f9baedeb01a68b882a4c7679687fa88656dbf373aea2dab9"
       }
     },
     {
@@ -741,16 +681,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -762,16 +699,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -785,8 +719,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "49621fe07adbc133cf12123191a4a600e818330ebbcee0610470acdb301bd23c",
-        "v2": "e88e5d2ca99c84923360c19fdbc0f6c09be212749e59d0059c6978dbbf67c745"
+        "v1": "99b86bdf3aec375b86e22f63451fc2de0ccc8bcc9a895cdf89debce774de96d6",
+        "v2": "29492b4521f065f5b6e1a7116f3add0443fb011bfca18cd7c9feb0b3ab0827b1"
       }
     },
     {
@@ -823,16 +757,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -844,20 +775,14 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials",
-              "unverified_experience"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
-            "rendered_claim_flags": [
-              "unverified_experience"
-            ]
+            "unverified_rendered_testimonials": false,
+            "rendered_claim_flags": []
           }
         }
       },
@@ -870,8 +795,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "81a9daaa465eecdbfe0eb2eba4a619fa47a0a8d5697da6224e93f194a00bdd6d",
-        "v2": "8823b4484064c1c494836bb1c75fbdbb8f9e51725392dc30841a619ff9d24795"
+        "v1": "4c180afdeab4f5cc1a0d824d3dc603b4e15df0a0863fd30f7b36a73b4d3218db",
+        "v2": "5ac1d0a4899101555f85cc81675de7dc8aab88d9e3a6498534a4a722a715b664"
       }
     },
     {
@@ -908,16 +833,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -929,16 +851,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -949,8 +868,8 @@
         "improvements": []
       },
       "render_signatures": {
-        "v1": "079747fc14c05f3627e7f9048220cd23de2225ce12813ab732dd64665e45ce03",
-        "v2": "d6072639dd1a8464a3d60f09dd218428f4544824cb36c250e07551e70cb037cf"
+        "v1": "36081c6adde18fc2f36aca6de50c58bd2c419af82752e69089b7a5d137271612",
+        "v2": "71098ecefcf7b5d7af961dd3c2d57e62657150a4da5fb73b10dcdf52d5b7db98"
       }
     },
     {
@@ -975,8 +894,8 @@
         "v2_resolved": 1798707583
       },
       "deterministic": {
-        "v1": false,
-        "v2": false
+        "v1": true,
+        "v2": true
       },
       "objective_checks": {
         "v1": {
@@ -987,13 +906,11 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
             "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
@@ -1007,13 +924,11 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
             "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
@@ -1026,8 +941,8 @@
         "improvements": []
       },
       "render_signatures": {
-        "v1": "d47ac050ce5c9b5c985d203f10403dd36c8280dd2d53d2a39286af5c0bf9f40b",
-        "v2": "efbca9acf061ebc9f01571afb38664e0f6217731ef570de293ebe6cb30e482d8"
+        "v1": "42a83a3a0ad6a8d2a59646fd1b007372f5171f7a99edf093a739600b607a9c8c",
+        "v2": "42a83a3a0ad6a8d2a59646fd1b007372f5171f7a99edf093a739600b607a9c8c"
       }
     },
     {
@@ -1064,16 +979,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1085,20 +997,14 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials",
-              "unverified_experience"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
-            "rendered_claim_flags": [
-              "unverified_experience"
-            ]
+            "unverified_rendered_testimonials": false,
+            "rendered_claim_flags": []
           }
         }
       },
@@ -1111,8 +1017,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "9b693fc7b8fb83b9a2790cd11e7c253274511c0550a94a2e899802362a4266f2",
-        "v2": "52f0e63b4876e9b40b473c2058de70499aa8cd15140d139c550d08f3377707c0"
+        "v1": "520ed61c74a1bbf41ea06776eb30ec78a7aa02f2670dbc6187e0747f73233a14",
+        "v2": "4f239ee054f1f9c82955b9f750d4932f1ff87e5035307f42d81902e9a17dda6c"
       }
     },
     {
@@ -1149,16 +1055,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1170,16 +1073,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1192,8 +1092,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "63bb7d3de09b8f66fc8c4d9c84ea7f2d89e8fd42e781023a3c2443819590a7e1",
-        "v2": "de5e7dbf5b5f149baf85fa56aaff34680af67090d0064a860adb1c11b96994d2"
+        "v1": "c7b6d828b23af19196a847f89e40b471094ed5773a651c878aae4ae7fa07c244",
+        "v2": "527cc611519e223828133afebb59ce98875a8deb5e867624779ed4d96a6fa63a"
       }
     },
     {
@@ -1230,16 +1130,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1251,16 +1148,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1273,8 +1167,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "0a4fcae64f9046ec3b6d330cbfcf86ae42249e9063616b7db885bf6363bcd43c",
-        "v2": "69b4bf4c25128e79eec6fb8989cbfb32042cb6c5159c4ef5ec36bbff80a8ce22"
+        "v1": "805243f2f35f6a823e7f2c5cb4f556c81905d19f02168412e4213c4d7c46efa5",
+        "v2": "a5b944374659be959e5a3aa151da58eb9fbc1d1c24931dcafecc231f2ac501d7"
       }
     },
     {
@@ -1311,16 +1205,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1332,20 +1223,14 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials",
-              "unverified_experience"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
-            "rendered_claim_flags": [
-              "unverified_experience"
-            ]
+            "unverified_rendered_testimonials": false,
+            "rendered_claim_flags": []
           }
         }
       },
@@ -1357,8 +1242,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "8b3eb9a5715ca5d4239d568508573ac8ee7be50683cd04c17a7f582642b39921",
-        "v2": "dbf16812c28ec03652868069082a7202475f873ff92e8c4fb42e508b7fc9512e"
+        "v1": "b0a2f5995e2ae2419ffd2d8326d5ca1f838cba133c02ca549928955d42f827ee",
+        "v2": "6c12bbc72233c7b70f1dc06a78ae8c3f1d486e8016ac310b8b7a38396660a739"
       }
     },
     {
@@ -1395,16 +1280,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1416,16 +1298,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1438,8 +1317,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "9a70ade167cb755452be8c946643327e6cd04bb2dee027a20308892ce970971e",
-        "v2": "6a75393e5c6264bca31d95743526d7cd36d76b4f1a704e7894b0267e392513c7"
+        "v1": "6d4474ba4fd6f95e8f9a02fac66b783d0f8d84413746aec6fe5f19cecf05de51",
+        "v2": "80443d98cb980cc43332843e79ec9bfb672c1da19db8bae930eb99ba89f8361c"
       }
     },
     {
@@ -1476,16 +1355,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1497,16 +1373,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1519,8 +1392,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "063db69edebe718cfee1d10a47549aff2dfc56386e8054135be78f049cf1d779",
-        "v2": "ab7c68b66beaf189d4b0aa305f9f94fca6fb007ec67a5adcaf7ef3b1e83405bf"
+        "v1": "80cd11abb69654b930a7643df83253d7821177265d304b88353986769985867a",
+        "v2": "bd335626cdbc6823129e5a9a33f384d73ffd167c7e39dd486e558e79317aec11"
       }
     },
     {
@@ -1557,16 +1430,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1578,16 +1448,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1601,8 +1468,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "8d581ac7d01aa338e6e3834727f25a33a41fca531cb4c38ba0bb8d50609e6275",
-        "v2": "15bb97470a2eb020d00db592b4897582f44198b4ad406dd762997ff8734410ad"
+        "v1": "8d2b975e180fc035effa030decfbafbc2d90148269e3dfa2ec887aed5f8f3387",
+        "v2": "6b8898cbf719d8e57dab1115e4caee9b2fc5f4d9e7121a4f6f9138be6993451b"
       }
     },
     {
@@ -1639,16 +1506,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1660,16 +1524,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1682,8 +1543,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "5f68a10fe117e90dbc3f73038a563126b5810ef6898996120b4a10ccb2b6e55e",
-        "v2": "edd7f8b350f252ff81c279d078beb93478f7db0b695d24b32d2a260a606acfa9"
+        "v1": "6e83c7ec8a6f6f4bfcb135743df0a4fedbfee83c6d1dfc960c018dd8b1ee4a46",
+        "v2": "ed7a58020abb043e5864f39a9e4ed0a692a0307bccdec7c45646506189c1e0eb"
       }
     },
     {
@@ -1720,16 +1581,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1741,16 +1599,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1763,8 +1618,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "2d1b53475dd5a8ce4ed667d7fe318167fb067d35ba9de3b77266fa5bedab138d",
-        "v2": "8459c6d9c769a576d0b37b8fcbfe81430657349af5c6b5e4f39b631938e65282"
+        "v1": "c031982246eb296e79b26fabbb5741e789283a1b1cfa07f4edbe203f159897a3",
+        "v2": "3d965cb3cf80a7296fabb0c3a660e347b8ef0be69de7137b1e4a8ca42ad5ae2d"
       }
     },
     {
@@ -1801,16 +1656,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1822,16 +1674,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1844,8 +1693,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "d026c6ca05a9a9e557be8b53dfdcccc9ba5ac813980ea1d38df27c0d3d481e0c",
-        "v2": "bf73e63253b299a966deef094824cef051d31c8e340a23c45c69656596a5edcf"
+        "v1": "a71669d5667fdc6cc5ec8b9f346cc518e19080d0e13d3e66dabad3103fe85c50",
+        "v2": "57f954e157a973b936f273167e720e5245d9a32e8a87495b5d1c028a862b3aff"
       }
     },
     {
@@ -1882,16 +1731,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1903,16 +1749,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -1923,8 +1766,8 @@
         "improvements": []
       },
       "render_signatures": {
-        "v1": "a527f9e03e840823fec8df8fad207fe6f95ec654f09c71ef6ebe8f2769826b08",
-        "v2": "1030193988bf4f0f4f144529454bf671e06f90ff5e9807248935a9e31654f9db"
+        "v1": "424b9ed86b418a8cf9aa2475c4617458ea749a49c67bb35557ccb270b4133b35",
+        "v2": "2f616444e86e00cbf68aac47f4361616695bd4bffd5e325cd33b377b3c75a25c"
       }
     },
     {
@@ -1961,16 +1804,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": false,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         },
@@ -1982,16 +1822,13 @@
           "hero_specific": true,
           "hero_intent": true,
           "cta_intent": true,
-          "no_hallucinations": false,
+          "no_hallucinations": true,
           "truth_evidence": {
-            "passed": false,
-            "blockers": [
-              "unverified_generated_projects",
-              "unverified_rendered_testimonials"
-            ],
-            "unverified_project_count": 6,
+            "passed": true,
+            "blockers": [],
+            "unverified_project_count": 0,
             "review_placeholders_blocked": true,
-            "unverified_rendered_testimonials": true,
+            "unverified_rendered_testimonials": false,
             "rendered_claim_flags": []
           }
         }
@@ -2004,8 +1841,8 @@
         ]
       },
       "render_signatures": {
-        "v1": "55d95d2aa6fff8df6a4e91bc52d5c25252dd18dd9d702d542dbd9c826e4316e7",
-        "v2": "dc4cdd639b04c62947c0b4d19509cf769fa6850908094ed7cc2e737040d9d991"
+        "v1": "19c0c4e3e4b59a25ace0371193df52d6459514dda28be735eb2725a1c92bce4e",
+        "v2": "61daacb8c507dbab67ff5bc9eb35888de6ea0e08b3c24c795d33e2613418c98c"
       }
     }
   ]
