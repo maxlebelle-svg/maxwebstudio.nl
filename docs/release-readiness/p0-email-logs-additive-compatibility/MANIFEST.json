@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "release": "P0 Email Logs Additive Compatibility Correction Release",
+  "status": "EXECUTED_AND_FINAL_COMPATIBILITY_VERIFIED",
+  "productionTarget": {
+    "project": "maxwebstudio",
+    "projectRef": "yxxahurphdbblkuxoeje",
+    "baselineLatestMigration": "20260722135000"
+  },
+  "migrationVersions": [
+    "20260722136000"
+  ],
+  "executionOrder": [
+    "supabase/migrations/20260722136000_p0_email_logs_additive_compatibility.sql"
+  ],
+  "releaseFiles": [
+    "supabase/migrations/20260722136000_p0_email_logs_additive_compatibility.sql",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/PRECONDITIONS.sql",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/POSTCONDITIONS.sql",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/EXPECTED_PRODUCTION_PRESTATE.json",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/ROLLBACK_RECOVERY.md",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/LOCAL_VALIDATION.json",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/RELEASE_REPORT.md",
+    "scripts/p0-build-email-logs-additive-compatibility-release.mjs",
+    "scripts/p0-email-logs-additive-compatibility-local-validation.zsh",
+    "tests/fixtures/p0-email-logs-additive-compatibility-baseline.sql",
+    "tests/p0-email-logs-additive-compatibility-release.test.js",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/FILESET.json",
+    "docs/release-readiness/p0-email-logs-additive-compatibility/MANIFEST.json"
+  ],
+  "hashedFileCount": 11,
+  "releaseFileCount": 13,
+  "filesetSha256": "8dc8a5aa8518ff12897c6e10adf33b081ae94c974ceca80bd927d93da930a4bd",
+  "impactClassification": "ACCEPTABLE_UPDATED_AT_MIGRATION_EFFECT",
+  "productionReadOnlyCompatibilityVerified": true,
+  "gateDPreparationEligible": true,
+  "releaseType": "DATABASE_ONLY_APPEND_ONLY_COMPATIBILITY",
+  "applicationChangesPerformed": false,
+  "productionContactedWithWrites": false,
+  "productionChangesPerformed": false,
+  "gateDRetryAuthorized": false,
+  "selfHashAlgorithm": "SHA-256 over canonical compact JSON with selfHash=null",
+  "selfHash": "ede70cd986fb70b6145e0bac0e229d90e0d6f82aa83c0988c78d207752561033"
+}

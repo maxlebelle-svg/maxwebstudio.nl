@@ -196,6 +196,7 @@ const maxAiStates = ["idle", "wave", "thumbs-up", "thinking", "celebrate", "look
 let calendlyLoadPromise;
 let maxAiStateTimer;
 let googleAnalyticsLoaded = false;
+let pendingLeadRequest = null;
 
 const checkoutPackages = {
   "Starter Site": {
@@ -710,17 +711,25 @@ function storeLeadRequest(lead) {
 }
 
 async function sendLeadRequest(lead) {
+  const body = JSON.stringify(lead);
+  if (new TextEncoder().encode(body).length > 131072) {
+    const error = new Error("De aanvraag is te groot.");
+    error.statusCode = 413;
+    throw error;
+  }
   const response = await fetch("/.netlify/functions/send-lead", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(lead),
+    body,
   });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok || !data.success) {
-    throw new Error(data.error || "E-mail verzenden lukte niet.");
+    const error = new Error(data.error || "Aanvraag kon niet veilig worden opgeslagen.");
+    error.statusCode = response.status;
+    throw error;
   }
 
   return data;
@@ -734,48 +743,64 @@ async function handleLeadFormSubmit() {
   const formData = new FormData(form);
   const nameField = form.querySelector('[name="name"]');
   const emailField = form.querySelector('[name="email"]');
+  const companyField = form.querySelector('[name="company"]');
+  const phoneField = form.querySelector('[name="phone"]');
   const messageField = form.querySelector('[name="message"]');
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim();
+  const company = String(formData.get("company") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
   const message = String(formData.get("message") || "").trim();
-  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const selectedPackage = formData.get("package") || "Business Launch";
+  const selectedCarePackage = formData.get("carePackage") || "Nog geen keuze";
+  const validation = window.MaxWebstudioLeadValidation.validateLeadDraft({
+    name,
+    company,
+    email,
+    phone,
+    message,
+    source: "homepage-contact-form",
+    requestId: "lead-0000000000000",
+    packageInterest: String(selectedPackage),
+    carePackage: String(selectedCarePackage),
+    termsAccepted: Boolean(termsAccepted?.checked),
+  });
 
-  markLeadField(nameField, !name);
-  markLeadField(emailField, !emailIsValid);
-  markLeadField(messageField, !message);
+  markLeadField(nameField, Boolean(validation.errors.name));
+  markLeadField(companyField, Boolean(validation.errors.company));
+  markLeadField(emailField, Boolean(validation.errors.email));
+  markLeadField(phoneField, Boolean(validation.errors.phone));
+  markLeadField(messageField, Boolean(validation.errors.message));
 
-  if (!name || !emailIsValid || !message) {
-    setLeadFormStatus("Vul je naam, een geldig e-mailadres en je wensen in.", "error");
+  if (!validation.valid && !validation.errors.termsAccepted) {
+    setLeadFormStatus("Controleer je naam, bedrijfsnaam, e-mailadres, telefoonnummer en bericht.", "error");
     formButton.setAttribute("aria-live", "polite");
     return;
   }
 
-  if (termsAccepted && !termsAccepted.checked) {
+  if (validation.errors.termsAccepted) {
     setLeadFormStatus("Akkoord met de voorwaarden is nodig om je aanvraag te versturen.", "error");
     formButton.setAttribute("aria-live", "polite");
     return;
   }
 
-  const selectedPackage = formData.get("package") || "Business Launch";
-  const selectedCarePackage = formData.get("carePackage") || "Nog geen keuze";
-
-  const leadRequest = {
+  const leadRequest = pendingLeadRequest || window.MaxWebstudioLeadValidation.buildLeadRequestWithHoneypot(formData, {
     id: `lead-${Date.now()}`,
     createdAt: new Date().toISOString(),
     source: "homepage-contact-form",
     status: "nieuw",
     name,
-    company: String(formData.get("company") || "").trim(),
+    company,
     email,
-    phone: String(formData.get("phone") || "").trim(),
+    phone,
     packageInterest: String(selectedPackage),
     carePackage: String(selectedCarePackage),
     termsAccepted: true,
     message,
-  };
+  });
+  pendingLeadRequest = leadRequest;
 
   try {
-    storeLeadRequest(leadRequest);
     if (formButton) {
       formButton.textContent = "Aanvraag verzenden...";
       formButton.disabled = true;
@@ -783,7 +808,9 @@ async function handleLeadFormSubmit() {
     }
     setLeadFormStatus("Aanvraag verzenden...", "");
 
-    await sendLeadRequest(leadRequest);
+    const intakeResult = await sendLeadRequest(leadRequest);
+    if (intakeResult.accepted !== false) storeLeadRequest(leadRequest);
+    pendingLeadRequest = null;
     form.reset();
     if (formButton) {
       formButton.textContent = "Aanvraag verzonden";
@@ -791,18 +818,24 @@ async function handleLeadFormSubmit() {
     }
     setLeadFormStatus("Bedankt! Je aanvraag is succesvol verzonden. Ik neem meestal dezelfde dag contact met je op.", "success");
   } catch (error) {
-    console.warn("Lead request email failed", error);
+    console.warn("Lead intake failed", error);
     if (formButton) {
       formButton.textContent = "Verstuur aanvraag";
       formButton.disabled = false;
     }
-    setLeadFormStatus("Je aanvraag is lokaal opgeslagen, maar e-mail verzenden lukte niet. Neem eventueel contact op via WhatsApp.", "error");
+    setLeadFormStatus(error.statusCode === 429
+      ? "Er zijn te veel aanvragen vanaf deze verbinding. Probeer het later opnieuw."
+      : "Je aanvraag kon niet veilig worden opgeslagen. Probeer het opnieuw of neem contact op via WhatsApp.", "error");
   }
 }
 
 form?.addEventListener("submit", (event) => {
   event.preventDefault();
   handleLeadFormSubmit();
+});
+
+form?.addEventListener("input", () => {
+  pendingLeadRequest = null;
 });
 
 formButton?.addEventListener("click", () => {

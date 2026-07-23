@@ -1,142 +1,396 @@
+const crypto = require("crypto");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getWhatsappLink } = require("./company-settings");
-const { createTimelineEvent } = require("./services/timelineService");
-const { persistPublicLead } = require("./services/publicLeadService");
+
+const { prepareAbuseControlRequest, runLeadIntakeAbuseGate } = require("./services/leadIntakeAbuseControl");
+const { createOutboundEmailSender, resolveP0StagingSmokeControl } = require("./services/p0StagingSmokeControl");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REQUEST_MAX_BYTES = 131072;
+const CREATE_TIMEOUT_MS = 8000;
+const RECONCILIATION_TIMEOUT_MS = 3000;
+const LIMITS = Object.freeze({ name: 240, company: 240, email: 320, phone: 80, message: 4000, source: 120, requestId: 255, packageInterest: 240, carePackage: 240 });
 
-function createHandler(dependencies = {}) {
-  const persist = dependencies.persistPublicLead || persistPublicLead;
-  const deliverEmail = dependencies.sendEmail || sendEmail;
-  const createEvent = dependencies.createTimelineEvent || createTimelineEvent;
-  return async (event) => {
-  if (event.httpMethod !== "POST") {
-    return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
-  }
+function createHandler(overrides = {}) {
+  const dependencies = {
+    sendEmail, getCompanySettings, getWhatsappLink,
+    fetchImpl: (...args) => fetch(...args), env: process.env, logger: console,
+    createRequestReference: () => crypto.randomBytes(12).toString("hex"), ...overrides,
+  };
 
-  let payload;
+  return async (event = {}) => {
+    let requestReference = dependencies.createRequestReference();
+    if (event.httpMethod !== "POST") {
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, { reason: "unsupportedMethod" });
+      return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan.", requestReference });
+    }
 
-  try {
-    payload = JSON.parse(event.body || "{}");
-  } catch (error) {
-    return jsonResponse(400, { success: false, error: "Ongeldige JSON body." });
-  }
+    const rawBody = readRequestBody(event);
+    if (!rawBody.valid || rawBody.bytes > REQUEST_MAX_BYTES) {
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, { reason: "requestTooLarge" });
+      return jsonResponse(413, { success: false, error: "De aanvraag is te groot.", requestReference });
+    }
 
-  const lead = sanitizeLead(payload);
-  const validationError = validateLead(lead);
+    let payload;
+    try {
+      payload = JSON.parse(rawBody.text || "{}");
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("invalid shape");
+    } catch (error) {
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, { reason: "malformedJson" });
+      return jsonResponse(400, { success: false, error: "Ongeldige JSON body.", requestReference });
+    }
 
-  if (validationError) {
-    return jsonResponse(400, { success: false, error: validationError });
-  }
+    if (hasHoneypotSignal(payload)) {
+      recordOutcome(dependencies.logger, "abuseRejected", requestReference, { reason: "honeypot" });
+      return jsonResponse(200, { success: true, accepted: false, requestReference });
+    }
 
-  try {
-    const persisted = await persist(lead);
-    const leadId = persisted.lead?.id;
-    if (!leadId) throw new Error("Leadopslag gaf geen geldige lead-ID terug.");
-    await safeCreateTimeline({
-      createEvent,
-      leadId,
-      eventType: "lead_created",
-      title: `Nieuwe lead ontvangen: ${lead.name}`,
-      description: lead.company ? `${lead.company} heeft een aanvraag ingestuurd.` : "Er is een nieuwe aanvraag ingestuurd.",
-      module: "sales",
-      referenceType: "lead",
-      referenceId: leadId,
-      actorName: lead.name,
-      actorRole: "lead",
-      icon: "🔔",
-      severity: "info",
-      metadata: {
-        dedupeKey: `lead_created:${lead.email}:${lead.submittedAt}`,
-        publicRequestId: persisted.requestId,
-        leadEmail: lead.email,
-        leadName: lead.name,
-        company: lead.company,
-        packageInterest: lead.packageInterest,
-      },
-    });
-    const companySettings = getCompanySettings();
-    const result = await deliverEmail({
-      to: process.env.LEAD_TO_EMAIL || process.env.ADMIN_EMAIL || companySettings.primaryEmail,
-      from: process.env.LEAD_FROM_EMAIL || process.env.FROM_EMAIL || undefined,
-      replyTo: lead.email,
-      subject: `Nieuwe aanvraag Max Webstudio - ${lead.packageInterest} - ${lead.name}`,
-      html: buildLeadHtml(lead),
-      text: buildLeadText(lead),
-      templateKey: "lead_notification",
-      templateName: "Nieuwe lead notificatie",
-      triggeredBy: "homepage_contact_form",
-      leadId,
-      idempotencyKey: `public-lead-notification:${persisted.requestId}`,
-      metadata: {
-        leadEmail: lead.email,
-        leadName: lead.name,
-        company: lead.company,
-        source: lead.source,
-        packageInterest: lead.packageInterest,
-      },
-    });
+    const lead = sanitizeLead(payload);
+    const invalid = validateLead(lead);
+    if (invalid) {
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, { reason: invalid.code });
+      return jsonResponse(400, { success: false, error: invalid.message, requestReference });
+    }
 
-    if (!result.sent) {
-      return jsonResponse(502, {
+    let smokeControl;
+    try {
+      smokeControl = await resolveP0StagingSmokeControl({
+        event,
+        rawBody: rawBody.text,
+        env: dependencies.env,
+        fetchImpl: dependencies.fetchImpl,
+        logger: dependencies.logger,
+      });
+    } catch (error) {
+      const statusCode = error.statusCode || 503;
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, {
+        reason: safeReason(error.code),
+        ...(error.diagnostics || {}),
+      });
+      return jsonResponse(statusCode, {
         success: false,
-        error: "Aanvraag is opgeslagen, maar de interne e-mail kon niet worden verzonden.",
-        warning: result.warning,
+        error: statusCode === 403 ? "Staging-smokeverificatie geweigerd." : "Staging-smokemodus is niet veilig geconfigureerd.",
+        classification: "validationRejected",
+        requestReference,
       });
     }
 
-    const confirmation = await sendCustomerConfirmation(lead, { leadId, requestId: persisted.requestId, deliverEmail });
-    const confirmationWarning = confirmation.warning || "";
+    let runtimeEnvironment;
+    try {
+      runtimeEnvironment = resolveRuntimeEnvironment(dependencies.env, smokeControl);
+    } catch (error) {
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, { reason: safeReason(error.code) });
+      return jsonResponse(503, {
+        success: false,
+        error: "De runtimeomgeving is niet veilig geconfigureerd.",
+        classification: "validationRejected",
+        requestReference,
+      });
+    }
 
-    return jsonResponse(200, {
-      success: true,
-      confirmationSent: Boolean(confirmation.sent),
-      leadId,
-      created: persisted.created,
-      warning: confirmationWarning || undefined,
-    });
-  } catch (error) {
-    console.error("Lead request failed", { message: error.message });
-    return jsonResponse(error.status || 500, { success: false, error: "Aanvraag kon niet veilig worden opgeslagen." });
-  }
+    const idempotencyKey = leadIdempotencyKey(lead);
+    try {
+      const requestDependencies = { ...dependencies, smokeControl, runtimeEnvironment };
+      const references = prepareAbuseControlRequest(event, idempotencyKey, dependencies.env);
+      requestReference = references.requestReference;
+      const persisted = await runLeadIntakeAbuseGate({
+        supabaseUrl: dependencies.env.SUPABASE_URL,
+        serviceRoleKey: dependencies.env.SUPABASE_SERVICE_ROLE_KEY,
+        references,
+        fetchImpl: dependencies.fetchImpl,
+        onAllowed: () => persistLeadWithReconciliation(lead, idempotencyKey, requestDependencies),
+      });
+      const { intake, classification } = persisted;
+      recordOutcome(dependencies.logger, classification, requestReference, { reconciled: persisted.reconciled });
+
+      if (classification === "idempotentReplay") {
+        return jsonResponse(200, {
+          success: true, leadId: text(intake.leadId || intake.lead?.id), emailSent: false, confirmationSent: false,
+          classification, storageClassification: classification, reconciled: false, idempotentReplay: true, requestReference,
+        });
+      }
+
+      const { notificationDegraded, result, confirmation, suppressedDeliveries } = await runPostStorageNotifications(lead, intake, requestDependencies);
+      if (notificationDegraded) recordOutcome(dependencies.logger, "notificationDegraded", requestReference, { storageClassification: classification });
+
+      return jsonResponse(notificationDegraded ? 202 : 200, {
+        success: true,
+        leadId: text(intake.leadId || intake.lead?.id),
+        emailSent: Boolean(result?.sent),
+        confirmationSent: Boolean(confirmation.sent),
+        classification: notificationDegraded ? "notificationDegraded" : classification,
+        storageClassification: classification,
+        reconciled: persisted.reconciled,
+        idempotentReplay: Boolean(intake.idempotentReplay),
+        requestReference,
+        ...(suppressedDeliveries.length > 0 ? {
+          providerSuppressed: true,
+          suppressedProviders: ["resend"],
+          suppressionReason: "staging_smoke",
+          suppressedDeliveryCount: suppressedDeliveries.length,
+        } : {}),
+        warning: notificationDegraded ? "Je aanvraag is veilig ontvangen. Een notificatie wordt handmatig opgevolgd." : undefined,
+      });
+    } catch (error) {
+      const abuseRejected = error.code === "ABUSE_RATE_LIMITED" || error.code === "ABUSE_IDEMPOTENCY_CONFLICT";
+      const classification = abuseRejected ? "abuseRejected" : "storageFailed";
+      recordOutcome(dependencies.logger, classification, requestReference, { reason: safeReason(error.code) });
+      const statusCode = error.code === "ABUSE_RATE_LIMITED" ? 429 : (error.statusCode || 503);
+      const publicMessage = error.code === "ABUSE_RATE_LIMITED" ? "Te veel aanvragen. Probeer het later opnieuw."
+        : error.code === "ABUSE_IDEMPOTENCY_CONFLICT" ? "Deze aanvraag kan niet worden verwerkt."
+          : "Aanvraag kon niet veilig worden verwerkt.";
+      return jsonResponse(statusCode, { success: false, error: publicMessage, classification, requestReference });
+    }
   };
+}
+
+async function runPostStorageNotifications(lead, intake, dependencies) {
+  let notificationDegraded = false;
+  let result = { sent: false };
+  let confirmation = { sent: false };
+
+  const outboundEmail = createOutboundEmailSender(dependencies.smokeControl, dependencies.sendEmail, dependencies.logger);
+  const notificationDependencies = { ...dependencies, sendEmail: outboundEmail };
+
+  try {
+    const companySettings = dependencies.getCompanySettings() || {};
+    result = await outboundEmail(adminEmailInput(lead, companySettings, dependencies.env));
+    if (!deliverySucceededOrSuppressed(result)) notificationDegraded = true;
+    if (deliverySucceededOrSuppressed(result)) confirmation = await sendCustomerConfirmation(lead, notificationDependencies, companySettings);
+    if (!deliverySucceededOrSuppressed(confirmation)) notificationDegraded = true;
+  } catch (error) {
+    notificationDegraded = true;
+  }
+
+  const suppressedDeliveries = [result, confirmation].filter((value) => value?.suppressed === true);
+  return { notificationDegraded, result, confirmation, suppressedDeliveries };
 }
 
 exports.handler = createHandler();
 
 function sanitizeLead(payload) {
   return {
-    id: cleanText(payload.id || payload.requestId),
-    name: cleanText(payload.name),
-    company: cleanText(payload.company),
-    email: cleanText(payload.email).toLowerCase(),
-    phone: cleanText(payload.phone),
-    packageInterest: cleanText(payload.packageInterest || payload.package),
-    carePackage: cleanText(payload.carePackage),
-    termsAccepted: Boolean(payload.termsAccepted),
-    message: cleanText(payload.message, 3000),
-    source: cleanText(payload.source || "homepage-contact-form"),
-    submittedAt: cleanText(payload.createdAt) || new Date().toISOString(),
+    name: normalizeWhitespace(payload.name), requestId: text(payload.id), company: normalizeWhitespace(payload.company),
+    email: text(payload.email).toLowerCase(), phone: text(payload.phone),
+    packageInterest: text(payload.packageInterest || payload.package), carePackage: text(payload.carePackage),
+    termsAccepted: payload.termsAccepted === true, message: normalizeWhitespace(payload.message),
+    source: text(payload.source || "homepage-contact-form"), submittedAt: text(payload.createdAt) || new Date().toISOString(),
   };
 }
 
-async function safeCreateTimeline(input) {
-  const createEvent = input.createEvent || createTimelineEvent;
+async function persistLeadWithReconciliation(lead, idempotencyKey, dependencies) {
   try {
-    const { createEvent: _ignored, ...event } = input;
-    return await createEvent(event);
+    const intake = await createLead(lead, idempotencyKey, dependencies);
+    return { intake, classification: classifyIntake(intake, false), reconciled: false };
   } catch (error) {
-    console.error("Lead timeline event failed", { message: error.message });
-    return null;
+    if (!error.ambiguous) throw error;
+    const intake = await reconcileLead(idempotencyKey, dependencies);
+    if (!intake) throw storageError("STORAGE_RECONCILIATION_NOT_FOUND");
+    return { intake, classification: classifyIntake(intake, true), reconciled: true };
   }
 }
 
+async function createLead(lead, idempotencyKey, dependencies) {
+  const { supabaseUrl, serviceRoleKey } = databaseConfiguration(dependencies.env);
+  const rpcLead = leadRpcPayload(lead, dependencies.env, dependencies.smokeControl, dependencies.runtimeEnvironment);
+  let response;
+  try {
+    response = await dependencies.fetchImpl(`${supabaseUrl}/rest/v1/rpc/mws_create_lead_transactional_v1`, {
+      method: "POST", headers: rpcHeaders(serviceRoleKey),
+      body: JSON.stringify({ p_lead: rpcLead, p_idempotency_key: idempotencyKey, p_actor_profile_id: null, p_actor_type: "service", p_actor_id: "homepage-contact-form" }),
+      signal: AbortSignal.timeout(CREATE_TIMEOUT_MS),
+    });
+  } catch (cause) { throw ambiguousStorageError(cause); }
+  if (!response.ok) throw definitiveStorageError(response.status);
+  let data;
+  try { data = await response.json(); } catch (cause) { throw ambiguousStorageError(cause); }
+  return requireIntakeResult(data);
+}
+
+async function reconcileLead(idempotencyKey, dependencies) {
+  const { supabaseUrl, serviceRoleKey } = databaseConfiguration(dependencies.env);
+  let response;
+  try {
+    response = await dependencies.fetchImpl(`${supabaseUrl}/rest/v1/rpc/mws_get_lead_intake_result_v1`, {
+      method: "POST", headers: rpcHeaders(serviceRoleKey), body: JSON.stringify({ p_idempotency_key: idempotencyKey }),
+      signal: AbortSignal.timeout(RECONCILIATION_TIMEOUT_MS),
+    });
+  } catch (cause) { throw storageError("STORAGE_RECONCILIATION_FAILED"); }
+  if (!response.ok) throw storageError("STORAGE_RECONCILIATION_FAILED");
+  let data;
+  try { data = await response.json(); } catch (cause) { throw storageError("STORAGE_RECONCILIATION_FAILED"); }
+  return data == null ? null : requireIntakeResult(data);
+}
+
+async function persistLead(lead, options = {}) {
+  const dependencies = { env: options.env || process.env, fetchImpl: options.fetchImpl || ((...args) => fetch(...args)) };
+  return (await persistLeadWithReconciliation(lead, options.idempotencyKey || leadIdempotencyKey(lead), dependencies)).intake;
+}
+
+function databaseConfiguration(env) {
+  const supabaseUrl = text(env.SUPABASE_URL).replace(/\/$/, "");
+  const serviceRoleKey = text(env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!supabaseUrl || !serviceRoleKey) throw storageError(!supabaseUrl ? "STORAGE_URL_MISSING" : "STORAGE_KEY_MISSING");
+  return { supabaseUrl, serviceRoleKey };
+}
+
+function leadRpcPayload(lead, env = process.env, smokeControl = null, resolvedEnvironment = "") {
+  const environment = resolvedEnvironment || resolveRuntimeEnvironment(env, smokeControl);
+  const smokeMetadata = smokeControl?.suppressProviders
+    ? { stagingSmoke: true, providerMode: "suppress", suppressionReason: "staging_smoke" }
+    : {};
+  return {
+    company: lead.company || lead.name, name: lead.name, email: lead.email, phone: lead.phone || null,
+    source: lead.source || "homepage-contact-form", external_source: "homepage-contact-form", external_source_id: lead.requestId || null,
+    notes: lead.message, environment, is_demo: false,
+    metadata: { requestId: lead.requestId || null, submittedAt: lead.submittedAt, termsAccepted: lead.termsAccepted, packageInterest: lead.packageInterest || null, carePackage: lead.carePackage || null, ...smokeMetadata },
+  };
+}
+
+function leadIdempotencyKey(lead) {
+  const seed = [lead.source, lead.requestId, lead.email, lead.submittedAt].map(text).join("|");
+  const bytes = Buffer.from(crypto.createHash("sha256").update(seed).digest().subarray(0, 16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return `lead-intake:v1:${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function validateLead(lead) {
-  if (!lead.name) return "Vul je naam in.";
-  if (!emailPattern.test(lead.email)) return "Vul een geldig e-mailadres in.";
-  if (!lead.message) return "Vul je bericht of wensen in.";
-  if (!lead.termsAccepted) return "Akkoord met de voorwaarden is nodig.";
-  return "";
+  if (!lead.name) return validationError("nameRequired", "Vul je naam in.");
+  if (charLength(lead.name) > LIMITS.name) return validationError("nameTooLong", "Je naam is te lang.");
+  if (charLength(lead.company) > LIMITS.company) return validationError("companyTooLong", "De bedrijfsnaam is te lang.");
+  if (charLength(lead.email) > LIMITS.email) return validationError("emailTooLong", "Het e-mailadres is te lang.");
+  if (!emailPattern.test(lead.email)) return validationError("emailInvalid", "Vul een geldig e-mailadres in.");
+  if (charLength(lead.phone) > LIMITS.phone) return validationError("phoneTooLong", "Het telefoonnummer is te lang.");
+  if (!lead.message) return validationError("messageRequired", "Vul je bericht of wensen in.");
+  if (charLength(lead.message) > LIMITS.message) return validationError("messageTooLong", "Het bericht is te lang.");
+  if (!lead.source) return validationError("sourceRequired", "De aanvraagbron is ongeldig.");
+  if (charLength(lead.source) > LIMITS.source) return validationError("sourceTooLong", "De aanvraagbron is ongeldig.");
+  if (charLength(lead.requestId) > LIMITS.requestId) return validationError("requestIdTooLong", "De aanvraagreferentie is ongeldig.");
+  if (charLength(lead.packageInterest) > LIMITS.packageInterest || charLength(lead.carePackage) > LIMITS.carePackage) return validationError("selectionTooLong", "Een gekozen optie is ongeldig.");
+  if (!lead.termsAccepted) return validationError("termsRequired", "Akkoord met de voorwaarden is nodig.");
+  const rpcPayload = leadRpcPayload(lead, { APP_ENVIRONMENT: "test" });
+  if (Buffer.byteLength(JSON.stringify(rpcPayload.metadata), "utf8") > 65536) return validationError("metadataTooLarge", "De aanvraagmetadata is te groot.");
+  if (Buffer.byteLength(JSON.stringify(rpcPayload), "utf8") > REQUEST_MAX_BYTES) return validationError("rpcPayloadTooLarge", "De aanvraag is te groot.");
+  return null;
+}
+
+function readRequestBody(event) {
+  const source = typeof event.body === "string" ? event.body : "";
+  if (!event.isBase64Encoded) return { valid: true, text: source, bytes: Buffer.byteLength(source, "utf8") };
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(source)) return { valid: false, text: "", bytes: 0 };
+  const decoded = Buffer.from(source, "base64");
+  return { valid: true, text: decoded.toString("utf8"), bytes: decoded.length };
+}
+
+function rpcHeaders(serviceRoleKey) {
+  return {
+    apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json",
+    Accept: "application/json", "Accept-Profile": "public", "Content-Profile": "public",
+  };
+}
+
+function requireIntakeResult(value) {
+  const leadId = text(value?.leadId || value?.lead?.id);
+  if (!value || typeof value !== "object" || value.status !== "resolved" || !leadId
+    || typeof value.created !== "boolean" || typeof value.duplicate !== "boolean"
+    || typeof value.idempotentReplay !== "boolean") throw storageError("STORAGE_INVALID_RESPONSE");
+  return value;
+}
+
+function classifyIntake(intake, reconciled) {
+  if (reconciled) return intake.duplicate ? "reconciledDuplicate" : "reconciledCreated";
+  if (intake.idempotentReplay) return "idempotentReplay";
+  if (intake.created) return "created";
+  if (intake.duplicate) return "duplicate";
+  throw storageError("STORAGE_INVALID_RESPONSE");
+}
+
+function ambiguousStorageError(cause) {
+  const error = storageError(cause?.name === "TimeoutError" || cause?.name === "AbortError" ? "STORAGE_CREATE_TIMEOUT" : "STORAGE_CREATE_TRANSPORT");
+  error.ambiguous = true;
+  return error;
+}
+
+function definitiveStorageError(status) {
+  const error = storageError("STORAGE_CREATE_DEFINITIVE");
+  error.statusCode = status >= 500 ? 503 : 400;
+  return error;
+}
+
+function storageError(code) {
+  const error = new Error("Aanvraag kon niet veilig worden verwerkt.");
+  error.code = code;
+  error.statusCode = 503;
+  error.ambiguous = false;
+  return error;
+}
+
+function resolveRuntimeEnvironment(env = process.env, smokeControl = null) {
+  if (smokeControl?.suppressProviders === true) return "test";
+
+  const appEnvironment = text(env.APP_ENVIRONMENT).toLowerCase();
+  const appEnv = text(env.APP_ENV).toLowerCase();
+  const allowed = new Set(["production", "test", "demo"]);
+
+  if ((appEnvironment && !allowed.has(appEnvironment)) || (appEnv && !allowed.has(appEnv))) {
+    throw runtimeEnvironmentError("RUNTIME_ENVIRONMENT_INVALID");
+  }
+  if (appEnvironment && appEnv && appEnvironment !== appEnv) {
+    throw runtimeEnvironmentError("RUNTIME_ENVIRONMENT_CONFLICT");
+  }
+
+  const environment = appEnvironment || appEnv;
+  if (!environment) throw runtimeEnvironmentError("RUNTIME_ENVIRONMENT_MISSING");
+  return environment;
+}
+
+function runtimeEnvironmentError(code) {
+  const error = new Error("De runtimeomgeving is niet veilig geconfigureerd.");
+  error.code = code;
+  error.statusCode = 503;
+  return error;
+}
+
+function validationError(code, message) { return { code, message }; }
+function charLength(value) { return Array.from(text(value)).length; }
+function normalizeWhitespace(value) { return text(value).replace(/\s+/gu, " "); }
+function text(value) { return typeof value === "string" || typeof value === "number" ? String(value).trim() : ""; }
+
+function hasHoneypotSignal(payload) {
+  if (!Object.prototype.hasOwnProperty.call(payload, "_gotcha")) return false;
+  return typeof payload._gotcha !== "string" || payload._gotcha.trim().length > 0;
+}
+function safeReason(value) {
+  const reason = text(value);
+  return /^(?:ABUSE|STORAGE|SMOKE|RUNTIME)_[A-Z0-9_]+$/.test(reason) ? reason : "INTERNAL_ERROR";
+}
+
+function recordOutcome(logger, classification, requestReference, details = {}) {
+  const safeDetails = {};
+  for (const key of [
+    "reason", "reconciled", "storageClassification", "validationStage", "headerParsed",
+    "protocolAccepted", "timestampStatus", "nonceShapeValid", "targetStatus",
+    "secretVersionStatus", "bodyStatus", "signatureStatus", "rotationId",
+    "secretVersionProof", "bodyProof", "nonceProof", "protocolVersion", "signedTimestamp",
+    "nonceDecision", "internalComponent",
+  ]) {
+    if (details[key] !== undefined) safeDetails[key] = details[key];
+  }
+  if (typeof logger?.info === "function") logger.info("lead_intake_outcome", { classification, requestReference, ...safeDetails });
+}
+
+function adminEmailInput(lead, companySettings, env) {
+  return {
+    to: env.LEAD_TO_EMAIL || env.ADMIN_EMAIL || companySettings.primaryEmail,
+    from: env.LEAD_FROM_EMAIL || env.FROM_EMAIL || undefined,
+    replyTo: lead.email,
+    subject: `Nieuwe aanvraag Max Webstudio - ${lead.packageInterest} - ${lead.name}`,
+    html: buildLeadHtml(lead), text: buildLeadText(lead), templateKey: "lead_notification",
+    templateName: "Nieuwe lead notificatie", triggeredBy: "homepage_contact_form",
+    metadata: { leadEmail: lead.email, leadName: lead.name, company: lead.company, source: lead.source, packageInterest: lead.packageInterest },
+  };
 }
 
 function buildLeadHtml(lead) {
@@ -194,19 +448,17 @@ function buildLeadText(lead) {
   ].join("\n");
 }
 
-async function sendCustomerConfirmation(lead, context = {}) {
+async function sendCustomerConfirmation(lead, dependencies, companySettings = {}) {
   try {
-    const result = await (context.deliverEmail || sendEmail)({
+    return await dependencies.sendEmail({
       to: lead.email,
-      from: process.env.LEAD_FROM_EMAIL || process.env.FROM_EMAIL || undefined,
-      subject: "Bedankt voor je aanvraag bij Max Webstudio",
-      html: buildCustomerConfirmationHtml(lead),
-      text: buildCustomerConfirmationText(lead),
+      from: dependencies.env.LEAD_FROM_EMAIL || dependencies.env.FROM_EMAIL || undefined,
+      subject: "Bedankt voor je aanvraag bij Max Webstudio 🚀",
+      html: buildCustomerConfirmationHtml(lead, dependencies, companySettings),
+      text: buildCustomerConfirmationText(lead, dependencies, companySettings),
       templateKey: "lead_customer_confirmation",
       templateName: "Lead klantbevestiging",
       triggeredBy: "homepage_contact_form",
-      leadId: context.leadId,
-      idempotencyKey: `public-lead-confirmation:${context.requestId}`,
       metadata: {
         leadName: lead.name,
         company: lead.company,
@@ -214,30 +466,13 @@ async function sendCustomerConfirmation(lead, context = {}) {
         packageInterest: lead.packageInterest,
       },
     });
-
-    if (!result.sent) {
-      console.error("Lead customer confirmation skipped", {
-        email: lead.email,
-        warning: result.warning || "Unknown email warning",
-      });
-    }
-
-    return result;
   } catch (error) {
-    console.error("Lead customer confirmation failed", {
-      email: lead.email,
-      message: error.message,
-    });
     return { sent: false, warning: "Klantbevestiging kon niet worden verzonden." };
   }
 }
 
-exports.createHandler = createHandler;
-exports._test = { sanitizeLead, validateLead };
-
-function buildCustomerConfirmationHtml(lead) {
-  const companySettings = getCompanySettings();
-  const whatsappLink = getWhatsappLink(companySettings);
+function buildCustomerConfirmationHtml(lead, dependencies, companySettings) {
+  const whatsappLink = dependencies.getWhatsappLink(companySettings);
   const rows = [
     ["Naam", lead.name],
     ["Bedrijf", lead.company || "-"],
@@ -338,8 +573,7 @@ function buildCustomerConfirmationHtml(lead) {
   `;
 }
 
-function buildCustomerConfirmationText(lead) {
-  const companySettings = getCompanySettings();
+function buildCustomerConfirmationText(lead, dependencies, companySettings) {
   return [
     "Bedankt voor je aanvraag!",
     "",
@@ -360,7 +594,7 @@ function buildCustomerConfirmationText(lead) {
     lead.message,
     "",
     "Demo-websites: https://maxwebstudio.nl/#projecten",
-    `WhatsApp Max Webstudio: ${getWhatsappLink(companySettings)}`,
+    `WhatsApp Max Webstudio: ${dependencies.getWhatsappLink(companySettings)}`,
     "",
     "Met vriendelijke groet,",
     "Max Webstudio",
@@ -378,11 +612,23 @@ function buildEmailLogo() {
   `;
 }
 
-function cleanText(value, maxLength = 500) {
-  return String(value || "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, maxLength);
+exports._private = {
+  LIMITS,
+  REQUEST_MAX_BYTES,
+  createHandler,
+  classifyIntake,
+  hasHoneypotSignal,
+  leadIdempotencyKey,
+  leadRpcPayload,
+  persistLead,
+  persistLeadWithReconciliation,
+  resolveRuntimeEnvironment,
+  sanitizeLead,
+  validateLead,
+};
+
+function deliverySucceededOrSuppressed(value) {
+  return Boolean(value?.sent || value?.suppressed);
 }
 
 function escapeHtml(value) {

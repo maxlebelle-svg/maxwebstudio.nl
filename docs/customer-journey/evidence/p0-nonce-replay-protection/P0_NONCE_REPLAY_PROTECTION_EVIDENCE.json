@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-21T20:02:23Z",
+  "status": "PASS_P0_NONCE_REPLAY_PROTECTION_LOCAL_STAGING_REVIEW_REQUIRED",
+  "basis": {
+    "stagingCommit": "7bdfb15d659a2f9da5d0816732ad19828bcb296d",
+    "supersededIntermediateCommit": "1da026be7edc6258a3ed6762c9bf3d9ceba89078",
+    "localOnly": true
+  },
+  "architecture": {
+    "table": "public.p0_staging_smoke_nonces",
+    "rpc": "public.mws_consume_p0_staging_smoke_nonce_v1(text,text,text,text)",
+    "scope": "p0_staging_smoke_v1",
+    "atomicity": "transaction-scoped advisory lock per nonce fingerprint plus primary-key uniqueness",
+    "ttlSeconds": 3600,
+    "cleanupBatch": 100,
+    "automaticRetry": false
+  },
+  "migration": {
+    "version": "20260721050000",
+    "filename": "20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+    "bytes": 6583,
+    "sha256": "a733d0eefb976524bc69b06487f440310641f19d101cb21b3f9fb2ff58e2819a",
+    "byteIdenticalCopies": 3,
+    "previousMigrationUnchanged": true,
+    "previousMigrationSha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a"
+  },
+  "privacy": {
+    "plaintextNonceStored": false,
+    "secretStored": false,
+    "authorizationHeaderStored": false,
+    "rawBodyStored": false,
+    "piiStored": false,
+    "piiColumns": 0,
+    "frontendExposure": false
+  },
+  "security": {
+    "rlsEnabled": true,
+    "owner": "postgres",
+    "securityDefiner": true,
+    "searchPath": "pg_catalog",
+    "publicExecute": false,
+    "anonExecute": false,
+    "authenticatedExecute": false,
+    "serviceRoleExecute": true,
+    "directServiceRoleTableAccess": false
+  },
+  "validation": {
+    "smokeContract": { "passed": 17, "failed": 0 },
+    "targetedP0": { "passed": 75, "failed": 0 },
+    "fullIsolatedSuite": { "passed": 262, "failed": 0 },
+    "bootstrapRuns": 2,
+    "existingUpgradeRuns": 2,
+    "postgresConcurrencyContenders": 10,
+    "postgresConcurrencyConsumed": 1,
+    "postgresConcurrencyReplay": 9,
+    "postgresConcurrencyRows": 1,
+    "functionConcurrentCounts": [2, 10],
+    "functionExactlyOneWinner": true,
+    "sequentialReplayRejected": true,
+    "bindingConflictRejected": true,
+    "expiredTimestampRejectedBeforeNonce": true,
+    "wrongTargetRejectedBeforeNonce": true,
+    "invalidHmacRejectedBeforeNonce": true,
+    "honeypotBeforeNonce": true,
+    "regularRequestTouchesNonce": false,
+    "boundedCleanup": true,
+    "fixturesAfterCleanup": 0,
+    "javascriptSyntax": true,
+    "shellSyntax": true,
+    "html5Parse": true,
+    "gitDiffCheck": true,
+    "frontendLeakCheck": true,
+    "functionEntrypoints": 70,
+    "riskyFunctionsByteIdentical": 9
+  },
+  "effects": {
+    "stagingContacts": 0,
+    "productionContacts": 0,
+    "remoteConfigurationChanges": 0,
+    "databaseApplies": 0,
+    "commits": 0,
+    "pushes": 0,
+    "deploys": 0,
+    "providerActions": 0
+  },
+  "nextGate": "READ_ONLY_P0_NONCE_REPLAY_STAGING_READINESS_REVIEW"
+}

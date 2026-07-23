@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "status": "active",
+  "cutoverVersion": "20260721000000",
+  "generatedAt": "2026-07-21T17:45:00.000Z",
+  "migrations": [
+    {
+      "version": "20260721010000",
+      "filename": "20260721010000_harden_role_helper_search_paths.sql",
+      "canonicalSource": "supabase-common/migrations/20260721010000_harden_role_helper_search_paths.sql",
+      "existingOutput": "supabase/migrations/20260721010000_harden_role_helper_search_paths.sql",
+      "bootstrapOutput": "supabase-bootstrap/supabase/migrations/20260721010000_harden_role_helper_search_paths.sql",
+      "bytes": 3578,
+      "sha256": "fd787e93077783963d87879d6f9fba32395949fe572ef94609101293c91af966",
+      "materializationCommand": "cp canonical source to each named output; refuse semantic editing; validate full bytes afterward",
+      "byteIdentical": true,
+      "validatorStatus": "PASS"
+    },
+    {
+      "version": "20260721020000",
+      "filename": "20260721020000_restrict_policy_helper_execute_acl.sql",
+      "canonicalSource": "supabase-common/migrations/20260721020000_restrict_policy_helper_execute_acl.sql",
+      "existingOutput": "supabase/migrations/20260721020000_restrict_policy_helper_execute_acl.sql",
+      "bootstrapOutput": "supabase-bootstrap/supabase/migrations/20260721020000_restrict_policy_helper_execute_acl.sql",
+      "bytes": 2443,
+      "sha256": "c75f1796e52d8c2bd8a06994cb692c72f9f794adbb93d76cee4ccedd6f01e570",
+      "materializationCommand": "mechanically materialize canonical source to each named output; refuse semantic editing; validate full bytes afterward",
+      "byteIdentical": true,
+      "validatorStatus": "PASS"
+    },
+    {
+      "version": "20260721030000",
+      "filename": "20260721030000_restrict_internal_helper_execute_acl.sql",
+      "canonicalSource": "supabase-common/migrations/20260721030000_restrict_internal_helper_execute_acl.sql",
+      "existingOutput": "supabase/migrations/20260721030000_restrict_internal_helper_execute_acl.sql",
+      "bootstrapOutput": "supabase-bootstrap/supabase/migrations/20260721030000_restrict_internal_helper_execute_acl.sql",
+      "bytes": 1644,
+      "sha256": "83a428e28401c63a0b8e2bffc9ba4a6aca54d1fe159556ee9f674b129cf64bad",
+      "materializationCommand": "mechanically materialize canonical source to each named output; refuse semantic editing; validate full bytes afterward",
+      "byteIdentical": true,
+      "validatorStatus": "PASS"
+    },
+    {
+      "version": "20260721040000",
+      "filename": "20260721040000_lead_intake_abuse_control.sql",
+      "canonicalSource": "supabase-common/migrations/20260721040000_lead_intake_abuse_control.sql",
+      "existingOutput": "supabase/migrations/20260721040000_lead_intake_abuse_control.sql",
+      "bootstrapOutput": "supabase-bootstrap/supabase/migrations/20260721040000_lead_intake_abuse_control.sql",
+      "bytes": 12199,
+      "sha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a",
+      "materializationCommand": "mechanically materialize canonical source to each named output; refuse semantic editing; validate full bytes afterward",
+      "byteIdentical": true,
+      "validatorStatus": "PASS"
+    },
+    {
+      "version": "20260721050000",
+      "filename": "20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "canonicalSource": "supabase-common/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "existingOutput": "supabase/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "bootstrapOutput": "supabase-bootstrap/supabase/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "bytes": 6583,
+      "sha256": "a733d0eefb976524bc69b06487f440310641f19d101cb21b3f9fb2ff58e2819a",
+      "materializationCommand": "mechanically materialize canonical source to each named output; refuse semantic editing; validate full bytes afterward",
+      "byteIdentical": true,
+      "validatorStatus": "PASS"
+    }
+  ]
+}
