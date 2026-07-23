@@ -1,0 +1,2356 @@
+{
+  "report_version": "1.0.0",
+  "generated_at": "deterministic-local-certification",
+  "status": "PASS_CONTENT_FACTORY_V2_RENDERER_SHADOW_READY",
+  "scope": "local renderer shadow certification; no production activation, writes or database changes",
+  "feature_flags": {
+    "version": "WEBSITE_FACTORY_CONTENT_ADAPTER=v1|v2 (default v1)",
+    "mode": "WEBSITE_FACTORY_CONTENT_ADAPTER_MODE=off|shadow|active (default preserves legacy off mode)",
+    "production_default_changed": false
+  },
+  "summaryChecks": {
+    "allCasesPassed": true,
+    "sixRepresentativeCases": true,
+    "visibleDesignVariation": true,
+    "controlledFallbackPassed": true,
+    "noPublicationClaims": true
+  },
+  "distinctDesigns": 6,
+  "styleVariationCheck": {
+    "passed": true,
+    "sameLeadInput": "installateur:thuisbatterijen:Utrecht:0",
+    "variants": [
+      {
+        "requestedStyle": "premium",
+        "resolvedStyle": "premium-editorial",
+        "designSignature": "2182c8537cd965f61a8b4ba297a3549968ef6ffd017d194d1164cc97e093cc75",
+        "cssSignature": "144ad3f7c8fd43bf05febbf276491718d75370156a89e8628f9782f5ea9872ed",
+        "photographyPromptSignature": "ca320b1b3856b8c68032edfc1f9342ac20ed3088a45e4fa239e5f8f103d39a3b",
+        "renderSignature": "d4d6ee0b6406de450c8b22560489aee8085dd3013d67179be6e4b61dc02a2630"
+      },
+      {
+        "requestedStyle": "warm",
+        "resolvedStyle": "warm-persoonlijk",
+        "designSignature": "a55a5c1dfc89a103499c3a11b95425dde55625c79fa1fa07d1313449f0f0b399",
+        "cssSignature": "3597cab84175b6d96c9c4585e157169ee29221b90c0093b1d075838800528d6b",
+        "photographyPromptSignature": "3847b726cab3bb5a973fe9b7290d0d300f226558e03282738fea6f7600c02444",
+        "renderSignature": "2c4b1f9d57332e82a544df1dabe3d8554c882774e3efcaaf25ce51370b5ae241"
+      },
+      {
+        "requestedStyle": "modern",
+        "resolvedStyle": "modern-scherp",
+        "designSignature": "cbd6e8321d3fac46385a4d2c35bfc3759c31e97259c2a204a096dd847c9c0d21",
+        "cssSignature": "897a483104bd14574daddc531334af0ef9c6b74ce356cca7ef3cf42dfd122762",
+        "photographyPromptSignature": "17523d44cd04b4ae8114670271d9daf4f135c10500c2d84f85afa2e920cfc78c",
+        "renderSignature": "1f48be8e8a4de54953a4a29a2d4b4303f395acb95031ad81a4befe4e2fffae4f"
+      },
+      {
+        "requestedStyle": "minimalistisch",
+        "resolvedStyle": "minimalistisch-licht",
+        "designSignature": "8fbfc8170ee7192c381f9b766b5333a3b33eb5a8234b26d2e841ca342c141dd7",
+        "cssSignature": "e889e669ff055d11d6de58f2adde06c975a5e1268f920893f0c6480fe150098f",
+        "photographyPromptSignature": "25158d190d39a86870a69c652c7d55d4446f307d132ddaf9880836517311523c",
+        "renderSignature": "68a68bfe296e16a3ca3f820e39b5743965d58574ac25247e6e8a9bc247e5b75d"
+      }
+    ]
+  },
+  "fallbackCheck": {
+    "passed": true,
+    "status": "v2_fallback_v1",
+    "rendererAdapterVersion": "v1",
+    "fallbackFrom": "v2",
+    "fallbackTo": "v1",
+    "renderedIndexCount": 1
+  },
+  "cases": [
+    {
+      "id": "installateur-thuisbatterijen-premium-dark",
+      "input": {
+        "id": "installateur-thuisbatterijen-premium-dark",
+        "vertical": "installateur",
+        "specialization": "thuisbatterijen",
+        "style": "premium",
+        "brandPersonality": "innovatief",
+        "theme": "dark",
+        "goal": "leadgeneratie",
+        "region": "Utrecht",
+        "seed": 0
+      },
+      "passed": true,
+      "checks": {
+        "branchCorrect": true,
+        "specializationCorrect": true,
+        "copySpecific": true,
+        "photographyCombinationSpecific": true,
+        "designTokensResolved": true,
+        "heroIntentAligned": true,
+        "ctaIntentAligned": true,
+        "seoSpecific": true,
+        "reviewsBlocked": true,
+        "rendererCompatible": true,
+        "deterministic": true,
+        "shadowUsesV1": true,
+        "v1Available": true
+      },
+      "evidence": {
+        "v1Adapter": "content-factory-adapter/v1",
+        "v2Adapter": "content-factory-adapter/v2",
+        "shadowRendererAdapter": "v1",
+        "dimensions": {
+          "vertical": {
+            "slug": "installateur",
+            "name": "Installatiebedrijf",
+            "category": "bouw"
+          },
+          "specialization": {
+            "id": "thuisbatterijen",
+            "name": "Thuisbatterijen"
+          },
+          "visual_style": {
+            "id": "premium-editorial",
+            "name": "Premium editorial"
+          },
+          "brand_personality": {
+            "id": "innovatief",
+            "name": "Innovatief"
+          },
+          "theme": "dark",
+          "goal": {
+            "id": "leadgeneratie",
+            "name": "Leadgeneratie"
+          },
+          "locale": "nl-NL",
+          "region": "Utrecht",
+          "channels": [
+            "social",
+            "website"
+          ]
+        },
+        "seed": 2934545964,
+        "fallbackChoices": [
+          {
+            "field": "asset:services",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          },
+          {
+            "field": "asset:gallery",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          }
+        ],
+        "compositionSignature": "installateur:thuisbatterijen:premium-editorial:innovatief:dark:leadgeneratie:nl-NL:utrecht:social:website",
+        "heroTitle": "Thuisbatterijen professioneel geregeld",
+        "primaryCta": "Vraag een offerte aan",
+        "seoTitle": "Demo installateur | Thuisbatterijen in Utrecht",
+        "designSignature": "2182c8537cd965f61a8b4ba297a3549968ef6ffd017d194d1164cc97e093cc75",
+        "photographyPromptSignature": "ca320b1b3856b8c68032edfc1f9342ac20ed3088a45e4fa239e5f8f103d39a3b",
+        "v1RenderSignature": "c10b156302238623097b76b0432bc67521602c02fa93996db1c42074601460c5",
+        "v2RenderSignature": "1c4f95b1c3d645f1c993d4576994360fb015d24f5c5df6242dc263e158606bcf",
+        "renderChanged": true,
+        "quality": {
+          "blueprint": {
+            "contract_version": "quality-score/v1",
+            "target": "composition-blueprint",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "completeness",
+                "label": "Volledigheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "dimensions",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "design-system",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "blocks",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "photography",
+                    "pass": true,
+                    "weight": 25
+                  }
+                ]
+              },
+              {
+                "id": "specificity",
+                "label": "Specificiteit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "vertical",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "specialization",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "region",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal",
+                    "pass": true,
+                    "weight": 15
+                  },
+                  {
+                    "id": "locale",
+                    "pass": true,
+                    "weight": 10
+                  }
+                ]
+              },
+              {
+                "id": "channel_fit",
+                "label": "Kanaalfit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "channel-list",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "matching-blocks",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "neutral-contract",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie-architectuur",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "cta-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "proof-weight",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal-alignment",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Veiligheidsdekking",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "human-image-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "rights-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "negative-prompt",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "reduced-motion",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "AI-confidence vereist een afzonderlijke modelevaluatie of menselijke review en wordt niet afgeleid uit structurele checks."
+            },
+            "publication_ready": false,
+            "status": "architecture_ready"
+          },
+          "website": {
+            "contract_version": "quality-score/v1",
+            "target": "website-content",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "hero",
+                "label": "Hero",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "subtitle",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "primary-cta",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "intent",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "seo",
+                "label": "SEO",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "description-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "keywords",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "local-context",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "contact-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "services",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "proof",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "readability",
+                "label": "Leesbaarheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-title-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "hero-subtitle-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "service-descriptions",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Publicatieveiligheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "review-policy",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "reviews-blocked",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "placeholder-scan",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "Structurele validatie is geen inhoudelijke AI-confidence."
+            },
+            "publication_ready": false,
+            "requires_human_review": true,
+            "status": "adapter_ready"
+          }
+        },
+        "aiConfidence": null,
+        "publicationReady": false
+      }
+    },
+    {
+      "id": "holistisch-warm-light",
+      "input": {
+        "id": "holistisch-warm-light",
+        "vertical": "holistisch",
+        "specialization": "coaching",
+        "style": "warm",
+        "brandPersonality": "persoonlijk",
+        "theme": "light",
+        "goal": "afspraken",
+        "region": "Amersfoort",
+        "seed": 1
+      },
+      "passed": true,
+      "checks": {
+        "branchCorrect": true,
+        "specializationCorrect": true,
+        "copySpecific": true,
+        "photographyCombinationSpecific": true,
+        "designTokensResolved": true,
+        "heroIntentAligned": true,
+        "ctaIntentAligned": true,
+        "seoSpecific": true,
+        "reviewsBlocked": true,
+        "rendererCompatible": true,
+        "deterministic": true,
+        "shadowUsesV1": true,
+        "v1Available": true
+      },
+      "evidence": {
+        "v1Adapter": "content-factory-adapter/v1",
+        "v2Adapter": "content-factory-adapter/v2",
+        "shadowRendererAdapter": "v1",
+        "dimensions": {
+          "vertical": {
+            "slug": "holistisch",
+            "name": "Holistische Praktijk",
+            "category": "gezondheid"
+          },
+          "specialization": {
+            "id": "coaching",
+            "name": "Holistische coaching"
+          },
+          "visual_style": {
+            "id": "warm-persoonlijk",
+            "name": "Warm & persoonlijk"
+          },
+          "brand_personality": {
+            "id": "persoonlijk",
+            "name": "Persoonlijk expertmerk"
+          },
+          "theme": "light",
+          "goal": {
+            "id": "afspraken",
+            "name": "Afspraken en reserveringen"
+          },
+          "locale": "nl-NL",
+          "region": "Amersfoort",
+          "channels": [
+            "social",
+            "website"
+          ]
+        },
+        "seed": 2435499408,
+        "fallbackChoices": [
+          {
+            "field": "asset:services",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          },
+          {
+            "field": "asset:gallery",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          }
+        ],
+        "compositionSignature": "holistisch:coaching:warm-persoonlijk:persoonlijk:light:afspraken:nl-NL:amersfoort:social:website",
+        "heroTitle": "Holistische coaching professioneel geregeld",
+        "primaryCta": "Plan een afspraak",
+        "seoTitle": "Demo holistisch | Holistische coaching in Amersfoort",
+        "designSignature": "a85aab805fdf00cb82cda8241eda8f9c8e3fc4563947d0ab2702bc5822c60803",
+        "photographyPromptSignature": "c00f9103b75a405138a65d3f2cc8cd7553b120afc4bab446a512e9d0d4c00e2e",
+        "v1RenderSignature": "d48cfb97f4f140792c364809f7e4310388152f163269876725db36727356a127",
+        "v2RenderSignature": "8df8772e4ee0ec91045f9e06d47c92d497e57fda64e5ab037729084cd81defe2",
+        "renderChanged": true,
+        "quality": {
+          "blueprint": {
+            "contract_version": "quality-score/v1",
+            "target": "composition-blueprint",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "completeness",
+                "label": "Volledigheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "dimensions",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "design-system",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "blocks",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "photography",
+                    "pass": true,
+                    "weight": 25
+                  }
+                ]
+              },
+              {
+                "id": "specificity",
+                "label": "Specificiteit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "vertical",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "specialization",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "region",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal",
+                    "pass": true,
+                    "weight": 15
+                  },
+                  {
+                    "id": "locale",
+                    "pass": true,
+                    "weight": 10
+                  }
+                ]
+              },
+              {
+                "id": "channel_fit",
+                "label": "Kanaalfit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "channel-list",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "matching-blocks",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "neutral-contract",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie-architectuur",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "cta-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "proof-weight",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal-alignment",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Veiligheidsdekking",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "human-image-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "rights-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "negative-prompt",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "reduced-motion",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "AI-confidence vereist een afzonderlijke modelevaluatie of menselijke review en wordt niet afgeleid uit structurele checks."
+            },
+            "publication_ready": false,
+            "status": "architecture_ready"
+          },
+          "website": {
+            "contract_version": "quality-score/v1",
+            "target": "website-content",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "hero",
+                "label": "Hero",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "subtitle",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "primary-cta",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "intent",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "seo",
+                "label": "SEO",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "description-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "keywords",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "local-context",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "contact-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "services",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "proof",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "readability",
+                "label": "Leesbaarheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-title-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "hero-subtitle-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "service-descriptions",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Publicatieveiligheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "review-policy",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "reviews-blocked",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "placeholder-scan",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "Structurele validatie is geen inhoudelijke AI-confidence."
+            },
+            "publication_ready": false,
+            "requires_human_review": true,
+            "status": "adapter_ready"
+          }
+        },
+        "aiConfidence": null,
+        "publicationReady": false
+      }
+    },
+    {
+      "id": "loodgieter-modern-leadgeneratie",
+      "input": {
+        "id": "loodgieter-modern-leadgeneratie",
+        "vertical": "loodgieter",
+        "specialization": "lekkage",
+        "style": "modern",
+        "brandPersonality": "jong",
+        "theme": "light",
+        "goal": "leadgeneratie",
+        "region": "Rotterdam",
+        "seed": 2
+      },
+      "passed": true,
+      "checks": {
+        "branchCorrect": true,
+        "specializationCorrect": true,
+        "copySpecific": true,
+        "photographyCombinationSpecific": true,
+        "designTokensResolved": true,
+        "heroIntentAligned": true,
+        "ctaIntentAligned": true,
+        "seoSpecific": true,
+        "reviewsBlocked": true,
+        "rendererCompatible": true,
+        "deterministic": true,
+        "shadowUsesV1": true,
+        "v1Available": true
+      },
+      "evidence": {
+        "v1Adapter": "content-factory-adapter/v1",
+        "v2Adapter": "content-factory-adapter/v2",
+        "shadowRendererAdapter": "v1",
+        "dimensions": {
+          "vertical": {
+            "slug": "loodgieter",
+            "name": "Loodgieter",
+            "category": "bouw"
+          },
+          "specialization": {
+            "id": "lekkage",
+            "name": "Lekkage en spoed"
+          },
+          "visual_style": {
+            "id": "modern-scherp",
+            "name": "Modern & scherp"
+          },
+          "brand_personality": {
+            "id": "jong",
+            "name": "Jong bedrijf"
+          },
+          "theme": "light",
+          "goal": {
+            "id": "leadgeneratie",
+            "name": "Leadgeneratie"
+          },
+          "locale": "nl-NL",
+          "region": "Rotterdam",
+          "channels": [
+            "social",
+            "website"
+          ]
+        },
+        "seed": 4048718900,
+        "fallbackChoices": [
+          {
+            "field": "asset:services",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          },
+          {
+            "field": "asset:gallery",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          }
+        ],
+        "compositionSignature": "loodgieter:lekkage:modern-scherp:jong:light:leadgeneratie:nl-NL:rotterdam:social:website",
+        "heroTitle": "Ervaren specialist in lekkage en spoed",
+        "primaryCta": "Vraag een offerte aan",
+        "seoTitle": "Demo loodgieter | Lekkage en spoed in Rotterdam",
+        "designSignature": "4a0db86e082d82cf2bc5690b47c67f3182c04f48ffdb8a0e50a5f0cc9e2ff74c",
+        "photographyPromptSignature": "df3daa74d550569bdf9e9ba574e2bc9afe63f06edfca5242f9099e62234c0d65",
+        "v1RenderSignature": "ea563ca9894bd702ce311796e44421970be87ecbd317b5a9ea9b403443b9ad87",
+        "v2RenderSignature": "61c13cb5bd51dee5f5c730518d84651b78d0e268fd2cf1d47e9580701a3e3799",
+        "renderChanged": true,
+        "quality": {
+          "blueprint": {
+            "contract_version": "quality-score/v1",
+            "target": "composition-blueprint",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "completeness",
+                "label": "Volledigheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "dimensions",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "design-system",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "blocks",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "photography",
+                    "pass": true,
+                    "weight": 25
+                  }
+                ]
+              },
+              {
+                "id": "specificity",
+                "label": "Specificiteit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "vertical",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "specialization",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "region",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal",
+                    "pass": true,
+                    "weight": 15
+                  },
+                  {
+                    "id": "locale",
+                    "pass": true,
+                    "weight": 10
+                  }
+                ]
+              },
+              {
+                "id": "channel_fit",
+                "label": "Kanaalfit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "channel-list",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "matching-blocks",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "neutral-contract",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie-architectuur",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "cta-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "proof-weight",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal-alignment",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Veiligheidsdekking",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "human-image-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "rights-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "negative-prompt",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "reduced-motion",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "AI-confidence vereist een afzonderlijke modelevaluatie of menselijke review en wordt niet afgeleid uit structurele checks."
+            },
+            "publication_ready": false,
+            "status": "architecture_ready"
+          },
+          "website": {
+            "contract_version": "quality-score/v1",
+            "target": "website-content",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "hero",
+                "label": "Hero",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "subtitle",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "primary-cta",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "intent",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "seo",
+                "label": "SEO",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "description-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "keywords",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "local-context",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "contact-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "services",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "proof",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "readability",
+                "label": "Leesbaarheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-title-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "hero-subtitle-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "service-descriptions",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Publicatieveiligheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "review-policy",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "reviews-blocked",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "placeholder-scan",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "Structurele validatie is geen inhoudelijke AI-confidence."
+            },
+            "publication_ready": false,
+            "requires_human_review": true,
+            "status": "adapter_ready"
+          }
+        },
+        "aiConfidence": null,
+        "publicationReady": false
+      }
+    },
+    {
+      "id": "restaurant-luxe-reserveringen",
+      "input": {
+        "id": "restaurant-luxe-reserveringen",
+        "vertical": "restaurant",
+        "specialization": "sushi",
+        "style": "luxe",
+        "brandPersonality": "persoonlijk",
+        "theme": "light",
+        "goal": "afspraken",
+        "region": "Amsterdam",
+        "seed": 3
+      },
+      "passed": true,
+      "checks": {
+        "branchCorrect": true,
+        "specializationCorrect": true,
+        "copySpecific": true,
+        "photographyCombinationSpecific": true,
+        "designTokensResolved": true,
+        "heroIntentAligned": true,
+        "ctaIntentAligned": true,
+        "seoSpecific": true,
+        "reviewsBlocked": true,
+        "rendererCompatible": true,
+        "deterministic": true,
+        "shadowUsesV1": true,
+        "v1Available": true
+      },
+      "evidence": {
+        "v1Adapter": "content-factory-adapter/v1",
+        "v2Adapter": "content-factory-adapter/v2",
+        "shadowRendererAdapter": "v1",
+        "dimensions": {
+          "vertical": {
+            "slug": "restaurant",
+            "name": "Restaurant",
+            "category": "horeca"
+          },
+          "specialization": {
+            "id": "sushi",
+            "name": "Sushirestaurant"
+          },
+          "visual_style": {
+            "id": "premium-editorial",
+            "name": "Premium editorial"
+          },
+          "brand_personality": {
+            "id": "persoonlijk",
+            "name": "Persoonlijk expertmerk"
+          },
+          "theme": "light",
+          "goal": {
+            "id": "afspraken",
+            "name": "Afspraken en reserveringen"
+          },
+          "locale": "nl-NL",
+          "region": "Amsterdam",
+          "channels": [
+            "social",
+            "website"
+          ]
+        },
+        "seed": 2439672837,
+        "fallbackChoices": [
+          {
+            "field": "asset:services",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          },
+          {
+            "field": "asset:gallery",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          }
+        ],
+        "compositionSignature": "restaurant:sushi:premium-editorial:persoonlijk:light:afspraken:nl-NL:amsterdam:social:website",
+        "heroTitle": "Sushirestaurant met aandacht voor wat voor u telt",
+        "primaryCta": "Plan een afspraak",
+        "seoTitle": "Demo restaurant | Sushirestaurant in Amsterdam",
+        "designSignature": "cc866a31016c48b12d4034bcc42228c11964f7aa3cbbcb03806c00183ad58e7d",
+        "photographyPromptSignature": "e5c4e0028dac2f2ad878493ac81d972733c16d3d3c3ee0b550e47ac9605579f9",
+        "v1RenderSignature": "a3c1bfa32b2b6a9f6caee7ed666a0821ab254219a4408db83fd831e64cfd7836",
+        "v2RenderSignature": "5807447612273fc93b94499ba1863113ec4f60c8ef3ab5f8f5134b030f7e5aec",
+        "renderChanged": true,
+        "quality": {
+          "blueprint": {
+            "contract_version": "quality-score/v1",
+            "target": "composition-blueprint",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "completeness",
+                "label": "Volledigheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "dimensions",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "design-system",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "blocks",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "photography",
+                    "pass": true,
+                    "weight": 25
+                  }
+                ]
+              },
+              {
+                "id": "specificity",
+                "label": "Specificiteit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "vertical",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "specialization",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "region",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal",
+                    "pass": true,
+                    "weight": 15
+                  },
+                  {
+                    "id": "locale",
+                    "pass": true,
+                    "weight": 10
+                  }
+                ]
+              },
+              {
+                "id": "channel_fit",
+                "label": "Kanaalfit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "channel-list",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "matching-blocks",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "neutral-contract",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie-architectuur",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "cta-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "proof-weight",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal-alignment",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Veiligheidsdekking",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "human-image-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "rights-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "negative-prompt",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "reduced-motion",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "AI-confidence vereist een afzonderlijke modelevaluatie of menselijke review en wordt niet afgeleid uit structurele checks."
+            },
+            "publication_ready": false,
+            "status": "architecture_ready"
+          },
+          "website": {
+            "contract_version": "quality-score/v1",
+            "target": "website-content",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "hero",
+                "label": "Hero",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "subtitle",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "primary-cta",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "intent",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "seo",
+                "label": "SEO",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "description-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "keywords",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "local-context",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "contact-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "services",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "proof",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "readability",
+                "label": "Leesbaarheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-title-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "hero-subtitle-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "service-descriptions",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Publicatieveiligheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "review-policy",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "reviews-blocked",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "placeholder-scan",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "Structurele validatie is geen inhoudelijke AI-confidence."
+            },
+            "publication_ready": false,
+            "requires_human_review": true,
+            "status": "adapter_ready"
+          }
+        },
+        "aiConfidence": null,
+        "publicationReady": false
+      }
+    },
+    {
+      "id": "autobedrijf-zakelijk-occasions",
+      "input": {
+        "id": "autobedrijf-zakelijk-occasions",
+        "vertical": "autobedrijf",
+        "specialization": "occasions",
+        "style": "zakelijk",
+        "brandPersonality": "corporate",
+        "theme": "light",
+        "goal": "portfolio",
+        "region": "Almere",
+        "seed": 4
+      },
+      "passed": true,
+      "checks": {
+        "branchCorrect": true,
+        "specializationCorrect": true,
+        "copySpecific": true,
+        "photographyCombinationSpecific": true,
+        "designTokensResolved": true,
+        "heroIntentAligned": true,
+        "ctaIntentAligned": true,
+        "seoSpecific": true,
+        "reviewsBlocked": true,
+        "rendererCompatible": true,
+        "deterministic": true,
+        "shadowUsesV1": true,
+        "v1Available": true
+      },
+      "evidence": {
+        "v1Adapter": "content-factory-adapter/v1",
+        "v2Adapter": "content-factory-adapter/v2",
+        "shadowRendererAdapter": "v1",
+        "dimensions": {
+          "vertical": {
+            "slug": "autobedrijf",
+            "name": "Autobedrijf",
+            "category": "mobiliteit"
+          },
+          "specialization": {
+            "id": "occasions",
+            "name": "Occasions"
+          },
+          "visual_style": {
+            "id": "betrouwbaar-vakmanschap",
+            "name": "Betrouwbaar vakmanschap"
+          },
+          "brand_personality": {
+            "id": "corporate",
+            "name": "Corporate organisatie"
+          },
+          "theme": "light",
+          "goal": {
+            "id": "portfolio",
+            "name": "Portfolio en bewijs"
+          },
+          "locale": "nl-NL",
+          "region": "Almere",
+          "channels": [
+            "social",
+            "website"
+          ]
+        },
+        "seed": 45262433,
+        "fallbackChoices": [
+          {
+            "field": "asset:services",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          },
+          {
+            "field": "asset:gallery",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          }
+        ],
+        "compositionSignature": "autobedrijf:occasions:betrouwbaar-vakmanschap:corporate:light:portfolio:nl-NL:almere:social:website",
+        "heroTitle": "Occasions met aandacht voor wat voor u telt",
+        "primaryCta": "Vraag een offerte aan",
+        "seoTitle": "Demo autobedrijf | Occasions in Almere",
+        "designSignature": "a9356a3359efa5cfdbb6d9bf2f9c9d616c75a600aa0046a6bc8591866c461e6d",
+        "photographyPromptSignature": "0a900cedf1a0ec1f910a648eb2e3047c8b23c3370b6605097d869c1560e58b13",
+        "v1RenderSignature": "ed87b5cc61d3b3936fd1e032ede2c15dcfdb2487b508d202d8a88cccecb6acde",
+        "v2RenderSignature": "c3685b444a9e0b3c84bf7336a9f25498274970202ad4244351ce0e01c85c95c9",
+        "renderChanged": true,
+        "quality": {
+          "blueprint": {
+            "contract_version": "quality-score/v1",
+            "target": "composition-blueprint",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "completeness",
+                "label": "Volledigheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "dimensions",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "design-system",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "blocks",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "photography",
+                    "pass": true,
+                    "weight": 25
+                  }
+                ]
+              },
+              {
+                "id": "specificity",
+                "label": "Specificiteit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "vertical",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "specialization",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "region",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal",
+                    "pass": true,
+                    "weight": 15
+                  },
+                  {
+                    "id": "locale",
+                    "pass": true,
+                    "weight": 10
+                  }
+                ]
+              },
+              {
+                "id": "channel_fit",
+                "label": "Kanaalfit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "channel-list",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "matching-blocks",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "neutral-contract",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie-architectuur",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "cta-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "proof-weight",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal-alignment",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Veiligheidsdekking",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "human-image-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "rights-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "negative-prompt",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "reduced-motion",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "AI-confidence vereist een afzonderlijke modelevaluatie of menselijke review en wordt niet afgeleid uit structurele checks."
+            },
+            "publication_ready": false,
+            "status": "architecture_ready"
+          },
+          "website": {
+            "contract_version": "quality-score/v1",
+            "target": "website-content",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "hero",
+                "label": "Hero",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "subtitle",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "primary-cta",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "intent",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "seo",
+                "label": "SEO",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "description-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "keywords",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "local-context",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "contact-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "services",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "proof",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "readability",
+                "label": "Leesbaarheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-title-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "hero-subtitle-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "service-descriptions",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Publicatieveiligheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "review-policy",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "reviews-blocked",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "placeholder-scan",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "Structurele validatie is geen inhoudelijke AI-confidence."
+            },
+            "publication_ready": false,
+            "requires_human_review": true,
+            "status": "adapter_ready"
+          }
+        },
+        "aiConfidence": null,
+        "publicationReady": false
+      }
+    },
+    {
+      "id": "glazenwasser-lokaal-offerte",
+      "input": {
+        "id": "glazenwasser-lokaal-offerte",
+        "vertical": "glazenwasser",
+        "specialization": "",
+        "style": "minimalistisch",
+        "brandPersonality": "lokaal",
+        "theme": "light",
+        "goal": "leadgeneratie",
+        "region": "Kampen",
+        "seed": 0
+      },
+      "passed": true,
+      "checks": {
+        "branchCorrect": true,
+        "specializationCorrect": true,
+        "copySpecific": true,
+        "photographyCombinationSpecific": true,
+        "designTokensResolved": true,
+        "heroIntentAligned": true,
+        "ctaIntentAligned": true,
+        "seoSpecific": true,
+        "reviewsBlocked": true,
+        "rendererCompatible": true,
+        "deterministic": true,
+        "shadowUsesV1": true,
+        "v1Available": true
+      },
+      "evidence": {
+        "v1Adapter": "content-factory-adapter/v1",
+        "v2Adapter": "content-factory-adapter/v2",
+        "shadowRendererAdapter": "v1",
+        "dimensions": {
+          "vertical": {
+            "slug": "glazenwasser",
+            "name": "Glazenwasser",
+            "category": "bouw"
+          },
+          "specialization": null,
+          "visual_style": {
+            "id": "minimalistisch-licht",
+            "name": "Minimalistisch licht"
+          },
+          "brand_personality": {
+            "id": "lokaal",
+            "name": "Lokaal betrokken"
+          },
+          "theme": "light",
+          "goal": {
+            "id": "leadgeneratie",
+            "name": "Leadgeneratie"
+          },
+          "locale": "nl-NL",
+          "region": "Kampen",
+          "channels": [
+            "social",
+            "website"
+          ]
+        },
+        "seed": 2563301092,
+        "fallbackChoices": [
+          {
+            "field": "asset:services",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          },
+          {
+            "field": "asset:gallery",
+            "requested": "asset_slot",
+            "resolved": "prompt_ready_placeholder",
+            "reason": "missing_asset"
+          }
+        ],
+        "compositionSignature": "glazenwasser:general:minimalistisch-licht:lokaal:light:leadgeneratie:nl-NL:kampen:social:website",
+        "heroTitle": "Glasbewassing in Kampen",
+        "primaryCta": "Vraag een offerte aan",
+        "seoTitle": "Demo glazenwasser | Glasbewassing in Kampen",
+        "designSignature": "32bbba2215a44aedfaced6a6b68bd29345f35825179df9873dda8895ed3ed930",
+        "photographyPromptSignature": "984fe0cf53209702874bc61737c1b247785455012c487e65d163026c5e8b706f",
+        "v1RenderSignature": "4f8433f1a2cc835f9f05c8fcb5b67aae7c5e272a1930d1db388adb86af551b7c",
+        "v2RenderSignature": "b20197b009285d2f39c2a99d60b92d5349737d290f1ab2ea5287db05287d1216",
+        "renderChanged": true,
+        "quality": {
+          "blueprint": {
+            "contract_version": "quality-score/v1",
+            "target": "composition-blueprint",
+            "overall": 95,
+            "metrics": [
+              {
+                "id": "completeness",
+                "label": "Volledigheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "dimensions",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "design-system",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "blocks",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "photography",
+                    "pass": true,
+                    "weight": 25
+                  }
+                ]
+              },
+              {
+                "id": "specificity",
+                "label": "Specificiteit",
+                "score": 75,
+                "checks": [
+                  {
+                    "id": "vertical",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "specialization",
+                    "pass": false,
+                    "weight": 25
+                  },
+                  {
+                    "id": "region",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal",
+                    "pass": true,
+                    "weight": 15
+                  },
+                  {
+                    "id": "locale",
+                    "pass": true,
+                    "weight": 10
+                  }
+                ]
+              },
+              {
+                "id": "channel_fit",
+                "label": "Kanaalfit",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "channel-list",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "matching-blocks",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "neutral-contract",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie-architectuur",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "cta-intent",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "proof-weight",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "goal-alignment",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Veiligheidsdekking",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "human-image-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "rights-review",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "negative-prompt",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "reduced-motion",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "AI-confidence vereist een afzonderlijke modelevaluatie of menselijke review en wordt niet afgeleid uit structurele checks."
+            },
+            "publication_ready": false,
+            "status": "architecture_ready"
+          },
+          "website": {
+            "contract_version": "quality-score/v1",
+            "target": "website-content",
+            "overall": 100,
+            "metrics": [
+              {
+                "id": "hero",
+                "label": "Hero",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "subtitle",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "primary-cta",
+                    "pass": true,
+                    "weight": 25
+                  },
+                  {
+                    "id": "intent",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "seo",
+                "label": "SEO",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "title-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "description-length",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "keywords",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "local-context",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "conversion",
+                "label": "Conversie",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "contact-cta",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "services",
+                    "pass": true,
+                    "weight": 20
+                  },
+                  {
+                    "id": "proof",
+                    "pass": true,
+                    "weight": 20
+                  }
+                ]
+              },
+              {
+                "id": "readability",
+                "label": "Leesbaarheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "hero-title-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "hero-subtitle-compact",
+                    "pass": true,
+                    "weight": 35
+                  },
+                  {
+                    "id": "service-descriptions",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              },
+              {
+                "id": "safety",
+                "label": "Publicatieveiligheid",
+                "score": 100,
+                "checks": [
+                  {
+                    "id": "review-policy",
+                    "pass": true,
+                    "weight": 40
+                  },
+                  {
+                    "id": "reviews-blocked",
+                    "pass": true,
+                    "weight": 30
+                  },
+                  {
+                    "id": "placeholder-scan",
+                    "pass": true,
+                    "weight": 30
+                  }
+                ]
+              }
+            ],
+            "ai_confidence": {
+              "score": null,
+              "status": "not_measured",
+              "reason": "Structurele validatie is geen inhoudelijke AI-confidence."
+            },
+            "publication_ready": false,
+            "requires_human_review": true,
+            "status": "adapter_ready"
+          }
+        },
+        "aiConfidence": null,
+        "publicationReady": false
+      }
+    }
+  ]
+}
