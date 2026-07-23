@@ -567,6 +567,7 @@
                       </div>
                       <div class="factory-guided-preview-actions">
                         <a id="factory-guided-preview-url" aria-disabled="true">Preview nog niet beschikbaar</a>
+                        <button class="button primary" id="factory-preview-process-manual-zip" type="button" disabled hidden>ZIP verwerken</button>
                         <button id="factory-preview-editor-toggle" type="button" aria-pressed="false">Bewerken</button>
                         <button type="button" data-factory-proxy="demo-journey-preview-refresh">Vernieuwen</button>
                         <details class="factory-preview-actions-menu" id="factory-preview-actions-menu">
@@ -25151,7 +25152,6 @@
           }
           if (render) {
             renderPreviewStage();
-            window.WebsiteFactoryRuntime?.renderGuidedVersionMeta?.();
           }
         }
 
@@ -25281,7 +25281,9 @@
               await previewLoaded;
               setMessage(elements.message, "ZIP succesvol verwerkt — je bekijkt nu de Geüploade ZIP. De actieve klantpreview is niet gewijzigd.", "success");
             } catch (error) {
-              setMessage(elements.message, error.message || "ZIP kon niet worden verwerkt.", "error");
+              const errorCode = error?.code && error.code !== "REQUEST_FAILED" ? `Code: ${error.code}.` : "";
+              const requestId = error?.requestId ? `Request-id: ${error.requestId}.` : "";
+              setMessage(elements.message, [error.message || "ZIP kon niet worden verwerkt.", errorCode, requestId].filter(Boolean).join(" "), "error");
             } finally {
               if (!processed) selectManualZipFile(file);
               setManualZipBusy(false);
@@ -25841,12 +25843,12 @@
           const viewSelector = document.getElementById("factory-preview-view-selector");
           const activeSourceType = source === "manual" ? "manual_zip" : "factory_build";
           if (viewSelector) {
-            viewSelector.hidden = availableSources.size === 0;
+            viewSelector.hidden = availableSources.size === 0 && !pendingManualZipFile;
             viewSelector.dataset.activeSource = activeSourceType;
           }
           document.querySelectorAll("[data-view-preview-source]").forEach((button) => {
             const sourceType = button.dataset.viewPreviewSource;
-            const available = availableSources.has(sourceType);
+            const available = availableSources.has(sourceType) || (sourceType === "manual_zip" && Boolean(pendingManualZipFile));
             const active = sourceType === activeSourceType;
             button.hidden = false;
             button.disabled = !available;
@@ -26443,6 +26445,12 @@
           document.getElementById("factory-preview-view-selector")?.addEventListener("click", (event) => {
             const button = event.target.closest("[data-view-preview-source]");
             if (!button) return;
+            if (button.dataset.viewPreviewSource === "manual_zip" && pendingManualZipFile) {
+              previewSource = "manual";
+              renderPreviewStage();
+              setMessage(elements.message, "Handmatige ZIP geselecteerd. Klik op ZIP verwerken om de preview te bouwen.", "info");
+              return;
+            }
             const version = previewSourceApi()?.latestForSource(buildHistory.previewVersions || [], button.dataset.viewPreviewSource);
             if (!version || !viewPreviewVersion(version.id)) return;
             setMessage(elements.message, `Je bekijkt nu ${version.sourceLabel}. De actieve klantpreview is niet gewijzigd.`, "success");
@@ -26918,14 +26926,17 @@
         }
 
         function syncGuidedZipProcess() {
-          const guided = document.getElementById("factory-process-manual-zip");
           const original = document.getElementById("demo-journey-process-manual-zip");
-          if (!guided || !original) return;
-          guided.disabled = original.disabled;
-          guided.hidden = original.disabled && original.getAttribute("aria-busy") !== "true";
-          guided.textContent = original.textContent || "ZIP verwerken";
-          guided.setAttribute("aria-busy", original.getAttribute("aria-busy") || "false");
-          guided.title = original.disabled ? "Kies eerst een website-ZIP" : "Maak van de gekozen ZIP een actieve preview";
+          if (!original) return;
+          ["factory-process-manual-zip", "factory-preview-process-manual-zip"].forEach((id) => {
+            const guided = document.getElementById(id);
+            if (!guided) return;
+            guided.disabled = original.disabled;
+            guided.hidden = original.disabled && original.getAttribute("aria-busy") !== "true";
+            guided.textContent = original.textContent || "ZIP verwerken";
+            guided.setAttribute("aria-busy", original.getAttribute("aria-busy") || "false");
+            guided.title = original.disabled ? "Kies eerst een website-ZIP" : "Verwerk de gekozen ZIP tot een previewversie";
+          });
         }
 
         function syncGuidedFactory() {
@@ -27084,7 +27095,9 @@
           document.getElementById("factory-preview-share-whatsapp")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.shareSelectedPreviewViaWhatsApp?.());
           document.getElementById("factory-preview-publish-customer")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.publishCustomerPreview?.());
           document.getElementById("factory-preview-use-customer")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.activateSelectedManualPreview?.());
-          document.getElementById("factory-process-manual-zip")?.addEventListener("click", () => proxyClick("demo-journey-process-manual-zip"));
+          ["factory-process-manual-zip", "factory-preview-process-manual-zip"].forEach((id) => {
+            document.getElementById(id)?.addEventListener("click", () => proxyClick("demo-journey-process-manual-zip"));
+          });
           document.querySelectorAll("[data-factory-proxy]").forEach((button) => button.addEventListener("click", () => proxyClick(button.dataset.factoryProxy)));
           document.getElementById("factory-quick-generate")?.addEventListener("click", runQuickBuild);
           document.getElementById("factory-quick-retry")?.addEventListener("click", runQuickBuild);
