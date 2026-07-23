@@ -544,7 +544,7 @@
                     <button type="button" data-factory-proxy="demo-journey-preview-refresh">Technische preview vernieuwen</button>
                     <button type="button" data-factory-action="version">Factory-versie kiezen</button>
                     <button type="button" data-factory-source-choice="manual">Handmatige ZIP gebruiken</button>
-                    <button type="button" data-factory-proxy="demo-journey-upload-manual-zip">ZIP uploaden</button>
+                    <button type="button" data-factory-proxy="demo-journey-upload-manual-zip">ZIP kiezen</button>
                     <button type="button" data-factory-proxy="demo-journey-regenerate">Build opnieuw starten</button>
                     <button type="button" data-factory-action="versions">Previewversies beheren</button>
                   </div>
@@ -572,7 +572,7 @@
                 <div class="factory-guided-control-group">
                   <strong>Factory opties</strong>
                   <button type="button" data-factory-action="version">Factory-versie kiezen</button>
-                  <button type="button" data-factory-proxy="demo-journey-upload-manual-zip">ZIP uploaden</button>
+                  <button type="button" data-factory-proxy="demo-journey-upload-manual-zip">ZIP kiezen</button>
                   <button type="button" data-factory-source-choice="manual">Handmatige ZIP gebruiken</button>
                 </div>
               </aside>
@@ -770,7 +770,7 @@
                   <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
                   <button type="button" id="demo-journey-regenerate-preview">Opnieuw genereren</button>
                   <button type="button" id="demo-journey-save-demo-site">Demo-site opslaan</button>
-                  <button type="button" id="demo-journey-upload-manual-zip">ZIP uploaden</button>
+                  <button type="button" id="demo-journey-upload-manual-zip">ZIP kiezen</button>
                   <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" hidden />
                 </div>
                 <div class="factory-preview-source-switch" aria-label="Definitieve previewbron">
@@ -21241,6 +21241,7 @@
         let intakeActiveQuestionKey = "";
         let previewSource = "factory";
         let manualPreview = null;
+        let selectedZipFile = null;
         let customerPreviewPublication = null;
         let leadSelectionVersion = 0;
         let manualLeadSelectionActive = false;
@@ -23139,6 +23140,10 @@
           return manualPreview || pack.manualPreview || pack.manual_preview || null;
         }
 
+        function manualPreviewSourceAvailable() {
+          return Boolean(selectedZipFile || manualPreviewMeta()?.files?.length);
+        }
+
         function activePreviewSource(sourceJourney = journey) {
           const savedDemo = savedDemoSiteMeta(sourceJourney) || {};
           const source = String(previewSource || savedDemo.previewSource || sourceJourney?.previewPackage?.activePreviewSource || "").toLowerCase();
@@ -23146,7 +23151,10 @@
         }
 
         function factoryPreviewUrl() {
-          if (activePreviewSource() === "manual" && manualPreview?.localPreviewUrl) return manualPreview.localPreviewUrl;
+          if (activePreviewSource() === "manual") {
+            if (selectedZipFile) return "";
+            return manualPreview?.localPreviewUrl || "";
+          }
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
           const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
           return absolutePreviewUrl(journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "");
@@ -23486,6 +23494,16 @@
           return leads.find((lead) => lead.id === elements.lead?.value) || null;
         }
 
+        function activeFactoryCustomerId() {
+          const lead = selectedLead();
+          return factoryCustomerContext?.customer?.id
+            || journey?.customerId
+            || journey?.customer_id
+            || lead?.customerId
+            || lead?.customer_id
+            || "";
+        }
+
         function clearFactoryRuntimeState() {
           journey = null;
           events = [];
@@ -23494,6 +23512,7 @@
           projectWorkspace = null;
           websiteIntelligencePackage = null;
           manualPreview = null;
+          selectedZipFile = null;
           previewSource = "factory";
           lastFactoryResponse = null;
         }
@@ -23884,6 +23903,7 @@
             intakeAssets = [];
             websiteIntelligencePackage = null;
             manualPreview = null;
+            selectedZipFile = null;
             previewSource = "factory";
             lastFactoryResponse = null;
             buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
@@ -24043,14 +24063,28 @@
           });
         }
 
-        async function uploadManualZipFile(file) {
+        function selectManualZipFile(file) {
+          if (!file) return;
+          if (!/\.zip$/i.test(file.name || "")) {
+            selectedZipFile = null;
+            setMessage(elements.message, "Kies een .zip bestand.", "warning");
+            renderPreviewStage();
+            return;
+          }
+          selectedZipFile = file;
+          previewSource = "manual";
+          renderPreviewStage();
+          setMessage(elements.message, `${file.name} is geselecteerd. Klik op ZIP verwerken om de preview te bouwen.`, "success");
+        }
+
+        async function uploadManualZipFile(file = selectedZipFile) {
           if (!file) return;
           if (!/\.zip$/i.test(file.name || "")) {
             setMessage(elements.message, "Kies een .zip bestand.", "warning");
             return;
           }
-          const customer = factoryCustomerContext?.customer || null;
-          if (!customer?.id) {
+          const customerId = activeFactoryCustomerId();
+          if (!customerId) {
             setMessage(elements.message, "Selecteer eerst een geldige klant.", "warning");
             return;
           }
@@ -24064,7 +24098,7 @@
               setMessage(elements.message, "2/5 Controleren · 3/5 Uitpakken · 4/5 Preview bouwen...", "info");
               const zipBase64 = uint8ToBase64(new Uint8Array(await file.arrayBuffer()));
               const data = await apiRequest(manualPreviewEndpoint, "POST", {
-                customerId: customer.id,
+                customerId,
                 websiteId: factoryCustomerContext?.website?.id || "",
                 projectId: factoryCustomerContext?.project?.id || "",
                 demoJourneyId: journey?.id || "",
@@ -24075,6 +24109,7 @@
               const previewPackage = data.previewPackage || { files: parsed.files, entryFile: parsed.entryPath };
               const localPreviewUrl = manualPackageDataUrl(previewPackage);
               manualPreview = { fileName: file.name, files: previewPackage.files || parsed.files, entryPath: previewPackage.entryFile || parsed.entryPath, localPreviewUrl, previewVersionId: version.id };
+              selectedZipFile = null;
               previewSource = "manual";
               const normalizedVersion = { ...version, generatedPackage: previewPackage, previewUrl: localPreviewUrl, isActive: true };
               buildHistory = {
@@ -24623,7 +24658,8 @@
 
         function renderPreviewStage() {
           const source = activePreviewSource();
-          const hasManual = Boolean(manualPreviewMeta()?.files?.length);
+          const hasManual = manualPreviewSourceAvailable();
+          const hasSelectedZip = Boolean(selectedZipFile);
           const previewUrl = activePreviewUrl();
           const ready = Boolean(previewUrl);
           const saved = isDemoSiteSaved();
@@ -24636,9 +24672,15 @@
             button.title = isManualButton && !hasManual ? "Upload eerst een ZIP-bestand" : "";
           });
           if (elements.uploadManualZip) {
-            const canUploadZip = Boolean(factoryCustomerContext?.customer?.id);
-            elements.uploadManualZip.disabled = !canUploadZip;
-            elements.uploadManualZip.title = canUploadZip ? "Upload een handmatige website-ZIP" : "Selecteer eerst een klant";
+            const hasCustomer = Boolean(activeFactoryCustomerId());
+            elements.uploadManualZip.disabled = false;
+            elements.uploadManualZip.textContent = hasSelectedZip ? "ZIP verwerken" : "ZIP kiezen";
+            elements.uploadManualZip.title = hasSelectedZip
+              ? hasCustomer ? `Verwerk ${selectedZipFile.name}` : "Kies eerst een klant via de zoekbalk om deze ZIP te verwerken"
+              : "Kies een handmatige website-ZIP";
+            document.querySelectorAll('[data-factory-proxy="demo-journey-upload-manual-zip"]').forEach((button) => {
+              button.textContent = hasSelectedZip ? "ZIP verwerken" : "ZIP kiezen";
+            });
           }
           if (elements.regenerateDemo) {
             const canRegenerate = Boolean(journey?.id || elements.briefing?.value || ready);
@@ -24656,8 +24698,10 @@
           }
           if (elements.previewStageState) {
             const sourceLabel = source === "manual" ? "Handmatige ZIP" : "Factory";
-            elements.previewStageState.textContent = saved ? `Opgeslagen: ${sourceLabel}` : ready ? `${sourceLabel} preview` : "Nog geen preview";
-            elements.previewStageState.className = saved || ready ? "status-badge status-active" : "status-badge status-planned";
+            elements.previewStageState.textContent = hasSelectedZip && source === "manual"
+              ? "ZIP klaar om te verwerken"
+              : saved ? `Opgeslagen: ${sourceLabel}` : ready ? `${sourceLabel} preview` : "Nog geen preview";
+            elements.previewStageState.className = saved || ready || hasSelectedZip ? "status-badge status-active" : "status-badge status-planned";
           }
           if (elements.saveDemoSite) {
             elements.saveDemoSite.disabled = !ready || !journey?.id;
@@ -25068,18 +25112,28 @@
           elements.uploadManualZip?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
+            if (selectedZipFile) {
+              if (!activeFactoryCustomerId()) {
+                setMessage(elements.message, "Kies eerst een klant via de zoekbalk bovenaan. Daarna kun je de ZIP verwerken.", "warning");
+                elements.leadCommandSearch?.focus?.({ preventScroll: false });
+                return;
+              }
+              uploadManualZipFile(selectedZipFile);
+              return;
+            }
+            if (elements.manualZipInput) elements.manualZipInput.value = "";
             elements.manualZipInput?.click();
           });
           elements.manualZipInput?.addEventListener("change", (event) => {
-            uploadManualZipFile(event.target.files?.[0] || null);
+            selectManualZipFile(event.target.files?.[0] || null);
           });
           elements.previewSourceControls?.forEach((button) => {
             button.addEventListener("click", (event) => {
               event.preventDefault();
               event.stopPropagation();
               const source = button.dataset.previewSource || "factory";
-              if (source === "manual" && !manualPreviewMeta()?.files?.length) {
-                setMessage(elements.message, "Upload eerst een handmatige ZIP.", "warning");
+              if (source === "manual" && !manualPreviewSourceAvailable()) {
+                setMessage(elements.message, "Kies eerst een handmatige ZIP.", "warning");
                 return;
               }
               previewSource = source;

@@ -60,4 +60,17 @@ test("frontend sends the ZIP to server validation and does not require Demo Site
   assert.doesNotMatch(html, /async function uploadManualZipFile\(file\) \{\s*if \(!journey\?\.id\)/);
   assert.match(html, /ZIP succesvol verwerkt/);
   assert.match(html, /buildHistory = \{[\s\S]*activeVersion: normalizedVersion/);
+  assert.match(html, /function activeFactoryCustomerId\(\)/);
+  assert.match(html, /journey\?\.customerId/);
+  assert.match(html, /elements\.uploadManualZip\.disabled = false/);
+  assert.match(html, /Kies eerst een klant via de zoekbalk bovenaan/);
+  assert.match(html, /let selectedZipFile = null/);
+  assert.match(html, /function selectManualZipFile\(file\)/);
+  assert.match(html, /selectedZipFile = file;\s*previewSource = "manual";/);
+  assert.match(html, /elements\.uploadManualZip\.textContent = hasSelectedZip \? "ZIP verwerken" : "ZIP kiezen"/);
+  assert.match(html, /elements\.manualZipInput\?\.addEventListener\("change", \(event\) => \{\s*selectManualZipFile/);
+  assert.match(html, /if \(selectedZipFile\) \{[\s\S]{0,500}uploadManualZipFile\(selectedZipFile\)/);
+  assert.match(html, /button\.disabled = isManualButton && !hasManual/);
+  assert.match(html, /function manualPreviewSourceAvailable\(\) \{\s*return Boolean\(selectedZipFile \|\| manualPreviewMeta\(\)\?\.files\?\.length\)/);
+  assert.match(html, /if \(selectedZipFile\) return "";/);
 });
