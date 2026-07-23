@@ -19,7 +19,7 @@ function titleForIntent(intent, subject, region) {
     price: `Duidelijkheid over ${subject.toLowerCase()} en kosten`,
     portfolio: `Bekijk wat goed uitgevoerde ${subject.toLowerCase()} oplevert`,
     emotional: `${subject} met aandacht voor wat voor u telt`,
-    proof: `Ervaren specialist in ${subject.toLowerCase()}`
+    proof: `Duidelijkheid over ${subject.toLowerCase()}`
   };
   return titles[intent] || titles.conversion;
 }
@@ -121,7 +121,7 @@ export function resolveWebsiteContentV2(input = {}) {
   const hero = {
     ...base.hero,
     title: titleForIntent(blueprint.block_strategy.hero_intent, subject, region),
-    subtitle: `${companyName} helpt met ${subject.toLowerCase()} in ${region}. ${blueprint.content_strategy.story_angle}`,
+    subtitle: `${companyName} helpt met ${subject.toLowerCase()} in ${region}. Bekijk de mogelijkheden en kies een passende vervolgstap.`,
     primaryCta,
     secondaryCta,
     messagingIntent: blueprint.block_strategy.hero_intent,

@@ -189,6 +189,22 @@ function makeReviews(items, context) {
   }));
 }
 
+function makeProjects(items) {
+  return items.map((project) => ({
+    ...project,
+    disclosure: "Voorbeeldproject — niet publiceren zonder geverifieerde klantbron",
+    placeholder: true,
+    publishable: false,
+    requiresVerifiedReplacement: true,
+    publicationStatus: "blocked_until_verified_project"
+  }));
+}
+
+function isSafeDefaultUsp(usp) {
+  const text = `${usp?.title || ""} ${usp?.description || usp?.text || ""}`;
+  return !/\b(ervaren|bewezen|gecertificeerd|erkend|marktleider|nummer 1)\b/i.test(text);
+}
+
 function outputValidation(output) {
   const errors = [];
   const required = ["metadata", "brand", "hero", "services", "about", "usps", "projects", "reviews", "faq", "contactCta", "seo", "assets", "multichannel", "websiteFactoryInput"];
@@ -198,6 +214,8 @@ function outputValidation(output) {
   if (!Array.isArray(output.services) || !output.services.length) errors.push("services ontbreken");
   if (output.reviews?.publicationPolicy !== "placeholder_only_requires_verified_replacement") errors.push("reviewbeleid ontbreekt");
   if (output.reviews?.items?.some((item) => item.publishable !== false || item.placeholder !== true || item.requiresVerifiedReplacement !== true)) errors.push("onveilige review gevonden");
+  if (output.projects?.some((item) => item.publishable !== false || item.placeholder !== true || item.requiresVerifiedReplacement !== true)) errors.push("onveilig project gevonden");
+  if (output.websiteFactoryInput?.content?.projects?.length) errors.push("projectplaceholder lekt naar Website Factory-input");
   for (const group of ["hero", "services", "about", "gallery", "social"]) if (!(group in (output.assets || {}))) errors.push(`assets.${group} ontbreekt`);
   return { valid: errors.length === 0, errors };
 }
@@ -256,8 +274,8 @@ export function createWebsiteContentAdapterV1({ contentSource = contentFactorySo
     const assets = assetSelector(definition.assets, context, seed, content.branch.name, fallbackFlags);
     const hero = selectOne(content.hero_titles, seed, "hero");
     const services = selectMany(content.service_descriptions, profile.counts.services, seed, "services").map((service) => ({ ...service, name: sentenceCase(service.name) }));
-    const usps = selectMany(content.usps, profile.counts.usps, seed, "usps");
-    const projects = selectMany(content.projects, profile.counts.projects, seed, "projects");
+    const usps = selectMany(content.usps.filter(isSafeDefaultUsp), profile.counts.usps, seed, "usps");
+    const projects = makeProjects(selectMany(content.projects, profile.counts.projects, seed, "projects"));
     const faqs = selectMany(content.faq, profile.counts.faq, seed, "faq");
     const ctas = selectMany(content.cta, 4, seed, "ctas");
     const team = selectMany(content.team_profiles, profile.id === "premium" ? 4 : 2, seed, "team");
@@ -338,6 +356,10 @@ export function createWebsiteContentAdapterV1({ contentSource = contentFactorySo
       },
       usps,
       projects,
+      projectPolicy: {
+        publicationPolicy: "placeholder_only_requires_verified_replacement",
+        safeFallbackText: "Projecten worden zichtbaar zodra de klant geverifieerde projectinformatie heeft aangeleverd."
+      },
       reviews: {
         publicationPolicy: "placeholder_only_requires_verified_replacement",
         safeFallbackText: "Geverifieerde klantreviews worden toegevoegd zodra deze door de klant zijn aangeleverd en gecontroleerd.",
@@ -435,7 +457,9 @@ export function createWebsiteContentAdapterV1({ contentSource = contentFactorySo
             description: `${companyName} is actief als ${content.branch.name.toLowerCase()} voor klanten in ${region}.`
           },
           usps,
-          projects,
+          projects: [],
+          projectPolicy: "verified_projects_only",
+          projectPlaceholderText: "Projecten worden zichtbaar zodra de klant geverifieerde projectinformatie heeft aangeleverd.",
           faq: faqs,
           assets: {
             hero: heroAsset,

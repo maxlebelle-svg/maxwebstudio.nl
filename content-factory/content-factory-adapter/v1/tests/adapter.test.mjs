@@ -80,6 +80,25 @@ test("voorbeeldreviews zijn technisch geblokkeerd voor publicatie", () => {
   assert.equal(output.websiteFactoryInput.texts.reviewPolicy, "verified_reviews_only");
 });
 
+test("voorbeeldprojecten zijn technisch geblokkeerd en bereiken de renderer niet", () => {
+  const output = resolveWebsiteContent({ ...baseInput, vertical: "installateur" });
+  assert.ok(output.projects.length > 0);
+  for (const project of output.projects) {
+    assert.equal(project.placeholder, true);
+    assert.equal(project.publishable, false);
+    assert.equal(project.requiresVerifiedReplacement, true);
+    assert.equal(project.publicationStatus, "blocked_until_verified_project");
+    assert.match(project.disclosure, /Voorbeeldproject/);
+  }
+  assert.deepEqual(output.websiteFactoryInput.content.projects, []);
+  assert.equal(output.websiteFactoryInput.content.projectPolicy, "verified_projects_only");
+});
+
+test("onbewezen bewijsclaims worden niet als standaard-USP gepubliceerd", () => {
+  const output = resolveWebsiteContent({ ...baseInput, vertical: "loodgieter" });
+  assert.doesNotMatch(output.usps.map((usp) => `${usp.title} ${usp.description || ""}`).join(" "), /ervaren|bewezen|gecertificeerd|erkend/i);
+});
+
 test("ontbrekende assets krijgen een veilig, zichtbaar fallbackslot", () => {
   const incompleteSource = {
     ...contentFactorySourceV1,
@@ -126,6 +145,9 @@ test("input- en outputvalidatie rapporteren contractproblemen", () => {
   assert.match(validateAdapterInputV1({ vertical: "loodgieter", extra: true }).errors[0], /onbekend veld/);
   const output = resolveWebsiteContent({ ...baseInput, vertical: "loodgieter" });
   output.reviews.items[0].publishable = true;
+  assert.equal(validateAdapterOutputV1(output).valid, false);
+  output.reviews.items[0].publishable = false;
+  output.projects[0].publishable = true;
   assert.equal(validateAdapterOutputV1(output).valid, false);
 });
 

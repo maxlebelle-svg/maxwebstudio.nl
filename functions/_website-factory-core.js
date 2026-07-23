@@ -244,7 +244,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1, factory
   const internalNotes = cleanText(journey.internalNotes || journey.internal_notes);
   const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
   if (isVmTegelwerkenJourney({ businessName, websiteUrl, briefing: combinedBriefing })) {
-    return buildVmTegelwerkenDemo({ version });
+    return buildVmTegelwerkenDemo({ version, generatedAt: cleanText(normalizedFactoryInput.contentFactory?.generatedAt) });
   }
   const websiteAnalysis = journey.websiteAnalysis && typeof journey.websiteAnalysis === "object" ? journey.websiteAnalysis : null;
   const currentWebsite = normalizeCurrentWebsiteSnapshot(websiteAnalysis?.currentWebsite || journey.currentWebsite || journey.current_website);
@@ -437,7 +437,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1, factory
     { path: "index.html", content: html },
     ...pages.filter((page) => page !== "index.html").map((page) => ({
       path: page,
-      content: renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }),
+      content: renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets, googleReviews, googleMapsUrl }),
     })),
   ];
   const readme = [
@@ -1392,21 +1392,11 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <h3>${escapeHtml(step.title)}</h3>
           <p>${escapeHtml(step.text)}</p>
         </article>`).join("");
-  const reviewCards = googleReviews.length
-    ? googleReviews.slice(0, 2).map((review) => `
+  const reviewCards = googleReviews.slice(0, 2).map((review) => `
         <article class="review-card">
           <strong>"${escapeHtml(review.text)}"</strong>
           <p>${escapeHtml([review.author, review.rating ? `${review.rating}/5` : "", review.relativeTime].filter(Boolean).join(" · "))}</p>
-        </article>`).join("")
-    : `
-        <article class="review-card">
-          <strong>${escapeHtml(demoCopy.reviewOneTitle)}</strong>
-          <p>${escapeHtml(demoCopy.reviewOneText)}</p>
-        </article>
-        <article class="review-card">
-          <strong>${escapeHtml(demoCopy.reviewTwoTitle)}</strong>
-          <p>${escapeHtml(demoCopy.reviewTwoText)}</p>
-        </article>`;
+        </article>`).join("");
   const reviewIntro = googleReviews.length
     ? [
         googleRating ? `${googleRating}/5 op Google` : "Google reviews",
@@ -1416,6 +1406,15 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const reviewSourceLink = googleReviews.length && googleMapsUrl
     ? `<a class="review-source-link" href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener">Bekijk op Google</a>`
     : "";
+  const reviewsSection = googleReviews.length ? `
+      <section class="section-band reviews-section" id="reviews">
+        <div>
+          <span class="eyebrow">${escapeHtml(demoCopy.reviewsEyebrow)}</span>
+          <h2>${escapeHtml(demoCopy.reviewsTitle)}</h2>
+          ${reviewIntro ? `<p>${escapeHtml(reviewIntro)}</p>${reviewSourceLink}` : ""}
+        </div>
+        ${reviewCards}
+      </section>` : "";
   const contactLine = [phone ? `Telefoon: ${phone}` : "", email ? `E-mail: ${email}` : ""].filter(Boolean).join(" | ");
   const websiteLine = websiteUrl ? `Huidige website: ${websiteUrl}` : "Website-informatie kan later worden aangevuld.";
   const statLabel = packageRules.pages.length >= 7 ? "premium pagina's" : packageRules.pages.length >= 4 ? "websitepagina's" : "onepage flow";
@@ -1551,14 +1550,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         </div>
       </section>
 
-      <section class="section-band reviews-section" id="reviews">
-        <div>
-          <span class="eyebrow">${escapeHtml(demoCopy.reviewsEyebrow)}</span>
-          <h2>${escapeHtml(demoCopy.reviewsTitle)}</h2>
-          ${reviewIntro ? `<p>${escapeHtml(reviewIntro)}</p>${reviewSourceLink}` : ""}
-        </div>
-        ${reviewCards}
-      </section>
+${reviewsSection}
       ${premiumSections}
 
       <section class="contact-section section-band" id="contact">
@@ -1590,7 +1582,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
 </html>`;
 }
 
-function renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }) {
+function renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets, googleReviews = [], googleMapsUrl = "" }) {
   const titleMap = {
     "over-ons.html": "Over ons",
     "diensten.html": "Diensten",
@@ -1607,10 +1599,13 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
   const heroAsset = assetPath(siteAssets, "hero", heroImage.src);
   const serviceBody = services.map((service) => `<article class="service-card"><img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)}" loading="lazy" /><h3>${escapeHtml(service)}</h3><p>${escapeHtml(serviceText(service, profile))}</p></article>`).join("");
   const pricingBody = pricingPackages.map((item) => `<article class="pricing-card"><span>${escapeHtml(item.confidence === "manual" ? "Aangeleverd" : "Gevonden op huidige website")}</span><h3>${escapeHtml(item.name)}</h3><strong>${escapeHtml(item.price)}</strong><p>${escapeHtml(item.description)}</p></article>`).join("");
+  const verifiedReviewBody = googleReviews.length
+    ? `${googleReviews.map((review) => `<article class="review-card"><strong>"${escapeHtml(review.text)}"</strong><p>${escapeHtml([review.author, review.rating ? `${review.rating}/5` : "", review.relativeTime].filter(Boolean).join(" · "))}</p></article>`).join("")}${googleMapsUrl ? `<article class="service-card"><h3>Geverifieerde bron</h3><p><a class="review-source-link" href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener">Bekijk deze reviews op Google</a></p></article>` : ""}`
+    : `<article class="service-card"><h3>Reviews nog niet gekoppeld</h3><p>Geverifieerde reviews worden hier zichtbaar zodra een goedgekeurde bron is gekoppeld.</p></article>`;
   const body = page === "diensten.html"
     ? `${serviceBody}${pricingBody}`
     : page === "reviews.html"
-      ? benefits.map((benefit) => `<article class="review-card"><strong>${escapeHtml(benefit.title)}</strong><p>${escapeHtml(benefit.text)}</p></article>`).join("")
+      ? verifiedReviewBody
       : page === "projecten.html"
         ? processSteps.map((step) => `<article class="service-card"><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p></article>`).join("")
         : `<article class="service-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(businessName)} ${escapeHtml(demoCopy.subPageText)}</p></article>`;

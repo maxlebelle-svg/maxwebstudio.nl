@@ -29,9 +29,17 @@ test("Adapter v2 levert een gespecialiseerde Website Factory-input uit het v2-bl
   assert.equal(output.services[0].name, "Thuisbatterijen");
   assert.match(output.hero.title, /thuisbatterijen/i);
   assert.match(output.hero.subtitle, /Utrecht/);
+  assert.doesNotMatch(`${output.hero.title} ${output.hero.subtitle}`, /ervaren specialist|jarenlange ervaring/i);
   assert.ok(output.seo.keywords.some((keyword) => /thuisbatterij/i.test(keyword)));
   assert.equal(output.websiteFactoryInput.content.designSystem.colors.surface, "#101317");
   assert.equal(output.websiteFactoryInput.contentFactory.contractVersion, CONTENT_FACTORY_ADAPTER_V2_CONTRACT);
+});
+
+test("Adapter v2 erft de fail-closed project- en reviewregels", () => {
+  const output = resolveWebsiteContentV2(input);
+  assert.ok(output.projects.every((project) => project.publishable === false && project.publicationStatus === "blocked_until_verified_project"));
+  assert.deepEqual(output.websiteFactoryInput.content.projects, []);
+  assert.deepEqual(output.websiteFactoryInput.texts.reviews, []);
 });
 
 test("Adapter v2 maakt fotografieprompts voor de concrete combinatie", () => {

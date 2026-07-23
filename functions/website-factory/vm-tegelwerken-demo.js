@@ -68,8 +68,8 @@ function isVmTegelwerkenJourney(input = {}) {
   return /vmtegelwerken|vm tegelwerken|van meetelen tegelwerken|vanmeetelen/.test(text);
 }
 
-function buildVmTegelwerkenDemo({ version = 1 } = {}) {
-  const generatedAt = new Date().toISOString();
+function buildVmTegelwerkenDemo({ version = 1, generatedAt: requestedGeneratedAt = "" } = {}) {
+  const generatedAt = String(requestedGeneratedAt || "").trim() || new Date().toISOString();
   const pages = [
     "index.html",
     "diensten.html",

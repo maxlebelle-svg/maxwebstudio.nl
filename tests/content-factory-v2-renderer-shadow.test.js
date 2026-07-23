@@ -102,6 +102,30 @@ test("legacy en v1 zonder v2-designsysteem behouden de bestaande renderer-CSS", 
   assert.doesNotMatch(css, /--cf-radius:/);
 });
 
+test("renderer laat testimonialsecties weg zonder geverifieerde reviewbron", () => {
+  const generated = buildWebsitePackage({ journey, briefing, packageType: "premium", version: 4 });
+  const home = generated.files.find((file) => file.path === "index.html").content;
+  const reviewsPage = generated.files.find((file) => file.path === "reviews.html").content;
+  assert.doesNotMatch(home, /class="[^"]*review-card/i);
+  assert.match(reviewsPage, /Reviews nog niet gekoppeld/);
+  assert.doesNotMatch(reviewsPage, /class="[^"]*review-card/i);
+});
+
+test("renderer toont uitsluitend aangeleverde Google-reviews met bronverwijzing", () => {
+  const verifiedJourney = {
+    ...journey,
+    googleReviews: [{ author: "A. de Vries", text: "Duidelijke uitleg en prettig contact tijdens het hele traject.", rating: 5 }],
+    googleMapsUrl: "https://maps.google.test/energie-vooruit"
+  };
+  const generated = buildWebsitePackage({ journey: verifiedJourney, briefing, packageType: "premium", version: 4 });
+  const home = generated.files.find((file) => file.path === "index.html").content;
+  const reviewsPage = generated.files.find((file) => file.path === "reviews.html").content;
+  assert.match(home, /Duidelijke uitleg en prettig contact/);
+  assert.match(home, /Bekijk op Google/);
+  assert.match(reviewsPage, /Duidelijke uitleg en prettig contact/);
+  assert.match(reviewsPage, /Bekijk deze reviews op Google/);
+});
+
 test("v2 resolverfout valt vóór rendering terug op de voorbereide v1-input", async () => {
   const prepared = await bridge.prepareWebsiteFactoryRenderRequest({
     journey, briefing, packageType: "premium", version: 4,
