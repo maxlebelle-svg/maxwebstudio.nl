@@ -77,3 +77,7 @@ Belangrijk:
 - `submit-onboarding.js` stuurt de volledige samenvatting naar Max Webstudio en naar de klant zodra e-mail actief is.
 - Klanten kunnen optioneel foto's uploaden in de wizard. Foto's worden client-side verkleind en als bijlage meegestuurd naar de adminmail.
 - Later uitbreidbaar met klantportaal en aparte betalingen voor extra opties.
+
+## Engineering & Quality
+
+Wijzigingen aan de Content Library, adapters, renderer en publicatiekanalen vallen onder de normatieve [Max Webstudio Engineering & Quality Principles](docs/MAX_WEBSTUDIO_ENGINEERING_QUALITY_PRINCIPLES.md), inclusief de Gold Set, Customer Success Gate en No Hallucination Gate.
