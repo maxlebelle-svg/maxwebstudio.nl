@@ -422,6 +422,33 @@ export function createWebsiteContentAdapterV1({ contentSource = contentFactorySo
           title: `${companyName} | ${content.branch.name} in ${region}`,
           description: `${companyName} helpt klanten in ${region} met ${primaryService.toLowerCase()}.`
         },
+        content: {
+          hero: {
+            title: hero.title,
+            subtitle: hero.subtitle,
+            eyebrow: hero.eyebrow,
+            primaryCta: hero.primary_cta,
+            secondaryCta: hero.secondary_cta
+          },
+          about: {
+            title: `Over ${companyName}`,
+            description: `${companyName} is actief als ${content.branch.name.toLowerCase()} voor klanten in ${region}.`
+          },
+          usps,
+          projects,
+          faq: faqs,
+          assets: {
+            hero: heroAsset,
+            services: serviceAssets,
+            about: aboutAssets,
+            gallery: galleryAssets,
+            social: socialAssets
+          },
+          multichannel: {
+            socialTopics,
+            blogTopics
+          }
+        },
         contentFactory: metadata
       }
     };

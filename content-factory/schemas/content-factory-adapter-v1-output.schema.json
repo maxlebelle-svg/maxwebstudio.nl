@@ -39,6 +39,6 @@
     "seo": { "type": "object", "required": ["title", "description", "keywords", "local"] },
     "assets": { "type": "object", "required": ["hero", "services", "about", "gallery", "social"] },
     "multichannel": { "type": "object", "required": ["socialTopics", "blogTopics", "newsletter", "googleBusinessProfile"] },
-    "websiteFactoryInput": { "type": "object", "required": ["businessName", "packageType", "template", "services", "ctas", "branding", "texts", "seo"] }
+    "websiteFactoryInput": { "type": "object", "required": ["businessName", "packageType", "template", "services", "ctas", "branding", "texts", "seo", "content", "contentFactory"] }
   }
 }

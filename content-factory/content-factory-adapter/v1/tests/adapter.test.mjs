@@ -33,6 +33,8 @@ for (const vertical of ["loodgieter", "schilder", "holistisch", "restaurant", "a
     assert.equal(output.metadata.verticalFallbackUsed, false);
     assert.equal(output.websiteFactoryInput.businessName, baseInput.companyName);
     assert.equal(output.websiteFactoryInput.packageType, "premium");
+    assert.equal(output.websiteFactoryInput.content.hero.title, output.hero.title);
+    assert.deepEqual(output.websiteFactoryInput.content.faq, output.faq);
     assert.equal(output.services.length, 6);
     assert.equal(output.assets.services.length, 6);
     assert.equal(output.assets.gallery.length, 10);
