@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "locale": "nl-NL",
+  "minimums": {
+    "hero_variants": 20,
+    "seo_keywords": 100,
+    "faq": 100,
+    "reviews": 50,
+    "social_post_ideas": 100,
+    "blog_topics": 50,
+    "calls_to_action": 30,
+    "usps": 30,
+    "project_descriptions": 30,
+    "team_profiles": 30,
+    "services": 12,
+    "gallery_descriptions": 30,
+    "asset_slots": 51,
+    "image_prompts": 51
+  },
+  "asset_directories": [
+    "hero",
+    "backgrounds",
+    "team",
+    "atmosphere",
+    "gallery",
+    "services",
+    "projects",
+    "reviews",
+    "about",
+    "cta",
+    "icons",
+    "brand",
+    "illustrations",
+    "social",
+    "logos",
+    "video"
+  ],
+  "channels": [
+    "homepage",
+    "services",
+    "about",
+    "contact",
+    "faq",
+    "blogs",
+    "seo",
+    "social_media",
+    "newsletter",
+    "google_business_profile"
+  ]
+}

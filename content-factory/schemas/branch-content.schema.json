@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxwebstudio.nl/schemas/content-factory/branch-content.schema.json",
+  "title": "Max Webstudio Content Factory branch content",
+  "type": "object",
+  "required": [
+    "schema_version", "content_version", "locale", "branch", "brand", "hero_titles", "hero_subtitles",
+    "service_names", "service_descriptions", "review_examples", "faq", "cta", "usps", "projects",
+    "team_profiles", "gallery_descriptions", "social_post_topics", "blog_topics", "placeholders"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "content_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "locale": { "const": "nl-NL" },
+    "branch": {
+      "type": "object",
+      "required": ["slug", "name", "description", "category", "tone_of_voice", "audience", "keywords", "seo_keywords"],
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "name": { "type": "string", "minLength": 2 },
+        "description": { "type": "string", "minLength": 20 },
+        "category": { "type": "string" },
+        "tone_of_voice": { "type": "string" },
+        "audience": { "type": "string" },
+        "keywords": { "type": "array", "minItems": 4, "uniqueItems": true, "items": { "type": "string" } },
+        "seo_keywords": { "type": "array", "minItems": 100, "items": { "$ref": "#/$defs/identified" } }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "required": ["colors", "fonts", "icons", "illustrations", "logo_placeholders", "video_placeholders"]
+    },
+    "hero_titles": { "type": "array", "minItems": 20, "items": { "$ref": "#/$defs/identified" } },
+    "hero_subtitles": { "type": "array", "minItems": 20, "items": { "$ref": "#/$defs/identified" } },
+    "service_names": { "type": "array", "minItems": 12, "items": { "$ref": "#/$defs/identified" } },
+    "service_descriptions": { "type": "array", "minItems": 12, "items": { "$ref": "#/$defs/identified" } },
+    "review_examples": { "type": "array", "minItems": 50, "items": { "$ref": "#/$defs/identified" } },
+    "faq": { "type": "array", "minItems": 100, "items": { "$ref": "#/$defs/identified" } },
+    "cta": { "type": "array", "minItems": 30, "items": { "$ref": "#/$defs/identified" } },
+    "usps": { "type": "array", "minItems": 30, "items": { "$ref": "#/$defs/identified" } },
+    "projects": { "type": "array", "minItems": 30, "items": { "$ref": "#/$defs/identified" } },
+    "team_profiles": { "type": "array", "minItems": 30, "items": { "$ref": "#/$defs/identified" } },
+    "gallery_descriptions": { "type": "array", "minItems": 30, "items": { "$ref": "#/$defs/identified" } },
+    "social_post_topics": { "type": "array", "minItems": 100, "items": { "$ref": "#/$defs/identified" } },
+    "blog_topics": { "type": "array", "minItems": 50, "items": { "$ref": "#/$defs/identified" } },
+    "placeholders": { "type": "object", "required": ["required", "optional"] }
+  },
+  "$defs": {
+    "identified": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "type": "string", "minLength": 3 } }
+    }
+  }
+}
