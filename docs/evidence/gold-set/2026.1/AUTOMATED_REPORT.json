@@ -1,0 +1,2012 @@
+{
+  "report_version": "1.0.0",
+  "gold_set_version": "2026.1",
+  "manifest_sha256": "c1843f70245194cb5a2b67981e72700be057b78ad4e80456cddbf4f7bed6452d",
+  "case_count": 24,
+  "status": "STOPPED_GOLD_SET_CERTIFICATION",
+  "certified": false,
+  "protocol": {
+    "blinded": true,
+    "reviewer_visible_labels": [
+      "Website A",
+      "Website B"
+    ],
+    "hidden_until_submission": [
+      "adapter_version",
+      "seed",
+      "branch",
+      "style",
+      "commit",
+      "date"
+    ],
+    "no_average_compensation": true,
+    "per_case_rule": "V2 must be equal or better than V1 for every case",
+    "mapping_commitment": "936cc9e29adb3709f53c71b0d9a9febcb6f90586d3ba6ba1ce9ecef99e076160",
+    "private_reveal_path": ".gold-set-private/2026.1/reveal.json"
+  },
+  "gates": {
+    "frozen_manifest": true,
+    "automated_gold_set": false,
+    "no_hallucination": false,
+    "blind_human_assessment": false,
+    "customer_success": false
+  },
+  "blockers": [
+    "automated_gold_set_gate_failed",
+    "no_hallucination_gate_failed",
+    "blind_human_assessments_pending",
+    "customer_success_gate_pending_or_failed"
+  ],
+  "truth_blocker_counts": {
+    "unverified_generated_projects": 24,
+    "unverified_rendered_testimonials": 23,
+    "unverified_experience": 5
+  },
+  "human_assessment": {
+    "ready": false,
+    "reviewer_count": 0,
+    "minimum_reviewers": 2,
+    "no_regression_passed": false,
+    "customer_success_passed": false,
+    "cases": []
+  },
+  "cases": [
+    {
+      "case_number": 1,
+      "case_id": "GS-2026.1-01",
+      "expected_dimensions": {
+        "vertical": "installateur",
+        "specialization": "thuisbatterijen",
+        "style": "premium-editorial",
+        "brand_personality": "innovatief",
+        "theme": "dark",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "installateur:thuisbatterijen:premium-editorial:innovatief:dark:leadgeneratie:nl-NL:utrecht:website",
+      "seed": {
+        "frozen_input": 101,
+        "v1_resolved": 1748227631,
+        "v2_resolved": 1748227631
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials",
+              "unverified_experience"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": [
+              "unverified_experience"
+            ]
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "e38af1140c4f1ad878ce777d7ed953d3347d21f7fc7e79765badaf4506d92b2d",
+        "v2": "f915d75219c8f1a6c15f9bfd686506874be4d42a108e85c634adfea876fbac9b"
+      }
+    },
+    {
+      "case_number": 2,
+      "case_id": "GS-2026.1-02",
+      "expected_dimensions": {
+        "vertical": "loodgieter",
+        "specialization": "sanitair",
+        "style": "modern-scherp",
+        "brand_personality": "lokaal",
+        "theme": "light",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "loodgieter:sanitair:modern-scherp:lokaal:light:leadgeneratie:nl-NL:almere:website",
+      "seed": {
+        "frozen_input": 102,
+        "v1_resolved": 1765005250,
+        "v2_resolved": 1765005250
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "e5fdf3227ecc0701532f654991d6b0144e43f77315c55d6b01e99f1cd794e3d9",
+        "v2": "133f8edbfae693308bf8b210167d58e7dfcf12bf4987ffb5ab518faf60bb292a"
+      }
+    },
+    {
+      "case_number": 3,
+      "case_id": "GS-2026.1-03",
+      "expected_dimensions": {
+        "vertical": "kapper",
+        "specialization": "kleuren",
+        "style": "premium-editorial",
+        "brand_personality": "persoonlijk",
+        "theme": "light",
+        "goal": "afspraken"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "kapper:kleuren:premium-editorial:persoonlijk:light:afspraken:nl-NL:almere:website",
+      "seed": {
+        "frozen_input": 103,
+        "v1_resolved": 1781782869,
+        "v2_resolved": 1781782869
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "9868e86b2d23fab7712f9c1a483d71af470c5c5e776a0d1d606be2f826865427",
+        "v2": "6cf2c8eb6a1206b608a8b9bd16165ac6e886d69d302cb09764a2a905b7801f3b"
+      }
+    },
+    {
+      "case_number": 4,
+      "case_id": "GS-2026.1-04",
+      "expected_dimensions": {
+        "vertical": "holistisch",
+        "specialization": "coaching",
+        "style": "warm-persoonlijk",
+        "brand_personality": "persoonlijk",
+        "theme": "light",
+        "goal": "afspraken"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "holistisch:coaching:warm-persoonlijk:persoonlijk:light:afspraken:nl-NL:almere:website",
+      "seed": {
+        "frozen_input": 104,
+        "v1_resolved": 1664339536,
+        "v2_resolved": 1664339536
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "f7ea8e2b89f5e962952558139c8b72b44b121113fcd31bef63837390c08077c3",
+        "v2": "365fddf6038c6048f391d58049479d57a1aaef18ecc634712b0eb7d47f66f4d1"
+      }
+    },
+    {
+      "case_number": 5,
+      "case_id": "GS-2026.1-05",
+      "expected_dimensions": {
+        "vertical": "holistisch",
+        "specialization": "energetisch",
+        "style": "natuurlijk-duurzaam",
+        "brand_personality": "persoonlijk",
+        "theme": "light",
+        "goal": "autoriteit"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "holistisch:energetisch:natuurlijk-duurzaam:persoonlijk:light:autoriteit:nl-NL:almere:website",
+      "seed": {
+        "frozen_input": 105,
+        "v1_resolved": 1681117155,
+        "v2_resolved": 1681117155
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct"
+        ]
+      },
+      "render_signatures": {
+        "v1": "d93accea863b243cc96efb123d08fad4808564cf8e283806e11b4ae87fe4d9cb",
+        "v2": "00252ced9c33dc913f9cbe4bb8a3fca38ca9ea8f587f81ee53a623c5c41c0fa3"
+      }
+    },
+    {
+      "case_number": 6,
+      "case_id": "GS-2026.1-06",
+      "expected_dimensions": {
+        "vertical": "ict",
+        "specialization": null,
+        "style": "modern-scherp",
+        "brand_personality": "corporate",
+        "theme": "dark",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "ict:general:modern-scherp:corporate:dark:leadgeneratie:nl-NL:friesland:website",
+      "seed": {
+        "frozen_input": 106,
+        "v1_resolved": 1697894774,
+        "v2_resolved": 1697894774
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials",
+              "unverified_experience"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": [
+              "unverified_experience"
+            ]
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": []
+      },
+      "render_signatures": {
+        "v1": "f032d9b3f10ed966bb7f557409658ea9b9a6ef83f77ead5d1dbe25656a03480a",
+        "v2": "ae1d99bad435d864e33218df9597ccbad5c9023a651965331535dcb43039e7f7"
+      }
+    },
+    {
+      "case_number": 7,
+      "case_id": "GS-2026.1-07",
+      "expected_dimensions": {
+        "vertical": "festival",
+        "specialization": null,
+        "style": "premium-editorial",
+        "brand_personality": "familiebedrijf",
+        "theme": "light",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "festival:general:premium-editorial:familiebedrijf:light:leadgeneratie:nl-NL:overijssel:website",
+      "seed": {
+        "frozen_input": 107,
+        "v1_resolved": 1714672393,
+        "v2_resolved": 1714672393
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "3d3e0144b919665c5ee13f8cf49a6f0ca345fc57dc4926430e0e5031a429ae00",
+        "v2": "e4c3a7ac3fa4280d32a42ae2f2bc16129b3ac4c7df4cd6ea277fafa430b9557f"
+      }
+    },
+    {
+      "case_number": 8,
+      "case_id": "GS-2026.1-08",
+      "expected_dimensions": {
+        "vertical": "sportvereniging",
+        "specialization": null,
+        "style": "speels-toegankelijk",
+        "brand_personality": "lokaal",
+        "theme": "light",
+        "goal": "afspraken"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "sportvereniging:general:speels-toegankelijk:lokaal:light:afspraken:nl-NL:kampen:website",
+      "seed": {
+        "frozen_input": 108,
+        "v1_resolved": 1865670964,
+        "v2_resolved": 1865670964
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "04397c103cd7bb1f5d7f4b565699c218c0ae2825c3f8d3949410fc14b079bcd2",
+        "v2": "3ee687b424a4507ce02634922d42f156a06980173bd8998e60f9430805d672df"
+      }
+    },
+    {
+      "case_number": 9,
+      "case_id": "GS-2026.1-09",
+      "expected_dimensions": {
+        "vertical": "autobedrijf",
+        "specialization": "occasions",
+        "style": "premium-editorial",
+        "brand_personality": "corporate",
+        "theme": "dark",
+        "goal": "portfolio"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "autobedrijf:occasions:premium-editorial:corporate:dark:portfolio:nl-NL:almere:website",
+      "seed": {
+        "frozen_input": 109,
+        "v1_resolved": 1882448583,
+        "v2_resolved": 1882448583
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "49621fe07adbc133cf12123191a4a600e818330ebbcee0610470acdb301bd23c",
+        "v2": "e88e5d2ca99c84923360c19fdbc0f6c09be212749e59d0059c6978dbbf67c745"
+      }
+    },
+    {
+      "case_number": 10,
+      "case_id": "GS-2026.1-10",
+      "expected_dimensions": {
+        "vertical": "autobedrijf",
+        "specialization": "occasions",
+        "style": "betrouwbaar-vakmanschap",
+        "brand_personality": "familiebedrijf",
+        "theme": "light",
+        "goal": "directe-verkoop"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "autobedrijf:occasions:betrouwbaar-vakmanschap:familiebedrijf:light:directe-verkoop:nl-NL:breukelen:website",
+      "seed": {
+        "frozen_input": 110,
+        "v1_resolved": 1832262821,
+        "v2_resolved": 1832262821
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials",
+              "unverified_experience"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": [
+              "unverified_experience"
+            ]
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "81a9daaa465eecdbfe0eb2eba4a619fa47a0a8d5697da6224e93f194a00bdd6d",
+        "v2": "8823b4484064c1c494836bb1c75fbdbb8f9e51725392dc30841a619ff9d24795"
+      }
+    },
+    {
+      "case_number": 11,
+      "case_id": "GS-2026.1-11",
+      "expected_dimensions": {
+        "vertical": "glazenwasser",
+        "specialization": null,
+        "style": "minimalistisch-licht",
+        "brand_personality": "lokaal",
+        "theme": "light",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "glazenwasser:general:minimalistisch-licht:lokaal:light:leadgeneratie:nl-NL:almere:website",
+      "seed": {
+        "frozen_input": 111,
+        "v1_resolved": 1815485202,
+        "v2_resolved": 1815485202
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": []
+      },
+      "render_signatures": {
+        "v1": "079747fc14c05f3627e7f9048220cd23de2225ce12813ab732dd64665e45ce03",
+        "v2": "d6072639dd1a8464a3d60f09dd218428f4544824cb36c250e07551e70cb037cf"
+      }
+    },
+    {
+      "case_number": 12,
+      "case_id": "GS-2026.1-12",
+      "expected_dimensions": {
+        "vertical": "tegelzetter",
+        "specialization": null,
+        "style": "betrouwbaar-vakmanschap",
+        "brand_personality": "traditioneel",
+        "theme": "light",
+        "goal": "portfolio"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "tegelzetter:general:betrouwbaar-vakmanschap:traditioneel:light:portfolio:nl-NL:almere:website",
+      "seed": {
+        "frozen_input": 112,
+        "v1_resolved": 1798707583,
+        "v2_resolved": 1798707583
+      },
+      "deterministic": {
+        "v1": false,
+        "v2": false
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": false,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": false,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": []
+      },
+      "render_signatures": {
+        "v1": "d47ac050ce5c9b5c985d203f10403dd36c8280dd2d53d2a39286af5c0bf9f40b",
+        "v2": "efbca9acf061ebc9f01571afb38664e0f6217731ef570de293ebe6cb30e482d8"
+      }
+    },
+    {
+      "case_number": 13,
+      "case_id": "GS-2026.1-13",
+      "expected_dimensions": {
+        "vertical": "dakdekker",
+        "specialization": "platte-daken",
+        "style": "krachtig-conversie",
+        "brand_personality": "lokaal",
+        "theme": "dark",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "dakdekker:platte-daken:krachtig-conversie:lokaal:dark:leadgeneratie:nl-NL:groningen:website",
+      "seed": {
+        "frozen_input": 113,
+        "v1_resolved": 1781929964,
+        "v2_resolved": 1781929964
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials",
+              "unverified_experience"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": [
+              "unverified_experience"
+            ]
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "9b693fc7b8fb83b9a2790cd11e7c253274511c0550a94a2e899802362a4266f2",
+        "v2": "52f0e63b4876e9b40b473c2058de70499aa8cd15140d139c550d08f3377707c0"
+      }
+    },
+    {
+      "case_number": 14,
+      "case_id": "GS-2026.1-14",
+      "expected_dimensions": {
+        "vertical": "advocaat",
+        "specialization": null,
+        "style": "premium-editorial",
+        "brand_personality": "corporate",
+        "theme": "light",
+        "goal": "autoriteit"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "advocaat:general:premium-editorial:corporate:light:autoriteit:nl-NL:utrecht:website",
+      "seed": {
+        "frozen_input": 114,
+        "v1_resolved": 1765152345,
+        "v2_resolved": 1765152345
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "63bb7d3de09b8f66fc8c4d9c84ea7f2d89e8fd42e781023a3c2443819590a7e1",
+        "v2": "de5e7dbf5b5f149baf85fa56aaff34680af67090d0064a860adb1c11b96994d2"
+      }
+    },
+    {
+      "case_number": 15,
+      "case_id": "GS-2026.1-15",
+      "expected_dimensions": {
+        "vertical": "accountant",
+        "specialization": null,
+        "style": "betrouwbaar-vakmanschap",
+        "brand_personality": "corporate",
+        "theme": "light",
+        "goal": "autoriteit"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "accountant:general:betrouwbaar-vakmanschap:corporate:light:autoriteit:nl-NL:amersfoort:website",
+      "seed": {
+        "frozen_input": 115,
+        "v1_resolved": 1748374726,
+        "v2_resolved": 1748374726
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "0a4fcae64f9046ec3b6d330cbfcf86ae42249e9063616b7db885bf6363bcd43c",
+        "v2": "69b4bf4c25128e79eec6fb8989cbfb32042cb6c5159c4ef5ec36bbff80a8ce22"
+      }
+    },
+    {
+      "case_number": 16,
+      "case_id": "GS-2026.1-16",
+      "expected_dimensions": {
+        "vertical": "makelaar",
+        "specialization": null,
+        "style": "modern-scherp",
+        "brand_personality": "persoonlijk",
+        "theme": "light",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "makelaar:general:modern-scherp:persoonlijk:light:leadgeneratie:nl-NL:zwolle:website",
+      "seed": {
+        "frozen_input": 116,
+        "v1_resolved": 1731597107,
+        "v2_resolved": 1731597107
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials",
+              "unverified_experience"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": [
+              "unverified_experience"
+            ]
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "8b3eb9a5715ca5d4239d568508573ac8ee7be50683cd04c17a7f582642b39921",
+        "v2": "dbf16812c28ec03652868069082a7202475f873ff92e8c4fb42e508b7fc9512e"
+      }
+    },
+    {
+      "case_number": 17,
+      "case_id": "GS-2026.1-17",
+      "expected_dimensions": {
+        "vertical": "fysiotherapie",
+        "specialization": null,
+        "style": "warm-persoonlijk",
+        "brand_personality": "persoonlijk",
+        "theme": "light",
+        "goal": "afspraken"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "fysiotherapie:general:warm-persoonlijk:persoonlijk:light:afspraken:nl-NL:apeldoorn:website",
+      "seed": {
+        "frozen_input": 117,
+        "v1_resolved": 1714819488,
+        "v2_resolved": 1714819488
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "9a70ade167cb755452be8c946643327e6cd04bb2dee027a20308892ce970971e",
+        "v2": "6a75393e5c6264bca31d95743526d7cd36d76b4f1a704e7894b0267e392513c7"
+      }
+    },
+    {
+      "case_number": 18,
+      "case_id": "GS-2026.1-18",
+      "expected_dimensions": {
+        "vertical": "sportschool",
+        "specialization": null,
+        "style": "krachtig-conversie",
+        "brand_personality": "jong",
+        "theme": "dark",
+        "goal": "directe-verkoop"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "sportschool:general:krachtig-conversie:jong:dark:directe-verkoop:nl-NL:rotterdam:website",
+      "seed": {
+        "frozen_input": 118,
+        "v1_resolved": 1966483773,
+        "v2_resolved": 1966483773
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "063db69edebe718cfee1d10a47549aff2dfc56386e8054135be78f049cf1d779",
+        "v2": "ab7c68b66beaf189d4b0aa305f9f94fca6fb007ec67a5adcaf7ef3b1e83405bf"
+      }
+    },
+    {
+      "case_number": 19,
+      "case_id": "GS-2026.1-19",
+      "expected_dimensions": {
+        "vertical": "restaurant",
+        "specialization": "italiaans",
+        "style": "premium-editorial",
+        "brand_personality": "familiebedrijf",
+        "theme": "dark",
+        "goal": "afspraken"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "restaurant:italiaans:premium-editorial:familiebedrijf:dark:afspraken:nl-NL:amsterdam:website",
+      "seed": {
+        "frozen_input": 119,
+        "v1_resolved": 1949706154,
+        "v2_resolved": 1949706154
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct",
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "8d581ac7d01aa338e6e3834727f25a33a41fca531cb4c38ba0bb8d50609e6275",
+        "v2": "15bb97470a2eb020d00db592b4897582f44198b4ad406dd762997ff8734410ad"
+      }
+    },
+    {
+      "case_number": 20,
+      "case_id": "GS-2026.1-20",
+      "expected_dimensions": {
+        "vertical": "hovenier",
+        "specialization": "ecologische-tuinen",
+        "style": "natuurlijk-duurzaam",
+        "brand_personality": "lokaal",
+        "theme": "light",
+        "goal": "portfolio"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "hovenier:ecologische-tuinen:natuurlijk-duurzaam:lokaal:light:portfolio:nl-NL:arnhem:website",
+      "seed": {
+        "frozen_input": 120,
+        "v1_resolved": 1933075630,
+        "v2_resolved": 1933075630
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct"
+        ]
+      },
+      "render_signatures": {
+        "v1": "5f68a10fe117e90dbc3f73038a563126b5810ef6898996120b4a10ccb2b6e55e",
+        "v2": "edd7f8b350f252ff81c279d078beb93478f7db0b695d24b32d2a260a606acfa9"
+      }
+    },
+    {
+      "case_number": 21,
+      "case_id": "GS-2026.1-21",
+      "expected_dimensions": {
+        "vertical": "elektricien",
+        "specialization": "domotica",
+        "style": "modern-scherp",
+        "brand_personality": "innovatief",
+        "theme": "dark",
+        "goal": "leadgeneratie"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "elektricien:domotica:modern-scherp:innovatief:dark:leadgeneratie:nl-NL:eindhoven:website",
+      "seed": {
+        "frozen_input": 121,
+        "v1_resolved": 1949853249,
+        "v2_resolved": 1949853249
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct"
+        ]
+      },
+      "render_signatures": {
+        "v1": "2d1b53475dd5a8ce4ed667d7fe318167fb067d35ba9de3b77266fa5bedab138d",
+        "v2": "8459c6d9c769a576d0b37b8fcbfe81430657349af5c6b5e4f39b631938e65282"
+      }
+    },
+    {
+      "case_number": 22,
+      "case_id": "GS-2026.1-22",
+      "expected_dimensions": {
+        "vertical": "schilder",
+        "specialization": "buitenschilderwerk",
+        "style": "betrouwbaar-vakmanschap",
+        "brand_personality": "traditioneel",
+        "theme": "light",
+        "goal": "lokale-zichtbaarheid"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "schilder:buitenschilderwerk:betrouwbaar-vakmanschap:traditioneel:light:lokale-zichtbaarheid:nl-NL:haarlem:website",
+      "seed": {
+        "frozen_input": 122,
+        "v1_resolved": 1899520392,
+        "v2_resolved": 1899520392
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": false,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "specialization_correct"
+        ]
+      },
+      "render_signatures": {
+        "v1": "d026c6ca05a9a9e557be8b53dfdcccc9ba5ac813980ea1d38df27c0d3d481e0c",
+        "v2": "bf73e63253b299a966deef094824cef051d31c8e340a23c45c69656596a5edcf"
+      }
+    },
+    {
+      "case_number": 23,
+      "case_id": "GS-2026.1-23",
+      "expected_dimensions": {
+        "vertical": "keukens",
+        "specialization": null,
+        "style": "premium-editorial",
+        "brand_personality": "persoonlijk",
+        "theme": "light",
+        "goal": "afspraken"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "keukens:general:premium-editorial:persoonlijk:light:afspraken:nl-NL:breda:website",
+      "seed": {
+        "frozen_input": 123,
+        "v1_resolved": 1916298011,
+        "v2_resolved": 1916298011
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": []
+      },
+      "render_signatures": {
+        "v1": "a527f9e03e840823fec8df8fad207fe6f95ec654f09c71ef6ebe8f2769826b08",
+        "v2": "1030193988bf4f0f4f144529454bf671e06f90ff5e9807248935a9e31654f9db"
+      }
+    },
+    {
+      "case_number": 24,
+      "case_id": "GS-2026.1-24",
+      "expected_dimensions": {
+        "vertical": "tandarts",
+        "specialization": null,
+        "style": "minimalistisch-licht",
+        "brand_personality": "corporate",
+        "theme": "light",
+        "goal": "afspraken"
+      },
+      "adapter_contracts": {
+        "v1": "content-factory-adapter/v1",
+        "v2": "content-factory-adapter/v2"
+      },
+      "composition_signature": "tandarts:general:minimalistisch-licht:corporate:light:afspraken:nl-NL:nijmegen:website",
+      "seed": {
+        "frozen_input": 124,
+        "v1_resolved": 2000186106,
+        "v2_resolved": 2000186106
+      },
+      "deterministic": {
+        "v1": true,
+        "v2": true
+      },
+      "objective_checks": {
+        "v1": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": false,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        },
+        "v2": {
+          "branch_correct": true,
+          "specialization_correct": true,
+          "renderer_correct": true,
+          "seo_structured": true,
+          "hero_specific": true,
+          "hero_intent": true,
+          "cta_intent": true,
+          "no_hallucinations": false,
+          "truth_evidence": {
+            "passed": false,
+            "blockers": [
+              "unverified_generated_projects",
+              "unverified_rendered_testimonials"
+            ],
+            "unverified_project_count": 6,
+            "review_placeholders_blocked": true,
+            "unverified_rendered_testimonials": true,
+            "rendered_claim_flags": []
+          }
+        }
+      },
+      "no_regression": {
+        "passed": true,
+        "regressions": [],
+        "improvements": [
+          "cta_intent"
+        ]
+      },
+      "render_signatures": {
+        "v1": "55d95d2aa6fff8df6a4e91bc52d5c25252dd18dd9d702d542dbd9c826e4316e7",
+        "v2": "dc4cdd639b04c62947c0b4d19509cf769fa6850908094ed7cc2e737040d9d991"
+      }
+    }
+  ]
+}
