@@ -150,7 +150,7 @@ export function resolveWebsiteContentV2(input = {}) {
       colors: blueprint.design_system.colors,
       fonts: blueprint.design_system.fonts,
       icons: blueprint.design_system.icons,
-      designSystem: blueprint.design_system
+      designSystem: { ...blueprint.design_system, theme: blueprint.dimensions.theme }
     },
     hero,
     services,
@@ -173,7 +173,7 @@ export function resolveWebsiteContentV2(input = {}) {
       content: {
         ...base.websiteFactoryInput.content,
         hero,
-        designSystem: blueprint.design_system,
+        designSystem: { ...blueprint.design_system, theme: blueprint.dimensions.theme },
         contentStrategy: blueprint.content_strategy,
         blockStrategy: blueprint.block_strategy,
         assets

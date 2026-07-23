@@ -7,7 +7,7 @@ const { sendEmail } = require("./email");
 const {
   attachIntegrationMetadata: attachContentFactoryIntegrationMetadata,
   prepareWebsiteFactoryRenderRequest,
-} = require("./services/contentFactoryWebsiteFactoryAdapterV1");
+} = require("./services/contentFactoryWebsiteFactoryAdapter");
 const {
   buildLogs,
   buildWebsitePackage,

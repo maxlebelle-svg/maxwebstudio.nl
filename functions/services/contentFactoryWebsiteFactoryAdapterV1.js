@@ -210,6 +210,7 @@ module.exports = {
     buildAdaptedBriefing,
     compareInputs,
     extractBriefingField,
+    factoryInputFromJourney,
     mergeJourneyWithFactoryInput
   }
 };
