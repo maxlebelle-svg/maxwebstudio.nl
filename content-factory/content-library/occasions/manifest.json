@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "occasions",
+  "content": "../../generated/branches/occasions/content.json",
+  "assets": "../../generated/branches/occasions/asset-manifest.json",
+  "prompts": "../../generated/branches/occasions/image-prompts.json"
+}

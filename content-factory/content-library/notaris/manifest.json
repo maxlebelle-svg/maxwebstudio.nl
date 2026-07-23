@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "notaris",
+  "content": "../../generated/branches/notaris/content.json",
+  "assets": "../../generated/branches/notaris/asset-manifest.json",
+  "prompts": "../../generated/branches/notaris/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "hovenier",
+  "content": "../../generated/branches/hovenier/content.json",
+  "assets": "../../generated/branches/hovenier/asset-manifest.json",
+  "prompts": "../../generated/branches/hovenier/image-prompts.json"
+}

@@ -1,0 +1,1996 @@
+{
+  "manifest_version": "1.0.0",
+  "storage_root": "content-library/timmerwerk",
+  "slots": [
+    {
+      "id": "asset-hero-001",
+      "type": "hero",
+      "asset_kind": "image",
+      "usage": "Hero",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/hero/01-hero.webp",
+      "source_resolution": {
+        "width": 2400,
+        "height": 1350
+      },
+      "aspect_ratio": "16:9",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "right-center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.0.image",
+        "hero.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "zacht directioneel daglicht met gecontroleerd contrast",
+        "composition": "breed kader, onderwerp op rechter derde, rustige negatieve ruimte links voor webtekst",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-hero-002",
+      "type": "hero",
+      "asset_kind": "image",
+      "usage": "Hero",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/hero/02-hero.webp",
+      "source_resolution": {
+        "width": 2400,
+        "height": 1350
+      },
+      "aspect_ratio": "16:9",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "right-center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.1.image",
+        "hero.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "zacht directioneel daglicht met gecontroleerd contrast",
+        "composition": "breed kader, onderwerp op rechter derde, rustige negatieve ruimte links voor webtekst",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-hero-003",
+      "type": "hero",
+      "asset_kind": "image",
+      "usage": "Hero",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/hero/03-hero.webp",
+      "source_resolution": {
+        "width": 2400,
+        "height": 1350
+      },
+      "aspect_ratio": "16:9",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "right-center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.2.image",
+        "hero.2.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "zacht directioneel daglicht met gecontroleerd contrast",
+        "composition": "breed kader, onderwerp op rechter derde, rustige negatieve ruimte links voor webtekst",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-hero-004",
+      "type": "hero",
+      "asset_kind": "image",
+      "usage": "Hero",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/hero/04-hero.webp",
+      "source_resolution": {
+        "width": 2400,
+        "height": 1350
+      },
+      "aspect_ratio": "16:9",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "right-center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.3.image",
+        "hero.3.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "zacht directioneel daglicht met gecontroleerd contrast",
+        "composition": "breed kader, onderwerp op rechter derde, rustige negatieve ruimte links voor webtekst",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-background-001",
+      "type": "backgrounds",
+      "asset_kind": "image",
+      "usage": "Background",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/backgrounds/01-background.webp",
+      "source_resolution": {
+        "width": 2400,
+        "height": 1600
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "background.0.image",
+        "background.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Background"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-background-002",
+      "type": "backgrounds",
+      "asset_kind": "image",
+      "usage": "Background",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/backgrounds/02-background.webp",
+      "source_resolution": {
+        "width": 2400,
+        "height": 1600
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "background.1.image",
+        "background.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Background"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-team-001",
+      "type": "team",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/team/01-team.webp",
+      "source_resolution": {
+        "width": 1200,
+        "height": 1500
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.0.image",
+        "about.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 85mm lens, f/2.8, ooghoogte",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": true,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-team-002",
+      "type": "team",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/team/02-team.webp",
+      "source_resolution": {
+        "width": 1200,
+        "height": 1500
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.1.image",
+        "about.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 85mm lens, f/2.8, ooghoogte",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": true,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-team-003",
+      "type": "team",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/team/03-team.webp",
+      "source_resolution": {
+        "width": 1200,
+        "height": 1500
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.2.image",
+        "about.2.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 85mm lens, f/2.8, ooghoogte",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": true,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-team-004",
+      "type": "team",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/team/04-team.webp",
+      "source_resolution": {
+        "width": 1200,
+        "height": 1500
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.3.image",
+        "about.3.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 85mm lens, f/2.8, ooghoogte",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": true,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-atmosphere-001",
+      "type": "atmosphere",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/atmosphere/01-atmosphere.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.0.image",
+        "about.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": true,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-atmosphere-002",
+      "type": "atmosphere",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/atmosphere/02-atmosphere.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.1.image",
+        "about.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": true,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-gallery-001",
+      "type": "gallery",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/gallery/01-gallery.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.0.image",
+        "gallery.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-gallery-002",
+      "type": "gallery",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/gallery/02-gallery.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.1.image",
+        "gallery.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-gallery-003",
+      "type": "gallery",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/gallery/03-gallery.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.2.image",
+        "gallery.2.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-gallery-004",
+      "type": "gallery",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/gallery/04-gallery.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.3.image",
+        "gallery.3.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-service-001",
+      "type": "services",
+      "asset_kind": "image",
+      "usage": "Services",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/services/01-service.webp",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.0.image",
+        "services.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-service-002",
+      "type": "services",
+      "asset_kind": "image",
+      "usage": "Services",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/services/02-service.webp",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.1.image",
+        "services.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-service-003",
+      "type": "services",
+      "asset_kind": "image",
+      "usage": "Services",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/services/03-service.webp",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.2.image",
+        "services.2.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-service-004",
+      "type": "services",
+      "asset_kind": "image",
+      "usage": "Services",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/services/04-service.webp",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.3.image",
+        "services.3.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-project-001",
+      "type": "projects",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/projects/01-project.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.0.image",
+        "gallery.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-project-002",
+      "type": "projects",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/projects/02-project.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.1.image",
+        "gallery.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-project-003",
+      "type": "projects",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/projects/03-project.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.2.image",
+        "gallery.2.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-project-004",
+      "type": "projects",
+      "asset_kind": "image",
+      "usage": "Gallery",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/projects/04-project.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "gallery.3.image",
+        "gallery.3.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Gallery"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-review-001",
+      "type": "reviews",
+      "asset_kind": "image",
+      "usage": "Reviews",
+      "subject": "Timmerbedrijf",
+      "required": false,
+      "storage_path": "content-library/timmerwerk/reviews/01-review.webp",
+      "source_resolution": {
+        "width": 1200,
+        "height": 1200
+      },
+      "aspect_ratio": "1:1",
+      "formats": [
+        "webp",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "reviews.0.image",
+        "reviews.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Reviews"
+      },
+      "rights": {
+        "model_release_required": true,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-about-001",
+      "type": "about",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/about/01-about.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.0.image",
+        "about.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-about-002",
+      "type": "about",
+      "asset_kind": "image",
+      "usage": "About",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/about/02-about.webp",
+      "source_resolution": {
+        "width": 1800,
+        "height": 1200
+      },
+      "aspect_ratio": "3:2",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.1.image",
+        "about.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-cta-001",
+      "type": "cta",
+      "asset_kind": "image",
+      "usage": "CTA",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/cta/01-cta.webp",
+      "source_resolution": {
+        "width": 1920,
+        "height": 800
+      },
+      "aspect_ratio": "12:5",
+      "formats": [
+        "webp",
+        "avif",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "cta.0.image",
+        "cta.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "CTA"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-icon-001",
+      "type": "icons",
+      "asset_kind": "vector-placeholder",
+      "usage": "Services",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/icons/01-icon.svg",
+      "source_resolution": {
+        "width": 512,
+        "height": 512
+      },
+      "aspect_ratio": "1:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.0.image",
+        "services.0.srcset"
+      ],
+      "prompt": {
+        "style": "coherent rounded-outline icon system, minimal vector construction",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-icon-002",
+      "type": "icons",
+      "asset_kind": "vector-placeholder",
+      "usage": "Services",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/icons/02-icon.svg",
+      "source_resolution": {
+        "width": 512,
+        "height": 512
+      },
+      "aspect_ratio": "1:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.1.image",
+        "services.1.srcset"
+      ],
+      "prompt": {
+        "style": "coherent rounded-outline icon system, minimal vector construction",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-icon-003",
+      "type": "icons",
+      "asset_kind": "vector-placeholder",
+      "usage": "Services",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/icons/03-icon.svg",
+      "source_resolution": {
+        "width": 512,
+        "height": 512
+      },
+      "aspect_ratio": "1:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.2.image",
+        "services.2.srcset"
+      ],
+      "prompt": {
+        "style": "coherent rounded-outline icon system, minimal vector construction",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-icon-004",
+      "type": "icons",
+      "asset_kind": "vector-placeholder",
+      "usage": "Services",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/icons/04-icon.svg",
+      "source_resolution": {
+        "width": 512,
+        "height": 512
+      },
+      "aspect_ratio": "1:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.3.image",
+        "services.3.srcset"
+      ],
+      "prompt": {
+        "style": "coherent rounded-outline icon system, minimal vector construction",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-icon-005",
+      "type": "icons",
+      "asset_kind": "vector-placeholder",
+      "usage": "Services",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/icons/05-icon.svg",
+      "source_resolution": {
+        "width": 512,
+        "height": 512
+      },
+      "aspect_ratio": "1:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.4.image",
+        "services.4.srcset"
+      ],
+      "prompt": {
+        "style": "coherent rounded-outline icon system, minimal vector construction",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-icon-006",
+      "type": "icons",
+      "asset_kind": "vector-placeholder",
+      "usage": "Services",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/icons/06-icon.svg",
+      "source_resolution": {
+        "width": 512,
+        "height": 512
+      },
+      "aspect_ratio": "1:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "services.5.image",
+        "services.5.srcset"
+      ],
+      "prompt": {
+        "style": "coherent rounded-outline icon system, minimal vector construction",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Services"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-brand-001",
+      "type": "brand",
+      "asset_kind": "vector-placeholder",
+      "usage": "About",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/brand/01-brand.svg",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.0.image",
+        "about.0.srcset"
+      ],
+      "prompt": {
+        "style": "editorial vector illustration with subtle brand-color fills",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-brand-002",
+      "type": "brand",
+      "asset_kind": "vector-placeholder",
+      "usage": "About",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/brand/02-brand.svg",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.1.image",
+        "about.1.srcset"
+      ],
+      "prompt": {
+        "style": "editorial vector illustration with subtle brand-color fills",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-illustration-001",
+      "type": "illustrations",
+      "asset_kind": "vector-placeholder",
+      "usage": "About",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/illustrations/01-illustration.svg",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "svg",
+        "png",
+        "webp"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.0.image",
+        "about.0.srcset"
+      ],
+      "prompt": {
+        "style": "editorial vector illustration with subtle brand-color fills",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-illustration-002",
+      "type": "illustrations",
+      "asset_kind": "vector-placeholder",
+      "usage": "About",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/illustrations/02-illustration.svg",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "svg",
+        "png",
+        "webp"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.1.image",
+        "about.1.srcset"
+      ],
+      "prompt": {
+        "style": "editorial vector illustration with subtle brand-color fills",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-illustration-003",
+      "type": "illustrations",
+      "asset_kind": "vector-placeholder",
+      "usage": "About",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/illustrations/03-illustration.svg",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "svg",
+        "png",
+        "webp"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.2.image",
+        "about.2.srcset"
+      ],
+      "prompt": {
+        "style": "editorial vector illustration with subtle brand-color fills",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-illustration-004",
+      "type": "illustrations",
+      "asset_kind": "vector-placeholder",
+      "usage": "About",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/illustrations/04-illustration.svg",
+      "source_resolution": {
+        "width": 1600,
+        "height": 1200
+      },
+      "aspect_ratio": "4:3",
+      "formats": [
+        "svg",
+        "png",
+        "webp"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "about.3.image",
+        "about.3.srcset"
+      ],
+      "prompt": {
+        "style": "editorial vector illustration with subtle brand-color fills",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "About"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-social-001",
+      "type": "social",
+      "asset_kind": "image",
+      "usage": "Social",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/social/01-social.webp",
+      "source_resolution": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "social.0.image",
+        "social.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Social"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-social-002",
+      "type": "social",
+      "asset_kind": "image",
+      "usage": "Social",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/social/02-social.webp",
+      "source_resolution": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "social.1.image",
+        "social.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "zolder voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Social"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-social-003",
+      "type": "social",
+      "asset_kind": "image",
+      "usage": "Social",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/social/03-social.webp",
+      "source_resolution": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "social.2.image",
+        "social.2.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "overkapping voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Social"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-social-004",
+      "type": "social",
+      "asset_kind": "image",
+      "usage": "Social",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/social/04-social.webp",
+      "source_resolution": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect_ratio": "4:5",
+      "formats": [
+        "webp",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "social.3.image",
+        "social.3.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Social"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-logo-001",
+      "type": "logos",
+      "asset_kind": "vector-placeholder",
+      "usage": "Hero",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/logos/01-logo.svg",
+      "source_resolution": {
+        "width": 1200,
+        "height": 400
+      },
+      "aspect_ratio": "3:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.0.image",
+        "hero.0.srcset"
+      ],
+      "prompt": {
+        "style": "neutral editable logo placeholder, simple geometric mark, no final brand claim",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "tijdelijke logo-placeholder voor een professioneel Nederlands timmerbedrijf, geometrisch symbool geïnspireerd op Timmerbedrijf",
+        "negative_prompt": "geen bedrijfsnaam, geen leesbare tekst, geen watermerk, geen bestaand merk, geen complex detail, geen mockup",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-logo-002",
+      "type": "logos",
+      "asset_kind": "vector-placeholder",
+      "usage": "Hero",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/logos/02-logo.svg",
+      "source_resolution": {
+        "width": 1200,
+        "height": 400
+      },
+      "aspect_ratio": "3:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.1.image",
+        "hero.1.srcset"
+      ],
+      "prompt": {
+        "style": "neutral editable logo placeholder, simple geometric mark, no final brand claim",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "tijdelijke logo-placeholder voor een professioneel Nederlands timmerbedrijf, geometrisch symbool geïnspireerd op Timmerwerk en maatwerk",
+        "negative_prompt": "geen bedrijfsnaam, geen leesbare tekst, geen watermerk, geen bestaand merk, geen complex detail, geen mockup",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-logo-003",
+      "type": "logos",
+      "asset_kind": "vector-placeholder",
+      "usage": "Hero",
+      "subject": "zolder",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/logos/03-logo.svg",
+      "source_resolution": {
+        "width": 1200,
+        "height": 400
+      },
+      "aspect_ratio": "3:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "zolder door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.2.image",
+        "hero.2.srcset"
+      ],
+      "prompt": {
+        "style": "neutral editable logo placeholder, simple geometric mark, no final brand claim",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "tijdelijke logo-placeholder voor een professioneel Nederlands timmerbedrijf, geometrisch symbool geïnspireerd op zolder",
+        "negative_prompt": "geen bedrijfsnaam, geen leesbare tekst, geen watermerk, geen bestaand merk, geen complex detail, geen mockup",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-logo-004",
+      "type": "logos",
+      "asset_kind": "vector-placeholder",
+      "usage": "Hero",
+      "subject": "overkapping",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/logos/04-logo.svg",
+      "source_resolution": {
+        "width": 1200,
+        "height": 400
+      },
+      "aspect_ratio": "3:1",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "overkapping door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.3.image",
+        "hero.3.srcset"
+      ],
+      "prompt": {
+        "style": "neutral editable logo placeholder, simple geometric mark, no final brand claim",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "tijdelijke logo-placeholder voor een professioneel Nederlands timmerbedrijf, geometrisch symbool geïnspireerd op overkapping",
+        "negative_prompt": "geen bedrijfsnaam, geen leesbare tekst, geen watermerk, geen bestaand merk, geen complex detail, geen mockup",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-video-001",
+      "type": "video",
+      "asset_kind": "video-placeholder",
+      "usage": "Hero",
+      "subject": "kozijnen",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/video/01-video.mp4",
+      "source_resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "aspect_ratio": "16:9",
+      "formats": [
+        "mp4",
+        "webm",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "kozijnen door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.0.image",
+        "hero.0.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat, seamless five-second motion loop",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "kozijnen voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-video-002",
+      "type": "video",
+      "asset_kind": "video-placeholder",
+      "usage": "Hero",
+      "subject": "Timmerbedrijf",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/video/02-video.mp4",
+      "source_resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "aspect_ratio": "16:9",
+      "formats": [
+        "mp4",
+        "webm",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerbedrijf door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.1.image",
+        "hero.1.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat, seamless five-second motion loop",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerbedrijf voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    },
+    {
+      "id": "asset-video-003",
+      "type": "video",
+      "asset_kind": "video-placeholder",
+      "usage": "Hero",
+      "subject": "Timmerwerk en maatwerk",
+      "required": true,
+      "storage_path": "content-library/timmerwerk/video/03-video.mp4",
+      "source_resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "aspect_ratio": "16:9",
+      "formats": [
+        "mp4",
+        "webm",
+        "jpg"
+      ],
+      "focal_point": "center",
+      "alt_text_template": "Timmerwerk en maatwerk door [BEDRIJFSNAAM] in [PLAATS]",
+      "template_bindings": [
+        "hero.2.image",
+        "hero.2.srcset"
+      ],
+      "prompt": {
+        "style": "authentieke Nederlandse vakmensen, hoogwaardige materialen, zichtbaar eindresultaat, seamless five-second motion loop",
+        "lighting": "natuurlijk daglicht, realistische schaduwen",
+        "composition": "gebalanceerde editorial compositie met duidelijk hoofdonderwerp",
+        "camera": "full-frame camera, 35mm lens, f/5.6, hoge detailweergave",
+        "color_usage": "afgestemd op #15202B, #31513D, #D49A3A, #F4F1E9, natuurlijke huid- en materiaaltinten",
+        "subject": "Timmerwerk en maatwerk voor een professioneel Nederlands timmerbedrijf, authentiek en geloofwaardig",
+        "negative_prompt": "geen tekst, geen logo, geen watermerk, geen vervormde handen, geen extra vingers, geen onrealistische huid, geen plastic stockfoto-uitstraling, geen rommelige achtergrond, geen oververzadiging, geen zichtbare merknamen",
+        "suitable_for": "Hero"
+      },
+      "rights": {
+        "model_release_required": false,
+        "usage_license": "te registreren voor publicatie"
+      }
+    }
+  ],
+  "counts_by_type": {
+    "hero": 4,
+    "backgrounds": 2,
+    "team": 4,
+    "atmosphere": 2,
+    "gallery": 4,
+    "services": 4,
+    "projects": 4,
+    "reviews": 1,
+    "about": 2,
+    "cta": 1,
+    "icons": 6,
+    "brand": 2,
+    "illustrations": 4,
+    "social": 4,
+    "logos": 4,
+    "video": 3
+  }
+}

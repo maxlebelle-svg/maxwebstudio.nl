@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "psycholoog",
+  "content": "../../generated/branches/psycholoog/content.json",
+  "assets": "../../generated/branches/psycholoog/asset-manifest.json",
+  "prompts": "../../generated/branches/psycholoog/image-prompts.json"
+}

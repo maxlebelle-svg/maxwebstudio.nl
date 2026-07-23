@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "beveiliging",
+  "content": "../../generated/branches/beveiliging/content.json",
+  "assets": "../../generated/branches/beveiliging/asset-manifest.json",
+  "prompts": "../../generated/branches/beveiliging/image-prompts.json"
+}

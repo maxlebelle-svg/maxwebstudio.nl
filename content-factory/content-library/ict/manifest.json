@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "ict",
+  "content": "../../generated/branches/ict/content.json",
+  "assets": "../../generated/branches/ict/asset-manifest.json",
+  "prompts": "../../generated/branches/ict/image-prompts.json"
+}

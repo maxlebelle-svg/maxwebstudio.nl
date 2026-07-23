@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "sportschool",
+  "content": "../../generated/branches/sportschool/content.json",
+  "assets": "../../generated/branches/sportschool/asset-manifest.json",
+  "prompts": "../../generated/branches/sportschool/image-prompts.json"
+}

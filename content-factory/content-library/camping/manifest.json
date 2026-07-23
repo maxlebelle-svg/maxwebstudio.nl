@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "camping",
+  "content": "../../generated/branches/camping/content.json",
+  "assets": "../../generated/branches/camping/asset-manifest.json",
+  "prompts": "../../generated/branches/camping/image-prompts.json"
+}

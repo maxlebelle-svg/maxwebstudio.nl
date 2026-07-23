@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "hypnotherapie",
+  "content": "../../generated/branches/hypnotherapie/content.json",
+  "assets": "../../generated/branches/hypnotherapie/asset-manifest.json",
+  "prompts": "../../generated/branches/hypnotherapie/image-prompts.json"
+}

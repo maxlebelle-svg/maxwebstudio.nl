@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "keukens",
+  "content": "../../generated/branches/keukens/content.json",
+  "assets": "../../generated/branches/keukens/asset-manifest.json",
+  "prompts": "../../generated/branches/keukens/image-prompts.json"
+}

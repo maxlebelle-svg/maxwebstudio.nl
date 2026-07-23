@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "installateur",
+  "content": "../../generated/branches/installateur/content.json",
+  "assets": "../../generated/branches/installateur/asset-manifest.json",
+  "prompts": "../../generated/branches/installateur/image-prompts.json"
+}

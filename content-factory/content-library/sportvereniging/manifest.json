@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "sportvereniging",
+  "content": "../../generated/branches/sportvereniging/content.json",
+  "assets": "../../generated/branches/sportvereniging/asset-manifest.json",
+  "prompts": "../../generated/branches/sportvereniging/image-prompts.json"
+}

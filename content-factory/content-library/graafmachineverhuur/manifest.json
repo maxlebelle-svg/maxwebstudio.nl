@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "graafmachineverhuur",
+  "content": "../../generated/branches/graafmachineverhuur/content.json",
+  "assets": "../../generated/branches/graafmachineverhuur/asset-manifest.json",
+  "prompts": "../../generated/branches/graafmachineverhuur/image-prompts.json"
+}

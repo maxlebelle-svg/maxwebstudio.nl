@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "dietist",
+  "content": "../../generated/branches/dietist/content.json",
+  "assets": "../../generated/branches/dietist/asset-manifest.json",
+  "prompts": "../../generated/branches/dietist/image-prompts.json"
+}

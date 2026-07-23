@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "motoren",
+  "content": "../../generated/branches/motoren/content.json",
+  "assets": "../../generated/branches/motoren/asset-manifest.json",
+  "prompts": "../../generated/branches/motoren/image-prompts.json"
+}

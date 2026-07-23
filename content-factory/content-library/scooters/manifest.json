@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "scooters",
+  "content": "../../generated/branches/scooters/content.json",
+  "assets": "../../generated/branches/scooters/asset-manifest.json",
+  "prompts": "../../generated/branches/scooters/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "yogastudio",
+  "content": "../../generated/branches/yogastudio/content.json",
+  "assets": "../../generated/branches/yogastudio/asset-manifest.json",
+  "prompts": "../../generated/branches/yogastudio/image-prompts.json"
+}

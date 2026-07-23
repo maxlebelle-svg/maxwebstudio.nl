@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "carwash",
+  "content": "../../generated/branches/carwash/content.json",
+  "assets": "../../generated/branches/carwash/asset-manifest.json",
+  "prompts": "../../generated/branches/carwash/image-prompts.json"
+}

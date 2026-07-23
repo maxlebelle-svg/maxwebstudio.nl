@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "tegelzetter",
+  "content": "../../generated/branches/tegelzetter/content.json",
+  "assets": "../../generated/branches/tegelzetter/asset-manifest.json",
+  "prompts": "../../generated/branches/tegelzetter/image-prompts.json"
+}

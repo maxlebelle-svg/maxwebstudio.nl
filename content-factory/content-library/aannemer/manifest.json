@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "aannemer",
+  "content": "../../generated/branches/aannemer/content.json",
+  "assets": "../../generated/branches/aannemer/asset-manifest.json",
+  "prompts": "../../generated/branches/aannemer/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "escape-room",
+  "content": "../../generated/branches/escape-room/content.json",
+  "assets": "../../generated/branches/escape-room/asset-manifest.json",
+  "prompts": "../../generated/branches/escape-room/image-prompts.json"
+}

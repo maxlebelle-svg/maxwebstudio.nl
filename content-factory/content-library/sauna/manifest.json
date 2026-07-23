@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "sauna",
+  "content": "../../generated/branches/sauna/content.json",
+  "assets": "../../generated/branches/sauna/asset-manifest.json",
+  "prompts": "../../generated/branches/sauna/image-prompts.json"
+}

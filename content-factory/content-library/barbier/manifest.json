@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "barbier",
+  "content": "../../generated/branches/barbier/content.json",
+  "assets": "../../generated/branches/barbier/asset-manifest.json",
+  "prompts": "../../generated/branches/barbier/image-prompts.json"
+}

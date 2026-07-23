@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "uitzendbureau",
+  "content": "../../generated/branches/uitzendbureau/content.json",
+  "assets": "../../generated/branches/uitzendbureau/asset-manifest.json",
+  "prompts": "../../generated/branches/uitzendbureau/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "cybersecurity",
+  "content": "../../generated/branches/cybersecurity/content.json",
+  "assets": "../../generated/branches/cybersecurity/asset-manifest.json",
+  "prompts": "../../generated/branches/cybersecurity/image-prompts.json"
+}

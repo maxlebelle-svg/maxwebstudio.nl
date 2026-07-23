@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "restaurant",
+  "content": "../../generated/branches/restaurant/content.json",
+  "assets": "../../generated/branches/restaurant/asset-manifest.json",
+  "prompts": "../../generated/branches/restaurant/image-prompts.json"
+}

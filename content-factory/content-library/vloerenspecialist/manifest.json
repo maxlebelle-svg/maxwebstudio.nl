@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "vloerenspecialist",
+  "content": "../../generated/branches/vloerenspecialist/content.json",
+  "assets": "../../generated/branches/vloerenspecialist/asset-manifest.json",
+  "prompts": "../../generated/branches/vloerenspecialist/image-prompts.json"
+}

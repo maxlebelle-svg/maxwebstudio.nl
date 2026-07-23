@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "opticien",
+  "content": "../../generated/branches/opticien/content.json",
+  "assets": "../../generated/branches/opticien/asset-manifest.json",
+  "prompts": "../../generated/branches/opticien/image-prompts.json"
+}

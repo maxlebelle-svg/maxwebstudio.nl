@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "schoonheidssalon",
+  "content": "../../generated/branches/schoonheidssalon/content.json",
+  "assets": "../../generated/branches/schoonheidssalon/asset-manifest.json",
+  "prompts": "../../generated/branches/schoonheidssalon/image-prompts.json"
+}

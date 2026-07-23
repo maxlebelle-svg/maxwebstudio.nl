@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "pizzeria",
+  "content": "../../generated/branches/pizzeria/content.json",
+  "assets": "../../generated/branches/pizzeria/asset-manifest.json",
+  "prompts": "../../generated/branches/pizzeria/image-prompts.json"
+}

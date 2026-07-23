@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "personal-trainer",
+  "content": "../../generated/branches/personal-trainer/content.json",
+  "assets": "../../generated/branches/personal-trainer/asset-manifest.json",
+  "prompts": "../../generated/branches/personal-trainer/image-prompts.json"
+}

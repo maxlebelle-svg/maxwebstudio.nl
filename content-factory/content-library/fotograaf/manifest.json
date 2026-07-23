@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "fotograaf",
+  "content": "../../generated/branches/fotograaf/content.json",
+  "assets": "../../generated/branches/fotograaf/asset-manifest.json",
+  "prompts": "../../generated/branches/fotograaf/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "massage",
+  "content": "../../generated/branches/massage/content.json",
+  "assets": "../../generated/branches/massage/asset-manifest.json",
+  "prompts": "../../generated/branches/massage/image-prompts.json"
+}

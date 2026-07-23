@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "evenementenlocatie",
+  "content": "../../generated/branches/evenementenlocatie/content.json",
+  "assets": "../../generated/branches/evenementenlocatie/asset-manifest.json",
+  "prompts": "../../generated/branches/evenementenlocatie/image-prompts.json"
+}

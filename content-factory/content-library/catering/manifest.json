@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "catering",
+  "content": "../../generated/branches/catering/content.json",
+  "assets": "../../generated/branches/catering/asset-manifest.json",
+  "prompts": "../../generated/branches/catering/image-prompts.json"
+}

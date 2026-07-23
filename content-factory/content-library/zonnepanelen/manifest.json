@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "zonnepanelen",
+  "content": "../../generated/branches/zonnepanelen/content.json",
+  "assets": "../../generated/branches/zonnepanelen/asset-manifest.json",
+  "prompts": "../../generated/branches/zonnepanelen/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "dakdekker",
+  "content": "../../generated/branches/dakdekker/content.json",
+  "assets": "../../generated/branches/dakdekker/asset-manifest.json",
+  "prompts": "../../generated/branches/dakdekker/image-prompts.json"
+}

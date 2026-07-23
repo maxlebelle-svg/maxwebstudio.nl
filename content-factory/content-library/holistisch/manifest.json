@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "holistisch",
+  "content": "../../generated/branches/holistisch/content.json",
+  "assets": "../../generated/branches/holistisch/asset-manifest.json",
+  "prompts": "../../generated/branches/holistisch/image-prompts.json"
+}

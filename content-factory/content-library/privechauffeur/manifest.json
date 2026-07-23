@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "privechauffeur",
+  "content": "../../generated/branches/privechauffeur/content.json",
+  "assets": "../../generated/branches/privechauffeur/asset-manifest.json",
+  "prompts": "../../generated/branches/privechauffeur/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "lasergame",
+  "content": "../../generated/branches/lasergame/content.json",
+  "assets": "../../generated/branches/lasergame/asset-manifest.json",
+  "prompts": "../../generated/branches/lasergame/image-prompts.json"
+}

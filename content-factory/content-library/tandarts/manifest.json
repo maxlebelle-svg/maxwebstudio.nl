@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "tandarts",
+  "content": "../../generated/branches/tandarts/content.json",
+  "assets": "../../generated/branches/tandarts/asset-manifest.json",
+  "prompts": "../../generated/branches/tandarts/image-prompts.json"
+}

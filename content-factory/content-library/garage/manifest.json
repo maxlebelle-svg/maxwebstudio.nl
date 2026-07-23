@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "garage",
+  "content": "../../generated/branches/garage/content.json",
+  "assets": "../../generated/branches/garage/asset-manifest.json",
+  "prompts": "../../generated/branches/garage/image-prompts.json"
+}

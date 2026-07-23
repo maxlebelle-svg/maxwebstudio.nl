@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "nagelstudio",
+  "content": "../../generated/branches/nagelstudio/content.json",
+  "assets": "../../generated/branches/nagelstudio/asset-manifest.json",
+  "prompts": "../../generated/branches/nagelstudio/image-prompts.json"
+}

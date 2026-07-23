@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "transport",
+  "content": "../../generated/branches/transport/content.json",
+  "assets": "../../generated/branches/transport/asset-manifest.json",
+  "prompts": "../../generated/branches/transport/image-prompts.json"
+}

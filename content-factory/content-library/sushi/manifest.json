@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "sushi",
+  "content": "../../generated/branches/sushi/content.json",
+  "assets": "../../generated/branches/sushi/asset-manifest.json",
+  "prompts": "../../generated/branches/sushi/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "voetbal",
+  "content": "../../generated/branches/voetbal/content.json",
+  "assets": "../../generated/branches/voetbal/asset-manifest.json",
+  "prompts": "../../generated/branches/voetbal/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "hotel",
+  "content": "../../generated/branches/hotel/content.json",
+  "assets": "../../generated/branches/hotel/asset-manifest.json",
+  "prompts": "../../generated/branches/hotel/image-prompts.json"
+}

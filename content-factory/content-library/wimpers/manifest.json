@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "wimpers",
+  "content": "../../generated/branches/wimpers/content.json",
+  "assets": "../../generated/branches/wimpers/asset-manifest.json",
+  "prompts": "../../generated/branches/wimpers/image-prompts.json"
+}

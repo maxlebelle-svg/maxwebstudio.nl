@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "timmerwerk",
+  "content": "../../generated/branches/timmerwerk/content.json",
+  "assets": "../../generated/branches/timmerwerk/asset-manifest.json",
+  "prompts": "../../generated/branches/timmerwerk/image-prompts.json"
+}

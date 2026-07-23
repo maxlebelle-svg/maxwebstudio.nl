@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "bootverhuur",
+  "content": "../../generated/branches/bootverhuur/content.json",
+  "assets": "../../generated/branches/bootverhuur/asset-manifest.json",
+  "prompts": "../../generated/branches/bootverhuur/image-prompts.json"
+}

@@ -1,0 +1,947 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "deterministic-build",
+  "source": "src/verticals.mjs",
+  "branch_count": 101,
+  "categories": [
+    "bouw",
+    "mobiliteit",
+    "zakelijk",
+    "digitaal",
+    "beauty",
+    "gezondheid",
+    "horeca",
+    "sport",
+    "retail",
+    "recreatie",
+    "media",
+    "lokaal"
+  ],
+  "requirements": {
+    "hero_variants": 20,
+    "seo_keywords": 100,
+    "faq": 100,
+    "reviews": 50,
+    "social_post_ideas": 100,
+    "blog_topics": 50,
+    "calls_to_action": 30,
+    "usps": 30,
+    "project_descriptions": 30,
+    "team_profiles": 30,
+    "services": 12,
+    "gallery_descriptions": 30,
+    "asset_slots": 51,
+    "image_prompts": 51
+  },
+  "branches": [
+    {
+      "slug": "bouw",
+      "name": "Bouwbedrijf",
+      "category": "bouw",
+      "description": "Bouwbedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/bouw/content.json",
+      "asset_manifest_path": "branches/bouw/asset-manifest.json",
+      "prompt_library_path": "branches/bouw/image-prompts.json"
+    },
+    {
+      "slug": "aannemer",
+      "name": "Aannemer",
+      "category": "bouw",
+      "description": "Aannemer voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/aannemer/content.json",
+      "asset_manifest_path": "branches/aannemer/asset-manifest.json",
+      "prompt_library_path": "branches/aannemer/image-prompts.json"
+    },
+    {
+      "slug": "schilder",
+      "name": "Schildersbedrijf",
+      "category": "bouw",
+      "description": "Schildersbedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/schilder/content.json",
+      "asset_manifest_path": "branches/schilder/asset-manifest.json",
+      "prompt_library_path": "branches/schilder/image-prompts.json"
+    },
+    {
+      "slug": "dakdekker",
+      "name": "Dakdekker",
+      "category": "bouw",
+      "description": "Dakdekker voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/dakdekker/content.json",
+      "asset_manifest_path": "branches/dakdekker/asset-manifest.json",
+      "prompt_library_path": "branches/dakdekker/image-prompts.json"
+    },
+    {
+      "slug": "loodgieter",
+      "name": "Loodgieter",
+      "category": "bouw",
+      "description": "Loodgieter voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/loodgieter/content.json",
+      "asset_manifest_path": "branches/loodgieter/asset-manifest.json",
+      "prompt_library_path": "branches/loodgieter/image-prompts.json"
+    },
+    {
+      "slug": "elektricien",
+      "name": "Elektricien",
+      "category": "bouw",
+      "description": "Elektricien voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/elektricien/content.json",
+      "asset_manifest_path": "branches/elektricien/asset-manifest.json",
+      "prompt_library_path": "branches/elektricien/image-prompts.json"
+    },
+    {
+      "slug": "installateur",
+      "name": "Installatiebedrijf",
+      "category": "bouw",
+      "description": "Installatiebedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/installateur/content.json",
+      "asset_manifest_path": "branches/installateur/asset-manifest.json",
+      "prompt_library_path": "branches/installateur/image-prompts.json"
+    },
+    {
+      "slug": "glazenwasser",
+      "name": "Glazenwasser",
+      "category": "bouw",
+      "description": "Glazenwasser voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/glazenwasser/content.json",
+      "asset_manifest_path": "branches/glazenwasser/asset-manifest.json",
+      "prompt_library_path": "branches/glazenwasser/image-prompts.json"
+    },
+    {
+      "slug": "schoonmaak",
+      "name": "Schoonmaakbedrijf",
+      "category": "bouw",
+      "description": "Schoonmaakbedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/schoonmaak/content.json",
+      "asset_manifest_path": "branches/schoonmaak/asset-manifest.json",
+      "prompt_library_path": "branches/schoonmaak/image-prompts.json"
+    },
+    {
+      "slug": "beveiliging",
+      "name": "Beveiligingsbedrijf",
+      "category": "bouw",
+      "description": "Beveiligingsbedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/beveiliging/content.json",
+      "asset_manifest_path": "branches/beveiliging/asset-manifest.json",
+      "prompt_library_path": "branches/beveiliging/image-prompts.json"
+    },
+    {
+      "slug": "hovenier",
+      "name": "Hovenier",
+      "category": "bouw",
+      "description": "Hovenier voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/hovenier/content.json",
+      "asset_manifest_path": "branches/hovenier/asset-manifest.json",
+      "prompt_library_path": "branches/hovenier/image-prompts.json"
+    },
+    {
+      "slug": "tegelzetter",
+      "name": "Tegelzetbedrijf",
+      "category": "bouw",
+      "description": "Tegelzetbedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/tegelzetter/content.json",
+      "asset_manifest_path": "branches/tegelzetter/asset-manifest.json",
+      "prompt_library_path": "branches/tegelzetter/image-prompts.json"
+    },
+    {
+      "slug": "stukadoor",
+      "name": "Stukadoorsbedrijf",
+      "category": "bouw",
+      "description": "Stukadoorsbedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/stukadoor/content.json",
+      "asset_manifest_path": "branches/stukadoor/asset-manifest.json",
+      "prompt_library_path": "branches/stukadoor/image-prompts.json"
+    },
+    {
+      "slug": "badkamers",
+      "name": "Badkamerspecialist",
+      "category": "bouw",
+      "description": "Badkamerspecialist voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/badkamers/content.json",
+      "asset_manifest_path": "branches/badkamers/asset-manifest.json",
+      "prompt_library_path": "branches/badkamers/image-prompts.json"
+    },
+    {
+      "slug": "keukens",
+      "name": "Keukenspecialist",
+      "category": "bouw",
+      "description": "Keukenspecialist voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/keukens/content.json",
+      "asset_manifest_path": "branches/keukens/asset-manifest.json",
+      "prompt_library_path": "branches/keukens/image-prompts.json"
+    },
+    {
+      "slug": "timmerwerk",
+      "name": "Timmerbedrijf",
+      "category": "bouw",
+      "description": "Timmerbedrijf voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/timmerwerk/content.json",
+      "asset_manifest_path": "branches/timmerwerk/asset-manifest.json",
+      "prompt_library_path": "branches/timmerwerk/image-prompts.json"
+    },
+    {
+      "slug": "kozijnen",
+      "name": "Kozijnenspecialist",
+      "category": "bouw",
+      "description": "Kozijnenspecialist voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/kozijnen/content.json",
+      "asset_manifest_path": "branches/kozijnen/asset-manifest.json",
+      "prompt_library_path": "branches/kozijnen/image-prompts.json"
+    },
+    {
+      "slug": "vloerenspecialist",
+      "name": "Vloerenspecialist",
+      "category": "bouw",
+      "description": "Vloerenspecialist voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/vloerenspecialist/content.json",
+      "asset_manifest_path": "branches/vloerenspecialist/asset-manifest.json",
+      "prompt_library_path": "branches/vloerenspecialist/image-prompts.json"
+    },
+    {
+      "slug": "zonnepanelen",
+      "name": "Zonnepanelenspecialist",
+      "category": "bouw",
+      "description": "Zonnepanelenspecialist voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/zonnepanelen/content.json",
+      "asset_manifest_path": "branches/zonnepanelen/asset-manifest.json",
+      "prompt_library_path": "branches/zonnepanelen/image-prompts.json"
+    },
+    {
+      "slug": "graafmachineverhuur",
+      "name": "Graafmachineverhuur",
+      "category": "bouw",
+      "description": "Graafmachineverhuur voor particulieren en bedrijven die degelijk vakwerk en heldere afspraken zoeken.",
+      "content_path": "branches/graafmachineverhuur/content.json",
+      "asset_manifest_path": "branches/graafmachineverhuur/asset-manifest.json",
+      "prompt_library_path": "branches/graafmachineverhuur/image-prompts.json"
+    },
+    {
+      "slug": "autobedrijf",
+      "name": "Autobedrijf",
+      "category": "mobiliteit",
+      "description": "Autobedrijf voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/autobedrijf/content.json",
+      "asset_manifest_path": "branches/autobedrijf/asset-manifest.json",
+      "prompt_library_path": "branches/autobedrijf/image-prompts.json"
+    },
+    {
+      "slug": "occasions",
+      "name": "Occasiondealer",
+      "category": "mobiliteit",
+      "description": "Occasiondealer voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/occasions/content.json",
+      "asset_manifest_path": "branches/occasions/asset-manifest.json",
+      "prompt_library_path": "branches/occasions/image-prompts.json"
+    },
+    {
+      "slug": "garage",
+      "name": "Autogarage",
+      "category": "mobiliteit",
+      "description": "Autogarage voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/garage/content.json",
+      "asset_manifest_path": "branches/garage/asset-manifest.json",
+      "prompt_library_path": "branches/garage/image-prompts.json"
+    },
+    {
+      "slug": "carwash",
+      "name": "Carwash",
+      "category": "mobiliteit",
+      "description": "Carwash voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/carwash/content.json",
+      "asset_manifest_path": "branches/carwash/asset-manifest.json",
+      "prompt_library_path": "branches/carwash/image-prompts.json"
+    },
+    {
+      "slug": "fietswinkel",
+      "name": "Fietswinkel",
+      "category": "mobiliteit",
+      "description": "Fietswinkel voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/fietswinkel/content.json",
+      "asset_manifest_path": "branches/fietswinkel/asset-manifest.json",
+      "prompt_library_path": "branches/fietswinkel/image-prompts.json"
+    },
+    {
+      "slug": "scooters",
+      "name": "Scooterwinkel",
+      "category": "mobiliteit",
+      "description": "Scooterwinkel voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/scooters/content.json",
+      "asset_manifest_path": "branches/scooters/asset-manifest.json",
+      "prompt_library_path": "branches/scooters/image-prompts.json"
+    },
+    {
+      "slug": "motoren",
+      "name": "Motorzaak",
+      "category": "mobiliteit",
+      "description": "Motorzaak voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/motoren/content.json",
+      "asset_manifest_path": "branches/motoren/asset-manifest.json",
+      "prompt_library_path": "branches/motoren/image-prompts.json"
+    },
+    {
+      "slug": "boten",
+      "name": "Botenbedrijf",
+      "category": "mobiliteit",
+      "description": "Botenbedrijf voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/boten/content.json",
+      "asset_manifest_path": "branches/boten/asset-manifest.json",
+      "prompt_library_path": "branches/boten/image-prompts.json"
+    },
+    {
+      "slug": "transport",
+      "name": "Transportbedrijf",
+      "category": "mobiliteit",
+      "description": "Transportbedrijf voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/transport/content.json",
+      "asset_manifest_path": "branches/transport/asset-manifest.json",
+      "prompt_library_path": "branches/transport/image-prompts.json"
+    },
+    {
+      "slug": "koeriers",
+      "name": "Koeriersdienst",
+      "category": "mobiliteit",
+      "description": "Koeriersdienst voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/koeriers/content.json",
+      "asset_manifest_path": "branches/koeriers/asset-manifest.json",
+      "prompt_library_path": "branches/koeriers/image-prompts.json"
+    },
+    {
+      "slug": "taxi",
+      "name": "Taxibedrijf",
+      "category": "mobiliteit",
+      "description": "Taxibedrijf voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/taxi/content.json",
+      "asset_manifest_path": "branches/taxi/asset-manifest.json",
+      "prompt_library_path": "branches/taxi/image-prompts.json"
+    },
+    {
+      "slug": "privechauffeur",
+      "name": "Privéchauffeur",
+      "category": "mobiliteit",
+      "description": "Privéchauffeur voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/privechauffeur/content.json",
+      "asset_manifest_path": "branches/privechauffeur/asset-manifest.json",
+      "prompt_library_path": "branches/privechauffeur/image-prompts.json"
+    },
+    {
+      "slug": "rijschool",
+      "name": "Rijschool",
+      "category": "mobiliteit",
+      "description": "Rijschool voor mensen en organisaties die veilig, snel en zorgeloos onderweg willen zijn.",
+      "content_path": "branches/rijschool/content.json",
+      "asset_manifest_path": "branches/rijschool/asset-manifest.json",
+      "prompt_library_path": "branches/rijschool/image-prompts.json"
+    },
+    {
+      "slug": "boekhouder",
+      "name": "Boekhouder",
+      "category": "zakelijk",
+      "description": "Boekhouder voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/boekhouder/content.json",
+      "asset_manifest_path": "branches/boekhouder/asset-manifest.json",
+      "prompt_library_path": "branches/boekhouder/image-prompts.json"
+    },
+    {
+      "slug": "accountant",
+      "name": "Accountantskantoor",
+      "category": "zakelijk",
+      "description": "Accountantskantoor voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/accountant/content.json",
+      "asset_manifest_path": "branches/accountant/asset-manifest.json",
+      "prompt_library_path": "branches/accountant/image-prompts.json"
+    },
+    {
+      "slug": "advocaat",
+      "name": "Advocatenkantoor",
+      "category": "zakelijk",
+      "description": "Advocatenkantoor voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/advocaat/content.json",
+      "asset_manifest_path": "branches/advocaat/asset-manifest.json",
+      "prompt_library_path": "branches/advocaat/image-prompts.json"
+    },
+    {
+      "slug": "notaris",
+      "name": "Notariskantoor",
+      "category": "zakelijk",
+      "description": "Notariskantoor voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/notaris/content.json",
+      "asset_manifest_path": "branches/notaris/asset-manifest.json",
+      "prompt_library_path": "branches/notaris/image-prompts.json"
+    },
+    {
+      "slug": "hypotheek",
+      "name": "Hypotheekadviseur",
+      "category": "zakelijk",
+      "description": "Hypotheekadviseur voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/hypotheek/content.json",
+      "asset_manifest_path": "branches/hypotheek/asset-manifest.json",
+      "prompt_library_path": "branches/hypotheek/image-prompts.json"
+    },
+    {
+      "slug": "verzekeringen",
+      "name": "Verzekeringsadviseur",
+      "category": "zakelijk",
+      "description": "Verzekeringsadviseur voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/verzekeringen/content.json",
+      "asset_manifest_path": "branches/verzekeringen/asset-manifest.json",
+      "prompt_library_path": "branches/verzekeringen/image-prompts.json"
+    },
+    {
+      "slug": "consultant",
+      "name": "Consultancybureau",
+      "category": "zakelijk",
+      "description": "Consultancybureau voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/consultant/content.json",
+      "asset_manifest_path": "branches/consultant/asset-manifest.json",
+      "prompt_library_path": "branches/consultant/image-prompts.json"
+    },
+    {
+      "slug": "coach",
+      "name": "Coachingspraktijk",
+      "category": "zakelijk",
+      "description": "Coachingspraktijk voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/coach/content.json",
+      "asset_manifest_path": "branches/coach/asset-manifest.json",
+      "prompt_library_path": "branches/coach/image-prompts.json"
+    },
+    {
+      "slug": "uitzendbureau",
+      "name": "Uitzendbureau",
+      "category": "zakelijk",
+      "description": "Uitzendbureau voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/uitzendbureau/content.json",
+      "asset_manifest_path": "branches/uitzendbureau/asset-manifest.json",
+      "prompt_library_path": "branches/uitzendbureau/image-prompts.json"
+    },
+    {
+      "slug": "makelaar",
+      "name": "Makelaar",
+      "category": "zakelijk",
+      "description": "Makelaar voor ondernemers en particulieren die zekerheid, overzicht en deskundig advies zoeken.",
+      "content_path": "branches/makelaar/content.json",
+      "asset_manifest_path": "branches/makelaar/asset-manifest.json",
+      "prompt_library_path": "branches/makelaar/image-prompts.json"
+    },
+    {
+      "slug": "ict",
+      "name": "ICT-bedrijf",
+      "category": "digitaal",
+      "description": "ICT-bedrijf voor organisaties die digitaal willen groeien, automatiseren en professionaliseren.",
+      "content_path": "branches/ict/content.json",
+      "asset_manifest_path": "branches/ict/asset-manifest.json",
+      "prompt_library_path": "branches/ict/image-prompts.json"
+    },
+    {
+      "slug": "software",
+      "name": "Softwarebedrijf",
+      "category": "digitaal",
+      "description": "Softwarebedrijf voor organisaties die digitaal willen groeien, automatiseren en professionaliseren.",
+      "content_path": "branches/software/content.json",
+      "asset_manifest_path": "branches/software/asset-manifest.json",
+      "prompt_library_path": "branches/software/image-prompts.json"
+    },
+    {
+      "slug": "webshop",
+      "name": "Webshop",
+      "category": "digitaal",
+      "description": "Webshop voor organisaties die digitaal willen groeien, automatiseren en professionaliseren.",
+      "content_path": "branches/webshop/content.json",
+      "asset_manifest_path": "branches/webshop/asset-manifest.json",
+      "prompt_library_path": "branches/webshop/image-prompts.json"
+    },
+    {
+      "slug": "marketing",
+      "name": "Marketingbureau",
+      "category": "digitaal",
+      "description": "Marketingbureau voor organisaties die digitaal willen groeien, automatiseren en professionaliseren.",
+      "content_path": "branches/marketing/content.json",
+      "asset_manifest_path": "branches/marketing/asset-manifest.json",
+      "prompt_library_path": "branches/marketing/image-prompts.json"
+    },
+    {
+      "slug": "webdesign",
+      "name": "Webdesignbureau",
+      "category": "digitaal",
+      "description": "Webdesignbureau voor organisaties die digitaal willen groeien, automatiseren en professionaliseren.",
+      "content_path": "branches/webdesign/content.json",
+      "asset_manifest_path": "branches/webdesign/asset-manifest.json",
+      "prompt_library_path": "branches/webdesign/image-prompts.json"
+    },
+    {
+      "slug": "cybersecurity",
+      "name": "Cybersecuritybedrijf",
+      "category": "digitaal",
+      "description": "Cybersecuritybedrijf voor organisaties die digitaal willen groeien, automatiseren en professionaliseren.",
+      "content_path": "branches/cybersecurity/content.json",
+      "asset_manifest_path": "branches/cybersecurity/asset-manifest.json",
+      "prompt_library_path": "branches/cybersecurity/image-prompts.json"
+    },
+    {
+      "slug": "automation",
+      "name": "Automatiseringsbureau",
+      "category": "digitaal",
+      "description": "Automatiseringsbureau voor organisaties die digitaal willen groeien, automatiseren en professionaliseren.",
+      "content_path": "branches/automation/content.json",
+      "asset_manifest_path": "branches/automation/asset-manifest.json",
+      "prompt_library_path": "branches/automation/image-prompts.json"
+    },
+    {
+      "slug": "fotograaf",
+      "name": "Fotograaf",
+      "category": "media",
+      "description": "Fotograaf voor merken en mensen die een krachtig verhaal en onderscheidende zichtbaarheid willen.",
+      "content_path": "branches/fotograaf/content.json",
+      "asset_manifest_path": "branches/fotograaf/asset-manifest.json",
+      "prompt_library_path": "branches/fotograaf/image-prompts.json"
+    },
+    {
+      "slug": "videograaf",
+      "name": "Videograaf",
+      "category": "media",
+      "description": "Videograaf voor merken en mensen die een krachtig verhaal en onderscheidende zichtbaarheid willen.",
+      "content_path": "branches/videograaf/content.json",
+      "asset_manifest_path": "branches/videograaf/asset-manifest.json",
+      "prompt_library_path": "branches/videograaf/image-prompts.json"
+    },
+    {
+      "slug": "drukkerij",
+      "name": "Drukkerij",
+      "category": "media",
+      "description": "Drukkerij voor merken en mensen die een krachtig verhaal en onderscheidende zichtbaarheid willen.",
+      "content_path": "branches/drukkerij/content.json",
+      "asset_manifest_path": "branches/drukkerij/asset-manifest.json",
+      "prompt_library_path": "branches/drukkerij/image-prompts.json"
+    },
+    {
+      "slug": "nieuws",
+      "name": "Nieuwsplatform",
+      "category": "media",
+      "description": "Nieuwsplatform voor merken en mensen die een krachtig verhaal en onderscheidende zichtbaarheid willen.",
+      "content_path": "branches/nieuws/content.json",
+      "asset_manifest_path": "branches/nieuws/asset-manifest.json",
+      "prompt_library_path": "branches/nieuws/image-prompts.json"
+    },
+    {
+      "slug": "kapper",
+      "name": "Kapperssalon",
+      "category": "beauty",
+      "description": "Kapperssalon voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/kapper/content.json",
+      "asset_manifest_path": "branches/kapper/asset-manifest.json",
+      "prompt_library_path": "branches/kapper/image-prompts.json"
+    },
+    {
+      "slug": "barbier",
+      "name": "Barbershop",
+      "category": "beauty",
+      "description": "Barbershop voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/barbier/content.json",
+      "asset_manifest_path": "branches/barbier/asset-manifest.json",
+      "prompt_library_path": "branches/barbier/image-prompts.json"
+    },
+    {
+      "slug": "nagelstudio",
+      "name": "Nagelstudio",
+      "category": "beauty",
+      "description": "Nagelstudio voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/nagelstudio/content.json",
+      "asset_manifest_path": "branches/nagelstudio/asset-manifest.json",
+      "prompt_library_path": "branches/nagelstudio/image-prompts.json"
+    },
+    {
+      "slug": "pedicure",
+      "name": "Pedicurepraktijk",
+      "category": "beauty",
+      "description": "Pedicurepraktijk voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/pedicure/content.json",
+      "asset_manifest_path": "branches/pedicure/asset-manifest.json",
+      "prompt_library_path": "branches/pedicure/image-prompts.json"
+    },
+    {
+      "slug": "manicure",
+      "name": "Manicurestudio",
+      "category": "beauty",
+      "description": "Manicurestudio voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/manicure/content.json",
+      "asset_manifest_path": "branches/manicure/asset-manifest.json",
+      "prompt_library_path": "branches/manicure/image-prompts.json"
+    },
+    {
+      "slug": "wimpers",
+      "name": "Wimperstudio",
+      "category": "beauty",
+      "description": "Wimperstudio voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/wimpers/content.json",
+      "asset_manifest_path": "branches/wimpers/asset-manifest.json",
+      "prompt_library_path": "branches/wimpers/image-prompts.json"
+    },
+    {
+      "slug": "schoonheidssalon",
+      "name": "Schoonheidssalon",
+      "category": "beauty",
+      "description": "Schoonheidssalon voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/schoonheidssalon/content.json",
+      "asset_manifest_path": "branches/schoonheidssalon/asset-manifest.json",
+      "prompt_library_path": "branches/schoonheidssalon/image-prompts.json"
+    },
+    {
+      "slug": "sauna",
+      "name": "Sauna & Wellness",
+      "category": "beauty",
+      "description": "Sauna & Wellness voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/sauna/content.json",
+      "asset_manifest_path": "branches/sauna/asset-manifest.json",
+      "prompt_library_path": "branches/sauna/image-prompts.json"
+    },
+    {
+      "slug": "massage",
+      "name": "Massagepraktijk",
+      "category": "beauty",
+      "description": "Massagepraktijk voor klanten die verzorging, ontspanning en een resultaat dat bij hen past zoeken.",
+      "content_path": "branches/massage/content.json",
+      "asset_manifest_path": "branches/massage/asset-manifest.json",
+      "prompt_library_path": "branches/massage/image-prompts.json"
+    },
+    {
+      "slug": "personal-trainer",
+      "name": "Personal Trainer",
+      "category": "sport",
+      "description": "Personal Trainer voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/personal-trainer/content.json",
+      "asset_manifest_path": "branches/personal-trainer/asset-manifest.json",
+      "prompt_library_path": "branches/personal-trainer/image-prompts.json"
+    },
+    {
+      "slug": "sportschool",
+      "name": "Sportschool",
+      "category": "sport",
+      "description": "Sportschool voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/sportschool/content.json",
+      "asset_manifest_path": "branches/sportschool/asset-manifest.json",
+      "prompt_library_path": "branches/sportschool/image-prompts.json"
+    },
+    {
+      "slug": "sportvereniging",
+      "name": "Sportvereniging",
+      "category": "sport",
+      "description": "Sportvereniging voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/sportvereniging/content.json",
+      "asset_manifest_path": "branches/sportvereniging/asset-manifest.json",
+      "prompt_library_path": "branches/sportvereniging/image-prompts.json"
+    },
+    {
+      "slug": "voetbal",
+      "name": "Voetbalvereniging",
+      "category": "sport",
+      "description": "Voetbalvereniging voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/voetbal/content.json",
+      "asset_manifest_path": "branches/voetbal/asset-manifest.json",
+      "prompt_library_path": "branches/voetbal/image-prompts.json"
+    },
+    {
+      "slug": "tennis",
+      "name": "Tennisvereniging",
+      "category": "sport",
+      "description": "Tennisvereniging voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/tennis/content.json",
+      "asset_manifest_path": "branches/tennis/asset-manifest.json",
+      "prompt_library_path": "branches/tennis/image-prompts.json"
+    },
+    {
+      "slug": "squash",
+      "name": "Squashcentrum",
+      "category": "sport",
+      "description": "Squashcentrum voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/squash/content.json",
+      "asset_manifest_path": "branches/squash/asset-manifest.json",
+      "prompt_library_path": "branches/squash/image-prompts.json"
+    },
+    {
+      "slug": "paardensport",
+      "name": "Manege & Paardensport",
+      "category": "sport",
+      "description": "Manege & Paardensport voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/paardensport/content.json",
+      "asset_manifest_path": "branches/paardensport/asset-manifest.json",
+      "prompt_library_path": "branches/paardensport/image-prompts.json"
+    },
+    {
+      "slug": "yogastudio",
+      "name": "Yogastudio",
+      "category": "sport",
+      "description": "Yogastudio voor beginners en ervaren sporters die plezier, progressie en verbinding zoeken.",
+      "content_path": "branches/yogastudio/content.json",
+      "asset_manifest_path": "branches/yogastudio/asset-manifest.json",
+      "prompt_library_path": "branches/yogastudio/image-prompts.json"
+    },
+    {
+      "slug": "fysiotherapie",
+      "name": "Fysiotherapiepraktijk",
+      "category": "gezondheid",
+      "description": "Fysiotherapiepraktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/fysiotherapie/content.json",
+      "asset_manifest_path": "branches/fysiotherapie/asset-manifest.json",
+      "prompt_library_path": "branches/fysiotherapie/image-prompts.json"
+    },
+    {
+      "slug": "hypnotherapie",
+      "name": "Hypnotherapiepraktijk",
+      "category": "gezondheid",
+      "description": "Hypnotherapiepraktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/hypnotherapie/content.json",
+      "asset_manifest_path": "branches/hypnotherapie/asset-manifest.json",
+      "prompt_library_path": "branches/hypnotherapie/image-prompts.json"
+    },
+    {
+      "slug": "holistisch",
+      "name": "Holistische Praktijk",
+      "category": "gezondheid",
+      "description": "Holistische Praktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/holistisch/content.json",
+      "asset_manifest_path": "branches/holistisch/asset-manifest.json",
+      "prompt_library_path": "branches/holistisch/image-prompts.json"
+    },
+    {
+      "slug": "tandarts",
+      "name": "Tandartspraktijk",
+      "category": "gezondheid",
+      "description": "Tandartspraktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/tandarts/content.json",
+      "asset_manifest_path": "branches/tandarts/asset-manifest.json",
+      "prompt_library_path": "branches/tandarts/image-prompts.json"
+    },
+    {
+      "slug": "psycholoog",
+      "name": "Psychologenpraktijk",
+      "category": "gezondheid",
+      "description": "Psychologenpraktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/psycholoog/content.json",
+      "asset_manifest_path": "branches/psycholoog/asset-manifest.json",
+      "prompt_library_path": "branches/psycholoog/image-prompts.json"
+    },
+    {
+      "slug": "dietist",
+      "name": "Diëtistenpraktijk",
+      "category": "gezondheid",
+      "description": "Diëtistenpraktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/dietist/content.json",
+      "asset_manifest_path": "branches/dietist/asset-manifest.json",
+      "prompt_library_path": "branches/dietist/image-prompts.json"
+    },
+    {
+      "slug": "verloskundige",
+      "name": "Verloskundigenpraktijk",
+      "category": "gezondheid",
+      "description": "Verloskundigenpraktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/verloskundige/content.json",
+      "asset_manifest_path": "branches/verloskundige/asset-manifest.json",
+      "prompt_library_path": "branches/verloskundige/image-prompts.json"
+    },
+    {
+      "slug": "dierenarts",
+      "name": "Dierenartsenpraktijk",
+      "category": "gezondheid",
+      "description": "Dierenartsenpraktijk voor mensen die verantwoord willen werken aan gezondheid, herstel en welzijn.",
+      "content_path": "branches/dierenarts/content.json",
+      "asset_manifest_path": "branches/dierenarts/asset-manifest.json",
+      "prompt_library_path": "branches/dierenarts/image-prompts.json"
+    },
+    {
+      "slug": "restaurant",
+      "name": "Restaurant",
+      "category": "horeca",
+      "description": "Restaurant voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/restaurant/content.json",
+      "asset_manifest_path": "branches/restaurant/asset-manifest.json",
+      "prompt_library_path": "branches/restaurant/image-prompts.json"
+    },
+    {
+      "slug": "pizzeria",
+      "name": "Pizzeria",
+      "category": "horeca",
+      "description": "Pizzeria voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/pizzeria/content.json",
+      "asset_manifest_path": "branches/pizzeria/asset-manifest.json",
+      "prompt_library_path": "branches/pizzeria/image-prompts.json"
+    },
+    {
+      "slug": "snackbar",
+      "name": "Snackbar",
+      "category": "horeca",
+      "description": "Snackbar voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/snackbar/content.json",
+      "asset_manifest_path": "branches/snackbar/asset-manifest.json",
+      "prompt_library_path": "branches/snackbar/image-prompts.json"
+    },
+    {
+      "slug": "sushi",
+      "name": "Sushirestaurant",
+      "category": "horeca",
+      "description": "Sushirestaurant voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/sushi/content.json",
+      "asset_manifest_path": "branches/sushi/asset-manifest.json",
+      "prompt_library_path": "branches/sushi/image-prompts.json"
+    },
+    {
+      "slug": "doner",
+      "name": "Dönerzaak",
+      "category": "horeca",
+      "description": "Dönerzaak voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/doner/content.json",
+      "asset_manifest_path": "branches/doner/asset-manifest.json",
+      "prompt_library_path": "branches/doner/image-prompts.json"
+    },
+    {
+      "slug": "cafe",
+      "name": "Café",
+      "category": "horeca",
+      "description": "Café voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/cafe/content.json",
+      "asset_manifest_path": "branches/cafe/asset-manifest.json",
+      "prompt_library_path": "branches/cafe/image-prompts.json"
+    },
+    {
+      "slug": "hotel",
+      "name": "Hotel",
+      "category": "horeca",
+      "description": "Hotel voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/hotel/content.json",
+      "asset_manifest_path": "branches/hotel/asset-manifest.json",
+      "prompt_library_path": "branches/hotel/image-prompts.json"
+    },
+    {
+      "slug": "catering",
+      "name": "Cateringbedrijf",
+      "category": "horeca",
+      "description": "Cateringbedrijf voor gasten die sfeer, kwaliteit en een soepel bezoek of verblijf zoeken.",
+      "content_path": "branches/catering/content.json",
+      "asset_manifest_path": "branches/catering/asset-manifest.json",
+      "prompt_library_path": "branches/catering/image-prompts.json"
+    },
+    {
+      "slug": "camping",
+      "name": "Camping",
+      "category": "recreatie",
+      "description": "Camping voor vrienden, gezinnen en teams die samen een verzorgde ervaring willen beleven.",
+      "content_path": "branches/camping/content.json",
+      "asset_manifest_path": "branches/camping/asset-manifest.json",
+      "prompt_library_path": "branches/camping/image-prompts.json"
+    },
+    {
+      "slug": "festival",
+      "name": "Festival",
+      "category": "recreatie",
+      "description": "Festival voor vrienden, gezinnen en teams die samen een verzorgde ervaring willen beleven.",
+      "content_path": "branches/festival/content.json",
+      "asset_manifest_path": "branches/festival/asset-manifest.json",
+      "prompt_library_path": "branches/festival/image-prompts.json"
+    },
+    {
+      "slug": "bootverhuur",
+      "name": "Bootverhuur",
+      "category": "recreatie",
+      "description": "Bootverhuur voor vrienden, gezinnen en teams die samen een verzorgde ervaring willen beleven.",
+      "content_path": "branches/bootverhuur/content.json",
+      "asset_manifest_path": "branches/bootverhuur/asset-manifest.json",
+      "prompt_library_path": "branches/bootverhuur/image-prompts.json"
+    },
+    {
+      "slug": "paintball",
+      "name": "Paintballcentrum",
+      "category": "recreatie",
+      "description": "Paintballcentrum voor vrienden, gezinnen en teams die samen een verzorgde ervaring willen beleven.",
+      "content_path": "branches/paintball/content.json",
+      "asset_manifest_path": "branches/paintball/asset-manifest.json",
+      "prompt_library_path": "branches/paintball/image-prompts.json"
+    },
+    {
+      "slug": "lasergame",
+      "name": "Lasergamecentrum",
+      "category": "recreatie",
+      "description": "Lasergamecentrum voor vrienden, gezinnen en teams die samen een verzorgde ervaring willen beleven.",
+      "content_path": "branches/lasergame/content.json",
+      "asset_manifest_path": "branches/lasergame/asset-manifest.json",
+      "prompt_library_path": "branches/lasergame/image-prompts.json"
+    },
+    {
+      "slug": "escape-room",
+      "name": "Escape Room",
+      "category": "recreatie",
+      "description": "Escape Room voor vrienden, gezinnen en teams die samen een verzorgde ervaring willen beleven.",
+      "content_path": "branches/escape-room/content.json",
+      "asset_manifest_path": "branches/escape-room/asset-manifest.json",
+      "prompt_library_path": "branches/escape-room/image-prompts.json"
+    },
+    {
+      "slug": "evenementenlocatie",
+      "name": "Evenementenlocatie",
+      "category": "recreatie",
+      "description": "Evenementenlocatie voor vrienden, gezinnen en teams die samen een verzorgde ervaring willen beleven.",
+      "content_path": "branches/evenementenlocatie/content.json",
+      "asset_manifest_path": "branches/evenementenlocatie/asset-manifest.json",
+      "prompt_library_path": "branches/evenementenlocatie/image-prompts.json"
+    },
+    {
+      "slug": "elektronica",
+      "name": "Elektronicawinkel",
+      "category": "retail",
+      "description": "Elektronicawinkel voor consumenten die kwaliteit, persoonlijk advies en een prettige koopervaring waarderen.",
+      "content_path": "branches/elektronica/content.json",
+      "asset_manifest_path": "branches/elektronica/asset-manifest.json",
+      "prompt_library_path": "branches/elektronica/image-prompts.json"
+    },
+    {
+      "slug": "fashion",
+      "name": "Modewinkel",
+      "category": "retail",
+      "description": "Modewinkel voor consumenten die kwaliteit, persoonlijk advies en een prettige koopervaring waarderen.",
+      "content_path": "branches/fashion/content.json",
+      "asset_manifest_path": "branches/fashion/asset-manifest.json",
+      "prompt_library_path": "branches/fashion/image-prompts.json"
+    },
+    {
+      "slug": "bloemist",
+      "name": "Bloemist",
+      "category": "retail",
+      "description": "Bloemist voor consumenten die kwaliteit, persoonlijk advies en een prettige koopervaring waarderen.",
+      "content_path": "branches/bloemist/content.json",
+      "asset_manifest_path": "branches/bloemist/asset-manifest.json",
+      "prompt_library_path": "branches/bloemist/image-prompts.json"
+    },
+    {
+      "slug": "juwelier",
+      "name": "Juwelier",
+      "category": "retail",
+      "description": "Juwelier voor consumenten die kwaliteit, persoonlijk advies en een prettige koopervaring waarderen.",
+      "content_path": "branches/juwelier/content.json",
+      "asset_manifest_path": "branches/juwelier/asset-manifest.json",
+      "prompt_library_path": "branches/juwelier/image-prompts.json"
+    },
+    {
+      "slug": "opticien",
+      "name": "Opticien",
+      "category": "retail",
+      "description": "Opticien voor consumenten die kwaliteit, persoonlijk advies en een prettige koopervaring waarderen.",
+      "content_path": "branches/opticien/content.json",
+      "asset_manifest_path": "branches/opticien/asset-manifest.json",
+      "prompt_library_path": "branches/opticien/image-prompts.json"
+    },
+    {
+      "slug": "meubelwinkel",
+      "name": "Meubelwinkel",
+      "category": "retail",
+      "description": "Meubelwinkel voor consumenten die kwaliteit, persoonlijk advies en een prettige koopervaring waarderen.",
+      "content_path": "branches/meubelwinkel/content.json",
+      "asset_manifest_path": "branches/meubelwinkel/asset-manifest.json",
+      "prompt_library_path": "branches/meubelwinkel/image-prompts.json"
+    },
+    {
+      "slug": "lokale-specialist",
+      "name": "Lokale Specialist",
+      "category": "lokaal",
+      "description": "Lokale Specialist voor lokale klanten die snel duidelijkheid en betrouwbare service zoeken.",
+      "content_path": "branches/lokale-specialist/content.json",
+      "asset_manifest_path": "branches/lokale-specialist/asset-manifest.json",
+      "prompt_library_path": "branches/lokale-specialist/image-prompts.json"
+    }
+  ]
+}

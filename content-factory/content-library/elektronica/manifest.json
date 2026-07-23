@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "elektronica",
+  "content": "../../generated/branches/elektronica/content.json",
+  "assets": "../../generated/branches/elektronica/asset-manifest.json",
+  "prompts": "../../generated/branches/elektronica/image-prompts.json"
+}

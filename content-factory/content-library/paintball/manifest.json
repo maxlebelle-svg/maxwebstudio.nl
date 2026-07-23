@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "paintball",
+  "content": "../../generated/branches/paintball/content.json",
+  "assets": "../../generated/branches/paintball/asset-manifest.json",
+  "prompts": "../../generated/branches/paintball/image-prompts.json"
+}

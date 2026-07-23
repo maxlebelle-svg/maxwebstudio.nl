@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "stukadoor",
+  "content": "../../generated/branches/stukadoor/content.json",
+  "assets": "../../generated/branches/stukadoor/asset-manifest.json",
+  "prompts": "../../generated/branches/stukadoor/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "advocaat",
+  "content": "../../generated/branches/advocaat/content.json",
+  "assets": "../../generated/branches/advocaat/asset-manifest.json",
+  "prompts": "../../generated/branches/advocaat/image-prompts.json"
+}

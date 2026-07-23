@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "paardensport",
+  "content": "../../generated/branches/paardensport/content.json",
+  "assets": "../../generated/branches/paardensport/asset-manifest.json",
+  "prompts": "../../generated/branches/paardensport/image-prompts.json"
+}

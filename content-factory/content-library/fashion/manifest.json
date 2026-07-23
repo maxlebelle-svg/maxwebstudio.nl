@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "fashion",
+  "content": "../../generated/branches/fashion/content.json",
+  "assets": "../../generated/branches/fashion/asset-manifest.json",
+  "prompts": "../../generated/branches/fashion/image-prompts.json"
+}

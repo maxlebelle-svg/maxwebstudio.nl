@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "loodgieter",
+  "content": "../../generated/branches/loodgieter/content.json",
+  "assets": "../../generated/branches/loodgieter/asset-manifest.json",
+  "prompts": "../../generated/branches/loodgieter/image-prompts.json"
+}

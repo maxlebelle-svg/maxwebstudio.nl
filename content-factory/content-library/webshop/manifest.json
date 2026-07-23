@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "webshop",
+  "content": "../../generated/branches/webshop/content.json",
+  "assets": "../../generated/branches/webshop/asset-manifest.json",
+  "prompts": "../../generated/branches/webshop/image-prompts.json"
+}

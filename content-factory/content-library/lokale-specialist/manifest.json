@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "lokale-specialist",
+  "content": "../../generated/branches/lokale-specialist/content.json",
+  "assets": "../../generated/branches/lokale-specialist/asset-manifest.json",
+  "prompts": "../../generated/branches/lokale-specialist/image-prompts.json"
+}

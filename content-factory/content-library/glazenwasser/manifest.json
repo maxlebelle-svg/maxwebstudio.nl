@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "glazenwasser",
+  "content": "../../generated/branches/glazenwasser/content.json",
+  "assets": "../../generated/branches/glazenwasser/asset-manifest.json",
+  "prompts": "../../generated/branches/glazenwasser/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "nieuws",
+  "content": "../../generated/branches/nieuws/content.json",
+  "assets": "../../generated/branches/nieuws/asset-manifest.json",
+  "prompts": "../../generated/branches/nieuws/image-prompts.json"
+}

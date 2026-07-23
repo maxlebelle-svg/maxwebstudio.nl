@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "consultant",
+  "content": "../../generated/branches/consultant/content.json",
+  "assets": "../../generated/branches/consultant/asset-manifest.json",
+  "prompts": "../../generated/branches/consultant/image-prompts.json"
+}

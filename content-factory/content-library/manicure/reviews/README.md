@@ -1,0 +1,3 @@
+# Manicurestudio — reviews
+
+Bestandslocatie voor 1 geplande asset(s). Zie `../../../generated/branches/manicure/asset-manifest.json` voor bestandsnamen, resoluties, verhoudingen, templatekoppelingen en prompts.

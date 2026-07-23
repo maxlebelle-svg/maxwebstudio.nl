@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "hypotheek",
+  "content": "../../generated/branches/hypotheek/content.json",
+  "assets": "../../generated/branches/hypotheek/asset-manifest.json",
+  "prompts": "../../generated/branches/hypotheek/image-prompts.json"
+}

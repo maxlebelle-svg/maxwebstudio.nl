@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "videograaf",
+  "content": "../../generated/branches/videograaf/content.json",
+  "assets": "../../generated/branches/videograaf/asset-manifest.json",
+  "prompts": "../../generated/branches/videograaf/image-prompts.json"
+}

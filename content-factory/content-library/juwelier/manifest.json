@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "juwelier",
+  "content": "../../generated/branches/juwelier/content.json",
+  "assets": "../../generated/branches/juwelier/asset-manifest.json",
+  "prompts": "../../generated/branches/juwelier/image-prompts.json"
+}

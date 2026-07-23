@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "badkamers",
+  "content": "../../generated/branches/badkamers/content.json",
+  "assets": "../../generated/branches/badkamers/asset-manifest.json",
+  "prompts": "../../generated/branches/badkamers/image-prompts.json"
+}

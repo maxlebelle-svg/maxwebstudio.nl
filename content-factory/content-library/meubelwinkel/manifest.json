@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "meubelwinkel",
+  "content": "../../generated/branches/meubelwinkel/content.json",
+  "assets": "../../generated/branches/meubelwinkel/asset-manifest.json",
+  "prompts": "../../generated/branches/meubelwinkel/image-prompts.json"
+}

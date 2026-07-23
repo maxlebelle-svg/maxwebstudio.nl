@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "fysiotherapie",
+  "content": "../../generated/branches/fysiotherapie/content.json",
+  "assets": "../../generated/branches/fysiotherapie/asset-manifest.json",
+  "prompts": "../../generated/branches/fysiotherapie/image-prompts.json"
+}

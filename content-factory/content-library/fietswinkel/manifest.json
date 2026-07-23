@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "fietswinkel",
+  "content": "../../generated/branches/fietswinkel/content.json",
+  "assets": "../../generated/branches/fietswinkel/asset-manifest.json",
+  "prompts": "../../generated/branches/fietswinkel/image-prompts.json"
+}

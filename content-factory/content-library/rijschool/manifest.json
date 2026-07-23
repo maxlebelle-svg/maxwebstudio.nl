@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "rijschool",
+  "content": "../../generated/branches/rijschool/content.json",
+  "assets": "../../generated/branches/rijschool/asset-manifest.json",
+  "prompts": "../../generated/branches/rijschool/image-prompts.json"
+}

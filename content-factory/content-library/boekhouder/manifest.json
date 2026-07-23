@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "boekhouder",
+  "content": "../../generated/branches/boekhouder/content.json",
+  "assets": "../../generated/branches/boekhouder/asset-manifest.json",
+  "prompts": "../../generated/branches/boekhouder/image-prompts.json"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "koeriers",
+  "content": "../../generated/branches/koeriers/content.json",
+  "assets": "../../generated/branches/koeriers/asset-manifest.json",
+  "prompts": "../../generated/branches/koeriers/image-prompts.json"
+}

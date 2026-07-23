@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "pedicure",
+  "content": "../../generated/branches/pedicure/content.json",
+  "assets": "../../generated/branches/pedicure/asset-manifest.json",
+  "prompts": "../../generated/branches/pedicure/image-prompts.json"
+}

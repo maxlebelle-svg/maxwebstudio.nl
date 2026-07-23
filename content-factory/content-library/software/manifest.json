@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "software",
+  "content": "../../generated/branches/software/content.json",
+  "assets": "../../generated/branches/software/asset-manifest.json",
+  "prompts": "../../generated/branches/software/image-prompts.json"
+}

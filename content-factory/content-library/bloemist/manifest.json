@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "bloemist",
+  "content": "../../generated/branches/bloemist/content.json",
+  "assets": "../../generated/branches/bloemist/asset-manifest.json",
+  "prompts": "../../generated/branches/bloemist/image-prompts.json"
+}

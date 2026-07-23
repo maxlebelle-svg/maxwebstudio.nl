@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "accountant",
+  "content": "../../generated/branches/accountant/content.json",
+  "assets": "../../generated/branches/accountant/asset-manifest.json",
+  "prompts": "../../generated/branches/accountant/image-prompts.json"
+}

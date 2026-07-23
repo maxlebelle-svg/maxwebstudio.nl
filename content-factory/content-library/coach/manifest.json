@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "coach",
+  "content": "../../generated/branches/coach/content.json",
+  "assets": "../../generated/branches/coach/asset-manifest.json",
+  "prompts": "../../generated/branches/coach/image-prompts.json"
+}

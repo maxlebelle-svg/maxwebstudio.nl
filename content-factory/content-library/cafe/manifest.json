@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "cafe",
+  "content": "../../generated/branches/cafe/content.json",
+  "assets": "../../generated/branches/cafe/asset-manifest.json",
+  "prompts": "../../generated/branches/cafe/image-prompts.json"
+}

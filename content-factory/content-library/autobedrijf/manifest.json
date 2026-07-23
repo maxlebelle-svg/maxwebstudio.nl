@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "autobedrijf",
+  "content": "../../generated/branches/autobedrijf/content.json",
+  "assets": "../../generated/branches/autobedrijf/asset-manifest.json",
+  "prompts": "../../generated/branches/autobedrijf/image-prompts.json"
+}

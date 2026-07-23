@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "squash",
+  "content": "../../generated/branches/squash/content.json",
+  "assets": "../../generated/branches/squash/asset-manifest.json",
+  "prompts": "../../generated/branches/squash/image-prompts.json"
+}

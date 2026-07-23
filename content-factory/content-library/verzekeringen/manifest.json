@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "verzekeringen",
+  "content": "../../generated/branches/verzekeringen/content.json",
+  "assets": "../../generated/branches/verzekeringen/asset-manifest.json",
+  "prompts": "../../generated/branches/verzekeringen/image-prompts.json"
+}

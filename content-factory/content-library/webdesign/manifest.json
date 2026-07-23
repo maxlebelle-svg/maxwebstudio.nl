@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "webdesign",
+  "content": "../../generated/branches/webdesign/content.json",
+  "assets": "../../generated/branches/webdesign/asset-manifest.json",
+  "prompts": "../../generated/branches/webdesign/image-prompts.json"
+}

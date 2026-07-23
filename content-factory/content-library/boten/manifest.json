@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "boten",
+  "content": "../../generated/branches/boten/content.json",
+  "assets": "../../generated/branches/boten/asset-manifest.json",
+  "prompts": "../../generated/branches/boten/image-prompts.json"
+}

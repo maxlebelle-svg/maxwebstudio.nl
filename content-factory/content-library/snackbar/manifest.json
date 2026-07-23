@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "branch": "snackbar",
+  "content": "../../generated/branches/snackbar/content.json",
+  "assets": "../../generated/branches/snackbar/asset-manifest.json",
+  "prompts": "../../generated/branches/snackbar/image-prompts.json"
+}
