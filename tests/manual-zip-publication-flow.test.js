@@ -35,7 +35,9 @@ test("manual upload has one change handler, duplicate guard and explicit states"
   assert.match(factory, /id="demo-journey-manual-zip-name"/);
   assert.match(factory, /id="demo-journey-process-manual-zip"/);
   assert.match(factory, /id="factory-process-manual-zip"/);
+  assert.match(factory, /id="factory-preview-process-manual-zip"/);
   assert.match(factory, /function syncGuidedZipProcess\(\)/);
+  assert.match(factory, /\["factory-process-manual-zip", "factory-preview-process-manual-zip"\]/);
   assert.match(factory, /proxyClick\("demo-journey-process-manual-zip"\)/);
   assert.match(factory, /elements\.uploadManualZip\?\.addEventListener\("click"[\s\S]*openZipPicker\(\)/);
   assert.match(factory, /elements\.processManualZip\?\.addEventListener\("click"[\s\S]*uploadManualZipFile\(pendingManualZipFile\)/);
@@ -51,6 +53,8 @@ test("manual upload has one change handler, duplicate guard and explicit states"
   assert.match(factory, /pendingManualZipFile && previewSource === "manual"/);
   assert.match(factory, /previewSource = "manual";[\s\S]{0,500}renderPreviewStage\(\)/);
   assert.match(factory, /const hasManual = Boolean\(pendingManualZipFile\) \|\| availableSources\.has\("manual_zip"\)/);
+  assert.match(factory, /availableSources\.has\(sourceType\) \|\| \(sourceType === "manual_zip" && Boolean\(pendingManualZipFile\)\)/);
+  assert.match(factory, /viewSelector\.hidden = availableSources\.size === 0 && !pendingManualZipFile/);
   assert.match(factory, /source === "manual" && pendingManualZipFile/);
   assert.match(factory, /selectManualZipFile\(null, \{ render: false \}\)/);
   assert.match(factory, /if \(!processed\) selectManualZipFile\(file\)/);
@@ -101,6 +105,16 @@ test("backend and frontend expose concrete failure codes and request ids", () =>
   assert.match(upload, /databaseCode/);
   assert.match(factory, /response\.headers\.get\("x-nf-request-id"\)/);
   assert.match(factory, /Request-id:/);
+  assert.match(factory, /error\?\.code && error\.code !== "REQUEST_FAILED" \? `Code: \$\{error\.code\}\.\`/);
+});
+
+test("workspace ZIP process action is outside the hidden Builder and legacy command rows", () => {
+  const workspace = factory.slice(factory.indexOf('id="factory-workspace-mode"'), factory.indexOf('id="factory-guided-preview-url"') + 1000);
+  const builder = factory.slice(factory.indexOf('id="factory-builder-mode"'), factory.indexOf('id="factory-workspace-mode"'));
+  const legacy = factory.slice(factory.indexOf('class="factory-preview-command-row"'), factory.indexOf('class="factory-preview-browser"'));
+  assert.match(workspace, /id="factory-preview-process-manual-zip"/);
+  assert.doesNotMatch(builder, /id="factory-preview-process-manual-zip"/);
+  assert.doesNotMatch(legacy, /id="factory-preview-process-manual-zip"/);
 });
 
 test("manual preview activation is persisted server-side and survives refresh", () => {
