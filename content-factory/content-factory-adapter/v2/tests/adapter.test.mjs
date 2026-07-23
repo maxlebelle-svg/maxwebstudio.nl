@@ -58,4 +58,3 @@ test("dezelfde v2-input blijft deterministisch", () => {
 test("ongeldige specialisatie wordt fail-closed geweigerd", () => {
   assert.throws(() => resolveWebsiteContentV2({ ...input, specialization: "sushi" }), /Onbekende subspecialisatie/);
 });
-

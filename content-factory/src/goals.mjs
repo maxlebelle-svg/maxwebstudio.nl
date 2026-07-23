@@ -13,4 +13,3 @@ export function resolveContentGoal(value) {
   const normalized = String(value || DEFAULT_GOAL_ID).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return CONTENT_GOALS.find((goal) => goal.id === normalized) || null;
 }
-

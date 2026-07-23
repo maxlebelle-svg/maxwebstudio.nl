@@ -23,4 +23,3 @@ test("ontbrekende specialisatie en regio verlagen alleen de specificiteit", () =
   assert.ok(specificity.score < 100);
   assert.equal(completeness.score, 100);
 });
-

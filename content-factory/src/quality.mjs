@@ -109,4 +109,3 @@ export function assessWebsiteContentQuality({ blueprint, content }) {
     status: overall >= 90 ? "adapter_ready" : overall >= 75 ? "review_recommended" : "incomplete"
   };
 }
-

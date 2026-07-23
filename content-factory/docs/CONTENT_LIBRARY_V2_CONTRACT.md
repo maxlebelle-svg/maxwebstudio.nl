@@ -53,4 +53,3 @@ Het blueprint bevat geen HTML, templatecode, database-ID's, echte klantreviews o
 - v1 blijft beschikbaar voor de bestaande Content Factory-adapter.
 - Adapter v2 gebruikt het stabiele v2-blueprint en benut v1 alleen als tijdelijke bron voor bewezen contentselectie.
 - Productiecode gebruikt Adapter v2 pas na een afzonderlijke integratie- en regressiefase.
-

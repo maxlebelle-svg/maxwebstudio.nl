@@ -32,4 +32,3 @@ De uitvoer bevat:
 - expliciete placeholder-, review- en publicatieveiligheid.
 
 Adapter v2 gebruikt Adapter v1 tijdelijk als compatibiliteitsbron voor bewezen contentselectie. De v2-compositie overschrijft stijl, subspecialisatie, messaging-intentie, SEO-richting en fotografie. Deze overgang voorkomt dat productieflows al tijdens de contractvalidatie moeten veranderen.
-

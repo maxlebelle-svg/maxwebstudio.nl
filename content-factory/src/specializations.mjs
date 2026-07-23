@@ -71,4 +71,3 @@ export function resolveSpecialization(vertical, value) {
   if (!normalized) return null;
   return SPECIALIZATIONS.find((specialization) => specialization.vertical === vertical && (specialization.id === normalized || specialization.name.toLowerCase() === String(value).toLowerCase())) || null;
 }
-
