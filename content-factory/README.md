@@ -24,6 +24,8 @@ content-factory/
 │   ├── validator.mjs              volledigheidsbewaking
 │   ├── engine.mjs                 content generation engine
 │   └── cli.mjs                    command-line ingang
+├── public/v1/                     stabiele publieke leesinterface
+├── content-factory-adapter/v1/    versioned Website Factory-adapter
 ├── generated/
 │   ├── catalog.json               centrale lichte index
 │   ├── content-library.json       centrale volledige JSON-definitie
@@ -52,6 +54,8 @@ node src/cli.mjs generate \
 ```
 
 De gegenereerde output bestaat uit losse JSON-bestanden per kanaal. Een toekomstige Website Factory-adapter kan deze objecten direct op bestaande templates projecteren.
+
+De eerste veilige adapter is beschikbaar via `@maxwebstudio/content-factory/adapter/v1`. Deze levert zowel een rijk contentcontract als een compatibele `websiteFactoryInput`, maar is bewust nog niet in productiecode geactiveerd. Zie [Website Factory Adapter v1](./content-factory-adapter/v1/README.md).
 
 ## Datamodel
 

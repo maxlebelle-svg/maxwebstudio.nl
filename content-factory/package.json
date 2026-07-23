@@ -4,12 +4,18 @@
   "private": true,
   "type": "module",
   "description": "Deterministische, uitbreidbare contentbibliotheek voor de Max Webstudio Website Factory.",
+  "exports": {
+    ".": "./public/v1/index.mjs",
+    "./adapter/v1": "./content-factory-adapter/v1/index.mjs",
+    "./schemas/adapter-v1-input": "./schemas/content-factory-adapter-v1-input.schema.json",
+    "./schemas/adapter-v1-output": "./schemas/content-factory-adapter-v1-output.schema.json"
+  },
   "scripts": {
     "build": "node ./src/cli.mjs build",
     "validate": "node ./src/cli.mjs validate",
     "generate": "node ./src/cli.mjs generate",
     "stats": "node ./src/cli.mjs stats",
-    "test": "node --test ./tests/*.test.mjs"
+    "test": "node --test ./tests/*.test.mjs ./content-factory-adapter/v1/tests/*.test.mjs"
   },
   "engines": {
     "node": ">=20"
