@@ -14,3 +14,6 @@ Klanten MaxWebstudio/
 
 # Local Netlify folder
 .netlify
+
+# Local Gold Set blinding key and unrevealed A/B mapping
+.gold-set-private/

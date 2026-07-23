@@ -1,0 +1,7 @@
+{
+  "gold_set_version": "2026.1",
+  "manifest_sha256": "c1843f70245194cb5a2b67981e72700be057b78ad4e80456cddbf4f7bed6452d",
+  "case_count": 24,
+  "status": "frozen",
+  "mutation_rule": "Create a new version; never replace this hash."
+}

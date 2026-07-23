@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxwebstudio.nl/schemas/gold-set-2026.1-assessment.schema.json",
+  "title": "Gold Set 2026.1 blind assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["gold_set_version", "reviewer_id", "blinded", "cases"],
+  "properties": {
+    "gold_set_version": { "const": "2026.1" },
+    "reviewer_id": { "type": "string", "minLength": 2, "maxLength": 120 },
+    "blinded": { "const": true },
+    "submitted_at": { "type": "string" },
+    "cases": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["case_number", "preference", "scores", "customer_success", "notes"],
+        "properties": {
+          "case_number": { "type": "integer", "minimum": 1, "maximum": 24 },
+          "preference": { "enum": ["A", "B", "equal"] },
+          "scores": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["visual_quality", "premium_appearance", "trust", "conversion", "branch_feel", "custom_feel"],
+            "properties": {
+              "visual_quality": { "$ref": "#/$defs/pairScore" },
+              "premium_appearance": { "$ref": "#/$defs/pairScore" },
+              "trust": { "$ref": "#/$defs/pairScore" },
+              "conversion": { "$ref": "#/$defs/pairScore" },
+              "branch_feel": { "$ref": "#/$defs/pairScore" },
+              "custom_feel": { "$ref": "#/$defs/pairScore" }
+            }
+          },
+          "customer_success": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["send_today", "open_with_pride", "feels_custom", "no_obvious_ai_errors", "expected_to_pay"],
+            "properties": {
+              "send_today": { "$ref": "#/$defs/pairDecision" },
+              "open_with_pride": { "$ref": "#/$defs/pairDecision" },
+              "feels_custom": { "$ref": "#/$defs/pairDecision" },
+              "no_obvious_ai_errors": { "$ref": "#/$defs/pairDecision" },
+              "expected_to_pay": { "$ref": "#/$defs/pairDecision" }
+            }
+          },
+          "notes": { "type": "string", "maxLength": 4000 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "pairScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["A", "B"],
+      "properties": {
+        "A": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "B": { "type": "integer", "minimum": 1, "maximum": 5 }
+      }
+    },
+    "pairDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["A", "B"],
+      "properties": {
+        "A": { "type": "boolean" },
+        "B": { "type": "boolean" }
+      }
+    }
+  }
+}
