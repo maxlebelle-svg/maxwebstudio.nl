@@ -3,18 +3,22 @@
   "$id": "https://maxwebstudio.nl/schemas/content-factory/composition-blueprint-v2.json",
   "title": "Channel-neutral Content Library composition blueprint v2",
   "type": "object",
-  "required": ["contract_version", "composition_signature", "dimensions", "design_system", "content_strategy", "blocks", "photography_recipe", "consumers"],
+  "required": ["contract_version", "composition_signature", "dimensions", "design_system", "content_strategy", "blocks", "block_strategy", "photography_recipe", "consumers"],
   "properties": {
     "contract_version": { "type": "string" },
     "composition_signature": { "type": "string", "minLength": 8 },
     "dimensions": {
       "type": "object",
-      "required": ["vertical", "visual_style", "brand_personality", "theme", "channels"],
+      "required": ["vertical", "specialization", "visual_style", "brand_personality", "theme", "goal", "locale", "region", "channels"],
       "properties": {
         "vertical": { "type": "object", "required": ["slug", "name", "category"] },
+        "specialization": { "type": ["object", "null"] },
         "visual_style": { "type": "object", "required": ["id", "name"] },
         "brand_personality": { "type": "object", "required": ["id", "name"] },
         "theme": { "enum": ["light", "dark"] },
+        "goal": { "type": "object", "required": ["id", "name"] },
+        "locale": { "const": "nl-NL" },
+        "region": { "type": ["string", "null"] },
         "channels": { "type": "array", "minItems": 1 }
       }
     },
@@ -27,6 +31,7 @@
       "required": ["base_tone", "personality_voice", "story_angle", "proof_priorities", "priority_blocks", "audience"]
     },
     "blocks": { "type": "array", "minItems": 1 },
+    "block_strategy": { "type": "object", "required": ["hero_intent", "primary_cta_intent", "proof_weight"] },
     "photography_recipe": {
       "type": "object",
       "required": ["vertical_subject", "visual_style", "personality_modifier", "theme_modifier", "universal_negative_prompt", "human_review_required"]

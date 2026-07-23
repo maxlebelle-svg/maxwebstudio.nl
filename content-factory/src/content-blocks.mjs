@@ -1,9 +1,9 @@
 export const CONTENT_BLOCKS = Object.freeze([
-  { id: "hero", role: "conversion", channels: ["website", "social"], inputs: ["headline", "subtitle", "primary_cta", "hero_asset"], variants: ["split", "full-bleed", "centered", "action-led"] },
+  { id: "hero", role: "conversion", channels: ["website", "social"], inputs: ["headline", "subtitle", "primary_cta", "hero_asset"], variants: ["split", "full-bleed", "centered", "action-led"], message_intents: ["conversion", "storytelling", "local", "price", "portfolio", "emotional", "proof"] },
   { id: "usps", role: "proof", channels: ["website", "social", "newsletter"], inputs: ["title", "description", "icon"], variants: ["icon-grid", "proof-bar", "cards"] },
   { id: "services", role: "offer", channels: ["website", "social", "newsletter", "google_business_profile"], inputs: ["name", "description", "benefits", "asset"], variants: ["cards", "list", "editorial", "comparison"] },
   { id: "about", role: "trust", channels: ["website", "social", "newsletter"], inputs: ["story", "values", "team", "about_asset"], variants: ["founder-story", "timeline", "mission", "team-led"] },
-  { id: "cta", role: "conversion", channels: ["website", "social", "newsletter", "google_business_profile"], inputs: ["label", "supporting_text", "intent"], variants: ["inline", "banner", "sticky", "form-led"] },
+  { id: "cta", role: "conversion", channels: ["website", "social", "newsletter", "google_business_profile"], inputs: ["label", "supporting_text", "intent"], variants: ["inline", "banner", "sticky", "form-led"], action_intents: ["appointment", "quote", "call", "whatsapp", "demo", "callback", "booking", "advice", "contact", "directions", "download", "view_projects", "buy"] },
   { id: "faq", role: "objection", channels: ["website", "social", "newsletter", "google_business_profile"], inputs: ["question", "answer", "category"], variants: ["accordion", "searchable", "grouped"] },
   { id: "reviews", role: "proof", channels: ["website", "social"], inputs: ["verified_review"], variants: ["quote", "carousel", "case-proof"], publication_policy: "verified_only" },
   { id: "projects", role: "proof", channels: ["website", "social", "newsletter"], inputs: ["challenge", "approach", "result", "project_asset"], variants: ["case-grid", "before-after", "story"] },
@@ -19,4 +19,3 @@ export function blocksForChannels(channels) {
   const requested = new Set(channels);
   return CONTENT_BLOCKS.filter((block) => block.channels.some((channel) => requested.has(channel)));
 }
-

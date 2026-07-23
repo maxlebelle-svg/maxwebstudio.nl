@@ -1,11 +1,14 @@
 import { blocksForChannels } from "./content-blocks.mjs";
+import { DEFAULT_GOAL_ID, resolveContentGoal } from "./goals.mjs";
 import { DEFAULT_PERSONALITY_ID, resolveBrandPersonality } from "./personalities.mjs";
+import { resolveSpecialization } from "./specializations.mjs";
 import { DEFAULT_STYLE_ID, resolveStyleProfile } from "./styles.mjs";
 import { CATEGORY_PROFILES, VERTICALS } from "./verticals.mjs";
 
-export const CONTENT_LIBRARY_COMPOSITION_VERSION = "2.0.0-alpha.1";
+export const CONTENT_LIBRARY_COMPOSITION_VERSION = "2.0.0";
 export const SUPPORTED_CHANNELS = Object.freeze(["website", "social", "blog", "newsletter", "google_business_profile"]);
 export const SUPPORTED_THEMES = Object.freeze(["light", "dark"]);
+export const SUPPORTED_LOCALES = Object.freeze(["nl-NL"]);
 
 function slugify(value = "") {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -28,6 +31,11 @@ function normalizeChannels(channels) {
   return normalized;
 }
 
+function normalizeLocale(value) {
+  const normalized = String(value || "nl-NL").trim().toLowerCase();
+  return ["nl", "nl-nl", "nederlands"].includes(normalized) ? "nl-NL" : null;
+}
+
 function themeTokens(style, theme) {
   const colors = structuredClone(style.brand.colors);
   if (theme === "dark") {
@@ -37,16 +45,27 @@ function themeTokens(style, theme) {
   return colors;
 }
 
-export function composeContentLibraryBlueprint({ vertical, style, brandPersonality, theme = "light", channels = ["website"], seed = 0 } = {}) {
+function deterministicPick(values, seed, offset = 0) {
+  return values[(seed + offset) % values.length];
+}
+
+export function composeContentLibraryBlueprint({ vertical, specialization, style, brandPersonality, theme = "light", goal, region = "", locale = "nl-NL", channels = ["website"], seed = 0 } = {}) {
   const resolvedVertical = resolveVertical(vertical);
   if (!resolvedVertical) throw new Error(`Onbekende branche '${vertical || ""}'.`);
+  const resolvedSpecialization = resolveSpecialization(resolvedVertical.slug, specialization);
+  if (specialization && !resolvedSpecialization) throw new Error(`Onbekende subspecialisatie '${specialization}' voor branche '${resolvedVertical.slug}'.`);
   const resolvedStyle = resolveStyleProfile(style);
   if (!resolvedStyle) throw new Error(`Onbekende stijl '${style}'.`);
   const resolvedPersonality = resolveBrandPersonality(brandPersonality);
   if (!resolvedPersonality) throw new Error(`Onbekende merkpersoonlijkheid '${brandPersonality}'.`);
   const resolvedTheme = slugify(theme || "light");
   if (!SUPPORTED_THEMES.includes(resolvedTheme)) throw new Error(`Onbekend thema '${theme}'.`);
+  const resolvedGoal = resolveContentGoal(goal);
+  if (!resolvedGoal) throw new Error(`Onbekend contentdoel '${goal}'.`);
+  const resolvedLocale = normalizeLocale(locale);
+  if (!resolvedLocale) throw new Error(`Niet-ondersteunde taal of locale '${locale}'.`);
   const resolvedChannels = normalizeChannels(channels);
+  const resolvedSeed = Number.isSafeInteger(seed) && seed >= 0 ? seed : 0;
   const category = CATEGORY_PROFILES[resolvedVertical.category];
   const branchStyle = {
     ...structuredClone(resolvedStyle),
@@ -67,17 +86,22 @@ export function composeContentLibraryBlueprint({ vertical, style, brandPersonali
   };
   branchStyle.brand.colors = themeTokens(branchStyle, resolvedTheme);
   const selectedBlocks = blocksForChannels(resolvedChannels);
-  const signature = [resolvedVertical.slug, branchStyle.id, resolvedPersonality.id, resolvedTheme, ...resolvedChannels.sort()].join(":");
+  const resolvedRegion = String(region || "").trim() || null;
+  const signature = [resolvedVertical.slug, resolvedSpecialization?.id || "general", branchStyle.id, resolvedPersonality.id, resolvedTheme, resolvedGoal.id, resolvedLocale, slugify(resolvedRegion) || "no-region", ...resolvedChannels.sort()].join(":");
 
   return {
     contract_version: CONTENT_LIBRARY_COMPOSITION_VERSION,
     composition_signature: signature,
-    deterministic_seed: Number.isSafeInteger(seed) && seed >= 0 ? seed : 0,
+    deterministic_seed: resolvedSeed,
     dimensions: {
       vertical: { slug: resolvedVertical.slug, name: resolvedVertical.name, category: resolvedVertical.category },
+      specialization: resolvedSpecialization ? { id: resolvedSpecialization.id, name: resolvedSpecialization.name } : null,
       visual_style: { id: branchStyle.id, name: branchStyle.name },
       brand_personality: { id: resolvedPersonality.id, name: resolvedPersonality.name },
       theme: resolvedTheme,
+      goal: { id: resolvedGoal.id, name: resolvedGoal.name },
+      locale: resolvedLocale,
+      region: resolvedRegion,
       channels: resolvedChannels
     },
     design_system: {
@@ -110,11 +134,22 @@ export function composeContentLibraryBlueprint({ vertical, style, brandPersonali
       priority_blocks: resolvedPersonality.content_priorities,
       audience: category.audience,
       primary_service: resolvedVertical.primaryService,
-      related_topics: resolvedVertical.related
+      specialization: resolvedSpecialization,
+      related_topics: unique([...resolvedVertical.related, ...(resolvedSpecialization?.topics || [])]),
+      goal: resolvedGoal,
+      locale: resolvedLocale,
+      region: resolvedRegion
     },
     blocks: selectedBlocks,
+    block_strategy: {
+      hero_intent: deterministicPick(resolvedGoal.hero_intents, resolvedSeed),
+      secondary_hero_intent: deterministicPick(resolvedGoal.hero_intents, resolvedSeed, 1),
+      primary_cta_intent: deterministicPick(resolvedGoal.cta_intents, resolvedSeed),
+      secondary_cta_intent: deterministicPick(resolvedGoal.cta_intents, resolvedSeed, 1),
+      proof_weight: resolvedGoal.proof_weight
+    },
     photography_recipe: {
-      vertical_subject: `${resolvedVertical.name}: ${resolvedVertical.primaryService} en ${resolvedVertical.related.join(", ")}`,
+      vertical_subject: `${resolvedVertical.name}${resolvedSpecialization ? ` — ${resolvedSpecialization.name}` : ""}: ${resolvedSpecialization ? resolvedSpecialization.photography_subjects.join(", ") : `${resolvedVertical.primaryService} en ${resolvedVertical.related.join(", ")}`}`,
       visual_style: branchStyle.photography,
       personality_modifier: resolvedPersonality.photography_modifier,
       theme_modifier: resolvedTheme === "dark" ? "donkere maar realistische omgeving, gecontroleerde highlights en voldoende details in schaduwen" : "lichte realistische omgeving, natuurlijke highlights en heldere huid- en materiaaltinten",
@@ -138,6 +173,7 @@ export function composePhotographyPrompt(blueprint, { slot, subject, usage, aspe
     id: `${blueprint.composition_signature}:${slugify(slot)}`,
     combination: {
       vertical: blueprint.dimensions.vertical.slug,
+      specialization: blueprint.dimensions.specialization?.id || null,
       style: blueprint.dimensions.visual_style.id,
       brand_personality: blueprint.dimensions.brand_personality.id,
       theme: blueprint.dimensions.theme,
@@ -158,5 +194,5 @@ export function composePhotographyPrompt(blueprint, { slot, subject, usage, aspe
   };
 }
 
-export const COMPOSITION_DEFAULTS = Object.freeze({ style: DEFAULT_STYLE_ID, brandPersonality: DEFAULT_PERSONALITY_ID, theme: "light", channels: ["website"] });
+export const COMPOSITION_DEFAULTS = Object.freeze({ style: DEFAULT_STYLE_ID, brandPersonality: DEFAULT_PERSONALITY_ID, theme: "light", goal: DEFAULT_GOAL_ID, locale: "nl-NL", channels: ["website"] });
 

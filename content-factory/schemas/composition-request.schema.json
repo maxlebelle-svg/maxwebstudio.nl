@@ -6,9 +6,13 @@
   "required": ["vertical"],
   "properties": {
     "vertical": { "type": "string", "minLength": 1 },
+    "specialization": { "type": "string" },
     "style": { "type": "string" },
     "brandPersonality": { "type": "string" },
     "theme": { "enum": ["light", "dark"] },
+    "goal": { "type": "string" },
+    "region": { "type": "string" },
+    "locale": { "enum": ["nl-NL", "nl"] },
     "channels": {
       "type": "array",
       "minItems": 1,

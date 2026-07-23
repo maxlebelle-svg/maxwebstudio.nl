@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxwebstudio.nl/schemas/content-factory/quality-score-v1.json",
+  "title": "Content Factory Quality Score v1",
+  "type": "object",
+  "required": ["contract_version", "target", "overall", "metrics", "ai_confidence", "publication_ready", "status"],
+  "properties": {
+    "contract_version": { "const": "quality-score/v1" },
+    "target": { "enum": ["composition-blueprint", "website-content"] },
+    "overall": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "score", "checks"],
+        "properties": { "score": { "type": "integer", "minimum": 0, "maximum": 100 } }
+      }
+    },
+    "ai_confidence": {
+      "type": "object",
+      "required": ["score", "status", "reason"],
+      "properties": { "score": { "type": "null" }, "status": { "const": "not_measured" } }
+    },
+    "publication_ready": { "const": false },
+    "status": { "type": "string" }
+  }
+}
