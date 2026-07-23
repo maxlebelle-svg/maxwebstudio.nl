@@ -375,10 +375,12 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1, factory
     sourceWebsiteContent: currentWebsiteText,
     desiredPages: pages,
     ctaPreference: cta,
-    websiteFactoryInput: Object.keys(normalizedFactoryInput).length ? normalizedFactoryInput : null,
-    contentFactoryAdapter: normalizedFactoryInput.contentFactory || null,
     version,
   };
+  if (Object.keys(normalizedFactoryInput).length) {
+    briefingJson.websiteFactoryInput = normalizedFactoryInput;
+    briefingJson.contentFactoryAdapter = normalizedFactoryInput.contentFactory || null;
+  }
   const assetsMap = {
     logo: siteAssets.find((asset) => asset.kind === "logo")?.path || "text-brand",
     palette: colors,

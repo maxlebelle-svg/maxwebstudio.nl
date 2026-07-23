@@ -109,8 +109,8 @@ test("legacy rendereroutput blijft gelijk wanneer geen factoryInput wordt geleve
   const repeated = buildWebsitePackage({ journey, briefing, version: 3 });
   assert.deepEqual(repeated.files, baseline.files);
   assert.deepEqual(repeated.meta, baseline.meta);
-  assert.equal(baseline.meta.websiteFactoryInput, null);
-  assert.equal(baseline.meta.contentFactoryAdapter, null);
+  assert.equal("websiteFactoryInput" in baseline.meta, false);
+  assert.equal("contentFactoryAdapter" in baseline.meta, false);
 });
 
 test("productie-entrypoints lopen via de featureflagged bridge", () => {
