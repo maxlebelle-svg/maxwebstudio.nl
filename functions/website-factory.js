@@ -5,6 +5,10 @@ const { createTimelineEvent } = require("./services/timelineService");
 const { storedPreviewSource } = require("./_demo-preview-source");
 const { sendEmail } = require("./email");
 const {
+  attachIntegrationMetadata: attachContentFactoryIntegrationMetadata,
+  prepareWebsiteFactoryRenderRequest,
+} = require("./services/contentFactoryWebsiteFactoryAdapterV1");
+const {
   buildLogs,
   buildWebsitePackage,
   isBuildStatus,
@@ -376,19 +380,27 @@ async function generatePackageResponse(context, payload) {
   if (!journey) return jsonResponse(404, { success: false, error: "Demo-klantreis niet gevonden." });
   const mappedJourney = payload.journey ? { ...mapJourney(journey), ...journey } : mapJourney(journey);
   const packageType = normalizePackageType(payload.packageType || payload.package_type || mappedJourney.packageType);
-  const generatedPackage = buildWebsitePackage({
-    journey: {
-      ...mappedJourney,
-      packageType,
-      googleReviews: payload.googleReviews || payload.google_reviews || mappedJourney.googleReviews || [],
-      googleRating: payload.googleRating || payload.google_rating || mappedJourney.googleRating || "",
-      googleRatingTotal: payload.googleRatingTotal || payload.google_rating_total || mappedJourney.googleRatingTotal || "",
-      googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || mappedJourney.googleMapsUrl || "",
-    },
+  const renderJourney = {
+    ...mappedJourney,
+    packageType,
+    googleReviews: payload.googleReviews || payload.google_reviews || mappedJourney.googleReviews || [],
+    googleRating: payload.googleRating || payload.google_rating || mappedJourney.googleRating || "",
+    googleRatingTotal: payload.googleRatingTotal || payload.google_rating_total || mappedJourney.googleRatingTotal || "",
+    googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || mappedJourney.googleMapsUrl || "",
+  };
+  const generatedPackage = await buildWebsitePackageWithContentFactory({
+    journey: renderJourney,
     briefing: payload.briefing || journey.generated_briefing,
     version: Number(payload.version || 1),
+    packageType,
   });
   return jsonResponse(200, { success: true, generatedPackage });
+}
+
+async function buildWebsitePackageWithContentFactory({ journey = {}, briefing = "", version = 1, packageType = "" } = {}) {
+  const prepared = await prepareWebsiteFactoryRenderRequest({ journey, briefing, version, packageType });
+  const generatedPackage = buildWebsitePackage(prepared.request);
+  return attachContentFactoryIntegrationMetadata(generatedPackage, prepared.integration);
 }
 
 async function qualityCheckResponse(context, payload) {
@@ -696,7 +708,7 @@ async function runBuildJob(context, payload = {}) {
     phase = "patch_build_job_building";
     await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
     phase = "generate_website_package";
-    const generatedPackage = buildWebsitePackage({
+    const generatedPackage = await buildWebsitePackageWithContentFactory({
       journey: {
         ...journey,
         packageType,
@@ -708,6 +720,7 @@ async function runBuildJob(context, payload = {}) {
       },
       briefing,
       version: job.previewVersion,
+      packageType,
     });
 
     const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });

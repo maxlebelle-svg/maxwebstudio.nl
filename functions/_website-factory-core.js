@@ -231,12 +231,16 @@ function profile(key, keywords, config) {
   return Object.freeze({ key, keywords: Object.freeze(keywords), ...config });
 }
 
-function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
-  const businessName = cleanText(journey.businessName || journey.business_name) || "Demo bedrijf";
+function buildWebsitePackage({ journey = {}, briefing = "", version = 1, factoryInput = null }) {
+  const normalizedFactoryInput = factoryInput && typeof factoryInput === "object" && !Array.isArray(factoryInput) ? factoryInput : {};
+  const factoryContent = normalizedFactoryInput.content && typeof normalizedFactoryInput.content === "object" ? normalizedFactoryInput.content : {};
+  const factoryBranding = normalizedFactoryInput.branding && typeof normalizedFactoryInput.branding === "object" ? normalizedFactoryInput.branding : {};
+  const factorySeo = normalizedFactoryInput.seo && typeof normalizedFactoryInput.seo === "object" ? normalizedFactoryInput.seo : {};
+  const businessName = cleanText(normalizedFactoryInput.businessName || journey.businessName || journey.business_name) || "Demo bedrijf";
   const contactName = cleanText(journey.contactName || journey.contact_name) || "Contactpersoon";
-  const email = cleanText(journey.email).toLowerCase();
-  const phone = cleanText(journey.phone);
-  const websiteUrl = cleanText(journey.websiteUrl || journey.website_url);
+  const email = cleanText(normalizedFactoryInput.email || journey.email).toLowerCase();
+  const phone = cleanText(normalizedFactoryInput.phone || journey.phone);
+  const websiteUrl = cleanText(normalizedFactoryInput.websiteUrl || journey.websiteUrl || journey.website_url);
   const internalNotes = cleanText(journey.internalNotes || journey.internal_notes);
   const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
   if (isVmTegelwerkenJourney({ businessName, websiteUrl, briefing: combinedBriefing })) {
@@ -249,8 +253,17 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const googleRatingTotal = cleanText(journey.googleRatingTotal || journey.google_rating_total || journey.googleBusiness?.ratingTotal || journey.google_business?.rating_total);
   const googleMapsUrl = cleanText(journey.googleMapsUrl || journey.google_maps_url || journey.googleBusiness?.mapsUrl || journey.google_business?.maps_url);
   const industrySignals = [combinedBriefing, websiteUrl, businessName].filter(Boolean).join("\n");
-  const industry = extractField(combinedBriefing, ["Branche/regio", "Branche"]) || inferIndustry(industrySignals, businessName);
-  const industryProfile = resolveIndustryProfile({ industry, briefing: industrySignals, businessName });
+  const industry = cleanText(normalizedFactoryInput.contentFactory?.resolvedVertical) || extractField(combinedBriefing, ["Branche/regio", "Branche"]) || inferIndustry(industrySignals, businessName);
+  const baseIndustryProfile = resolveIndustryProfile({ industry, briefing: industrySignals, businessName });
+  const factoryHero = factoryContent.hero && typeof factoryContent.hero === "object" ? factoryContent.hero : {};
+  const industryProfile = {
+    ...baseIndustryProfile,
+    hero: cleanText(factoryHero.title) || baseIndustryProfile.hero,
+    intro: cleanText(factoryHero.subtitle || factoryContent.about?.description) || baseIndustryProfile.intro,
+    eyebrow: cleanText(factoryHero.eyebrow) || baseIndustryProfile.eyebrow,
+    cta: cleanText(factoryHero.primaryCta) || baseIndustryProfile.cta,
+    secondaryCta: cleanText(factoryHero.secondaryCta) || baseIndustryProfile.secondaryCta,
+  };
   const currentWebsiteText = [
     currentWebsite.title,
     currentWebsite.metaDescription,
@@ -259,19 +272,30 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
   const extractedServices = extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), industry);
-  const services = mergeUnique(extractedServices, industryProfile.services).filter(isUsableServiceLabel).slice(0, 6);
+  const factoryServices = Array.isArray(normalizedFactoryInput.services) ? normalizedFactoryInput.services : [];
+  const services = mergeUnique(factoryServices, extractedServices, industryProfile.services).filter(isUsableServiceLabel).slice(0, 6);
   const pricingPackages = extractPricingPackages({
     currentWebsite,
     briefing: combinedBriefing,
     services,
     industryProfile,
   });
-  const benefits = inferBenefits(industry, industryProfile);
+  const factoryUsps = Array.isArray(factoryContent.usps) ? factoryContent.usps : [];
+  const benefits = factoryUsps.length
+    ? factoryUsps.slice(0, 6).map((item) => ({ title: cleanText(item.title), text: cleanText(item.description || item.text) })).filter((item) => item.title)
+    : inferBenefits(industry, industryProfile);
   const processSteps = inferProcessSteps(industry, industryProfile);
-  const cta = inferCta(industrySignals, industryProfile);
-  const colors = inferColors(industry, industryProfile);
-  const style = inferStyle(combinedBriefing);
-  const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
+  const factoryCtas = Array.isArray(normalizedFactoryInput.ctas) ? normalizedFactoryInput.ctas.map(cleanText).filter(Boolean) : [];
+  const cta = factoryCtas[0] || inferCta(industrySignals, industryProfile);
+  const inferredColors = inferColors(industry, industryProfile);
+  const colors = {
+    ...inferredColors,
+    ...(cleanText(factoryBranding.primaryColor) ? { brand: cleanText(factoryBranding.primaryColor) } : {}),
+    ...(cleanText(factoryBranding.accentColor) ? { accent: cleanText(factoryBranding.accentColor) } : {}),
+    ...(cleanText(factoryBranding.secondaryColor) ? { soft: cleanText(factoryBranding.secondaryColor) } : {}),
+  };
+  const style = cleanText(factoryBranding.lookAndFeel) || inferStyle(combinedBriefing);
+  const packageType = normalizePackageType(normalizedFactoryInput.packageType || journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
   const factoryConfig = resolveFactoryConfig({ packageType, industry: `${industry} ${industrySignals} ${businessName}` });
   const packageRules = resolvePackageRules(factoryConfig.package.id || packageType);
   const demoImageAssets = resolveDemoImageAssetSet({ businessName, industry, services, briefing: industrySignals });
@@ -282,8 +306,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const pages = packageRules.pages;
   const siteUrl = normalizeSiteUrl(websiteUrl, businessName);
   const projectSlug = slugifySite(businessName || websiteUrl || "website-preview");
-  const title = buildSeoTitle({ businessName, industryProfile, industry, currentWebsite, services });
-  const description = buildSeoDescription({ businessName, industryProfile, currentWebsite, services });
+  const title = cleanText(factorySeo.title) || buildSeoTitle({ businessName, industryProfile, industry, currentWebsite, services });
+  const description = cleanText(factorySeo.description) || buildSeoDescription({ businessName, industryProfile, currentWebsite, services });
   const siteAssets = buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets, projectSlug });
   const packagedHeroImage = packagedAssetMeta(siteAssets.find((asset) => asset.kind === "hero"), heroImage);
   const packagedDemoImageAssets = Object.fromEntries(Object.entries(demoImageAssets).map(([role, asset]) => [
@@ -351,6 +375,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     sourceWebsiteContent: currentWebsiteText,
     desiredPages: pages,
     ctaPreference: cta,
+    websiteFactoryInput: Object.keys(normalizedFactoryInput).length ? normalizedFactoryInput : null,
+    contentFactoryAdapter: normalizedFactoryInput.contentFactory || null,
     version,
   };
   const assetsMap = {
