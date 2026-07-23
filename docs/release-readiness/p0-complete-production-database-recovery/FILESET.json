@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "executionOrder": [
+    "supabase/migrations/20260722130000_p0_recover_business_events.sql",
+    "supabase/migrations/20260722131000_p0_recover_transactional_lead_intake.sql",
+    "supabase/migrations/20260722132000_p0_recover_security_hardening.sql",
+    "supabase/migrations/20260722133000_p0_recover_lead_intake_abuse_control.sql",
+    "supabase/migrations/20260722134000_p0_remove_verified_staging_smoke_objects.sql",
+    "supabase/migrations/20260722135000_p0_recover_sales_manager_lead_policy.sql"
+  ],
+  "files": [
+    {
+      "path": "supabase/migrations/20260722130000_p0_recover_business_events.sql",
+      "bytes": 93749,
+      "sha256": "22c8e7ad491a4fcd7a0b7843987ebfe696c1c6a07ef2e7686cf1c9cb4964a347"
+    },
+    {
+      "path": "supabase/migrations/20260722131000_p0_recover_transactional_lead_intake.sql",
+      "bytes": 38495,
+      "sha256": "41a04ea0603b3172bc65d7518bb710edfbe112d3b1174ce4d00dbc554ed02938"
+    },
+    {
+      "path": "supabase/migrations/20260722132000_p0_recover_security_hardening.sql",
+      "bytes": 6112,
+      "sha256": "baed82a2ac1a8ea61a129ac47ca363cb2d32eaf04a3829e0bafe5341796851bf"
+    },
+    {
+      "path": "supabase/migrations/20260722133000_p0_recover_lead_intake_abuse_control.sql",
+      "bytes": 13134,
+      "sha256": "2df783679cd4e381f9e7327f6da29ab9a4d4b6e27503aea004047ca276dae4fc"
+    },
+    {
+      "path": "supabase/migrations/20260722134000_p0_remove_verified_staging_smoke_objects.sql",
+      "bytes": 6149,
+      "sha256": "a6949f1f05a7c101a1b9a6c8d5b705390633cb6a26ab7afc4c8efe90512c128d"
+    },
+    {
+      "path": "supabase/migrations/20260722135000_p0_recover_sales_manager_lead_policy.sql",
+      "bytes": 5275,
+      "sha256": "c4a2be79fbda26c493381fa480e85bf10a5508b19996bc2fce3b65a00b34860b"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722130000.sql",
+      "bytes": 766,
+      "sha256": "b6e896f766d86d8b0af8e6bb28bb4c3ad954565863b4b16b32ed04516864e825"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722131000.sql",
+      "bytes": 1549,
+      "sha256": "a30dc4fc13550fa43821f5fe560e58e8b33ebeefb753e493926a6c310a418175"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722132000.sql",
+      "bytes": 1892,
+      "sha256": "3bf19d9e04134270f5820b37b78223a4a22adc5b86ceddb597ad31a2c2498d0f"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722133000.sql",
+      "bytes": 422,
+      "sha256": "6cc87416b23afce9bef2856367b362f01da7edc3d4a3e46f839d882ef0384ade"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722134000.sql",
+      "bytes": 342,
+      "sha256": "8e889a8d1628551c82af8a973ada28ff7562447aaa239367de96521557e4ed63"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS_20260722135000.sql",
+      "bytes": 775,
+      "sha256": "b03d9757cda5e05272ed0a12fca13ce655f86aa078e97d4fe1e7b5ca1f74cde8"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/PRECONDITIONS.sql",
+      "bytes": 3347,
+      "sha256": "a31bfb2cb2fb5132cc2baaa12699200b1672badb7b25d5b03fd8c908df0ff14f"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/POSTCONDITIONS.sql",
+      "bytes": 8260,
+      "sha256": "26056e83d28eb46302570f3a1f8bbd9d1487e6e670a163a308114ec75351f29a"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/CATALOG_FINGERPRINT.sql",
+      "bytes": 11475,
+      "sha256": "be4c8b2215c3d59d51c3a429a2d091c487d38542b00b36b3547d9aaac0b15b0c"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/TARGET_AND_HISTORY_EVIDENCE.sql",
+      "bytes": 1240,
+      "sha256": "9c3594c627c851bdbc1a8c7a4551f3dd3cf922515f6db3ccc1454aeacc9c3349"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/DEPENDENCY_MATRIX.json",
+      "bytes": 2730,
+      "sha256": "8e6c931d971ce000b8f0c66c1910143a9a139c71a1818b7901baa19e8dc5e71f"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/RUNTIME_CONFIGURATION.json",
+      "bytes": 964,
+      "sha256": "bcf0e8e4ac8376d606e1380640a2a21233285703f29f060e4c2ce8fdda86e3cc"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/ROLLBACK_RECOVERY.md",
+      "bytes": 2315,
+      "sha256": "ed56a4f648038b3d8e8145e61cb294ef0597ee76eaae422f91c2e5c1f4f75678"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/EXECUTION_RUNBOOK.md",
+      "bytes": 2103,
+      "sha256": "11cc9ce5572c7bc43ea3d1c3bc28eaf298eda2a2869d54667dcb164564a27e87"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/LOCAL_VALIDATION.json",
+      "bytes": 2296,
+      "sha256": "9ecfba9d61bc21e442d97482d34e5f791b2793c801f2a25b1d0936b40b6d8b9e"
+    },
+    {
+      "path": "docs/release-readiness/p0-complete-production-database-recovery/RELEASE_REPORT.md",
+      "bytes": 1948,
+      "sha256": "59606a9717118d9e5ad0d624688dd26e1fdf82afa0f94ad082591808a34a3dbf"
+    },
+    {
+      "path": "scripts/p0-build-complete-production-database-recovery-release.mjs",
+      "bytes": 3923,
+      "sha256": "b2f728ed6159d9a281a9d6fab5c474c94967a61eff0426bada5a989611d20893"
+    },
+    {
+      "path": "scripts/p0-complete-production-database-recovery-local-validation.zsh",
+      "bytes": 12524,
+      "sha256": "d42d36d98405cf00fecdca6b36014ff9eb6757d1deaf774a8e4be48c1cd2ff66"
+    },
+    {
+      "path": "tests/fixtures/p0-complete-production-database-recovery-baseline.sql",
+      "bytes": 12539,
+      "sha256": "31237a3f0370af3229db518cd71fdba2990f81d6ac1b1a1938384e66fffcf9ca"
+    },
+    {
+      "path": "tests/fixtures/p0-complete-production-database-recovery-functional.sql",
+      "bytes": 7442,
+      "sha256": "d36111b711b44d3576755835167b5fd0fa513f6c66c7b3e75e41d1c869f9adcf"
+    },
+    {
+      "path": "tests/fixtures/p0-production-poststate-staging-nonce.sql",
+      "bytes": 4574,
+      "sha256": "dce1b48c4b2f1684cf70597c6013906f9b776c38bf62eb64aae50e246c975953"
+    },
+    {
+      "path": "tests/p0-complete-production-database-recovery-release.test.js",
+      "bytes": 8440,
+      "sha256": "f9d2ea9c5008de6641c2851b05a6e5ffb1ecff9a6d84d9fe00ec89da69a511ad"
+    }
+  ]
+}

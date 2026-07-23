@@ -51,6 +51,18 @@
       "materializationCommand": "mechanically materialize canonical source to each named output; refuse semantic editing; validate full bytes afterward",
       "byteIdentical": true,
       "validatorStatus": "PASS"
+    },
+    {
+      "version": "20260721050000",
+      "filename": "20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "canonicalSource": "supabase-common/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "existingOutput": "supabase/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "bootstrapOutput": "supabase-bootstrap/supabase/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "bytes": 6583,
+      "sha256": "a733d0eefb976524bc69b06487f440310641f19d101cb21b3f9fb2ff58e2819a",
+      "materializationCommand": "mechanically materialize canonical source to each named output; refuse semantic editing; validate full bytes afterward",
+      "byteIdentical": true,
+      "validatorStatus": "PASS"
     }
   ]
 }

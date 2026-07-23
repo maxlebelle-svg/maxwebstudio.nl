@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_P0_SMOKE_AUTH_OBSERVABILITY_LOCAL_STAGING_REVIEW_REQUIRED",
+  "capturedAt": "2026-07-22T00:00:00Z",
+  "lineage": {
+    "basisCommit": "7bdfb15d659a2f9da5d0816732ad19828bcb296d",
+    "snapshotCommit": "1da026be7edc6258a3ed6762c9bf3d9ceba89078",
+    "parentManifest": "docs/customer-journey/P0_RELEASE_UNIT_MANIFEST_TIMELINE_REPAIR_7BDFB15.json",
+    "parentManifestSha256": "fbaaf77c32929b6e1a22835a141c58c04d1c9522c6e7c035417a23d3a14d172f"
+  },
+  "observabilityGap": {
+    "previousCategory": "SMOKE_AUTH_INVALID",
+    "collapsedCauses": ["header_or_protocol_format", "hmac_signature_mismatch"],
+    "closed": true
+  },
+  "internalCategories": [
+    "SMOKE_AUTH_HEADER_MISSING",
+    "SMOKE_AUTH_FORMAT_INVALID",
+    "SMOKE_AUTH_VERSION_INVALID",
+    "SMOKE_AUTH_TIMESTAMP_INVALID",
+    "SMOKE_AUTH_EXPIRED",
+    "SMOKE_AUTH_NONCE_INVALID",
+    "SMOKE_AUTH_SECRET_VERSION_MISMATCH",
+    "SMOKE_AUTH_BODY_MISMATCH",
+    "SMOKE_AUTH_SIGNATURE_INVALID",
+    "SMOKE_TARGET_REFUSED",
+    "SMOKE_SECRET_INVALID",
+    "SMOKE_AUTH_REPLAY",
+    "SMOKE_AUTH_BINDING_CONFLICT",
+    "SMOKE_AUTH_INTERNAL_FAILURE"
+  ],
+  "safeDiagnostics": {
+    "fields": [
+      "requestReference",
+      "validationStage",
+      "headerParsed",
+      "protocolAccepted",
+      "protocolVersion",
+      "timestampStatus",
+      "signedTimestamp",
+      "nonceShapeValid",
+      "nonceProof",
+      "targetStatus",
+      "rotationId",
+      "secretVersionStatus",
+      "secretVersionProof",
+      "bodyStatus",
+      "bodyProof",
+      "signatureStatus",
+      "nonceDecision",
+      "internalComponent"
+    ],
+    "forbidden": [
+      "secret_value",
+      "secret_length",
+      "authorization_header",
+      "full_hmac_or_signature",
+      "plaintext_nonce",
+      "raw_body",
+      "raw_body_sha256",
+      "name",
+      "email",
+      "phone",
+      "company",
+      "message",
+      "ip_address",
+      "user_agent"
+    ]
+  },
+  "correlation": {
+    "rotationId": "rot_ plus 32 lowercase random hex characters",
+    "proofAlgorithm": "first 128 bits of domain-separated HMAC-SHA-256 under the temporary random smoke secret",
+    "proofs": ["secretVersionProof", "bodyProof", "nonceProof"],
+    "authorizationCapability": false,
+    "fullRequestSignatureUnchanged": true,
+    "comparisonOrder": ["secret_version", "body", "full_signature", "nonce_consumption"]
+  },
+  "publicMapping": {
+    "requestAuthenticationFailures": { "status": 403, "classification": "validationRejected", "detailExposed": false },
+    "serverConfigurationOrInternalFailures": { "status": 503, "classification": "validationRejected", "detailExposed": false }
+  },
+  "tests": {
+    "requiredScenarios": 20,
+    "targetedAndP0Regression": { "passed": 87, "failed": 0 },
+    "completeIsolatedJavaScript": { "passed": 273, "failed": 0 },
+    "syntax": "PASS",
+    "privacyLeakage": "PASS",
+    "base64Transport": "PASS",
+    "caseInsensitiveHeaders": "PASS",
+    "bodyMismatchCorrelation": "PASS",
+    "secretMismatchCorrelation": "PASS",
+    "signatureMismatchIsolation": "PASS",
+    "failClosed": "PASS"
+  },
+  "runtimeChanges": [
+    "functions/send-lead.js",
+    "functions/services/p0StagingSmokeControl.js"
+  ],
+  "configurationContractChanges": [".env.example", ".env.local.example"],
+  "testChanges": ["tests/p0-staging-smoke-contract.test.js"],
+  "functionInventory": {
+    "before": 70,
+    "after": 70,
+    "deleted": 0,
+    "changedEntrypoints": ["functions/send-lead.js"]
+  },
+  "migrationIntegrity": {
+    "20260721040000": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a",
+    "20260721050000": "a733d0eefb976524bc69b06487f440310641f19d101cb21b3f9fb2ff58e2819a",
+    "rootsByteIdentical": true,
+    "changed": false,
+    "added": false
+  },
+  "futureConfiguration": {
+    "required": true,
+    "name": "P0_STAGING_SMOKE_ROTATION_ID",
+    "secret": false,
+    "remoteChangePerformed": false,
+    "separateAuthorizationRequired": true
+  },
+  "remoteActions": {
+    "stagingContact": false,
+    "productionContact": false,
+    "functionInvocation": false,
+    "secretRotation": false,
+    "deploy": false,
+    "configurationChange": false,
+    "databaseWrite": false,
+    "commit": false,
+    "push": false
+  }
+}

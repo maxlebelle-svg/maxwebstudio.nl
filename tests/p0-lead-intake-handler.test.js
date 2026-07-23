@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
 const test = require("node:test");
 
 const { createHandler, LIMITS, REQUEST_MAX_BYTES, sanitizeLead, validateLead } = require("../functions/send-lead")._private;
@@ -20,9 +21,9 @@ const validPayload = Object.freeze({
 const limiterUnique = { version: 1, allowed: true, decision: "unique_allowed", replay: false, uniqueCounted: true, retryAfterSeconds: 0 };
 const limiterReplay = { version: 1, allowed: true, decision: "replay_allowed", replay: true, uniqueCounted: false, retryAfterSeconds: 0 };
 const limiterBlocked = { version: 1, allowed: false, decision: "short_window_limited", replay: false, uniqueCounted: false, retryAfterSeconds: 900 };
-const created = { status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000001" }, created: true, duplicate: false, idempotentReplay: false };
-const duplicate = { status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000002" }, created: false, duplicate: true, idempotentReplay: false };
-const replay = { status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000003" }, created: false, duplicate: false, idempotentReplay: true };
+const created = { status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000001" }, businessEventId: "20000000-0000-4000-8000-000000000001", created: true, duplicate: false, idempotentReplay: false };
+const duplicate = { status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000002" }, businessEventId: "20000000-0000-4000-8000-000000000002", created: false, duplicate: true, idempotentReplay: false };
+const replay = { status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000003" }, businessEventId: "20000000-0000-4000-8000-000000000003", created: false, duplicate: false, idempotentReplay: true };
 
 function response(data, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => data };
@@ -35,11 +36,12 @@ function timeoutError() {
 }
 
 function harness(queue = [response(limiterUnique), response(created)], overrides = {}) {
-  const calls = { limiter: 0, create: 0, reconcile: 0, timeline: 0, provider: 0, settings: 0, logs: [], bodies: [] };
+  const calls = { limiter: 0, create: 0, reconcile: 0, timeline: 0, businessEvent: 0, provider: 0, settings: 0, logs: [], bodies: [] };
   const fetchImpl = overrides.fetchImpl || (async (url, options) => {
     if (url.endsWith("mws_check_lead_intake_abuse_v1")) calls.limiter += 1;
     else if (url.endsWith("mws_create_lead_transactional_v1")) calls.create += 1;
     else if (url.endsWith("mws_get_lead_intake_result_v1")) calls.reconcile += 1;
+    else if (url.includes("record_business_event") || url.includes("/business_events")) calls.businessEvent += 1;
     calls.bodies.push({ url, body: JSON.parse(options.body) });
     const next = queue.shift();
     if (next instanceof Error) throw next;
@@ -50,7 +52,7 @@ function harness(queue = [response(limiterUnique), response(created)], overrides
     SUPABASE_URL: "https://example.supabase.co",
     SUPABASE_SERVICE_ROLE_KEY: "service-role-test-key",
     LEAD_ABUSE_HMAC_SECRET: "current-secret-with-at-least-32-bytes-value",
-    CONTEXT: "test",
+    APP_ENVIRONMENT: "test",
     ...overrides.env,
   };
   const handler = createHandler({
@@ -80,12 +82,19 @@ async function invoke(setup, request = event()) {
   return { result, body: JSON.parse(result.body) };
 }
 
-test("new lead follows limiter, create, timeline and both provider calls", async () => {
+test("send-lead contains one transactional intake writer and no direct timeline or business-event writer", () => {
+  const source = fs.readFileSync(require.resolve("../functions/send-lead"), "utf8");
+  assert.doesNotMatch(source, /createTimelineEvent|customer_timeline_events/);
+  assert.doesNotMatch(source, /record_business_event|\/rest\/v1\/business_events/);
+  assert.equal((source.match(/mws_create_lead_transactional_v1/g) || []).length, 1);
+});
+
+test("new lead uses the transactional RPC as its only canonical event writer", async () => {
   const setup = harness();
   const { result, body } = await invoke(setup);
   assert.equal(result.statusCode, 200);
   assert.equal(body.storageClassification, "created");
-  assert.deepEqual({ limiter: setup.calls.limiter, create: setup.calls.create, reconcile: setup.calls.reconcile, timeline: setup.calls.timeline, provider: setup.calls.provider }, { limiter: 1, create: 1, reconcile: 0, timeline: 1, provider: 2 });
+  assert.deepEqual({ limiter: setup.calls.limiter, create: setup.calls.create, reconcile: setup.calls.reconcile, timeline: setup.calls.timeline, businessEvent: setup.calls.businessEvent, provider: setup.calls.provider }, { limiter: 1, create: 1, reconcile: 0, timeline: 0, businessEvent: 0, provider: 2 });
 });
 
 for (const [name, intake, expected] of [
@@ -131,7 +140,7 @@ for (const [name, value] of [["empty", ""], ["whitespace-only", " \t\n"]]) {
     const { result, body } = await invoke(setup, event({ ...validPayload, _gotcha: value }));
     assert.equal(result.statusCode, 200);
     assert.equal(body.accepted, undefined);
-    assert.deepEqual({ limiter: setup.calls.limiter, create: setup.calls.create, reconcile: setup.calls.reconcile, timeline: setup.calls.timeline, provider: setup.calls.provider }, { limiter: 1, create: 1, reconcile: 0, timeline: 1, provider: 2 });
+    assert.deepEqual({ limiter: setup.calls.limiter, create: setup.calls.create, reconcile: setup.calls.reconcile, timeline: setup.calls.timeline, businessEvent: setup.calls.businessEvent, provider: setup.calls.provider }, { limiter: 1, create: 1, reconcile: 0, timeline: 0, businessEvent: 0, provider: 2 });
   });
 }
 
@@ -254,14 +263,14 @@ test("company settings exception after storage returns successful degraded respo
   assert.doesNotMatch(result.body, /private settings|storageFailed/);
 });
 
-test("timeline exception after storage does not change the proven storage result", async () => {
+test("an injected legacy timeline dependency is never invoked", async () => {
   const setup = harness(undefined, { createTimelineEvent: async () => { setup.calls.timeline += 1; throw new Error("private timeline exception"); } });
   const { result, body } = await invoke(setup);
-  assert.equal(result.statusCode, 202);
+  assert.equal(result.statusCode, 200);
   assert.equal(body.success, true);
-  assert.equal(body.classification, "notificationDegraded");
+  assert.equal(body.classification, "created");
   assert.equal(body.storageClassification, "created");
-  assert.deepEqual({ create: setup.calls.create, reconcile: setup.calls.reconcile, timeline: setup.calls.timeline }, { create: 1, reconcile: 0, timeline: 1 });
+  assert.deepEqual({ create: setup.calls.create, reconcile: setup.calls.reconcile, timeline: setup.calls.timeline, businessEvent: setup.calls.businessEvent }, { create: 1, reconcile: 0, timeline: 0, businessEvent: 0 });
 });
 
 test("idempotent replay skips the complete post-storage notification phase", async () => {

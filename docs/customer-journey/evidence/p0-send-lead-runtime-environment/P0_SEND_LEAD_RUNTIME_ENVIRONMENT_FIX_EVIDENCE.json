@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_P0_SEND_LEAD_RUNTIME_ENVIRONMENT_FIX_PACKAGED",
+  "capturedAt": "2026-07-22T00:00:00Z",
+  "source": {
+    "worktree": "/private/tmp/maxwebstudio-p0-staging-smoke-contract",
+    "branch": "codex/p0-staging-smoke-contract",
+    "head": "1da026be7edc6258a3ed6762c9bf3d9ceba89078",
+    "parentManifest": "docs/customer-journey/P0_RELEASE_UNIT_MANIFEST_SMOKE_AUTH_OBSERVABILITY_7BDFB15.json"
+  },
+  "rootCause": {
+    "previousAuthority": "CONTEXT",
+    "runtimeAuthority": ["APP_ENVIRONMENT", "APP_ENV"],
+    "classification": "METADATA_CLASSIFICATION_ONLY"
+  },
+  "contract": {
+    "precedence": ["APP_ENVIRONMENT", "APP_ENV"],
+    "allowed": ["production", "test", "demo"],
+    "suppressEnvironment": "test",
+    "contextAuthoritative": false,
+    "missing": "RUNTIME_ENVIRONMENT_MISSING",
+    "unknown": "RUNTIME_ENVIRONMENT_INVALID",
+    "conflict": "RUNTIME_ENVIRONMENT_CONFLICT",
+    "failureStatus": 503,
+    "downstreamCallsBeforeFailure": 0
+  },
+  "tests": {
+    "syntax": "PASS",
+    "targetedAndP0": { "passed": 92, "failed": 0 },
+    "completeJavaScript": { "passed": 285, "failed": 0 },
+    "productionViaAppEnvironment": "PASS",
+    "productionViaAppEnvFallback": "PASS",
+    "matchingProduction": "PASS",
+    "matchingTest": "PASS",
+    "demo": "PASS",
+    "conflictFailClosed": "PASS",
+    "missingFailClosed": "PASS",
+    "unknownFailClosed": "PASS",
+    "contextOnlyFailClosed": "PASS",
+    "suppressAlwaysTest": "PASS",
+    "productionPayload": "PASS",
+    "smokeAuthAndSuppressRegression": "PASS"
+  },
+  "databaseContract": {
+    "migration": "supabase/migrations/20260722131000_p0_recover_transactional_lead_intake.sql",
+    "migrationSha256": "41a04ea0603b3172bc65d7518bb710edfbe112d3b1174ce4d00dbc554ed02938",
+    "inputEnvironmentValidated": true,
+    "leadEnvironmentStoredUnchanged": true,
+    "leadCreatedEnvironmentCopiedFromStoredLead": true,
+    "databaseChangeRequired": false
+  },
+  "remoteActions": {
+    "productionContact": false,
+    "deploy": false,
+    "functionInvocation": false,
+    "productionIntake": false,
+    "configurationChange": false,
+    "databaseWrite": false,
+    "commit": false,
+    "push": false
+  },
+  "nextStep": "read-only deploy execution preflight for this application correction"
+}

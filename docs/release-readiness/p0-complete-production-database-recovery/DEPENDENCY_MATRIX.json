@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "productionBaseline": "20260718190000_public_preview_publications",
+  "steps": [
+    {
+      "version": "20260722130000",
+      "requires": [
+        "public.customers",
+        "roles: postgres,service_role,anon,authenticated"
+      ],
+      "provides": [
+        "business_event_contracts",
+        "business_events",
+        "business_event_consumptions",
+        "record_business_event",
+        "lead.created validators/dispatchers"
+      ]
+    },
+    {
+      "version": "20260722131000",
+      "requires": [
+        "20260722130000",
+        "proven public.leads V1 columns: company_name, contact_name, website, external_source",
+        "public.set_updated_at() and set_leads_updated_at trigger",
+        "extensions.pgcrypto"
+      ],
+      "provides": [
+        "nine additive V2 compatibility columns",
+        "fail-closed bidirectional synchronization for company, name and website aliases only",
+        "independent source and external_source semantics",
+        "mws_normalize_*",
+        "lead_intake_idempotency",
+        "mws_create_lead_transactional_v1",
+        "mws_get_lead_intake_result_v1"
+      ]
+    },
+    {
+      "version": "20260722132000",
+      "requires": [
+        "20260722131000",
+        "eight proven role-helper bodies; five production-semantic variants target-locked and read-only audited on 2026-07-22",
+        "public.set_updated_at()"
+      ],
+      "provides": [
+        "preservation of active/invited profile resolution, current staff-role vocabulary, active demo isolation and null/archived customer rejection",
+        "role-helper search_path=pg_catalog",
+        "least-privilege helper ACLs"
+      ]
+    },
+    {
+      "version": "20260722133000",
+      "requires": [
+        "20260722132000"
+      ],
+      "provides": [
+        "lead_intake_abuse_requests",
+        "mws_check_lead_intake_abuse_v1",
+        "mws_cleanup_lead_intake_abuse_v1"
+      ]
+    },
+    {
+      "version": "20260722134000",
+      "requires": [
+        "20260722133000",
+        "staging nonce table and RPC both absent or both exactly match the locked empty implementation"
+      ],
+      "provides": [
+        "absence of p0_staging_smoke_nonces",
+        "absence of mws_consume_p0_staging_smoke_nonce_v1"
+      ]
+    },
+    {
+      "version": "20260722135000",
+      "requires": [
+        "20260722134000",
+        "proven five-policy public.leads baseline digest 4ccfec448672edc3d019454a8c9983e0"
+      ],
+      "provides": [
+        "sales_manager SELECT policy",
+        "sales_manager UPDATE policy",
+        "no sales_manager INSERT or DELETE policy"
+      ]
+    }
+  ],
+  "supersededAndNeverExecutedByThisRelease": [
+    "20260722120000 through 20260722126000"
+  ]
+}

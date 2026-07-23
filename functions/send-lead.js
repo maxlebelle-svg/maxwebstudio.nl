@@ -1,7 +1,6 @@
 const crypto = require("crypto");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getWhatsappLink } = require("./company-settings");
-const { createTimelineEvent } = require("./services/timelineService");
 
 const { prepareAbuseControlRequest, runLeadIntakeAbuseGate } = require("./services/leadIntakeAbuseControl");
 const { createOutboundEmailSender, resolveP0StagingSmokeControl } = require("./services/p0StagingSmokeControl");
@@ -14,7 +13,7 @@ const LIMITS = Object.freeze({ name: 240, company: 240, email: 320, phone: 80, m
 
 function createHandler(overrides = {}) {
   const dependencies = {
-    sendEmail, getCompanySettings, getWhatsappLink, createTimelineEvent,
+    sendEmail, getCompanySettings, getWhatsappLink,
     fetchImpl: (...args) => fetch(...args), env: process.env, logger: console,
     createRequestReference: () => crypto.randomBytes(12).toString("hex"), ...overrides,
   };
@@ -55,10 +54,19 @@ function createHandler(overrides = {}) {
 
     let smokeControl;
     try {
-      smokeControl = resolveP0StagingSmokeControl({ event, rawBody: rawBody.text, env: dependencies.env });
+      smokeControl = await resolveP0StagingSmokeControl({
+        event,
+        rawBody: rawBody.text,
+        env: dependencies.env,
+        fetchImpl: dependencies.fetchImpl,
+        logger: dependencies.logger,
+      });
     } catch (error) {
       const statusCode = error.statusCode || 503;
-      recordOutcome(dependencies.logger, "validationRejected", requestReference, { reason: safeReason(error.code) });
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, {
+        reason: safeReason(error.code),
+        ...(error.diagnostics || {}),
+      });
       return jsonResponse(statusCode, {
         success: false,
         error: statusCode === 403 ? "Staging-smokeverificatie geweigerd." : "Staging-smokemodus is niet veilig geconfigureerd.",
@@ -67,9 +75,22 @@ function createHandler(overrides = {}) {
       });
     }
 
+    let runtimeEnvironment;
+    try {
+      runtimeEnvironment = resolveRuntimeEnvironment(dependencies.env, smokeControl);
+    } catch (error) {
+      recordOutcome(dependencies.logger, "validationRejected", requestReference, { reason: safeReason(error.code) });
+      return jsonResponse(503, {
+        success: false,
+        error: "De runtimeomgeving is niet veilig geconfigureerd.",
+        classification: "validationRejected",
+        requestReference,
+      });
+    }
+
     const idempotencyKey = leadIdempotencyKey(lead);
     try {
-      const requestDependencies = { ...dependencies, smokeControl };
+      const requestDependencies = { ...dependencies, smokeControl, runtimeEnvironment };
       const references = prepareAbuseControlRequest(event, idempotencyKey, dependencies.env);
       requestReference = references.requestReference;
       const persisted = await runLeadIntakeAbuseGate({
@@ -131,9 +152,6 @@ async function runPostStorageNotifications(lead, intake, dependencies) {
   const outboundEmail = createOutboundEmailSender(dependencies.smokeControl, dependencies.sendEmail, dependencies.logger);
   const notificationDependencies = { ...dependencies, sendEmail: outboundEmail };
 
-  try { await dependencies.createTimelineEvent(timelineInput(lead, intake, dependencies.smokeControl)); }
-  catch (error) { notificationDegraded = true; }
-
   try {
     const companySettings = dependencies.getCompanySettings() || {};
     result = await outboundEmail(adminEmailInput(lead, companySettings, dependencies.env));
@@ -174,11 +192,12 @@ async function persistLeadWithReconciliation(lead, idempotencyKey, dependencies)
 
 async function createLead(lead, idempotencyKey, dependencies) {
   const { supabaseUrl, serviceRoleKey } = databaseConfiguration(dependencies.env);
+  const rpcLead = leadRpcPayload(lead, dependencies.env, dependencies.smokeControl, dependencies.runtimeEnvironment);
   let response;
   try {
     response = await dependencies.fetchImpl(`${supabaseUrl}/rest/v1/rpc/mws_create_lead_transactional_v1`, {
       method: "POST", headers: rpcHeaders(serviceRoleKey),
-      body: JSON.stringify({ p_lead: leadRpcPayload(lead, dependencies.env, dependencies.smokeControl), p_idempotency_key: idempotencyKey, p_actor_profile_id: null, p_actor_type: "service", p_actor_id: "homepage-contact-form" }),
+      body: JSON.stringify({ p_lead: rpcLead, p_idempotency_key: idempotencyKey, p_actor_profile_id: null, p_actor_type: "service", p_actor_id: "homepage-contact-form" }),
       signal: AbortSignal.timeout(CREATE_TIMEOUT_MS),
     });
   } catch (cause) { throw ambiguousStorageError(cause); }
@@ -215,8 +234,8 @@ function databaseConfiguration(env) {
   return { supabaseUrl, serviceRoleKey };
 }
 
-function leadRpcPayload(lead, env = process.env, smokeControl = null) {
-  const environment = smokeControl?.suppressProviders ? "test" : (text(env.CONTEXT).toLowerCase() === "production" ? "production" : "test");
+function leadRpcPayload(lead, env = process.env, smokeControl = null, resolvedEnvironment = "") {
+  const environment = resolvedEnvironment || resolveRuntimeEnvironment(env, smokeControl);
   const smokeMetadata = smokeControl?.suppressProviders
     ? { stagingSmoke: true, providerMode: "suppress", suppressionReason: "staging_smoke" }
     : {};
@@ -251,7 +270,7 @@ function validateLead(lead) {
   if (charLength(lead.requestId) > LIMITS.requestId) return validationError("requestIdTooLong", "De aanvraagreferentie is ongeldig.");
   if (charLength(lead.packageInterest) > LIMITS.packageInterest || charLength(lead.carePackage) > LIMITS.carePackage) return validationError("selectionTooLong", "Een gekozen optie is ongeldig.");
   if (!lead.termsAccepted) return validationError("termsRequired", "Akkoord met de voorwaarden is nodig.");
-  const rpcPayload = leadRpcPayload(lead, { CONTEXT: "test" });
+  const rpcPayload = leadRpcPayload(lead, { APP_ENVIRONMENT: "test" });
   if (Buffer.byteLength(JSON.stringify(rpcPayload.metadata), "utf8") > 65536) return validationError("metadataTooLarge", "De aanvraagmetadata is te groot.");
   if (Buffer.byteLength(JSON.stringify(rpcPayload), "utf8") > REQUEST_MAX_BYTES) return validationError("rpcPayloadTooLarge", "De aanvraag is te groot.");
   return null;
@@ -308,6 +327,32 @@ function storageError(code) {
   return error;
 }
 
+function resolveRuntimeEnvironment(env = process.env, smokeControl = null) {
+  if (smokeControl?.suppressProviders === true) return "test";
+
+  const appEnvironment = text(env.APP_ENVIRONMENT).toLowerCase();
+  const appEnv = text(env.APP_ENV).toLowerCase();
+  const allowed = new Set(["production", "test", "demo"]);
+
+  if ((appEnvironment && !allowed.has(appEnvironment)) || (appEnv && !allowed.has(appEnv))) {
+    throw runtimeEnvironmentError("RUNTIME_ENVIRONMENT_INVALID");
+  }
+  if (appEnvironment && appEnv && appEnvironment !== appEnv) {
+    throw runtimeEnvironmentError("RUNTIME_ENVIRONMENT_CONFLICT");
+  }
+
+  const environment = appEnvironment || appEnv;
+  if (!environment) throw runtimeEnvironmentError("RUNTIME_ENVIRONMENT_MISSING");
+  return environment;
+}
+
+function runtimeEnvironmentError(code) {
+  const error = new Error("De runtimeomgeving is niet veilig geconfigureerd.");
+  error.code = code;
+  error.statusCode = 503;
+  return error;
+}
+
 function validationError(code, message) { return { code, message }; }
 function charLength(value) { return Array.from(text(value)).length; }
 function normalizeWhitespace(value) { return text(value).replace(/\s+/gu, " "); }
@@ -319,32 +364,21 @@ function hasHoneypotSignal(payload) {
 }
 function safeReason(value) {
   const reason = text(value);
-  return /^(?:ABUSE|STORAGE|SMOKE)_[A-Z0-9_]+$/.test(reason) ? reason : "INTERNAL_ERROR";
+  return /^(?:ABUSE|STORAGE|SMOKE|RUNTIME)_[A-Z0-9_]+$/.test(reason) ? reason : "INTERNAL_ERROR";
 }
 
 function recordOutcome(logger, classification, requestReference, details = {}) {
   const safeDetails = {};
-  for (const key of ["reason", "reconciled", "storageClassification"]) {
+  for (const key of [
+    "reason", "reconciled", "storageClassification", "validationStage", "headerParsed",
+    "protocolAccepted", "timestampStatus", "nonceShapeValid", "targetStatus",
+    "secretVersionStatus", "bodyStatus", "signatureStatus", "rotationId",
+    "secretVersionProof", "bodyProof", "nonceProof", "protocolVersion", "signedTimestamp",
+    "nonceDecision", "internalComponent",
+  ]) {
     if (details[key] !== undefined) safeDetails[key] = details[key];
   }
   if (typeof logger?.info === "function") logger.info("lead_intake_outcome", { classification, requestReference, ...safeDetails });
-}
-
-function timelineInput(lead, intake, smokeControl = null) {
-  return {
-    eventType: "lead_created", title: `Nieuwe lead ontvangen: ${lead.name}`,
-    description: lead.company ? `${lead.company} heeft een aanvraag ingestuurd.` : "Er is een nieuwe aanvraag ingestuurd.",
-    module: "sales", referenceType: "lead", referenceId: text(intake.leadId || intake.lead?.id),
-    actorName: lead.name, actorRole: "lead", icon: "🔔", severity: "info",
-    metadata: {
-      dedupeKey: `lead_created:${lead.email}:${lead.submittedAt}`,
-      leadEmail: lead.email,
-      leadName: lead.name,
-      company: lead.company,
-      packageInterest: lead.packageInterest,
-      ...(smokeControl?.suppressProviders ? { stagingSmoke: true, suppressionReason: "staging_smoke" } : {}),
-    },
-  };
 }
 
 function adminEmailInput(lead, companySettings, env) {
@@ -588,6 +622,7 @@ exports._private = {
   leadRpcPayload,
   persistLead,
   persistLeadWithReconciliation,
+  resolveRuntimeEnvironment,
   sanitizeLead,
   validateLead,
 };

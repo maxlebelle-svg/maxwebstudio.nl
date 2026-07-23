@@ -33,8 +33,8 @@ test("public lead intake uses a deterministic UUID-shaped idempotency key", () =
 });
 
 test("public lead is mapped to the canonical transactional intake contract", () => {
-  const previousContext = process.env.CONTEXT;
-  process.env.CONTEXT = "production";
+  const previousAppEnvironment = process.env.APP_ENVIRONMENT;
+  process.env.APP_ENVIRONMENT = "production";
   try {
     const payload = leadRpcPayload(lead);
     assert.equal(payload.company, lead.company);
@@ -45,8 +45,8 @@ test("public lead is mapped to the canonical transactional intake contract", () 
     assert.equal(payload.metadata.packageInterest, "Business Website");
     assert.equal(payload.metadata.termsAccepted, true);
   } finally {
-    if (previousContext === undefined) delete process.env.CONTEXT;
-    else process.env.CONTEXT = previousContext;
+    if (previousAppEnvironment === undefined) delete process.env.APP_ENVIRONMENT;
+    else process.env.APP_ENVIRONMENT = previousAppEnvironment;
   }
 });
 
@@ -54,18 +54,21 @@ test("public lead persistence calls the service-only RPC without exposing creden
   const previousFetch = global.fetch;
   const previousUrl = process.env.SUPABASE_URL;
   const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const previousAppEnvironment = process.env.APP_ENVIRONMENT;
   let request;
 
   process.env.SUPABASE_URL = "https://example.supabase.co/";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-test-key";
+  process.env.APP_ENVIRONMENT = "production";
   global.fetch = async (url, options) => {
     request = { url, options };
-    return { ok: true, json: async () => ({ status: "resolved", leadId: "lead-db-id", created: true, duplicate: false, idempotentReplay: false }) };
+    return { ok: true, json: async () => ({ status: "resolved", leadId: "lead-db-id", businessEventId: "business-event-db-id", created: true, duplicate: false, idempotentReplay: false }) };
   };
 
   try {
     const result = await persistLead(lead);
     assert.equal(result.leadId, "lead-db-id");
+    assert.equal(result.businessEventId, "business-event-db-id");
     assert.equal(request.url, "https://example.supabase.co/rest/v1/rpc/mws_create_lead_transactional_v1");
     assert.equal(request.options.method, "POST");
     assert.equal(request.options.headers.Authorization, "Bearer service-role-test-key");
@@ -79,6 +82,8 @@ test("public lead persistence calls the service-only RPC without exposing creden
     else process.env.SUPABASE_URL = previousUrl;
     if (previousKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     else process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey;
+    if (previousAppEnvironment === undefined) delete process.env.APP_ENVIRONMENT;
+    else process.env.APP_ENVIRONMENT = previousAppEnvironment;
   }
 });
 
@@ -89,6 +94,12 @@ test("canonical persistence precedes notifications and the UI reports storage fa
   assert.match(backendSource, /success: true,[\s\S]*emailSent: Boolean/);
   assert.match(frontendSource, /Je aanvraag kon niet veilig worden opgeslagen/);
   assert.doesNotMatch(frontendSource, /Je aanvraag is lokaal opgeslagen, maar e-mail verzenden lukte niet/);
+});
+
+test("send-lead has one transactional intake writer and no separate timeline or business-event writer", () => {
+  assert.doesNotMatch(backendSource, /createTimelineEvent|customer_timeline_events/);
+  assert.doesNotMatch(backendSource, /record_business_event|\/rest\/v1\/business_events/);
+  assert.equal((backendSource.match(/mws_create_lead_transactional_v1/g) || []).length, 1);
 });
 
 test("public form mirrors RPC limits, includes honeypot and stores only after server acceptance", () => {
@@ -167,13 +178,13 @@ test("native browser FormData sends an empty honeypot through the normal handler
   const serializedBrowserPayload = JSON.stringify(browserPayload);
   assert.equal(JSON.parse(serializedBrowserPayload)._gotcha, "");
 
-  const calls = { limiter: 0, create: 0, reconcile: 0, timeline: 0, provider: 0 };
+  const calls = { limiter: 0, create: 0, reconcile: 0, timeline: 0, businessEvent: 0, provider: 0 };
   const handler = createHandler({
     env: {
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "service-role-test-key",
       LEAD_ABUSE_HMAC_SECRET: "current-secret-with-at-least-32-bytes-value",
-      CONTEXT: "test",
+      APP_ENVIRONMENT: "test",
     },
     fetchImpl: async (url) => {
       if (url.endsWith("mws_check_lead_intake_abuse_v1")) {
@@ -182,9 +193,10 @@ test("native browser FormData sends an empty honeypot through the normal handler
       }
       if (url.endsWith("mws_create_lead_transactional_v1")) {
         calls.create += 1;
-        return { ok: true, json: async () => ({ status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000001" }, created: true, duplicate: false, idempotentReplay: false }) };
+        return { ok: true, json: async () => ({ status: "resolved", lead: { id: "10000000-0000-4000-8000-000000000001" }, businessEventId: "20000000-0000-4000-8000-000000000001", created: true, duplicate: false, idempotentReplay: false }) };
       }
       if (url.endsWith("mws_get_lead_intake_result_v1")) calls.reconcile += 1;
+      if (url.includes("record_business_event") || url.includes("/business_events")) calls.businessEvent += 1;
       throw new Error("unexpected fetch");
     },
     createTimelineEvent: async () => { calls.timeline += 1; return {}; },
@@ -196,7 +208,7 @@ test("native browser FormData sends an empty honeypot through the normal handler
   });
   const result = await handler({ httpMethod: "POST", headers: { "x-nf-client-connection-ip": "203.0.113.42", "user-agent": "Mozilla/5.0" }, body: serializedBrowserPayload });
   assert.equal(result.statusCode, 200);
-  assert.deepEqual({ limiter: calls.limiter, create: calls.create, reconcile: calls.reconcile, timeline: calls.timeline, provider: calls.provider }, { limiter: 1, create: 1, reconcile: 0, timeline: 1, provider: 2 });
+  assert.deepEqual({ limiter: calls.limiter, create: calls.create, reconcile: calls.reconcile, timeline: calls.timeline, businessEvent: calls.businessEvent, provider: calls.provider }, { limiter: 1, create: 1, reconcile: 0, timeline: 0, businessEvent: 0, provider: 2 });
 });
 
 test("browser and server use identical Unicode codepoint decisions for every bounded field", () => {

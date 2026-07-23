@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "order": [
+    "Apply and verify all six database recovery migrations while the old runtime remains active.",
+    "Set LEAD_ABUSE_HMAC_SECRET to a new production-only secret before the new send-lead runtime receives traffic.",
+    "Set LEAD_ABUSE_HMAC_SECRET_PREVIOUS only during a controlled secret rotation.",
+    "Verify P0_STAGING_SMOKE_HMAC_SECRET, P0_STAGING_SMOKE_ROTATION_ID and OUTBOUND_PROVIDER_MODE=suppress are absent from production.",
+    "Capture target identity, migration-history and P0-contract fingerprints immediately after Gate B.",
+    "Recheck the same three proofs immediately before the separately authorized application deploy."
+  ],
+  "requiredBeforeRuntimeTraffic": [
+    "LEAD_ABUSE_HMAC_SECRET"
+  ],
+  "rotationOnly": [
+    "LEAD_ABUSE_HMAC_SECRET_PREVIOUS"
+  ],
+  "forbiddenInProduction": [
+    "P0_STAGING_SMOKE_HMAC_SECRET",
+    "P0_STAGING_SMOKE_ROTATION_ID",
+    "OUTBOUND_PROVIDER_MODE=suppress"
+  ]
+}

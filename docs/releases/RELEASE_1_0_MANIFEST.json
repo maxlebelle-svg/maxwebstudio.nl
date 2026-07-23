@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "release": "1.0.0",
+  "status": "READY_P0_RELEASE_1_0_CLEAN_WORKTREE_FOR_COMMIT",
+  "preparedAt": "2026-07-23",
+  "source": {
+    "worktree": "/private/tmp/maxwebstudio-release-1.0-baseline",
+    "branch": "release/1.0.0-baseline",
+    "head": "1da026be7edc6258a3ed6762c9bf3d9ceba89078",
+    "remoteMainAtPreparation": "4352015a10ea07fca8edb1f1e21fd75b526fb0f6",
+    "basisClassification": "proven-p0-release-ancestor-with-materialized-final-release-overlay"
+  },
+  "productionBaseline": {
+    "status": "P0_PRODUCTION_RELEASE_LIVE",
+    "gates": {"A":"PASS","B":"PASS","C":"PASS","D":"PASS"},
+    "activeDeploy": "6a613eff1e9fc5627095f198",
+    "databaseMigration": "20260722136000",
+    "functionRuntime": {"count":70,"runtime":"nodejs24.x"},
+    "rollbackDeploy": "6a610b05c1c2b5f0789f1c24"
+  },
+  "fileset": {
+    "path": "docs/releases/RELEASE_1_0_FILESET.json",
+    "payloadFiles": 73,
+    "sha256": "964500a31f4cc62864fecc063ddc47ff18954227d0947387812225c3709642af",
+    "hashMismatches": 0
+  },
+  "keyArtifacts": {
+    "functions/send-lead.js": "443b7c2176e60737a945ac67b7c1eab8d788239dc02d094f18cbbfe886a33c49",
+    "supabase/migrations/20260722136000_p0_email_logs_additive_compatibility.sql": "be0028b4ade10ede39d6da66c18a6a1fa10446120d4e1a9a06e74e33b6423cb0",
+    "runtimeEnvironmentFixManifest": "884042e6548aadcf920ecfc8ecff1553d4c9efd6fc464531da6f3609b96888e8",
+    "node24ArtifactManifest": "727d5b226192deb4f2dbfc94f46a9ec824de9422d44fb1a50393bf4c2a85e529",
+    "completeRecoveryFileset": "f0f9fc71719a7d1c155120bf6989c8b563776e52bf8f27dada7fe6ee73515aa6",
+    "emailLogsCompatibilityFileset": "8dc8a5aa8518ff12897c6e10adf33b081ae94c974ceca80bd927d93da930a4bd"
+  },
+  "validation": {
+    "node": "v24.14.0",
+    "targetedP0Tests": {"passed":99,"total":99},
+    "fullJavaScriptRegression": {"passed":301,"total":301},
+    "runtimeEnvironmentManifestMismatches": 0,
+    "node24ManifestMismatches": 0,
+    "completeRecoveryFilesetMismatches": 0,
+    "emailLogsCompatibilityFilesetMismatches": 0,
+    "releaseFilesetMismatches": 0,
+    "syntaxCheck": "PASS",
+    "diffCheck": "PASS",
+    "highConfidenceSecretFindings": 0,
+    "binaryFiles": 0,
+    "filesOver1MiB": 0
+  },
+  "historicalEvidence": {
+    "smokeAuthObservabilityManifest": "docs/customer-journey/P0_RELEASE_UNIT_MANIFEST_SMOKE_AUTH_OBSERVABILITY_7BDFB15.json",
+    "historicallyReportedSelfHash": "775688e87f104ae2c9f47059f44080e500384d51e0202a21b2a1f6884b9e9dc0",
+    "materializedHistoricalManifestHash": "aea282997bb284073978f09d87d25cdd2397d184bf37a9ce6590be13d5c636e5",
+    "historicalLockedEntries": 39,
+    "entriesSupersededByLaterValidatedReleaseStages": [
+      "functions/send-lead.js",
+      "tests/p0-lead-intake-handler.test.js",
+      "tests/p0-staging-smoke-contract.test.js",
+      "tests/public-lead-intake-persistence.test.js"
+    ],
+    "classification": "historical-control-artifact-retained; final payload is governed by RELEASE_1_0_FILESET.json"
+  },
+  "remoteActions": {
+    "commitPerformed": false,
+    "pushPerformed": false,
+    "tagPerformed": false,
+    "productionChangesPerformed": false
+  }
+}
