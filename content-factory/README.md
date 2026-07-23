@@ -2,13 +2,19 @@
 
 Een schaalbare, versieerbare contentbibliotheek waarmee de Website Factory vanuit één branche en een kleine bedrijfsbriefing direct professionele demo-inhoud kan samenstellen. De Content Factory staat volledig los van de productiecode van Release 1.0.
 
+## Meerlagige Content Library v2-alpha
+
+De volgende architectuurlaag composeert branche, visuele stijl, merkpersoonlijkheid, light/dark-thema, contentblokken, kanaal en fotografie onafhankelijk van elkaar. Daardoor kan één branche tientallen verschillende websites en marketinguitingen voeden zonder combinaties vooraf te kopiëren. Website Factory en Social Studio kunnen hetzelfde kanaalneutrale blueprint gebruiken via `public/v2/`.
+
+Zie [Content Library v2-architectuur](./docs/CONTENT_LIBRARY_V2_ARCHITECTURE.md) voor het datamodel, de systeemgrenzen en de gefaseerde route naar echte fotografie.
+
 ## Omvang van versie 1.0
 
 - 101 branches in 12 categorieën.
 - 58.782 inhoudelijke records.
 - Per branche minimaal 20 hero-varianten, 100 SEO-zoekwoorden, 100 FAQ's, 50 voorbeeldreviews, 100 socialideeën en 50 blogonderwerpen.
 - Per branche 30 CTA's, 30 USP's, 30 projectomschrijvingen, 30 teamprofielen en 30 galerijbeschrijvingen.
-- 5.151 exact beschreven beeld-, vector- en videoplaceholders en 5.151 professionele AI-prompts.
+- 5.151 exact beschreven beeld-, vector- en videoplaceholders, met acht stijlvarianten per assetslot.
 - 16 uniforme assetmappen per branche.
 - Generator voor homepage, diensten, over ons, contact, FAQ, blogs, SEO, social media, nieuwsbrief en Google Bedrijfsprofiel.
 
@@ -20,11 +26,16 @@ content-factory/
 ├── schemas/                       publieke JSON-contracten
 ├── src/
 │   ├── verticals.mjs              compacte branche-seeds
+│   ├── styles.mjs                 onafhankelijke visuele stijlen
+│   ├── personalities.mjs          onafhankelijke merkpersoonlijkheden
+│   ├── content-blocks.mjs         kanaalneutrale blokcontracten
+│   ├── composition.mjs            on-demand compositieresolver
 │   ├── compiler.mjs               content- en assetcompiler
 │   ├── validator.mjs              volledigheidsbewaking
 │   ├── engine.mjs                 content generation engine
 │   └── cli.mjs                    command-line ingang
 ├── public/v1/                     stabiele publieke leesinterface
+├── public/v2/                     kanaalneutraal compositiecontract (alpha)
 ├── content-factory-adapter/v1/    versioned Website Factory-adapter
 ├── generated/
 │   ├── catalog.json               centrale lichte index
