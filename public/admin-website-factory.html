@@ -23282,6 +23282,7 @@
         function factoryPreviewUrl() {
           const selected = editorPreviewVersion(activePreviewSource());
           if (activePreviewSource() === "manual") {
+            if (pendingManualZipFile) return "";
             if (manualPreview?.previewVersionId === selected?.id && manualPreview?.localPreviewUrl) return manualPreview.localPreviewUrl;
             return manualPreviewUrlForVersion(selected || {});
           }
@@ -23404,6 +23405,7 @@
           const api = previewSourceApi();
           const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
           if (!api) return selectedViewedPreviewVersion();
+          if (pendingManualZipFile && previewSource === "manual") return selectedViewedPreviewVersion();
           let stored = "";
           try { stored = window.sessionStorage.getItem(previewSessionKey()) || ""; } catch {}
           const activeId = buildHistory.activeVersion?.id || versions.find((version) => version.isActive)?.id || "";
@@ -25093,10 +25095,11 @@
 
         function manualZipUploadContext() {
           const lead = selectedLead();
+          const queryLeadId = factoryQueryParams().get("leadId") || factoryQueryParams().get("lead_id") || "";
           return {
             customerId: factoryCustomerContext?.customer?.id || journey?.customerId || journey?.customer_id || "",
             demoJourneyId: journey?.id || "",
-            leadId: backendLeadId(journey?.leadId || journey?.lead_id || lead?.leadId || lead?.lead_id || elements.lead?.value || ""),
+            leadId: backendLeadId(journey?.leadId || journey?.lead_id || lead?.leadId || lead?.lead_id || elements.lead?.value || queryLeadId),
           };
         }
 
@@ -25131,7 +25134,7 @@
         }
         window.WebsiteFactoryZipPicker = Object.freeze({ open: openZipPicker });
 
-        function selectManualZipFile(file) {
+        function selectManualZipFile(file, { render = true } = {}) {
           pendingManualZipFile = file || null;
           const label = file ? `${file.name} · ${Math.max(1, Math.ceil(Number(file.size || 0) / 1024))} KB` : "Nog geen ZIP gekozen.";
           if (elements.manualZipName) {
@@ -25140,9 +25143,16 @@
           if (elements.manualZipSelection) elements.manualZipSelection.textContent = label;
           if (elements.removeManualZip) elements.removeManualZip.hidden = !file;
           if (elements.processManualZip) elements.processManualZip.disabled = !file || manualZipUploading || !manualZipCanProcess();
-          if (file) setMessage(elements.message, manualZipCanProcess()
-            ? `${file.name} is gekozen. Klik op ZIP verwerken om de preview aan deze lead te koppelen.`
-            : `${file.name} is gekozen. Selecteer eerst een geldige lead of klant.`, "info");
+          if (file) {
+            previewSource = "manual";
+            setMessage(elements.message, manualZipCanProcess()
+              ? `${file.name} is gekozen. Klik op ZIP verwerken om de preview aan deze lead te koppelen.`
+              : `${file.name} is gekozen. Selecteer eerst een geldige lead of klant.`, "info");
+          }
+          if (render) {
+            renderPreviewStage();
+            window.WebsiteFactoryRuntime?.renderGuidedVersionMeta?.();
+          }
         }
 
         function selectManualZipFiles(files = []) {
@@ -25228,6 +25238,7 @@
             return;
           }
           setManualZipBusy(true);
+          let processed = false;
           await withJourneyLock("upload_manual_zip", [elements.uploadManualZip, elements.saveDemoSite, elements.publishCustomerPreview], async () => {
             setMessage(elements.message, "1/5 Uploaden — ZIP-bestand voorbereiden...", "info");
             try {
@@ -25263,6 +25274,8 @@
               };
               viewedPreviewVersionId = previewVersionId;
               try { window.sessionStorage.setItem(previewSessionKey(), previewVersionId); } catch {}
+              selectManualZipFile(null, { render: false });
+              processed = true;
               const previewLoaded = waitForManualPreviewFrame(localPreviewUrl);
               renderJourney();
               await previewLoaded;
@@ -25270,7 +25283,7 @@
             } catch (error) {
               setMessage(elements.message, error.message || "ZIP kon niet worden verwerkt.", "error");
             } finally {
-              selectManualZipFile(file);
+              if (!processed) selectManualZipFile(file);
               setManualZipBusy(false);
             }
           });
@@ -25820,7 +25833,7 @@
           const api = previewSourceApi();
           const usableVersions = api?.usableVersions(buildHistory.previewVersions || []) || [];
           const availableSources = new Set(usableVersions.map((version) => version.sourceType));
-          const hasManual = availableSources.has("manual_zip");
+          const hasManual = Boolean(pendingManualZipFile) || availableSources.has("manual_zip");
           const previewUrl = activePreviewUrl();
           const ready = Boolean(previewUrl && capability.renderable);
           const saved = isDemoSiteSaved();
@@ -26382,6 +26395,9 @@
             event.stopPropagation();
             if (elements.manualZipInput) elements.manualZipInput.value = "";
             selectManualZipFile(null);
+            const viewed = selectedViewedPreviewVersion();
+            previewSource = isManualPreviewVersion(viewed) ? "manual" : "factory";
+            renderPreviewStage();
           });
           elements.processManualZip?.addEventListener("click", async (event) => {
             event.preventDefault();
@@ -26408,6 +26424,12 @@
               event.preventDefault();
               event.stopPropagation();
               const source = button.dataset.previewSource || "factory";
+              if (source === "manual" && pendingManualZipFile) {
+                previewSource = "manual";
+                renderPreviewStage();
+                setMessage(elements.message, "Handmatige ZIP geselecteerd. Klik op ZIP verwerken om de preview te bouwen.", "info");
+                return;
+              }
               if (source === "manual" && !previewSourceApi()?.latestForSource(buildHistory.previewVersions || [], "manual_zip")) {
                 setMessage(elements.message, "Upload eerst een handmatige ZIP.", "warning");
                 return;

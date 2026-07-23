@@ -47,6 +47,13 @@ test("manual upload has one change handler, duplicate guard and explicit states"
   assert.match(factory, /function manualZipUploadContext\(\)/);
   assert.match(factory, /context\.customerId \|\| context\.demoJourneyId \|\| context\.leadId/);
   assert.match(factory, /Klik op ZIP verwerken om de preview aan deze lead te koppelen/);
+  assert.match(factory, /const queryLeadId = factoryQueryParams\(\)\.get\("leadId"\)/);
+  assert.match(factory, /pendingManualZipFile && previewSource === "manual"/);
+  assert.match(factory, /previewSource = "manual";[\s\S]{0,500}renderPreviewStage\(\)/);
+  assert.match(factory, /const hasManual = Boolean\(pendingManualZipFile\) \|\| availableSources\.has\("manual_zip"\)/);
+  assert.match(factory, /source === "manual" && pendingManualZipFile/);
+  assert.match(factory, /selectManualZipFile\(null, \{ render: false \}\)/);
+  assert.match(factory, /if \(!processed\) selectManualZipFile\(file\)/);
 });
 
 test("lead phase owns ZIP uploads before customer conversion", () => {
