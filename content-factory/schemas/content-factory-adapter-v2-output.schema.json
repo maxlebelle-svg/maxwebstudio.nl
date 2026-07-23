@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxwebstudio.nl/schemas/content-factory-adapter/v2/output.json",
+  "title": "Content Factory Website Factory Adapter v2 output",
+  "type": "object",
+  "required": ["metadata", "blueprint", "quality", "brand", "hero", "services", "seo", "assets", "websiteFactoryInput"],
+  "properties": {
+    "metadata": { "type": "object", "required": ["contractVersion", "compositionVersion", "compositionSignature", "compatibilitySource"] },
+    "blueprint": { "$ref": "./composition-blueprint.schema.json" },
+    "quality": {
+      "type": "object",
+      "required": ["blueprint", "website"],
+      "properties": {
+        "blueprint": { "$ref": "./quality-score.schema.json" },
+        "website": { "$ref": "./quality-score.schema.json" }
+      }
+    },
+    "brand": { "type": "object" },
+    "hero": { "type": "object", "required": ["title", "subtitle", "primaryCta", "messagingIntent", "asset"] },
+    "services": { "type": "array", "minItems": 1 },
+    "seo": { "type": "object" },
+    "assets": { "type": "object" },
+    "websiteFactoryInput": { "type": "object" }
+  }
+}

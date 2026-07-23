@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxwebstudio.nl/schemas/content-factory-adapter/v2/input.json",
+  "title": "Content Factory Website Factory Adapter v2 input",
+  "type": "object",
+  "required": ["vertical"],
+  "properties": {
+    "vertical": { "type": "string", "minLength": 1 },
+    "specialization": { "type": "string" },
+    "style": { "type": "string" },
+    "brandPersonality": { "type": "string" },
+    "theme": { "enum": ["light", "dark"] },
+    "goal": { "type": "string" },
+    "region": { "type": "string" },
+    "locale": { "enum": ["nl-NL", "nl"] },
+    "channels": { "type": "array", "items": { "enum": ["website", "social", "blog", "newsletter", "google_business_profile"] } },
+    "companyName": { "type": "string" },
+    "tone": { "type": "string" },
+    "template": { "type": "string" },
+    "package": { "enum": ["starter", "business", "professional", "premium"] },
+    "seed": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "minLength": 1 }] },
+    "phone": { "type": "string" },
+    "email": { "type": "string" },
+    "websiteUrl": { "type": "string" }
+  },
+  "additionalProperties": false
+}

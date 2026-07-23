@@ -8,17 +8,21 @@
     ".": "./public/v1/index.mjs",
     "./v2": "./public/v2/index.mjs",
     "./adapter/v1": "./content-factory-adapter/v1/index.mjs",
+    "./adapter/v2": "./content-factory-adapter/v2/index.mjs",
     "./schemas/adapter-v1-input": "./schemas/content-factory-adapter-v1-input.schema.json",
     "./schemas/adapter-v1-output": "./schemas/content-factory-adapter-v1-output.schema.json",
     "./schemas/composition-v2-request": "./schemas/composition-request.schema.json",
-    "./schemas/composition-v2-blueprint": "./schemas/composition-blueprint.schema.json"
+    "./schemas/composition-v2-blueprint": "./schemas/composition-blueprint.schema.json",
+    "./schemas/adapter-v2-input": "./schemas/content-factory-adapter-v2-input.schema.json",
+    "./schemas/adapter-v2-output": "./schemas/content-factory-adapter-v2-output.schema.json",
+    "./schemas/quality-score": "./schemas/quality-score.schema.json"
   },
   "scripts": {
     "build": "node ./src/cli.mjs build",
     "validate": "node ./src/cli.mjs validate",
     "generate": "node ./src/cli.mjs generate",
     "stats": "node ./src/cli.mjs stats",
-    "test": "node --test ./tests/*.test.mjs ./content-factory-adapter/v1/tests/*.test.mjs"
+    "test": "node --test ./tests/*.test.mjs ./content-factory-adapter/v1/tests/*.test.mjs ./content-factory-adapter/v2/tests/*.test.mjs"
   },
   "engines": {
     "node": ">=20"
