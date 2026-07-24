@@ -111,7 +111,7 @@ Migratievolgorde: `20260724110000_bridge_preview_publication_portal_review.sql` 
 | Bridge gericht | n.v.t. | 9/9 | PASS |
 | CP-A gericht | 5/5 | 5/5 | PASS |
 | Portaalregressies | 76/76 | 76/76 | PASS |
-| Volledige suite | 250/260 | 259/269 | 9 nieuwe passes, 0 nieuwe failures |
+| Volledige suite | 251/261 | 260/270 | 9 nieuwe passes, 0 nieuwe failures |
 | PostgreSQL bridge + CP-A | n.v.t. | PASS | compile + beide fixtures |
 | Migratieorder/checksums | n.v.t. | PASS | exact |
 | JavaScript-syntax | PASS | PASS | geen nieuwe fout |
@@ -198,7 +198,7 @@ CP-A.1 mag pas opnieuw beginnen na een read-only preflight die exact de release-
 - bridge-tests: 9/9; PostgreSQL-scenario’s 10/10
 - CP-A-tests: 5/5
 - regressies: 76/76
-- volledige suite: 259/269; basis 250/260
+- volledige suite: 260/270; basis 251/261
 - nieuwe failures: 0
 - Deploy Preview technisch geschikt: nee
 - PR-route bewezen: ja

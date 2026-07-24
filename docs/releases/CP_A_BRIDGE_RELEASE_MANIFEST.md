@@ -81,8 +81,8 @@ Verwacht URL-patroon: `https://deploy-preview-<PR-NUMMER>--maxwebstudio-staging.
 | Bridge → CP-A compile en CP-A-fixture | PASS |
 | CP-A gericht | 5/5 PASS |
 | Portaalregressies | 76/76 PASS |
-| Volledige suite | 259/269; 10 bekende basisfailures, 0 nieuwe failures |
-| Basisnulmeting | 250/260; dezelfde 10 failures |
+| Volledige suite | 260/270; 10 bekende basisfailures, 0 nieuwe failures |
+| Basisnulmeting | 251/261; dezelfde 10 failures |
 | Migratievolgorde/checksums | PASS |
 | JavaScript-syntax | PASS |
 | Secret scan | PASS |
