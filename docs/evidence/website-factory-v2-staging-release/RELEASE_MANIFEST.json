@@ -1,0 +1,3492 @@
+{
+  "schemaVersion": "website-factory-v2-staging-release-manifest/v1",
+  "status": "PASS_WEBSITE_FACTORY_V2_STAGING_RELEASE_CANDIDATE_READY",
+  "basis": {
+    "commit": "1da026be7edc6258a3ed6762c9bf3d9ceba89078",
+    "subject": "feat(p0): add authenticated staging smoke suppression",
+    "parent": "7bdfb15d659a2f9da5d0816732ad19828bcb296d",
+    "reproducible": true
+  },
+  "productOwnerQualityDecision": {
+    "decision": "GOLD_SET_FORMAL_CERTIFICATION_WAIVED_BY_PRODUCT_OWNER",
+    "humanQualityStatus": "HUMAN_QUALITY_REVIEW_ACCEPTED_BY_PRODUCT_OWNER",
+    "automaticTruthfulnessDeterminismRegressionGates": "retained",
+    "externalBlindReviewsRequired": false,
+    "certificationClaimed": false,
+    "thirdPartyReviewerClaims": []
+  },
+  "fileset": {
+    "total": 385,
+    "added": 381,
+    "modified": 4,
+    "removed": 0,
+    "aggregateSha256": "bdce875dd00a192f861a7b943f6e481c72ebd8d3a725e2fcbf005fc54b16fd91",
+    "files": [
+      {
+        "path": "content-factory/assets/packs/priority-assets-2026.1/pack-manifest.json",
+        "classification": "added",
+        "sha256": "2109a0db09b644054abc4ba209bfb99a8fd45d9852447dfa8aa650e3a7e2e67f",
+        "releaseClass": "runtime",
+        "reason": "Checksum-pinned branch-safe asset resolution metadata"
+      },
+      {
+        "path": "content-factory/assets/packs/registry.json",
+        "classification": "added",
+        "sha256": "e33430accac5b84bafd495fe96d425414e494edf1e089c013979825c7a670d45",
+        "releaseClass": "runtime",
+        "reason": "Checksum-pinned branch-safe asset resolution metadata"
+      },
+      {
+        "path": "content-factory/content-factory-adapter/v1/index.mjs",
+        "classification": "added",
+        "sha256": "4adb99f5dfcc3da9b9ee7c121168a8d225155da0d8a38ce9474339b5e8a3bcf4",
+        "releaseClass": "runtime",
+        "reason": "Deployable v1 fallback"
+      },
+      {
+        "path": "content-factory/content-factory-adapter/v2/index.mjs",
+        "classification": "added",
+        "sha256": "62e17a42721e5847ee1e469b5321e75d344ed846ce5142df836d4b76f5e7ba94",
+        "releaseClass": "runtime",
+        "reason": "Primary Website Factory v2 adapter"
+      },
+      {
+        "path": "content-factory/generated/branches/aannemer/asset-manifest.json",
+        "classification": "added",
+        "sha256": "5fd212539626b719919a9242ee74350f9d1c488e0a864a51b6443f97b454b5a4",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/aannemer/content.json",
+        "classification": "added",
+        "sha256": "1b24e58c5c2ffc590b64154523935da4525f71c9603ef16f42157804d1eb5afa",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/aannemer/image-prompts.json",
+        "classification": "added",
+        "sha256": "620cf3d82e504ca7bee42d8a3eb7448e5d6c09fdc31c0a0a1762278d29a08257",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/accountant/asset-manifest.json",
+        "classification": "added",
+        "sha256": "a77f6b8ffc566791fe2cdcf424faee4ef23a6caf423757549993cd15e3a88e58",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/accountant/content.json",
+        "classification": "added",
+        "sha256": "a8cb4a4da22b91e4da7e40891051455319ed1839d927cbf9741066f39ca2c25e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/accountant/image-prompts.json",
+        "classification": "added",
+        "sha256": "40f99f80c147a5edd933c1fa1655b2409ed29d913118b902e289b0774755c337",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/advocaat/asset-manifest.json",
+        "classification": "added",
+        "sha256": "bc6dad8f8e56d2a3c799a1c3adf3c9e7dc08b8b643685c7f26c2e3d842c621e4",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/advocaat/content.json",
+        "classification": "added",
+        "sha256": "871f7e00c328082fb8a19ad9939b6845ed8e19db8072871d9135989755422b9c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/advocaat/image-prompts.json",
+        "classification": "added",
+        "sha256": "2cac121105751735292d19238b13f98e6ae660d8e76503bba8ea3203dae251df",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/autobedrijf/asset-manifest.json",
+        "classification": "added",
+        "sha256": "96420c83975ac8110d1a85f683bd0f4cf1edcf98cf7ce99dd96db75114a3d4c7",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/autobedrijf/content.json",
+        "classification": "added",
+        "sha256": "60b351e408f4f82891cbb349406f0e84f7c3481cd64b4b51950b2a00d21624c3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/autobedrijf/image-prompts.json",
+        "classification": "added",
+        "sha256": "1997b045ebd777089f32a9ed6bb96139f74be35f99081ffcf0063aad61ad980c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/automation/asset-manifest.json",
+        "classification": "added",
+        "sha256": "fcb0f554b6d014b73dee8115ae13ab06cd78787cfe5e4c871c14df4fe3eee51b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/automation/content.json",
+        "classification": "added",
+        "sha256": "1976b11fda2a9f5707dcc22eb2e9d78a8ce19f025d7f46eb4a2ea940057db4d6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/automation/image-prompts.json",
+        "classification": "added",
+        "sha256": "1c3977fc712855742e3a09ca5990b76abef6642450d95215016dc267b5ea2bbb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/badkamers/asset-manifest.json",
+        "classification": "added",
+        "sha256": "719a4ea814e3ab648746aeee1ba11f2809598c859d77830e75975800dfd6c6bc",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/badkamers/content.json",
+        "classification": "added",
+        "sha256": "40c85be6a129e3b175f4808b6642971081b1b689e2f4a8f10f978034b55772db",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/badkamers/image-prompts.json",
+        "classification": "added",
+        "sha256": "8dac9ed853646e48b4293939efafed18d9671745233147a5759697dfa8735b72",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/barbier/asset-manifest.json",
+        "classification": "added",
+        "sha256": "887598f5301ec1ff0d08742b133391b0b1e45e0bbc187dd0c04373d269d4e251",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/barbier/content.json",
+        "classification": "added",
+        "sha256": "082ccf15f3a3ab34b0fe1daf470a05a206e800a2c278a1066753132655aa10c5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/barbier/image-prompts.json",
+        "classification": "added",
+        "sha256": "b5d54ac1a93646de5c2f4f6d45aab55d412f62230d28fb927a11d29314599c25",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/beveiliging/asset-manifest.json",
+        "classification": "added",
+        "sha256": "f3a3bdf00d26551f84e52120270598c8daec236d8a61a351c4679d4261da1eeb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/beveiliging/content.json",
+        "classification": "added",
+        "sha256": "0cb115acc2ce4bcb0ab8f5f02c8cddc09dff2fa8c3bf902976554c7908de59c2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/beveiliging/image-prompts.json",
+        "classification": "added",
+        "sha256": "2c3e8003ff9ddaa1d2a65a44fb232ab58267f39dc103ba785d02264e392424e0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bloemist/asset-manifest.json",
+        "classification": "added",
+        "sha256": "6c7c9041b17428197928d8e54c6a69aac8dd26a589673bde13ad8b0dec97f287",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bloemist/content.json",
+        "classification": "added",
+        "sha256": "cf840651ee0b1c238a6e46fe8d4431da18918924dd2275c50c144942386bb13e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bloemist/image-prompts.json",
+        "classification": "added",
+        "sha256": "889b38102a878bf3c4cc840c2dae8fbba687142dc56cabdac58beab4b87acf1e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/boekhouder/asset-manifest.json",
+        "classification": "added",
+        "sha256": "776f328f08569ef9569601862903f83db1dc73ced6542ba69726d9f5c89f0fb5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/boekhouder/content.json",
+        "classification": "added",
+        "sha256": "abaac2144b2ba2e746eb2ac58e2385725d55d180f4531d7e1c02fbece27bb3a2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/boekhouder/image-prompts.json",
+        "classification": "added",
+        "sha256": "8f369db02adeb535178a1730ab05c68e17f4d1714710ba2ffbada42aacd5b727",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bootverhuur/asset-manifest.json",
+        "classification": "added",
+        "sha256": "87710f0a3f1f85aeb8458fb8aafd8fd258fe0c5d923d0499d269f3cf4190b528",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bootverhuur/content.json",
+        "classification": "added",
+        "sha256": "965c6aa5b62ed7b6c18de86aefd31c1a6b2e3a35c817c6a89cc4617a1d50e704",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bootverhuur/image-prompts.json",
+        "classification": "added",
+        "sha256": "34c07c04a2deb1df95b7dcc9acd6fdd910bdee6b5f8dd8d4bb2192988c79d799",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/boten/asset-manifest.json",
+        "classification": "added",
+        "sha256": "18194a0b5f5d998906d413880b32fecf6e34e0098d7d52dd75187b5eaff47673",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/boten/content.json",
+        "classification": "added",
+        "sha256": "6d22ec6b4ef33ce623781be144eeab18a7563b0c3bf436709d1fd8d10b65fd32",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/boten/image-prompts.json",
+        "classification": "added",
+        "sha256": "51e4efe823244bea0de24aec0c5e636dc3cf652b03eb60e075bb65ea2a19b064",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bouw/asset-manifest.json",
+        "classification": "added",
+        "sha256": "8f5cc99cc5aa917557ecb6c9ec7849e43083d8a032cc100847f879767a76add2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bouw/content.json",
+        "classification": "added",
+        "sha256": "9715c85d0e76b8fd43b21ac74c5067672d67b78c849551c93411d50e6f3e6b25",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/bouw/image-prompts.json",
+        "classification": "added",
+        "sha256": "b38b6507d75c94ba96e62e7496f0f832ece7524a0ac5ffa40de756af81735394",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/cafe/asset-manifest.json",
+        "classification": "added",
+        "sha256": "78c3cf3062620ff9afff216cc26d9e858c3a0ab9bc8ecb6cc96275138cbf733a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/cafe/content.json",
+        "classification": "added",
+        "sha256": "3e55625d45dee17cc10251bfd2f706953e41763f7431edc916dda73f5b00d536",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/cafe/image-prompts.json",
+        "classification": "added",
+        "sha256": "116446eda28927ca36a616e31cb5a88740a2ed587064d95b9bb9743458fc7a46",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/camping/asset-manifest.json",
+        "classification": "added",
+        "sha256": "6d5c3db55dd1f0b3370a89ad2dc06ded2a1681a82742e05562d7c3a8d2daeb4c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/camping/content.json",
+        "classification": "added",
+        "sha256": "1ed48edaf418ae77b7d139be525a29034a1671a9bb3b78324470162f430f07ec",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/camping/image-prompts.json",
+        "classification": "added",
+        "sha256": "ea7671d2717dbd219b4e663d39ab398881f823662a850f507d0d78d94706b665",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/carwash/asset-manifest.json",
+        "classification": "added",
+        "sha256": "223adc73458587e14e177d471aa1c11718502a746623aea2bfd27a8476907564",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/carwash/content.json",
+        "classification": "added",
+        "sha256": "a0d80d8301834651e0f7e7acdf083a1c8433f419af53c56ffd37f22c192784fc",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/carwash/image-prompts.json",
+        "classification": "added",
+        "sha256": "29a008817a644eb42f7a8ca80e4bc84d61099b55e643b1b72b23b39aa2cf0690",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/catering/asset-manifest.json",
+        "classification": "added",
+        "sha256": "a32d90c3d5a981c1af3ce209b72c17fc62909bf0109ff9be73f8f38ad4583312",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/catering/content.json",
+        "classification": "added",
+        "sha256": "e8e1353e7241610b3a68183626ee4a8cb15b240565441fd1147f9c168e96eb03",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/catering/image-prompts.json",
+        "classification": "added",
+        "sha256": "c4cb71e2d94a835db4fa8653641a1a6f5813b5e12444ae7d07b71fb4118e7201",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/coach/asset-manifest.json",
+        "classification": "added",
+        "sha256": "ddb9133dccf8a1905752929febfa7226136b682c86a2ae94b88690cd95413f56",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/coach/content.json",
+        "classification": "added",
+        "sha256": "0447e02ef45b0a0bb7aa836f432fde4dfaafad797a927c249470906f3c443a5e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/coach/image-prompts.json",
+        "classification": "added",
+        "sha256": "324b70cc95177a76a1dc076f7f86d8f3a95620029de96c914bb64ffaf0e990be",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/consultant/asset-manifest.json",
+        "classification": "added",
+        "sha256": "64bf2a6094c036c6c491c8e49e6c2d6345a9a356558c31353d81a7d788c0ccc7",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/consultant/content.json",
+        "classification": "added",
+        "sha256": "0224e5cffb493aff73db9f16a5f003237ae1f7acc96f98bf9a5577df74bff2a3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/consultant/image-prompts.json",
+        "classification": "added",
+        "sha256": "cb0970469520011d8b6766b48e2d499ab140a69ed3eaba7d6921e8a4fe012018",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/cybersecurity/asset-manifest.json",
+        "classification": "added",
+        "sha256": "f966e499a8664c6fe1c45dfcbb9e0b7b7006334066d213a39d60347c386399fb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/cybersecurity/content.json",
+        "classification": "added",
+        "sha256": "b85029274e5f0e4ebac8e346b9636207883ca0ae6c986725fc1f27decb95ae20",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/cybersecurity/image-prompts.json",
+        "classification": "added",
+        "sha256": "df138f9b10a9826a498338ba706eecaed4a73473c2a52fc3b415fc12c3e49d10",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dakdekker/asset-manifest.json",
+        "classification": "added",
+        "sha256": "ef3f034aa8d8e753ee7f6d2970d629a4f2d44d68ba796c663b42389ebf13d03f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dakdekker/content.json",
+        "classification": "added",
+        "sha256": "8b1821853705c78b2e67cfc690151094eec6e9191495ae9dbda987bb4bc38c07",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dakdekker/image-prompts.json",
+        "classification": "added",
+        "sha256": "592c5455c6daacac1e488b8d709635751e369a6c1cf86594a2675f4541e603e3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dierenarts/asset-manifest.json",
+        "classification": "added",
+        "sha256": "79f0d25985f6eb3addd7256bb3e84741c6618057fa3f1bda0ad1af230cbed673",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dierenarts/content.json",
+        "classification": "added",
+        "sha256": "ec7f3c0a0a4675e4fa67109299079a70967974c17beb093cab4c52d64b245b7e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dierenarts/image-prompts.json",
+        "classification": "added",
+        "sha256": "73ceba2b797d0dff35c852490e99dca9ba31139f7efb8fe048ed58021242d36f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dietist/asset-manifest.json",
+        "classification": "added",
+        "sha256": "dd95ad1622dd76806da36391984ddba09799c9bc2ea1e73bf3d87711751db581",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dietist/content.json",
+        "classification": "added",
+        "sha256": "5aba53a3bfc0ce0c3f14b6b629843ee9682ed7cc50aa89f814e3144c4b2c28fe",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/dietist/image-prompts.json",
+        "classification": "added",
+        "sha256": "6f693ce31829f5e6a964cb5871fd4cb9831ab4297a1f5e34bef4d905aeb032a1",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/doner/asset-manifest.json",
+        "classification": "added",
+        "sha256": "a5bd8237b646d6a928627fd0a2ef5ee38eef24c4e4384429923bd4869c6425d6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/doner/content.json",
+        "classification": "added",
+        "sha256": "800ab87b50d4c5f925fec21edbfe5d65a73f0430347703d23f6fbf8416b7c288",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/doner/image-prompts.json",
+        "classification": "added",
+        "sha256": "f9fe4253844fec0d94851a86fad014bab521a2fb19e6f582c2ccf42073215fb0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/drukkerij/asset-manifest.json",
+        "classification": "added",
+        "sha256": "987d26c1a4628d42966cc532f013a10c7a1a6ab1c8897406b69adaf3fce186d8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/drukkerij/content.json",
+        "classification": "added",
+        "sha256": "7084dcdd810ca566857e064f5825abab9649d4054a37ee1a118c54d7b7935301",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/drukkerij/image-prompts.json",
+        "classification": "added",
+        "sha256": "f9161d27bd1adcf9c16c1babfb1eb993b42c1314ca68316945d4a4716ec2bdde",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/elektricien/asset-manifest.json",
+        "classification": "added",
+        "sha256": "c13c3ab632d6c0b55293de5434d56d3382032f8b8046da2985b81100304fca0b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/elektricien/content.json",
+        "classification": "added",
+        "sha256": "319707be4f591ee26a8affcc31717cbf1b301a7def23670342c08b1cb02c35b8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/elektricien/image-prompts.json",
+        "classification": "added",
+        "sha256": "e1918e95889a5c18f3900bfd8bd035ee4ea24cd4ad642df97a04324df7ccc589",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/elektronica/asset-manifest.json",
+        "classification": "added",
+        "sha256": "78253d8e69cebdcd4281b0bb4bad4483781d6ff913e9bfb536f5ef81837d247e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/elektronica/content.json",
+        "classification": "added",
+        "sha256": "6b5ff9173e5008597c417464a1cc9ff0f41ea8ee3daf7d4409c285aab826f104",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/elektronica/image-prompts.json",
+        "classification": "added",
+        "sha256": "722ac3c48cc1937455730f3ba0cd09742401c824bf1c4f212e699de632c5c8b6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/escape-room/asset-manifest.json",
+        "classification": "added",
+        "sha256": "1a4923ff24ca6551e0a94d56ae9573c987c20b7af79d18bd256415fdb6d14f9c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/escape-room/content.json",
+        "classification": "added",
+        "sha256": "22e05298618ae93691443f0fdcdc5045edf8598707c3957ab5f3158a5488f87d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/escape-room/image-prompts.json",
+        "classification": "added",
+        "sha256": "2df1a340d87dfc75948ab4a9d622eec4288a8f7f654c4d6ec2d3efb57b9499e5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/evenementenlocatie/asset-manifest.json",
+        "classification": "added",
+        "sha256": "98788e8361b62418e55dae6312ae7e1b4289c16bcf94c411c7481c0854e118eb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/evenementenlocatie/content.json",
+        "classification": "added",
+        "sha256": "72a7f8ff6bc360f4ba780191505c0f8cb206b03316d6fa8ae4340ae4332d8205",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/evenementenlocatie/image-prompts.json",
+        "classification": "added",
+        "sha256": "1fe97010f0ce62caf9cebf682cbd1040f4475d64fb671a73940c5d456b5435cf",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fashion/asset-manifest.json",
+        "classification": "added",
+        "sha256": "51e62c0a567b66bb648ee3b10891c16ac8218482ae4336f281160db5c7a8619a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fashion/content.json",
+        "classification": "added",
+        "sha256": "d797955b49c1e74b58c0e1eb8b51bfec8841bc716dceb1f352ff9099684edf04",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fashion/image-prompts.json",
+        "classification": "added",
+        "sha256": "4e2be54c28df50c9e5af2f1fe2257204a2aaae56a0ffa22b04418555be6f41e3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/festival/asset-manifest.json",
+        "classification": "added",
+        "sha256": "ff417e2f8b2cbd778653bb02612bb322736e70a2f04d8ec15dcbf0a871201149",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/festival/content.json",
+        "classification": "added",
+        "sha256": "285fe80a5dd2b0d267385756dcb4184ddcf35bcb3c527fc6b8d638d3c0899354",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/festival/image-prompts.json",
+        "classification": "added",
+        "sha256": "291ede620c10380a7cc410c4a62bf4f4bed60b1f9fda0a08956ec11b2a1fca46",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fietswinkel/asset-manifest.json",
+        "classification": "added",
+        "sha256": "1beb8bb7ed30a9bbec0d2d0f413f4604e5d209252f4c00b3ec0958d3e595d225",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fietswinkel/content.json",
+        "classification": "added",
+        "sha256": "daf8f1c2234d88fd8f0d1861122c46831f53f3a233f18f20fd3a96c9b7a21c2e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fietswinkel/image-prompts.json",
+        "classification": "added",
+        "sha256": "7e8f48fe0d1074c0164eda420dd75ad67a32a59bd2ad1a79de773a192b40063b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fotograaf/asset-manifest.json",
+        "classification": "added",
+        "sha256": "e7b9f64168c62693e50ed8d345d89cd8b12069154c29a7f7e984768fc8185796",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fotograaf/content.json",
+        "classification": "added",
+        "sha256": "97444ff85841163e861dd04976ffd904c1466c3d8cdc2c7edb6628241276f9af",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fotograaf/image-prompts.json",
+        "classification": "added",
+        "sha256": "fd90d04521914352cd0ee2521b911ebee87f9baae8c2a8fbe60242c5e330c124",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fysiotherapie/asset-manifest.json",
+        "classification": "added",
+        "sha256": "1c0319d27a7950bde77dfd303befaf129948d2044b2b68eb7858dac2c38f4e85",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fysiotherapie/content.json",
+        "classification": "added",
+        "sha256": "c061690cf12adf23d0f2fb539d9120fccb284951d7b3a668dc4d3aa906af82ea",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/fysiotherapie/image-prompts.json",
+        "classification": "added",
+        "sha256": "bc5ddc9b1441344109d6b171c3a746dd22ca353ef6a30659ff787089d5e1b70b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/garage/asset-manifest.json",
+        "classification": "added",
+        "sha256": "11d02609d04470d834937870205b3d92b592bf97e8289deb2a5666b3029e409b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/garage/content.json",
+        "classification": "added",
+        "sha256": "54cc1684ffa66ab8962378a585068bee111d3faa6584447d1750561401501c2d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/garage/image-prompts.json",
+        "classification": "added",
+        "sha256": "3c84a66b17a297bf88c45df8dc44d936bfa23472b0c8703a725b79e9be87e764",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/glazenwasser/asset-manifest.json",
+        "classification": "added",
+        "sha256": "7d3344d618d454b4f34b6279ffb436b8db833f75c76dfcb38654c211b2da4cc7",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/glazenwasser/content.json",
+        "classification": "added",
+        "sha256": "5ac11973addeb6f693ce9f48c6794ed5a24067c42397d9c8e20cd0922bb8d548",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/glazenwasser/image-prompts.json",
+        "classification": "added",
+        "sha256": "7dfd87cf17cefa38e2f96756d2ed9b675b054829e633789a048932b36b56a886",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/graafmachineverhuur/asset-manifest.json",
+        "classification": "added",
+        "sha256": "978b23e4274ab8c3c0aa3368766481422969c5b751bc6ac60edfa8f4aa643e39",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/graafmachineverhuur/content.json",
+        "classification": "added",
+        "sha256": "0ca6b40f9019a6043cf24d107ca0e522bdabe4baab6de31e1d88c7615e31523e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/graafmachineverhuur/image-prompts.json",
+        "classification": "added",
+        "sha256": "422cc8c0fd566e72c37d818e4c22f2c573be6bd4df8e0d4aea8106bc90b83377",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/holistisch/asset-manifest.json",
+        "classification": "added",
+        "sha256": "bc442a2b2ee1de29e9de024e33105344d75d120b296d393298756c0bbc87d09a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/holistisch/content.json",
+        "classification": "added",
+        "sha256": "e4ccac46205bc9f85f743e8430f36a3e71885e7f6000e06d9799ebafff74a9a3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/holistisch/image-prompts.json",
+        "classification": "added",
+        "sha256": "908b2d3afaed7f19f4515494653c9417ff70c006f8445a219195175fdfddca43",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hotel/asset-manifest.json",
+        "classification": "added",
+        "sha256": "32e8baea26a9d40d62b8e1c0057c2b442c2f1c9eedcf8259a18131be3129e1a3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hotel/content.json",
+        "classification": "added",
+        "sha256": "47494a67679e04bdc12352dabcb2f53cbea77f6a7e99268b022fe6446737df7c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hotel/image-prompts.json",
+        "classification": "added",
+        "sha256": "6c959a3e97f1ef6a27f9d5eab36c8ebb25e77cacc830a672689ab1077389f1f7",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hovenier/asset-manifest.json",
+        "classification": "added",
+        "sha256": "8020086795319723b31f75e754a887111e82ac2bbc9e149586c2ff16944984ee",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hovenier/content.json",
+        "classification": "added",
+        "sha256": "88d50103f407166933e34d5d4155eff40d61ee591b227c865a89f1fd9f3cbd08",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hovenier/image-prompts.json",
+        "classification": "added",
+        "sha256": "021fd14e1aacb59f327ae2bccab251b433c022c0639f156708e087fb4456dddb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hypnotherapie/asset-manifest.json",
+        "classification": "added",
+        "sha256": "53d1ba1a9c62f26dfcad67844d8ccbaa1140fe3d59970b7e54658edd1f2ab3e8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hypnotherapie/content.json",
+        "classification": "added",
+        "sha256": "2d5ab43e77eeb30febded70626fa47d6bd1bacfbab0f40631af7559c76cb479e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hypnotherapie/image-prompts.json",
+        "classification": "added",
+        "sha256": "cd1fdb56da96511aa11ae7360968086678bbfab06a1680ee5fa59b609c0492f6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hypotheek/asset-manifest.json",
+        "classification": "added",
+        "sha256": "7f151188f05cd53b6c66eed7566c23c97be083243b988fae7e6f3d7d1601cb84",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hypotheek/content.json",
+        "classification": "added",
+        "sha256": "bbc29823ee7624724206d48c42a26b3f49c07c4e6394fdf90ea839fa5b4f39a2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/hypotheek/image-prompts.json",
+        "classification": "added",
+        "sha256": "4003f2f033b3174ebe924c14df32100596f73c23577eba30bc5e9a21b027a9b3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/ict/asset-manifest.json",
+        "classification": "added",
+        "sha256": "0400d53947bb9e0da66c2d417265950282145dfd5c6451118ca58b170985c356",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/ict/content.json",
+        "classification": "added",
+        "sha256": "f023d7aa1a3baa9cf7ed9c0c0f12d3f1999e1c795d35855c3cb76f5ecf7dc132",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/ict/image-prompts.json",
+        "classification": "added",
+        "sha256": "78947be1f28794677f5fc58052da9a8dc7169943b845fd1a6a04f55168c74196",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/installateur/asset-manifest.json",
+        "classification": "added",
+        "sha256": "66dcf146ce4637880959e462208b36e2dd62769c44d35ca33fe73fb1184f153e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/installateur/content.json",
+        "classification": "added",
+        "sha256": "b39453578f78af75b4b156f878aa2f449354dc3d9c59eace7103c9dcb9b355e0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/installateur/image-prompts.json",
+        "classification": "added",
+        "sha256": "e55fe00110bf177ab27582ac8759975c97d1964d4838d74c7e79ddfd4d3ac30f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/juwelier/asset-manifest.json",
+        "classification": "added",
+        "sha256": "6d0659c2c9b833aee650ffbc389222520d607d0f6c45998e6d77fe643d6a19ec",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/juwelier/content.json",
+        "classification": "added",
+        "sha256": "42086b13a3058796e9c2d46a4a21200977fb589b49b7ac11187c28cdfe75550c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/juwelier/image-prompts.json",
+        "classification": "added",
+        "sha256": "5fbdf73545fe21a94165d4b1c27c432ce364c2591a86de9d26e5bd3fcde35df7",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/kapper/asset-manifest.json",
+        "classification": "added",
+        "sha256": "c3de78a51fc8782776a8d09cfbf4b9dc51cb4bb6a0c072cceeaa2d42656de0ae",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/kapper/content.json",
+        "classification": "added",
+        "sha256": "259a5818a88ba7d441ff4ca6bf7416efa7850610aa064b859490f4ee9403194e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/kapper/image-prompts.json",
+        "classification": "added",
+        "sha256": "c807baf42c63e3506300d0e34c79fe07fe0bbcd863f4ae94aa27b6d0890e74bb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/keukens/asset-manifest.json",
+        "classification": "added",
+        "sha256": "ea1010085113fee31b0d16a8367a872401635754957f01b96c42c73354280932",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/keukens/content.json",
+        "classification": "added",
+        "sha256": "d74e856c5951df2a1ca696b2e8b3b081d76154b135c333ac46d38712c15bb0e5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/keukens/image-prompts.json",
+        "classification": "added",
+        "sha256": "012247edad07265268a3c4a3130ff93b031541547b482399330ae82bdce37707",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/koeriers/asset-manifest.json",
+        "classification": "added",
+        "sha256": "c3a2a0a2a278943e0cdf163a39919b3b2c63589fcb51126f931843bfb34e37a8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/koeriers/content.json",
+        "classification": "added",
+        "sha256": "4675ce300c331173dcae766a99c9b4e0b35e73fa475abd1445402bf1f7867a6c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/koeriers/image-prompts.json",
+        "classification": "added",
+        "sha256": "dbaa54e1f4df979326b945434dc9c962c0f7baaf18f908bf36ea87e3b76ae7a5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/kozijnen/asset-manifest.json",
+        "classification": "added",
+        "sha256": "a2628c04d6610f685f34a0b0c95a3e9fd1e7cff4b0029c5616db1d3088bd4696",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/kozijnen/content.json",
+        "classification": "added",
+        "sha256": "29f2b66a0540d6c06944f67e3060f60deb88eeec39259063f90fa9a1a0b316d2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/kozijnen/image-prompts.json",
+        "classification": "added",
+        "sha256": "bb9d3a698754e4b710e3750d347bbbe82422a5036f65dc9ae6889fa092dbd54d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/lasergame/asset-manifest.json",
+        "classification": "added",
+        "sha256": "94eb04de98ec5ff580d67b41cb03549ef1c3dbbadcbdc09b5574161eb7bd4906",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/lasergame/content.json",
+        "classification": "added",
+        "sha256": "e74158c42a4651cf1b3daca5d116563f007eac9408c2be8a981458a8a52effce",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/lasergame/image-prompts.json",
+        "classification": "added",
+        "sha256": "15992551759bab69244ef3aba3851b451ec81316947904e9ca9d9a74fe6e1ab6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/lokale-specialist/asset-manifest.json",
+        "classification": "added",
+        "sha256": "8ac0850b69042399444a39884d36467bbcd8682fe64b56e623f7d030cb3081af",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/lokale-specialist/content.json",
+        "classification": "added",
+        "sha256": "e43f8e73808ebd56b4232733ea916989222f52824df88273a5f2aded276436a0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/lokale-specialist/image-prompts.json",
+        "classification": "added",
+        "sha256": "4c54c427a6458dba2bd9976474cc7a20fed7472b7e83308b91f718254892199a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/loodgieter/asset-manifest.json",
+        "classification": "added",
+        "sha256": "da88265feb78417b19e1e4a188fef63143a609f960400796d9392125fc6396e1",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/loodgieter/content.json",
+        "classification": "added",
+        "sha256": "5f9565a04c5a71eeacc65d0becd8407ff3edebdb77f4aa66c2231bb351221e52",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/loodgieter/image-prompts.json",
+        "classification": "added",
+        "sha256": "3e97bcfc9009767414898030c598d2653c723f25b7afe569e1c8d23aa9fdb1f3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/makelaar/asset-manifest.json",
+        "classification": "added",
+        "sha256": "55d33669a91b7b394cba8c3e45706595d823a82ed9fca39e5c470438bfdc250d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/makelaar/content.json",
+        "classification": "added",
+        "sha256": "abb8b4bced01d868540aee3d1fd43cd395e395f9667436a2f5c4090bcff18b91",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/makelaar/image-prompts.json",
+        "classification": "added",
+        "sha256": "d149a51c613664ee77a442be8980f36a68842342abe066a25b7a935865379f90",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/manicure/asset-manifest.json",
+        "classification": "added",
+        "sha256": "bd3e8d0138cad6cac8325adc5838c4b17eeeaa03f67f359ef8de00f27074f328",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/manicure/content.json",
+        "classification": "added",
+        "sha256": "4720e5f9e0b86155aaf2de89273bdc13a595cbee24808bcbdb9072229dadffb6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/manicure/image-prompts.json",
+        "classification": "added",
+        "sha256": "816ae3be9e71b93217e0fa455ec87bff09ef21722bea201e861202575d5073fe",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/marketing/asset-manifest.json",
+        "classification": "added",
+        "sha256": "38f1b653ea1699ed1d744cbed991fa7d32b6fd454af23a0f71a2a5a2bad815ea",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/marketing/content.json",
+        "classification": "added",
+        "sha256": "1c21d8d1b0f15e134b250e82e9841ed800df5a32d55a302289d4c0358ec533c6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/marketing/image-prompts.json",
+        "classification": "added",
+        "sha256": "32a20dbfc1cd5b22e077abcbcac0051966fa09dfef923af3af803c05e1d47a0f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/massage/asset-manifest.json",
+        "classification": "added",
+        "sha256": "13068ffdce8ad5b88ef5d27842ca4acaeba8ef37fe865614ed358eec6803a34e",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/massage/content.json",
+        "classification": "added",
+        "sha256": "a9efa5f45e20db13ee767bdbaab615576204a0652d8bca765265ed8e83ee505b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/massage/image-prompts.json",
+        "classification": "added",
+        "sha256": "62dd3042c665f6b385d7de01f854173b819c694f97ce70fc63d2b8fc4bcedfe6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/meubelwinkel/asset-manifest.json",
+        "classification": "added",
+        "sha256": "4241d0016ef4535bdea37653e1f4a5a0f98201f6f5b65e67916e8d4c1e32759d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/meubelwinkel/content.json",
+        "classification": "added",
+        "sha256": "88f876a0900f43e14ff862e34f8b6832ae6ecaa9dd8808933028d5f4fa175571",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/meubelwinkel/image-prompts.json",
+        "classification": "added",
+        "sha256": "b5ff2e16fbbab2f44775f92cc4f9130404f0ffa312c18f6e56ca32f3b93f04f2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/motoren/asset-manifest.json",
+        "classification": "added",
+        "sha256": "94e61b5e2adac79952add28b1337996af4c640802372845abe75a43989ac70d0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/motoren/content.json",
+        "classification": "added",
+        "sha256": "6a61735b7fad41f29ab9da39b233c94e884b88892a746e6a0463032be3ac2551",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/motoren/image-prompts.json",
+        "classification": "added",
+        "sha256": "38931aea2ad41316292576098c3c7e76690c5319b9e41c5f1b4b119e4239ebf4",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/nagelstudio/asset-manifest.json",
+        "classification": "added",
+        "sha256": "f7853998c157369250e7fa47a6edea0b8ac921f4009eea6261b82cc1ad0c950f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/nagelstudio/content.json",
+        "classification": "added",
+        "sha256": "0579c88ffab4c956c0d1032c7e4b5cee528ae9d0f3dc8fffa9043130b0288191",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/nagelstudio/image-prompts.json",
+        "classification": "added",
+        "sha256": "3410add7696579b50fb720d4acbf07e44b22e93bab01e9789714c3e25fc93fbc",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/nieuws/asset-manifest.json",
+        "classification": "added",
+        "sha256": "3a0afbf498feb3e720fab3380291d072cc34412f1f1ed5b69b72541d13804ccf",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/nieuws/content.json",
+        "classification": "added",
+        "sha256": "fc09797054249e981b7ccbb376690d5fccb6540e000f4465fb0e0baaa018ddfb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/nieuws/image-prompts.json",
+        "classification": "added",
+        "sha256": "e53e6bbc77fde1bb8a73fb3852af6caa90773335eb7d91d6d1056e2c717f3745",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/notaris/asset-manifest.json",
+        "classification": "added",
+        "sha256": "718091cb68f2266dea8891f29709d514cc844afaa33e7c33e1808da4e422dd41",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/notaris/content.json",
+        "classification": "added",
+        "sha256": "500a79f23f560bcfb986b7f68d64397c0469db3409c77d99085a2e7f48132b59",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/notaris/image-prompts.json",
+        "classification": "added",
+        "sha256": "9c153b0d784f0df735d35172b919481feff4dafbf6b7764a6da68ff7fa22a8a8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/occasions/asset-manifest.json",
+        "classification": "added",
+        "sha256": "877c073bce47b4f65a7e92a8401b29dcb7f59015f53ad3f916d6ad92e0103c59",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/occasions/content.json",
+        "classification": "added",
+        "sha256": "bc8fe72a049e7088f3f9d3aad68c00e91ed235b9074ff6ec5c9d0c89ca0d5929",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/occasions/image-prompts.json",
+        "classification": "added",
+        "sha256": "17a085463445777e42c3a2fb5ede6c1284fac12ccbe788a41a26bcda6d9a5c01",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/opticien/asset-manifest.json",
+        "classification": "added",
+        "sha256": "a5424d4a7d82d4a307c3bb810aedb56d0eea7c8f800e2719dc4a0d049352d63f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/opticien/content.json",
+        "classification": "added",
+        "sha256": "5cc14291cc54054bd20569d65d2a7adc3fc3f7066b1fe47f3534077bce928b1a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/opticien/image-prompts.json",
+        "classification": "added",
+        "sha256": "0d7b621559bfe9e580e16b5a4b36003bb9f4752d6bbaca32d51b7cfc9509efa2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/paardensport/asset-manifest.json",
+        "classification": "added",
+        "sha256": "1699211512b12ba60949a69bbcdd42ced5663fa303f8d115ff4e1a483beddce8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/paardensport/content.json",
+        "classification": "added",
+        "sha256": "2505feb4c3194bf0e5f03e17dd75e312f0036fa65bb78affa615e59fb722bf59",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/paardensport/image-prompts.json",
+        "classification": "added",
+        "sha256": "920e201a0c3a70c0d69ac4711c03014d44e06d1807373b8ed99a9e9bc0fe7d4c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/paintball/asset-manifest.json",
+        "classification": "added",
+        "sha256": "391f60321ba4068d8cf330713b70e6ff7354d642475172f1fdef3f961d9bc3ba",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/paintball/content.json",
+        "classification": "added",
+        "sha256": "f490a77a5ceabbecaa9cfc5363fb895f1d018a661d63232734df94c13b1ae7c2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/paintball/image-prompts.json",
+        "classification": "added",
+        "sha256": "c60b3f32e2618f052ca3d4b9108bf4614b74e4828fb55fa73ddbcf1926676fd2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/pedicure/asset-manifest.json",
+        "classification": "added",
+        "sha256": "a4e2c1e4e50a78f29ae2d8ccb532cf32f5ab5635ba26c0a352b22e7167b49be9",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/pedicure/content.json",
+        "classification": "added",
+        "sha256": "3e7db85b850f71695b35d4fbb44cbf5ed70d343a38011464f01213225aea3d9f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/pedicure/image-prompts.json",
+        "classification": "added",
+        "sha256": "d8a49151948050be8fb89947d0409446e046c5ad6c1822f6e36ef6f8ba0a8455",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/personal-trainer/asset-manifest.json",
+        "classification": "added",
+        "sha256": "8a2138071d1e239d3b3b7071bd7e78397ceaa8d546353989bde1c22e1433cd5a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/personal-trainer/content.json",
+        "classification": "added",
+        "sha256": "bb98d7d3de8115dbaeff4d4288e9cbfa221cfdd46a45dc2f21e79876e84286df",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/personal-trainer/image-prompts.json",
+        "classification": "added",
+        "sha256": "9a4da42df8819d16b59f73ba7f0fd15eca3bcdf7f5f1bc3746a3f832bff286b5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/pizzeria/asset-manifest.json",
+        "classification": "added",
+        "sha256": "5714822fb5fc790fae07801b1e0be1d785d2a7702a8cc57cb678635d9b22fb4a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/pizzeria/content.json",
+        "classification": "added",
+        "sha256": "d09aa28246c899b4d05617532c6366127b59fd87077f62379c76bd8879890eea",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/pizzeria/image-prompts.json",
+        "classification": "added",
+        "sha256": "0e9567c924c2c72a004d9076243e61ae6f7828f031e5076dcabee6c21df5c978",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/privechauffeur/asset-manifest.json",
+        "classification": "added",
+        "sha256": "6091f827e988e1bb9380a4d6bd0d44bb76a85ed35ac6bdf5f95cde53b84ceaca",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/privechauffeur/content.json",
+        "classification": "added",
+        "sha256": "8aab4726512a46919cf1a01ce3c2a4379c22cf720201e5254833c1a56fa44583",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/privechauffeur/image-prompts.json",
+        "classification": "added",
+        "sha256": "e149c4df63222bc5e372d7ba17a81e6b9f13ac2719b420842fab4403e9642a5b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/psycholoog/asset-manifest.json",
+        "classification": "added",
+        "sha256": "ca16230911e6d4efc6e1fafeec801fd616a548d10005a377e676219bebdd5067",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/psycholoog/content.json",
+        "classification": "added",
+        "sha256": "7069a41f9fb2a7b895913f36801dbafab19557fef0f577cdeda03329c2d5e923",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/psycholoog/image-prompts.json",
+        "classification": "added",
+        "sha256": "a5c2c68566ab81306e176bf51075bc6e51b0e43de65f7d434d1a6c6b684fe572",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/restaurant/asset-manifest.json",
+        "classification": "added",
+        "sha256": "c88770d3c6f8077025b288abf7dd81e4703a172bedeb668ee203670c4b310589",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/restaurant/content.json",
+        "classification": "added",
+        "sha256": "d1d79a0278ec52a04af2d7372755e210d7903dd0c8eb80f6647d3871705ffc64",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/restaurant/image-prompts.json",
+        "classification": "added",
+        "sha256": "744782e9b00481cd092bdbafd46ac845525eacd8bfce191aecffda44f15d8b85",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/rijschool/asset-manifest.json",
+        "classification": "added",
+        "sha256": "43e98ed947519399363e76c8d1b256c34571f99585b41c348bf65ac46307509c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/rijschool/content.json",
+        "classification": "added",
+        "sha256": "d9c82f541304495ec3612e0280d441690b8c2e3b1b631d0263b5834e845d7b5b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/rijschool/image-prompts.json",
+        "classification": "added",
+        "sha256": "02616ac52b420a1bab3ba7c1239aca4623a9c4c399508720ea23825c70254c06",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sauna/asset-manifest.json",
+        "classification": "added",
+        "sha256": "3b9b79a81a9ddc5d79b1e03c3316f9ba47ac7ff6de09a4a6d8891ddc0af4ddaa",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sauna/content.json",
+        "classification": "added",
+        "sha256": "99e81d977e650c5b6db56ae070a93668ec787d4246e4a72e56b81dd67f56e020",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sauna/image-prompts.json",
+        "classification": "added",
+        "sha256": "a894acd77971be86bd59eb93b2798bd96d25b9e1087ced7dc8b30696647af65a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schilder/asset-manifest.json",
+        "classification": "added",
+        "sha256": "ad9ee9a14df43a4da193fcdf8bfc10886a3325e6e4ef9fea20cc4bcdee4fe1a1",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schilder/content.json",
+        "classification": "added",
+        "sha256": "e8cf49f54464528217aa2f62632108c08c2b1c4af4fa29896eb7a03fc6c620e5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schilder/image-prompts.json",
+        "classification": "added",
+        "sha256": "ad5f04f9aa20b9741a35ceb0ba9aeee367116592f147a70006402efc97b911c1",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schoonheidssalon/asset-manifest.json",
+        "classification": "added",
+        "sha256": "85a21030a2273628890495fe7d6a6c6e61599d7e9dd9100b7377bbf1d5eba062",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schoonheidssalon/content.json",
+        "classification": "added",
+        "sha256": "b3aa490592a9b723702ec773588529cc14f87fc45520854b662c22eb251c9e67",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schoonheidssalon/image-prompts.json",
+        "classification": "added",
+        "sha256": "22574b187b8a6a9b432e509e9865f48b3127ae6d1713fd7d153ec3f29ebe7919",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schoonmaak/asset-manifest.json",
+        "classification": "added",
+        "sha256": "4488d276622296199e77146a9426aa76549adeb408f8f4686e3ead7f405927bb",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schoonmaak/content.json",
+        "classification": "added",
+        "sha256": "1bf86f5c00b2c3595b1a7808cdde7ef85894e70886405b3329b87f5bd96a3a58",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/schoonmaak/image-prompts.json",
+        "classification": "added",
+        "sha256": "aa4ae68e8727810c4a2c3972fb8df2f976b75831695f749012f2fef6d83f3aa1",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/scooters/asset-manifest.json",
+        "classification": "added",
+        "sha256": "4effd480a8bae74679ef03082f52165dd083a9074e8a1be08cf056f718a72bf8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/scooters/content.json",
+        "classification": "added",
+        "sha256": "805c11267223e4bf69ad7d21474f6855157e5410bf294e4aa1d38383ce5df0b5",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/scooters/image-prompts.json",
+        "classification": "added",
+        "sha256": "c520eb925562f9c5e4968df4b11b005c3494d537b838af6ab2b22a1a01db916f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/snackbar/asset-manifest.json",
+        "classification": "added",
+        "sha256": "d4cadc2126ebe42524de4419a732ead50167c9e3dedf92871c1199d52f470ebf",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/snackbar/content.json",
+        "classification": "added",
+        "sha256": "b2aad9c976ede5b91847c07955f0a5096c7053893eb9660a99ee228d2a2697ff",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/snackbar/image-prompts.json",
+        "classification": "added",
+        "sha256": "1a2aab5b7fa0d7a13db9c49c218421d622f9aa04075d70a78eaeb05306ee7270",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/software/asset-manifest.json",
+        "classification": "added",
+        "sha256": "205b23ce1fbdc1cdc6cc9eba8aae69ca1f0b26a303adc4bb60c102e73b1e2748",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/software/content.json",
+        "classification": "added",
+        "sha256": "911e952b2c221a0641c6f5856aad60217028ca449c47e37dadf151b4a630560d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/software/image-prompts.json",
+        "classification": "added",
+        "sha256": "d3fd66bdeb9b9bb9e5c3e6c33791f906561197f5dc4f469a3d96573de930a897",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sportschool/asset-manifest.json",
+        "classification": "added",
+        "sha256": "17010f655bda686d70a115efd1f5d57c809dce099e1eddf788aafa15f243ed48",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sportschool/content.json",
+        "classification": "added",
+        "sha256": "231e256c86443c4862a8b6f106876c9c04e186c491d70a71d2f6c6530f83d1fd",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sportschool/image-prompts.json",
+        "classification": "added",
+        "sha256": "1b8511ae10059b8b736228e112c6e93806f2d516a4b30c9e9387079049c2fe39",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sportvereniging/asset-manifest.json",
+        "classification": "added",
+        "sha256": "011aa6311e37d748a913d771fea09698a8e03cd8bbb9191b45a43776f36f5e6a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sportvereniging/content.json",
+        "classification": "added",
+        "sha256": "a5a8997caa5620bd844d107ce835c3bf548812fdf9df131b4520b60a0539b945",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sportvereniging/image-prompts.json",
+        "classification": "added",
+        "sha256": "f5ceb1156dd464ce17bdb65be02bd16c0e94a267a57acc5792011ce18eff5213",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/squash/asset-manifest.json",
+        "classification": "added",
+        "sha256": "3f169525c91ec55b7a583d72817f40bd9a5e5d6cf2aa353612949f6c14dbaed3",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/squash/content.json",
+        "classification": "added",
+        "sha256": "9c9cebf72d1a34e2cff07b4c43a45ee86f37de210099d15c567a3fdeaaba9051",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/squash/image-prompts.json",
+        "classification": "added",
+        "sha256": "3944983c7d6250cc7903b1e12fc2618a23f371b92fd0982912f0751fcf0828f7",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/stukadoor/asset-manifest.json",
+        "classification": "added",
+        "sha256": "0f686ac7f8099c07d0c76a9ea3ab869d7f7ab934929bf5ebf9b87758ced657d9",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/stukadoor/content.json",
+        "classification": "added",
+        "sha256": "ae65befcb09718d4e6e244d7c3959fc7d1448460ffcd0f697270c8307cbce37f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/stukadoor/image-prompts.json",
+        "classification": "added",
+        "sha256": "fe017c233a065192dce5673af2388f890caa84c2ef5b69948476075dcdd006d8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sushi/asset-manifest.json",
+        "classification": "added",
+        "sha256": "e8d8e344fa189e6fc007879eb23c801cebe61afcada726728b6ffa5a0aaf43b9",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sushi/content.json",
+        "classification": "added",
+        "sha256": "b81bdea6e116b2b7a4d47bf7d703c1437c0f915a3035cabc681c232bf07e5dad",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/sushi/image-prompts.json",
+        "classification": "added",
+        "sha256": "bf2cecff3866f5a2ed9f01bf61807b1c3975186d274556466fbf74f8791aceef",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tandarts/asset-manifest.json",
+        "classification": "added",
+        "sha256": "1a871aacd339d1cccc6f2a80055cf7d33e71ce8b58ee8f1511f4cc60912d29e2",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tandarts/content.json",
+        "classification": "added",
+        "sha256": "0b60583fd72bb5641dc7e5b0d1c1b0f3766619036b45c175da97e3bdc7c2429f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tandarts/image-prompts.json",
+        "classification": "added",
+        "sha256": "b01645a03cd39a119873a4779316be09dec8bd0a1b5ac3990c8f9d098e8973cd",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/taxi/asset-manifest.json",
+        "classification": "added",
+        "sha256": "cf0ceec912a4bce2ae1317d4ac860fbf6d833330ee3f2dec025440edbe1b2f9c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/taxi/content.json",
+        "classification": "added",
+        "sha256": "26b3f1ee16aeeff93fb3c364bde0aabfda11f132713d7ce61bf3a3c2a8afdb57",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/taxi/image-prompts.json",
+        "classification": "added",
+        "sha256": "af9dbedcd7a99d7b4a81492dcba693f6953ab3fc129e1d9e9d3e4be5d6acf4aa",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tegelzetter/asset-manifest.json",
+        "classification": "added",
+        "sha256": "08092e77db223e2d27bf85e7e47fd76aa19bbc1871d76a412e7f25537b47f692",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tegelzetter/content.json",
+        "classification": "added",
+        "sha256": "bfb470b0ceccc442c499ea7781395498eb8384a656d10e4912b768cc16866b2b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tegelzetter/image-prompts.json",
+        "classification": "added",
+        "sha256": "fb1a81969afdc2447a3b18e2bc6033ca795058e8860075877981c27735488a8a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tennis/asset-manifest.json",
+        "classification": "added",
+        "sha256": "79ddb4f09cd4932dd1ce5dfd42cd1836b0be4595953ecb4d4649066c185ac0bd",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tennis/content.json",
+        "classification": "added",
+        "sha256": "b11fc5e874ae335f9d7c260f8ec75312ac2ae361546ef62873a2a0117f64ea64",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/tennis/image-prompts.json",
+        "classification": "added",
+        "sha256": "e783509b08b8fba3de830cc381d6eeec3334c504716e08fa254ee7b674471857",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/timmerwerk/asset-manifest.json",
+        "classification": "added",
+        "sha256": "110cda798fa4d42a5a9ce28d8d7c71b16adfb484e3bb4aa00131a40677790e7b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/timmerwerk/content.json",
+        "classification": "added",
+        "sha256": "6b7ebb31278adf4c5d484869162d6f42af8243269cb3541a67df98ff9c40d9d8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/timmerwerk/image-prompts.json",
+        "classification": "added",
+        "sha256": "1912c508c187042fd4e93c98210583e1900899826856244a6e956f2bc952268c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/transport/asset-manifest.json",
+        "classification": "added",
+        "sha256": "5d4e577989682d015ed0442c22259b4b1d7023105115fc604c89bc5f1b6a2f82",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/transport/content.json",
+        "classification": "added",
+        "sha256": "2641190ea4ec397efb1176fbe01c87e902bb660ca39c9d5187f2e0b545504206",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/transport/image-prompts.json",
+        "classification": "added",
+        "sha256": "2aa0bee73c6766f07f0680cdbd941d30cda0d1c32ff0cdd2b3cc76ba32edf34b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/uitzendbureau/asset-manifest.json",
+        "classification": "added",
+        "sha256": "a4c96040f6eb31622b70a003d240f7c8b62d630d04d6c34786cbdf8c84b4ca32",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/uitzendbureau/content.json",
+        "classification": "added",
+        "sha256": "86b05858a856859c9b6e2c36db5c1ab9643fae8c94e01ac29db3c6d6943310a9",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/uitzendbureau/image-prompts.json",
+        "classification": "added",
+        "sha256": "6565e509206b3557f0dde67ddf259254746c9fec789d678fe3639c1376c16725",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/verloskundige/asset-manifest.json",
+        "classification": "added",
+        "sha256": "70f382a3eb471402742b52c6c25326961f43674b6aa5f22ffc6d3f49f35d6fe0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/verloskundige/content.json",
+        "classification": "added",
+        "sha256": "02a75e199184f7580aec9a9c6bd107d47f268157613c5149a5c7e5c98baf06dc",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/verloskundige/image-prompts.json",
+        "classification": "added",
+        "sha256": "f876dbad9f315e60c5a3745c14de98f5932673c5cd463d6bbb8daff412a8bef6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/verzekeringen/asset-manifest.json",
+        "classification": "added",
+        "sha256": "69f89d4f636e10af8f421f27b26322b24dfbe1d00d09d4ccf06b3256b5a3f0d0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/verzekeringen/content.json",
+        "classification": "added",
+        "sha256": "e72b35078d529e8d940166f862307ac060c76e5fe87f92e50497269397119f11",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/verzekeringen/image-prompts.json",
+        "classification": "added",
+        "sha256": "bc9f1b22634ad6db3cf2d03ece374bbc1e550d88dd82c0a3fb1f4f7fa49f4972",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/videograaf/asset-manifest.json",
+        "classification": "added",
+        "sha256": "4142aab447ac9c9f93b9234679a4ed6c0504f77a32c3218942cf6fa78ca86061",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/videograaf/content.json",
+        "classification": "added",
+        "sha256": "252c268b5a64f3bf05a8c254921e094c12797cd671a8c57124d1ce143fe620b6",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/videograaf/image-prompts.json",
+        "classification": "added",
+        "sha256": "eb9d93f94b96c5a6689a96ad5d7538dac646ec80288ac42cfff81044fdcbef36",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/vloerenspecialist/asset-manifest.json",
+        "classification": "added",
+        "sha256": "dc7f4bef69bb1003c85a7c6d9faef6714f07a480de129baa9d5a2717f1f51706",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/vloerenspecialist/content.json",
+        "classification": "added",
+        "sha256": "728f3ce99043a04825b10b389b084688e70381c9f42464424018d7bcf6335308",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/vloerenspecialist/image-prompts.json",
+        "classification": "added",
+        "sha256": "27b71e2939688d0f6cfb5f1848b73d84d349772de527ab855ba0d1b094eb1eaa",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/voetbal/asset-manifest.json",
+        "classification": "added",
+        "sha256": "508708b7c9c9462f51426076bb082fb3a2abd639ead72a36e084656f98ad1b88",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/voetbal/content.json",
+        "classification": "added",
+        "sha256": "54e902ed227412dd8641d52a0d8237d7de6be8ca1e5e94356ab591aff2c965ea",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/voetbal/image-prompts.json",
+        "classification": "added",
+        "sha256": "53a21f8effa26ffcaafcea36bfc3bf44d1b6e08a731ee67ad05a9877f484749b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/webdesign/asset-manifest.json",
+        "classification": "added",
+        "sha256": "2e9d9476fe2ac2b4ce8ac6f13f9fc9f7362e7d0b15a089ac77f3b71fe6745610",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/webdesign/content.json",
+        "classification": "added",
+        "sha256": "d9d5fc22b66dbd79f9540fd0751ce6bb066bf6a19f1ebae7d7e3a4686e9cc89a",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/webdesign/image-prompts.json",
+        "classification": "added",
+        "sha256": "a0f4d181ed96b50c3f8615d67a07400fb8b12779834f36042b4d19c0da14b02c",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/webshop/asset-manifest.json",
+        "classification": "added",
+        "sha256": "379799a689e53ad17bd786f362ff28054d4e687b12207d9f9ab8067d62b6bf3b",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/webshop/content.json",
+        "classification": "added",
+        "sha256": "ca64d6432c2c0e6845ddb9415c7d82acdc141de76d79e5c94d8408b0134b9b4f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/webshop/image-prompts.json",
+        "classification": "added",
+        "sha256": "cf4614eaf9652d03e1b6907df4779e466d801eb4567624b4363fe0f1b353c6a0",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/wimpers/asset-manifest.json",
+        "classification": "added",
+        "sha256": "af2c72e07b7b348c8c8d9413b9f5a32a88e768a8d35c58eb9e1b6cf5f1fde819",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/wimpers/content.json",
+        "classification": "added",
+        "sha256": "fc4ae18cd55150a9c258b7c1feb2039fba2429be33141488b05c433a9547a645",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/wimpers/image-prompts.json",
+        "classification": "added",
+        "sha256": "41145262aa9507e2212b14a206c1fa1a9d7139ab9459125b9e08c4ac1863d09d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/yogastudio/asset-manifest.json",
+        "classification": "added",
+        "sha256": "cfa2947fd36dfc5cc89eae0c4e64ca05e86676efada37032a9cc698220e8a4c8",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/yogastudio/content.json",
+        "classification": "added",
+        "sha256": "98c47ace79e65ea46438af2cdaed4a460fd250f5ff9b59f67501677cf839dd77",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/yogastudio/image-prompts.json",
+        "classification": "added",
+        "sha256": "2a6be6e587e9979b3c3bdda6f7ee0e87ea996b559d76c9e7310944a686b52582",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/zonnepanelen/asset-manifest.json",
+        "classification": "added",
+        "sha256": "923d8106603e1782b792c879828283542c962488e67b2675dea490f62a1d631d",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/zonnepanelen/content.json",
+        "classification": "added",
+        "sha256": "932acd85261fd0a8cc1fcffbcb9352a40b0c275028213da001f5bfb17794f82f",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/branches/zonnepanelen/image-prompts.json",
+        "classification": "added",
+        "sha256": "31579e9048baca0994e8930eadf6c393af0813fbb85a5b0092ac5e301d6137bd",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/generated/catalog.json",
+        "classification": "added",
+        "sha256": "88589abae3b4d9662505cd5ceb5967689906bbbfb0623038508e9c7564812835",
+        "releaseClass": "runtime",
+        "reason": "Runtime branch content and service library required by Adapter v1/v2"
+      },
+      {
+        "path": "content-factory/public/v1/index.mjs",
+        "classification": "added",
+        "sha256": "72188cede92f22cad31045820ac13f35fb6f4a4988b1985c7e0a32f691b2d809",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/public/v2/index.mjs",
+        "classification": "added",
+        "sha256": "f049dbee30d7aac98509f876101b7411853953f5720b4bedb230b4f48eb8958b",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/asset-pack-resolver.mjs",
+        "classification": "added",
+        "sha256": "f1b2f2db68991be7197a12bbe8d3a346727cb63d9934aaee31a471197ca6aadc",
+        "releaseClass": "runtime",
+        "reason": "Checksum-pinned branch-safe asset resolution metadata"
+      },
+      {
+        "path": "content-factory/src/composition.mjs",
+        "classification": "added",
+        "sha256": "8e17a6f5b048077f98ab40ea7c6286c2246c3cad0790f1d42750ec90b764b3f3",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/content-blocks.mjs",
+        "classification": "added",
+        "sha256": "73ca3a932e6f8a0012cd78685b59f5fed466ad51ab81641c24e5d135afba8478",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/goals.mjs",
+        "classification": "added",
+        "sha256": "809a0c8177bc890a35237356e5c63b520a4383b20dbbe7e68e764eb1d816e148",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/personalities.mjs",
+        "classification": "added",
+        "sha256": "bcb4a6e5b4eb5649a06bf6b765e252089100f387b1b56b10261b338a7fd85d06",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/quality.mjs",
+        "classification": "added",
+        "sha256": "4d98f4f50709efc26bb66d0f984f6fc3e671a32a9ef43017e2a5cf9b26e2156c",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/specializations.mjs",
+        "classification": "added",
+        "sha256": "90c2dc4c9359f3ff09e1482ba1690dba2ccf7a2c505874b71535b4adbf8ade71",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/styles.mjs",
+        "classification": "added",
+        "sha256": "4bfbbf9f138d3e00615f749b99a8a99de61da20fccd43f38396244d7c511c3ba",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "content-factory/src/verticals.mjs",
+        "classification": "added",
+        "sha256": "2eb2e2f8a95af0b7565c07c144c47c43cd806ff9478b394023ce91e2ca780d90",
+        "releaseClass": "runtime",
+        "reason": "Content Factory v2 composition, layout, design and truthfulness runtime"
+      },
+      {
+        "path": "functions/_website-factory-core.js",
+        "classification": "modified",
+        "sha256": "ab5aa0330566b057e92ec099d737994568fa6e05352a980fae587a0179dd31b7",
+        "releaseClass": "runtime",
+        "reason": "Website Factory runtime integration and renderer compatibility"
+      },
+      {
+        "path": "functions/services/contentFactoryWebsiteFactoryAdapter.js",
+        "classification": "added",
+        "sha256": "6e956a131a5e03c2020de6d3cf221dfc97db89475391c7ca6dd22d5eb81a5aa5",
+        "releaseClass": "runtime",
+        "reason": "Website Factory runtime integration and renderer compatibility"
+      },
+      {
+        "path": "functions/services/contentFactoryWebsiteFactoryAdapterV1.js",
+        "classification": "added",
+        "sha256": "abf8e17b7ab1aeffdb195fdc77af2bd297104aae36b690def29307f58e586bfe",
+        "releaseClass": "runtime",
+        "reason": "Website Factory runtime integration and renderer compatibility"
+      },
+      {
+        "path": "functions/website-factory.js",
+        "classification": "modified",
+        "sha256": "e728117e5466e11fc10edb45d9caf8f26905c0a08cf49055a066f9e9d12c530c",
+        "releaseClass": "runtime",
+        "reason": "Website Factory runtime integration and renderer compatibility"
+      },
+      {
+        "path": "functions/website-factory/vm-tegelwerken-demo.js",
+        "classification": "modified",
+        "sha256": "789b0fd91aae79aa3a444dcf5bc6e194f7aac92aecb0e2df4b35afa2e246fac6",
+        "releaseClass": "runtime",
+        "reason": "Website Factory runtime integration and renderer compatibility"
+      },
+      {
+        "path": "netlify.toml",
+        "classification": "modified",
+        "sha256": "d0f9b6ba20726fa85afa33166a8c4e98177074c86d31e02bfb65bbb359684335",
+        "releaseClass": "deployment_configuration",
+        "reason": "Minimal Netlify included_files and immutable static-asset cache contract"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/autobedrijf/about_team/acf-v1-07-about-team-01.png",
+        "classification": "added",
+        "sha256": "bbdb89a0d2c53e401f99d707bdd5a1766407b081e35bfb29169adfba5334b415",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/autobedrijf/detail_ambiance/acf-v1-07-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "5313271a545bffe02791b84a0c4fdb93cdb70f0b116298de5fe79c9b8ddb0eab",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/autobedrijf/hero/acf-v1-07-hero-01.png",
+        "classification": "added",
+        "sha256": "a3b384d10a9528c288fbf38d66b2d570099eb283a45446c6ec2b80ffe291eecd",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/autobedrijf/hero/acf-v1-07-hero-02.png",
+        "classification": "added",
+        "sha256": "37411187cfa08cead85f2daef978f90ee1de3b0f181bcaee3656a5610d59650b",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/autobedrijf/service/acf-v1-07-service-01.png",
+        "classification": "added",
+        "sha256": "7d26bf113ecdf74ff07f509f6d53d5fc5112dcf2039e90a3b63183cd652c9114",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/autobedrijf/service/acf-v1-07-service-02.png",
+        "classification": "added",
+        "sha256": "3eaf1dfc0fd1dda9bd98232897215c775ac9153bfdc4f6e6c20a09c005bfed64",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/dakdekker/about_team/acf-v1-08-about-team-01.png",
+        "classification": "added",
+        "sha256": "d0de67cb301d5e42136efd15c4279f85f99e9b7d0bd3ced7a9c704b6d7d71cc7",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/dakdekker/detail_ambiance/acf-v1-08-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "c04083a99351c63e3dcbd713d18bcc6b74b8f237a27f8a2285cb11d24df1f303",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/dakdekker/hero/acf-v1-08-hero-01.png",
+        "classification": "added",
+        "sha256": "563af2a9544af4e484f84b5179f0b6995ab9a772d9bdfa2970b4683156995095",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/dakdekker/hero/acf-v1-08-hero-02.png",
+        "classification": "added",
+        "sha256": "174cbbfe29a1dfa85c67fd15cb96e60a11657f9c89bacb3e51bf803512465877",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/dakdekker/service/acf-v1-08-service-01.png",
+        "classification": "added",
+        "sha256": "00343dccca626eace3d86742d69961c07bd55446d33ec3d6d06e279a4b77197b",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/dakdekker/service/acf-v1-08-service-02.png",
+        "classification": "added",
+        "sha256": "a5219a5b296d13d97236ba1dce493c30bdbec08641689c90489f1fe43d7f0cd4",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/glazenwasser/about_team/acf-v1-03-about-team-01.png",
+        "classification": "added",
+        "sha256": "a48a43246fde8c79334bf79d0a7c829c0a01842e38562032d5987cf443220f51",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/glazenwasser/detail_ambiance/acf-v1-03-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "3489bd7e25b6d8f96e579ca62601270383542e327ea40600e761c73fd913cd82",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/glazenwasser/hero/acf-v1-03-hero-01.png",
+        "classification": "added",
+        "sha256": "ce96dcbe4deeb360b58bf4266cc664f0bffacb4ea3297e614c07275126567c8f",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/glazenwasser/hero/acf-v1-03-hero-02.png",
+        "classification": "added",
+        "sha256": "2467c89474ae0b8d124989d7b151f5715fa3ee591b0b02776d14e2416647a286",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/glazenwasser/service/acf-v1-03-service-01.png",
+        "classification": "added",
+        "sha256": "c11cba5368d1d07c4b1bcf220aa03619f0c8182d494b99cb4b8da4c3cfbc43f4",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/glazenwasser/service/acf-v1-03-service-02.png",
+        "classification": "added",
+        "sha256": "228acd02358c9e001b95ac13f1d16f1b867b0e16fc5ccb83eb935baf3ef27eb4",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/holistisch/about_team/acf-v1-05-about-team-01.png",
+        "classification": "added",
+        "sha256": "21b07fdcc67f75f881da63f17964b883f424c8c9d4d460d534412a0d7e9102f4",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/holistisch/detail_ambiance/acf-v1-05-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "d4267b7a6cf8785c502e2c8c35e6fa8e77aa530f9f722de13f36dbe6475324c0",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/holistisch/hero/acf-v1-05-hero-01.png",
+        "classification": "added",
+        "sha256": "4ac64abd9036cc232a5fa08d4a365f68a77f66b37a81a9b565bc7cc10666bcce",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/holistisch/hero/acf-v1-05-hero-02.png",
+        "classification": "added",
+        "sha256": "fb07992b5514716358d8115abdc8fa68f2764027aa30fc53ef7b3471f8656d03",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/holistisch/service/acf-v1-05-service-01.png",
+        "classification": "added",
+        "sha256": "042c34c431ba54fcf658f7d9ddb824673e6b8c3b6dceebaadcb782fad7816671",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/holistisch/service/acf-v1-05-service-02.png",
+        "classification": "added",
+        "sha256": "fb733e2a15bf2128b98eb0cc185837f8a0f436ec5888d48f87a2a27518696c22",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/installateur/about_team/acf-v1-01-about-team-01.png",
+        "classification": "added",
+        "sha256": "2639f573e2e86d0b6d0b5f60156d5acba3aa67c7785287c4a8730a83cd9b176e",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/installateur/detail_ambiance/acf-v1-01-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "09c4095e1f6a437431a3e1af67e802ba13e90ae1d64b9fcfcbe6a87da35eb849",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/installateur/hero/acf-v1-01-hero-01.png",
+        "classification": "added",
+        "sha256": "f3ca4784b06176396640490529b9913a286009eece8d25ebbc206797bd05b21e",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/installateur/hero/acf-v1-01-hero-02.png",
+        "classification": "added",
+        "sha256": "97e08881bdee241beaf1282cc261199a5e21a63ca523f35bf88e2b85e5a5202e",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/installateur/service/acf-v1-01-service-01.png",
+        "classification": "added",
+        "sha256": "603f267829fc1bc3dc9da2891cb1a905945ec99a7ea8d40ff14ec642e4496359",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/installateur/service/acf-v1-01-service-02.png",
+        "classification": "added",
+        "sha256": "1f1a64d7f46061d2b4380da0ba4fb6769fe61c489e5601fe540f9d574e6a99a8",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/loodgieter/about_team/acf-v1-02-about-team-01.png",
+        "classification": "added",
+        "sha256": "ea7b9df66565adb534dd888fe769780fccf855519892c0894026f43140b3846f",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/loodgieter/detail_ambiance/acf-v1-02-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "16594507fdc83c7611043ed3fa2f2b3d04b50524f393924c230bce4b1dab4e77",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/loodgieter/hero/acf-v1-02-hero-01.png",
+        "classification": "added",
+        "sha256": "150a16a2f05a83857d05de14b16411b1d19ce33f4ea7ebcf591ad7336d16fae9",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/loodgieter/hero/acf-v1-02-hero-02.png",
+        "classification": "added",
+        "sha256": "2c6b89dcdbacdaa7f7515895c81acbf9520ae7331f6daa797e819a304ae467a2",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/loodgieter/service/acf-v1-02-service-01.png",
+        "classification": "added",
+        "sha256": "8d5a6b0c55b76d421ce630bad406dc66aac8504895943647941e8404bbc8637c",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/loodgieter/service/acf-v1-02-service-02.png",
+        "classification": "added",
+        "sha256": "6c469f31fc61327f849cfbde2e0c8eb29369af88ac53fe62abaf68e3ae50e48a",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/restaurant/about_team/acf-v1-06-about-team-01.png",
+        "classification": "added",
+        "sha256": "5250031325e5be475daa95362afcea6dde54d20f2eb455e1a18cdc761b69ee72",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/restaurant/detail_ambiance/acf-v1-06-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "fef445d3f7bd7f36868c7372d314a29c3c1ac6df90600567ab06324a2d5864e8",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/restaurant/hero/acf-v1-06-hero-01.png",
+        "classification": "added",
+        "sha256": "0b0167a485962c9291657fb4ed9c97a3cfaca9201ea108c874b136334a32313b",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/restaurant/hero/acf-v1-06-hero-02.png",
+        "classification": "added",
+        "sha256": "9ea9333080a3d2a8bc1cdb199b53cfe4dc8a5d8d07cd9c0630f9db8da61257da",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/restaurant/service/acf-v1-06-service-01.png",
+        "classification": "added",
+        "sha256": "189a682748e79d7b20c53c1b4cfe61ce0363a6cf3f76c264302caa4b15f69dad",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/restaurant/service/acf-v1-06-service-02.png",
+        "classification": "added",
+        "sha256": "96fe323624d30df83aabbfcde466534f6dd3763d9e9ff7f77108e5c3d78917bb",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schilder/about_team/acf-v1-04-about-team-01.png",
+        "classification": "added",
+        "sha256": "f5951886c3c142e0bfb012fd034823d1981e4bc75196c1536658f16de024c7c6",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schilder/detail_ambiance/acf-v1-04-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "be24c3ee3c7c03dc4a551227e3fc2f0a1b4f2ad44cf0ab5991b1ba79b193e846",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schilder/hero/acf-v1-04-hero-01.png",
+        "classification": "added",
+        "sha256": "0eb55f71302ddf74d9e7b784422b0f33635895b7ce5a64282b2799c750dd2b84",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schilder/hero/acf-v1-04-hero-02.png",
+        "classification": "added",
+        "sha256": "3bdceee1e19f8b146269141578bcdb771e733d793a39d86b3dd2413891dcb3c5",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schilder/service/acf-v1-04-service-01.png",
+        "classification": "added",
+        "sha256": "70e9a58237af3b1eb363658b0e72e7354e64015624cf22d527d4f9e3778f0e2c",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schilder/service/acf-v1-04-service-02.png",
+        "classification": "added",
+        "sha256": "c75d6d38971cfc4d381bb306319659a580f4b53fd95173e5f44540abadc6a31a",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schoonheidssalon/about_team/acf-v1-09-about-team-01.png",
+        "classification": "added",
+        "sha256": "3ba3942a2582c2d98ff0d7dd75673355540d3247899e032f5115bc941a8b7429",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schoonheidssalon/detail_ambiance/acf-v1-09-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "e3531bf3675d8f7cc65589b45d24cfe5a934bd240fd4a4a883947d31215f24f9",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schoonheidssalon/hero/acf-v1-09-hero-01.png",
+        "classification": "added",
+        "sha256": "a8c274c761051f879c59ec6914f89c6f354a10c313660e272bdc034cc52ebfb8",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schoonheidssalon/hero/acf-v1-09-hero-02.png",
+        "classification": "added",
+        "sha256": "8cad4505c28b3e4d10cacabc9d32c96c36ea982e638cd07027c6dac58a98fcf0",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schoonheidssalon/service/acf-v1-09-service-01.png",
+        "classification": "added",
+        "sha256": "dcddb3c256ce512efc215c6c78f02dfef60ad550dda17e2ad42556ef2c259057",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/schoonheidssalon/service/acf-v1-09-service-02.png",
+        "classification": "added",
+        "sha256": "cc97890df189e192f6aed895e7efa0d22571c2dd454f23b137ebe78f5f8546ab",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/sportschool/about_team/acf-v1-10-about-team-01.png",
+        "classification": "added",
+        "sha256": "5dde4d6c4b4e6955f50cbe3195073238bad508cf7310384365850103d01436f4",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/sportschool/detail_ambiance/acf-v1-10-detail-ambiance-01.png",
+        "classification": "added",
+        "sha256": "46009c46fd89068dbf408fb0ef178199f2a6d0cdeabe59abd38695e8ef669480",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/sportschool/hero/acf-v1-10-hero-01.png",
+        "classification": "added",
+        "sha256": "db8b739a765e13361028f4520977463e320673289115f7d084afd4960ebed12c",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/sportschool/hero/acf-v1-10-hero-02.png",
+        "classification": "added",
+        "sha256": "6785bd0bfc7e49dbaf5d9fb88bb2b70acedc19d2852940b2c56bff39a1eff4ec",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/sportschool/service/acf-v1-10-service-01.png",
+        "classification": "added",
+        "sha256": "8aa4c004fbf39c3838ec7d8f0122365d4b340e185373992b0799007c14ffb080",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      },
+      {
+        "path": "public/assets/content-factory/packs/priority-assets-2026.1/assets/sportschool/service/acf-v1-10-service-02.png",
+        "classification": "added",
+        "sha256": "b4e1de6515f772d330475bdf4600a499ea74b4ad15d0be843ce2758e0b3a43fa",
+        "releaseClass": "runtime",
+        "reason": "Versioned static priority-assets-2026.1 delivery without Function-response base64"
+      }
+    ]
+  },
+  "assetDelivery": {
+    "model": "versioned_static_netlify_site_assets",
+    "pack": "priority-assets-2026.1",
+    "publicPrefix": "/assets/content-factory/packs/priority-assets-2026.1/",
+    "assets": 60,
+    "bytes": 131102148,
+    "missing": 0,
+    "functionBundleCopies": 0,
+    "provenancePubliclyExposed": false,
+    "fullImageDataUris": 0,
+    "fullImageBase64FilesInBuildResponse": 0
+  },
+  "responseMeasurements": {
+    "builds": 25,
+    "before": {
+      "smallestBytes": 6680989,
+      "averageBytes": 9408516,
+      "largestBytes": 19016232
+    },
+    "after": {
+      "averageBytes": 236387,
+      "largestBytes": 312031
+    },
+    "targetBytes": 4194304,
+    "allUnderTarget": true
+  },
+  "netlifyBundle": {
+    "cli": "netlify-cli/23.11.0",
+    "command": "netlify build --offline",
+    "functions": 70,
+    "websiteFactoryCompressedBytes": 3088580,
+    "websiteFactoryUncompressedBytes": 38120918,
+    "websiteFactoryFiles": 338,
+    "contentFactoryRuntimeFiles": 319,
+    "priorityAssetPngsInsideFunction": 0,
+    "forbiddenDevelopmentFiles": [],
+    "largestFiles": [
+      {
+        "bytes": 955838,
+        "path": "___netlify-telemetry.mjs"
+      },
+      {
+        "bytes": 238278,
+        "path": "content-factory/generated/branches/advocaat/content.json"
+      },
+      {
+        "bytes": 237463,
+        "path": "content-factory/generated/branches/transport/content.json"
+      },
+      {
+        "bytes": 237282,
+        "path": "content-factory/generated/branches/wimpers/content.json"
+      },
+      {
+        "bytes": 237198,
+        "path": "content-factory/generated/branches/schilder/content.json"
+      },
+      {
+        "bytes": 237035,
+        "path": "content-factory/generated/branches/schoonheidssalon/content.json"
+      },
+      {
+        "bytes": 236873,
+        "path": "content-factory/generated/branches/uitzendbureau/content.json"
+      },
+      {
+        "bytes": 236820,
+        "path": "content-factory/generated/branches/verzekeringen/content.json"
+      },
+      {
+        "bytes": 236800,
+        "path": "content-factory/generated/branches/hypnotherapie/content.json"
+      },
+      {
+        "bytes": 236690,
+        "path": "content-factory/generated/branches/beveiliging/content.json"
+      }
+    ]
+  },
+  "functionInventory": [
+    {
+      "name": "_admin-auth",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "5957acac4b0e4e21bf15d3f8eeb5ecb6875057ae1a4562fafa3e3bcbc23351a5",
+      "candidateSourceSha256": "5957acac4b0e4e21bf15d3f8eeb5ecb6875057ae1a4562fafa3e3bcbc23351a5",
+      "candidateArtifactSha256": "e9e57d1e8dd7e840a04096981a68f642deaef070beea25edccb8b74f7a9771be",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "_cors",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "13f6ab98be15bed2272f934ed15746ec0c29d545189c909c9a76edd998e9abf6",
+      "candidateSourceSha256": "13f6ab98be15bed2272f934ed15746ec0c29d545189c909c9a76edd998e9abf6",
+      "candidateArtifactSha256": "48f0996ccee496122e773caf21d9b16cbe1fc459c77c28d407b1980e9d9a5c48",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "_demo-image-assets",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "193fd4c1fb11b75aa6aa2c675f1aa1dc20301e8d3e8ffedeab9d4a98cc9c73f4",
+      "candidateSourceSha256": "193fd4c1fb11b75aa6aa2c675f1aa1dc20301e8d3e8ffedeab9d4a98cc9c73f4",
+      "candidateArtifactSha256": "c012b69f05ffed4c9da0b98647e8863b7ef1321a4f276009ebf3729e0db2633f",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "_demo-preview-source",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "941eb9c3ed8c72e9675394820773b92f04b849b4c08b767cdfe59bf8c4cb52bd",
+      "candidateSourceSha256": "941eb9c3ed8c72e9675394820773b92f04b849b4c08b767cdfe59bf8c4cb52bd",
+      "candidateArtifactSha256": "44866d11894e60f59d1417cf6ca2d738863b5b33f6ef5b1ac3add9caf103ecd8",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "_project-workspace",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "3961684c88dc63d81df61fb62847557523285e7212396d9ac29f17569a9a6a47",
+      "candidateSourceSha256": "3961684c88dc63d81df61fb62847557523285e7212396d9ac29f17569a9a6a47",
+      "candidateArtifactSha256": "9054e882e91d7252c8e5f8101c138e5e4a0fa3f4df01380763e73cafdbf7d28f",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "_website-factory-core",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "9ac7312ccb0aa30a3be76d0588bfdceab298a151c7a72ad971443736ab1f1c76",
+      "candidateSourceSha256": "ab5aa0330566b057e92ec099d737994568fa6e05352a980fae587a0179dd31b7",
+      "candidateArtifactSha256": "50a70e7f253101dab0ab3cb554d807f027349c022d8cfd819ea16c5bb52dc468",
+      "status": "changed",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "_website-factory-manifests",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "9b6c88a180418d7bab27d9eb575aa886c18fbcdcd1941f8c189d49284130ae94",
+      "candidateSourceSha256": "9b6c88a180418d7bab27d9eb575aa886c18fbcdcd1941f8c189d49284130ae94",
+      "candidateArtifactSha256": "3e25bda0637ccf4ff4a23049ff8ecf58f685260d60a3ef4e67ae845483f88d1e",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "account-profile",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "1493d45f6b52503884dc9d2a80e246cfdecb30a4e61f0ab6a6c1959e883b16e5",
+      "candidateSourceSha256": "1493d45f6b52503884dc9d2a80e246cfdecb30a4e61f0ab6a6c1959e883b16e5",
+      "candidateArtifactSha256": "e51e30ec1f939c5b8c9779843f5c63d5312bdb30aa7452fb4103a0e07f0ff983",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "activity-events",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "876d182a530d1c59944dcc7dc2139b403d4613287f2dfb0508393b8b765433ef",
+      "candidateSourceSha256": "876d182a530d1c59944dcc7dc2139b403d4613287f2dfb0508393b8b765433ef",
+      "candidateArtifactSha256": "f88f43bfb31702108c8968a283f561fa9c391d16afd226a88bba3e1bc18d9ae0",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-activity-events",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "1e30bfa4ad3d6e6f3617c10f11e6a58c7add9c034a009e7ac482df1c7c1a074a",
+      "candidateSourceSha256": "1e30bfa4ad3d6e6f3617c10f11e6a58c7add9c034a009e7ac482df1c7c1a074a",
+      "candidateArtifactSha256": "cd4aa43ee458954f2bca4fb6d6e35103e05fbe4355004f1169d3668309d3cfd8",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-billing",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "abf119e98921c3ed51edb07cbf299f02830851af3a6214decc9adc34a809aa8c",
+      "candidateSourceSha256": "abf119e98921c3ed51edb07cbf299f02830851af3a6214decc9adc34a809aa8c",
+      "candidateArtifactSha256": "34a03e9cd0c0d6bca35e09b6e484228d31430a0754c873d5fade02531e90d175",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-client-profiles",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "f105b63ccd41dd72c0a2d0f778f24ad0fac837c49af94a832eafbc3fb50c8c1e",
+      "candidateSourceSha256": "f105b63ccd41dd72c0a2d0f778f24ad0fac837c49af94a832eafbc3fb50c8c1e",
+      "candidateArtifactSha256": "3b86c631fe5d5c6366be91c5b6438adfd49f0c7b42e33c74e12b697df5b3b748",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-customer-onboarding",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "4f79155f8f37768fad087f3c44bc9e45f3da3ed5c160ccf3a160e948382aa981",
+      "candidateSourceSha256": "4f79155f8f37768fad087f3c44bc9e45f3da3ed5c160ccf3a160e948382aa981",
+      "candidateArtifactSha256": "9a090c1c2f6aafc06ea7c25b9b8d7b4bf7a1d4174c7ccc4c444cc87468d7fb85",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-customer-welcome-email",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "589d68d55a577b4a5bfde33698a081250bdd1bab4e0794fb8993dd05c87872ed",
+      "candidateSourceSha256": "589d68d55a577b4a5bfde33698a081250bdd1bab4e0794fb8993dd05c87872ed",
+      "candidateArtifactSha256": "a350ef8488233039fd97998f8260f02745b39f04363088ef1bcd5dca6459ab4f",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-dashboard-metrics",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "b72813cafa633da84d9e9561d41a080be2485655457042fae6ab072835a91377",
+      "candidateSourceSha256": "b72813cafa633da84d9e9561d41a080be2485655457042fae6ab072835a91377",
+      "candidateArtifactSha256": "9397fab6add9cd742d82b2d37ae5a01e554a7d89e012a35ca5e7a25be1e29cde",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-domain-center",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "282f27a081c37928c4794f92b2b295ca5fbb65277a8c729f65b60034fc2e8ab1",
+      "candidateSourceSha256": "282f27a081c37928c4794f92b2b295ca5fbb65277a8c729f65b60034fc2e8ab1",
+      "candidateArtifactSha256": "b7cb0b88c8d0d7bf5b8aa6cd2fbc6ca1ea893c00c4492371f5bcebb27be88bc3",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-email-logs",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "244f0991b5d87e57e5c4ba7a77db4345e44381caf1391a50089c90c7b8c53d12",
+      "candidateSourceSha256": "244f0991b5d87e57e5c4ba7a77db4345e44381caf1391a50089c90c7b8c53d12",
+      "candidateArtifactSha256": "82c30eb9fb4a504bbf6d20ca64a5b939f2c887b0471654aba7f33dbfad5eca4e",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-intakes",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "6ba1ecbe9b08a292bdf8a8b7b3580b9ae836fe6d03b6f29619fa86ecd0d35120",
+      "candidateSourceSha256": "6ba1ecbe9b08a292bdf8a8b7b3580b9ae836fe6d03b6f29619fa86ecd0d35120",
+      "candidateArtifactSha256": "063c540209f5de28e06d4c64bc36d9132e7b2f4ed7aaa0018aae0d60db73f941",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-invite-user",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "978397e62daf458e508c1a82acd5ab6169d680678f9b93c139c3870faf6da51d",
+      "candidateSourceSha256": "978397e62daf458e508c1a82acd5ab6169d680678f9b93c139c3870faf6da51d",
+      "candidateArtifactSha256": "729c999bf12b6fdb16ce024a0d6e29aa4f9f5573069dc180801cdc0848c07c7b",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-invoice-email",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "f741375e249990546d68778e87508c48dfa2566491b4870f8e7db05ef37a9ff6",
+      "candidateSourceSha256": "f741375e249990546d68778e87508c48dfa2566491b4870f8e7db05ef37a9ff6",
+      "candidateArtifactSha256": "80491902db4c9ea08a38b6a388cb09a40a00b2a92b3c8c5f7c599be28e18d469",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-leads",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "1077d921a95de64388a8d36e754e8fe959dcb6773c2383766ea7c198b58cebd7",
+      "candidateSourceSha256": "1077d921a95de64388a8d36e754e8fe959dcb6773c2383766ea7c198b58cebd7",
+      "candidateArtifactSha256": "bc28f804e1b79b527f010ad4ac1e8e70b9a9a59a3dde9ff1ce717186ee3c9afd",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-mail-studio-send",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "473547ab02b5fee6244d970a0969782c1956191fb29d0aad367478ec3bc05b87",
+      "candidateSourceSha256": "473547ab02b5fee6244d970a0969782c1956191fb29d0aad367478ec3bc05b87",
+      "candidateArtifactSha256": "f070b6dbf9d1bbc6adf2a29c0dd2b9c56a792f3684760665282a3688ac4970be",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-manual-preview",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "4deb9433a92a2baa696f5b1eb50c4adb71f4aebd6bde8a28f423385afebc40ee",
+      "candidateSourceSha256": "4deb9433a92a2baa696f5b1eb50c4adb71f4aebd6bde8a28f423385afebc40ee",
+      "candidateArtifactSha256": "7006f763fcd519c2bc3997ca014725a3de03028e543bc4cca208a128e19fccf1",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-microsoft-calendar",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "5ec8dd8ce991271b88e82e27bcf2cccb4390a508296adc95ef9e977dd7817e7e",
+      "candidateSourceSha256": "5ec8dd8ce991271b88e82e27bcf2cccb4390a508296adc95ef9e977dd7817e7e",
+      "candidateArtifactSha256": "68e2f01c8e77871b44bfa855657c35bec402eb0ee28975f0e75baa5cf0e2acbe",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-mollie-payment",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "c085dd6a912f053318455d2075c9a0bc7d301d635687b809a7d08f47aa867dad",
+      "candidateSourceSha256": "c085dd6a912f053318455d2075c9a0bc7d301d635687b809a7d08f47aa867dad",
+      "candidateArtifactSha256": "35feed79d061b458cc1e57db0fac11e270b12b9516ac8064638545f03f75fd52",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-mollie-subscription-action",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "ca635ba8601af3775f2273bb087918a91ce981bd4022699517ccd73f480e9709",
+      "candidateSourceSha256": "ca635ba8601af3775f2273bb087918a91ce981bd4022699517ccd73f480e9709",
+      "candidateArtifactSha256": "a706c1c21eca2a075b5ac067a15b06d7f64c778e7334314b9d4cd7cb8c6bdf3f",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-mollie-subscription",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "86c9a7f54744632d3391439c8051549c9e174dc6e7dd860a405132830bfaa11d",
+      "candidateSourceSha256": "86c9a7f54744632d3391439c8051549c9e174dc6e7dd860a405132830bfaa11d",
+      "candidateArtifactSha256": "afb78190e31994352527921a8a1c17458c59efc4adf72f94ba0fbc348241ae95",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-preview-publication",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "667b20948017d87055fbcaf64625702abc75333a467a8bb7f264b72d1b867675",
+      "candidateSourceSha256": "667b20948017d87055fbcaf64625702abc75333a467a8bb7f264b72d1b867675",
+      "candidateArtifactSha256": "5f43b60c416014f5d6413947f65b14631dc88df0ee73496dbaf6ff7f36565706",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-relationship-assets",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "e566d6a2a3715756ef6f733a3e4d40223b518bb77d95a54b20a9af764041dd20",
+      "candidateSourceSha256": "e566d6a2a3715756ef6f733a3e4d40223b518bb77d95a54b20a9af764041dd20",
+      "candidateArtifactSha256": "35b545987065304345bd3593c5765692ed85a84ce6152a14d9b6d7121facd31c",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-relationship-context",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "dcd2fb4416b992bc4c3b6b68371e262f8ef75647389e495e453751725a8fe580",
+      "candidateSourceSha256": "dcd2fb4416b992bc4c3b6b68371e262f8ef75647389e495e453751725a8fe580",
+      "candidateArtifactSha256": "2df7dffb52c2f26648face6f2bad879763c5f906ff03cf18ef53423f002947d0",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-relationship-workspace",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "4107225bdd2730ef712e4f3208a20a267168bcc15723d412f4738c58a8562cc0",
+      "candidateSourceSha256": "4107225bdd2730ef712e4f3208a20a267168bcc15723d412f4738c58a8562cc0",
+      "candidateArtifactSha256": "0de7932ec6845c8af58e2c96242841f90bd3ebc6bf39ae391d935d2f15d8dc43",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-subscription-retry",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "8d5537241d53c3a7e303b81e0983cdaeb8e8bd47ea7006ed0948edca9a4265b8",
+      "candidateSourceSha256": "8d5537241d53c3a7e303b81e0983cdaeb8e8bd47ea7006ed0948edca9a4265b8",
+      "candidateArtifactSha256": "5de959aa06ae4596a431a821f79157a81a5d5f28149680323f5cb83bc6af8b32",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-supabase-data",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "84f3bee4ef974da3c9161f5cbe74fa99e43766028173ad6adf3729e0dc82da10",
+      "candidateSourceSha256": "84f3bee4ef974da3c9161f5cbe74fa99e43766028173ad6adf3729e0dc82da10",
+      "candidateArtifactSha256": "d5a07da3875134e17c61ea77553d9eb1b61cab5b31f392d4e87f4e206ad3626b",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-timeline-events",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "7b2c932920513731b3d198e9a4267bd397949c26c88e87140b5e5f85c84d2ca8",
+      "candidateSourceSha256": "7b2c932920513731b3d198e9a4267bd397949c26c88e87140b5e5f85c84d2ca8",
+      "candidateArtifactSha256": "3fbf892baf37166ca41c446c08ab952f36ae12b751463286bff044391ca22a8c",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-website-health",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "5dceff949aceb2e554b19c841b09a99b85a25d831af80ee683b7b1d2ac535450",
+      "candidateSourceSha256": "5dceff949aceb2e554b19c841b09a99b85a25d831af80ee683b7b1d2ac535450",
+      "candidateArtifactSha256": "5c06ceb4b09fd99ae67907658c58e7bca783c24ec5c9d7ddd4fc3b24a9c61875",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "admin-website-package-email",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "b33baf8697f608855672320fede4e5e556c0eb38f7e2c7c185e93526c8b2b948",
+      "candidateSourceSha256": "b33baf8697f608855672320fede4e5e556c0eb38f7e2c7c185e93526c8b2b948",
+      "candidateArtifactSha256": "dabd90e16fbb9f70b08bbbef494ec04ab429046acc19ce9315bdb08c38814ad2",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "analyze-lead-website",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "5cde25136c015f5aab46ce5aaa41a22b8d3bb1a794134f8b9b11e848e0a143cd",
+      "candidateSourceSha256": "5cde25136c015f5aab46ce5aaa41a22b8d3bb1a794134f8b9b11e848e0a143cd",
+      "candidateArtifactSha256": "cc24ca9d2857a8c4bbbb5a4cf72c4662667eb7a14829651aac10853ddff3385a",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "client-auth-config",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "3a6be0be363057fca8e40deff6ae68201dcfc4ae243c59e2e4639cc6d2f12cc7",
+      "candidateSourceSha256": "3a6be0be363057fca8e40deff6ae68201dcfc4ae243c59e2e4639cc6d2f12cc7",
+      "candidateArtifactSha256": "9e15b4b42c98cc5a63f4928f8c7389e98af1606461b44a812eed6864eccd9f11",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "client-change-request-file",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "37b471aeb4a9708a5c4186aae494ef289d7b93d5237e6e4e5fd8153014f3fb13",
+      "candidateSourceSha256": "37b471aeb4a9708a5c4186aae494ef289d7b93d5237e6e4e5fd8153014f3fb13",
+      "candidateArtifactSha256": "3b68ab6ee258c373d735d18ea5b5868a45277a3dcacda412b650ef029d2d914c",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "client-password-reset",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "7e791d5bff3fc9ea0675fdc0f5ed635998f8510c568aa1a828290f8e25c116b0",
+      "candidateSourceSha256": "7e791d5bff3fc9ea0675fdc0f5ed635998f8510c568aa1a828290f8e25c116b0",
+      "candidateArtifactSha256": "22d069d560b43ec2f2a7a9dd81ab8e438380ad539d5c38b1764093a94a5285a7",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "client-preview-render",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "7756a63794964999aefa9e1ae1939b89565f50ad95ad33c08e03315a16da000f",
+      "candidateSourceSha256": "7756a63794964999aefa9e1ae1939b89565f50ad95ad33c08e03315a16da000f",
+      "candidateArtifactSha256": "1a2e664d892ca7c4ecc2df42ba3666a6d6b65bba157e90d696362738dfadf1df",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "client-preview-versions",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "222eeed4616bc6b1e39b655ee3d1f752689dd4d2fe383cee0c6697f5417894d6",
+      "candidateSourceSha256": "222eeed4616bc6b1e39b655ee3d1f752689dd4d2fe383cee0c6697f5417894d6",
+      "candidateArtifactSha256": "3317c7e5dc6b51331243854af5f5aa1309936fadb520526e24205322366c299c",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "client-recovery-session",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "9f5ae1e7a8875c28632439371de2b5d1ef3ebda20894222415d52795db91a67d",
+      "candidateSourceSha256": "9f5ae1e7a8875c28632439371de2b5d1ef3ebda20894222415d52795db91a67d",
+      "candidateArtifactSha256": "f6530e07e3f07afeea1306298aff74aab53eec7eea97114391c0f7ffb8012917",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "client-relationship-assets",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "7ce1676cbc85691c19d1874af7b3af29eecbd729b590fae0483a7a2c720cee2f",
+      "candidateSourceSha256": "7ce1676cbc85691c19d1874af7b3af29eecbd729b590fae0483a7a2c720cee2f",
+      "candidateArtifactSha256": "0a3eb47a489a5c789a2f36874236876f6b1621c2224d40c0815ca991220ff13e",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "commercial-order",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "1813869d302c8ac929011f18522e26c7668ded59154b5796a2d2bc9413a386a8",
+      "candidateSourceSha256": "1813869d302c8ac929011f18522e26c7668ded59154b5796a2d2bc9413a386a8",
+      "candidateArtifactSha256": "cc93b7dd41feed8c78d15da002f3be5981385674daba4ab5197f0432b4bcde07",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "company-settings",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "225aadda19c424c50de155322bf469dc27e8cdd58a71ab38928db7225bd26a6f",
+      "candidateSourceSha256": "225aadda19c424c50de155322bf469dc27e8cdd58a71ab38928db7225bd26a6f",
+      "candidateArtifactSha256": "ea99a29d56634d1fba0a37c0bee1eb3242d8855dc16641708440ff4b08537c96",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "create-payment",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "a2b05a60d33cfdf3f040f4c9033b69b1552087dbc4499082ffa47ae702867ea9",
+      "candidateSourceSha256": "a2b05a60d33cfdf3f040f4c9033b69b1552087dbc4499082ffa47ae702867ea9",
+      "candidateArtifactSha256": "349c81705109ed51f163e4303dacf9b6098c5e4efc5d4862160d873321bdf67b",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "customer-onboarding",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "9fe21b54f1cc0709cb1212a2cdf40d9b0bc786f191cd85ec26d57b66e9cc7b0a",
+      "candidateSourceSha256": "9fe21b54f1cc0709cb1212a2cdf40d9b0bc786f191cd85ec26d57b66e9cc7b0a",
+      "candidateArtifactSha256": "0215093a211d793dad17116967143721eb427a5982050579c4ddca3886c87c8e",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "customer-timeline",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "826ff2f3762fee9aac8686fff7d5ab01637baa8da3fb04627819c48fe929283a",
+      "candidateSourceSha256": "826ff2f3762fee9aac8686fff7d5ab01637baa8da3fb04627819c48fe929283a",
+      "candidateArtifactSha256": "a1ff060e2955d540dde479c80e61725788addc0839177adcc53488c5085d1d05",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "demo-journey",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "4f3a37ed2d8a02e0b45e4ec64174ae5c01f03c59f3b3592a59436667baa928fd",
+      "candidateSourceSha256": "4f3a37ed2d8a02e0b45e4ec64174ae5c01f03c59f3b3592a59436667baa928fd",
+      "candidateArtifactSha256": "305b4651e14d31af291d8b617f1c1b4fc314229f456c215537bff71ee4e900c2",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "demo-preview",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "d8f1f227837bfb2fe6c0d7bdc172e45579574e479e458e6ce5942408239f84a6",
+      "candidateSourceSha256": "d8f1f227837bfb2fe6c0d7bdc172e45579574e479e458e6ce5942408239f84a6",
+      "candidateArtifactSha256": "aeb4465ebb38beb11b1c3a0160790de68e2001ae62e12b18b2022e02dfbfb30b",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "email",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "e8cb0cd8602e24092af1f6e4564e67fd39c324f179daff5a7367ea1dd55070da",
+      "candidateSourceSha256": "e8cb0cd8602e24092af1f6e4564e67fd39c324f179daff5a7367ea1dd55070da",
+      "candidateArtifactSha256": "620214d9835632d02984538a1ba12fe998d0681c11157b7003ea5e16a0d7d1ca",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "get-change-request-file",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "691f67fc148111983a8c31807675ad600c8bb3caa9468e392b85ec5a48331157",
+      "candidateSourceSha256": "691f67fc148111983a8c31807675ad600c8bb3caa9468e392b85ec5a48331157",
+      "candidateArtifactSha256": "1a59cbce025450a7132b00383a99077c95f847d4aabfc78dbf6cd06a400ce1b4",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "global-search",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "bfa7965aa1da0e3d562b6245754d6ab8dcea6e95dd771fa5f679ac12c4c1cb6b",
+      "candidateSourceSha256": "bfa7965aa1da0e3d562b6245754d6ab8dcea6e95dd771fa5f679ac12c4c1cb6b",
+      "candidateArtifactSha256": "98a74f1eb4682e647f828b3c50ca0dc4d4da92258dc06d6c0d95cbd3a3a8fb32",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "google-maps-config",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "1ef86da903b6361fc4d1570189bf4615f84f9906a086a0929ea62a11fcca84ac",
+      "candidateSourceSha256": "1ef86da903b6361fc4d1570189bf4615f84f9906a086a0929ea62a11fcca84ac",
+      "candidateArtifactSha256": "b7f6bb3b9c843f08866e0db1ff73cd3c51ab59febf4cdd0ca838f1f5ab5d4dce",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "intake-storage",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "38a297d07a88329f052024ea684337d93f15a8b0e26ce6d67862b75d4b3ed01f",
+      "candidateSourceSha256": "38a297d07a88329f052024ea684337d93f15a8b0e26ce6d67862b75d4b3ed01f",
+      "candidateArtifactSha256": "80974f6f96e9760c24d76614dda6fc7646811e2d7e44c9b665029aed2a3d8d2b",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "invoice-download",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "83f0f0529481e44546ff0252c4b9efe40a63f888cc220ed9063279a6da65bef9",
+      "candidateSourceSha256": "83f0f0529481e44546ff0252c4b9efe40a63f888cc220ed9063279a6da65bef9",
+      "candidateArtifactSha256": "2b1f20ed3482fe027860b905e7d1d0b76f3393503342230047c8e2e84ccc7641",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "list-change-requests",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "be85a9f912f6d7d8d5950aab43d9b36fb8dff2e7558324f6dc6cd62d60db07e4",
+      "candidateSourceSha256": "be85a9f912f6d7d8d5950aab43d9b36fb8dff2e7558324f6dc6cd62d60db07e4",
+      "candidateArtifactSha256": "fbec5303a4784ba2aa93c08555a7d6026c4b724ac71827c38aaa7908944852e4",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "max-brain-context",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "7d49b40e3ecb98c48479aa251e4de9cd458b12cb8ae7bd6c7d183aaaca79fd81",
+      "candidateSourceSha256": "7d49b40e3ecb98c48479aa251e4de9cd458b12cb8ae7bd6c7d183aaaca79fd81",
+      "candidateArtifactSha256": "3a2703714f9f166a3f5713d9fe8c58b5bdc4154cf5c9bf5aa77f4aab0012d6f1",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "mollie-products",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "2a23b485a30c070c85758d2fac9d69916e4bd2f0c8503ef1969259c184360615",
+      "candidateSourceSha256": "2a23b485a30c070c85758d2fac9d69916e4bd2f0c8503ef1969259c184360615",
+      "candidateArtifactSha256": "7816d24f71f02e74b50efa5ae5d5ae4fd04e4f30a89735fff911a27b971a2b26",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "mollie-webhook",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "b0f0f2b8a87b24a4d2d6021b1d2fb3621de78939e67130369c820fee589be6d4",
+      "candidateSourceSha256": "b0f0f2b8a87b24a4d2d6021b1d2fb3621de78939e67130369c820fee589be6d4",
+      "candidateArtifactSha256": "11e87c764e4ca7aac04a89948e3c403c4f2ffe987da6733ed8129760a53dd266",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "order-status",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "57d50048f550fa9070d25e1045629eb7918a8bcfa4b8ea1b0c55a0880077f4c9",
+      "candidateSourceSha256": "57d50048f550fa9070d25e1045629eb7918a8bcfa4b8ea1b0c55a0880077f4c9",
+      "candidateArtifactSha256": "5aaa050ecd0db8b9af5e72b57b59e6923e190f2faa23b7b17ef8877fa8707757",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "platform-health",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "0e6497f6ce3e3b6d6c3c11cce76da7a5d776015a73628622acc02c68428415b1",
+      "candidateSourceSha256": "0e6497f6ce3e3b6d6c3c11cce76da7a5d776015a73628622acc02c68428415b1",
+      "candidateArtifactSha256": "7ccf8922046c195727a6597286a8a9b8e1d33c96ccdba7b1e51acfe3b2ec1099",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "product-catalog",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "4a6ed17bfabfc17ab98206119f8056dd1404cea85682aa2e63a0c28eb96412ae",
+      "candidateSourceSha256": "4a6ed17bfabfc17ab98206119f8056dd1404cea85682aa2e63a0c28eb96412ae",
+      "candidateArtifactSha256": "27f2d2bedd358a4bc0e396e3b7033f75a99445076b2c1b05d4fce4bf1cebd926",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "resend-webhook",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "c0b75242503b2c991cccef806b9cab4040adb6eb5e0a7ea64bf14ecfe89539a0",
+      "candidateSourceSha256": "c0b75242503b2c991cccef806b9cab4040adb6eb5e0a7ea64bf14ecfe89539a0",
+      "candidateArtifactSha256": "0412bceac3837871461021bb932e471c05c12a702efc78b555f947cbb968fa4a",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "send-lead",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "3b2ffc9550d10c4c01babcb822253b154c83ad9b10feffe7fc25d835604a984b",
+      "candidateSourceSha256": "3b2ffc9550d10c4c01babcb822253b154c83ad9b10feffe7fc25d835604a984b",
+      "candidateArtifactSha256": "ce62fad64a5f0b2d323902972291329636acf0dc119e74cc338de0f68b179e6c",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "submit-change-request",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "42450131fe97811fc699f0a1e687c53abd6e1cffb37334478cb7f9251b219a1e",
+      "candidateSourceSha256": "42450131fe97811fc699f0a1e687c53abd6e1cffb37334478cb7f9251b219a1e",
+      "candidateArtifactSha256": "0e1c6cf0ea6fbf737ae7649df108de9674a9ae754b3ac4d0cf37867e71b5a83e",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "submit-onboarding",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "dfd4ba36713cf204635a81645ca6e1770761fbce612f1865b08c020656bb0025",
+      "candidateSourceSha256": "dfd4ba36713cf204635a81645ca6e1770761fbce612f1865b08c020656bb0025",
+      "candidateArtifactSha256": "e28aef0e6f19be022907b57c00e13765f8744bcf9646636f0f03623afafb1295",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "update-change-request-status",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "e592b24fa49632ccc69ce363cb0b64a0b31ca1b6610d7963d32fee1d2c92d720",
+      "candidateSourceSha256": "e592b24fa49632ccc69ce363cb0b64a0b31ca1b6610d7963d32fee1d2c92d720",
+      "candidateArtifactSha256": "bd004f1fb822c805ecee6e0f85417e4c82ceaa1fbe7de2f6cee355a8fc716a45",
+      "status": "unchanged",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    },
+    {
+      "name": "website-factory",
+      "runtime": "node",
+      "stagingBasisSourceSha256": "35dcacfd87142482646d28d3b41cf8c6280abf0bb88a9a4d034d9321894774b1",
+      "candidateSourceSha256": "e728117e5466e11fc10edb45d9caf8f26905c0a08cf49055a066f9e9d12c530c",
+      "candidateArtifactSha256": "92c728e9b99c89728e9fd26690ef2d8c0e8713450da742bab2d9c672b23e538e",
+      "status": "changed",
+      "stagingArtifactComparison": "not_provable_from_read_only_netlify_api"
+    }
+  ],
+  "invariants": {
+    "functionEntrypoints": "70/70",
+    "removedFunctions": 0,
+    "unchangedTopLevelFunctions": 68,
+    "changedTopLevelFunctions": [
+      "_website-factory-core",
+      "website-factory"
+    ],
+    "p0SmokeSuppressionPreserved": true,
+    "p0FilesByteIdenticalToBasis": [
+      "functions/send-lead.js",
+      "functions/services/leadIntakeAbuseControl.js",
+      "functions/services/p0StagingSmokeControl.js"
+    ],
+    "v1Fallback": "v2_fallback_v1"
+  },
+  "tests": {
+    "websiteFactoryBuilds": "25/25",
+    "priorityBranches": "10/10",
+    "layoutFamilies": [
+      "split",
+      "asymmetric",
+      "full-bleed",
+      "portrait-led",
+      "centered",
+      "action-led",
+      "organic",
+      "modular"
+    ],
+    "designSignatures": 25,
+    "websiteQaMinimum": 100,
+    "compatibilityTests": "42/42",
+    "p0SmokeAndLeadRegressionTests": "62/62",
+    "syntaxFilesChecked": 18,
+    "jsonFilesParsed": 306,
+    "diffCheck": "PASS",
+    "secretScanFindings": 0,
+    "missingAssets": 0,
+    "providerActions": 0
+  },
+  "excluded": [
+    "Gold Set renders and formal certification portal",
+    "review portals and screenshots",
+    "validation output and development-only test scripts",
+    "temporary demos and ZIP fixtures",
+    "Social Studio and Business Intelligence",
+    "database migrations",
+    "unrelated documentation and dirty main-worktree files",
+    "asset provenance and internal prompt metadata"
+  ],
+  "actions": {
+    "localCommitsPlanned": 1,
+    "pushes": 0,
+    "deployAttempts": 0,
+    "databaseWrites": 0,
+    "providerActions": 0,
+    "remoteConfigChanges": 0
+  },
+  "manifestPayloadSha256": "ee86ed13bc6e57c6572b37f773e3c981d23d4b44772921f75160e483e59f3716"
+}

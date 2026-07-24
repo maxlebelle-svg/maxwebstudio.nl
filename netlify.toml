@@ -5,7 +5,25 @@
   directory = "functions"
 
 [functions."website-factory"]
-  included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
+  included_files = [
+    "content-factory/content-factory-adapter/v1/index.mjs",
+    "content-factory/content-factory-adapter/v2/index.mjs",
+    "content-factory/public/v1/index.mjs",
+    "content-factory/public/v2/index.mjs",
+    "content-factory/src/asset-pack-resolver.mjs",
+    "content-factory/src/composition.mjs",
+    "content-factory/src/content-blocks.mjs",
+    "content-factory/src/goals.mjs",
+    "content-factory/src/personalities.mjs",
+    "content-factory/src/quality.mjs",
+    "content-factory/src/specializations.mjs",
+    "content-factory/src/styles.mjs",
+    "content-factory/src/verticals.mjs",
+    "content-factory/generated/catalog.json",
+    "content-factory/generated/branches/**",
+    "content-factory/assets/packs/registry.json",
+    "content-factory/assets/packs/priority-assets-2026.1/pack-manifest.json"
+  ]
 
 [functions."demo-journey"]
   included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
@@ -99,6 +117,12 @@
   for = "/*.png"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/content-factory/packs/priority-assets-2026.1/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    X-Content-Type-Options = "nosniff"
 
 [[headers]]
   for = "/admin-*.html"

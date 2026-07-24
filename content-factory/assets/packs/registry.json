@@ -1,0 +1,16 @@
+{
+  "registry_version": "content-factory-asset-pack-registry-v1",
+  "default_pack": "priority-assets-2026.1",
+  "selection_environment_variable": "CONTENT_FACTORY_ASSET_PACK",
+  "public_request_override": false,
+  "unknown_pack_behavior": "fallback_existing_asset_resolution",
+  "packs": [
+    {
+      "pack_id": "priority-assets-2026.1",
+      "status": "inactive",
+      "default_active": false,
+      "manifest_path": "priority-assets-2026.1/pack-manifest.json",
+      "manifest_checksum": "sha256:2109a0db09b644054abc4ba209bfb99a8fd45d9852447dfa8aa650e3a7e2e67f"
+    }
+  ]
+}
