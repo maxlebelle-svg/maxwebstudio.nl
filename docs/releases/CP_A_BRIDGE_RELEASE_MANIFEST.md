@@ -36,9 +36,11 @@ Finale diffstat ten opzichte van `40797df3`: `5 files changed, 906 insertions(+)
 | Volgorde | Migratie | SHA-256 |
 | ---: | --- | --- |
 | 1 | `supabase/migrations/20260724110000_bridge_preview_publication_portal_review.sql` | `22628ef185d4f78a8dd96eefd9aee68022e2010f9f5143c7d13df0be4ea6fa50` |
-| 2 | `supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql` | `757d304cd9200baf438e0968f00508cfbecb56648aeefcd5486516734c007a84` |
+| 2 | `supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql` | `a418a8b05b03879f572c0ebd5862acd2ce36d3eae8e35db6aefbd5fa7c7586c2` |
 
 De vrije timestamp `20260724110000` dwingt de volgorde bridge → CP-A af en ligt na de reeds geregistreerde Factory-migratie `20260719170000`.
+
+De bridgechecksum bleef ongewijzigd. De CP-A-checksum veranderde vóór de eerste geslaagde remote toepassing van `757d304cd9200baf438e0968f00508cfbecb56648aeefcd5486516734c007a84` naar `a418a8b05b03879f572c0ebd5862acd2ce36d3eae8e35db6aefbd5fa7c7586c2`. Enige runtime-SQL-diff: `public.digest` → `extensions.digest`; checksumsemantiek, security-definer-searchpaths en grants bleven gelijk.
 
 ## Verwachte schemaobjecten
 
@@ -76,7 +78,7 @@ Verwacht URL-patroon: `https://deploy-preview-<PR-NUMMER>--maxwebstudio-staging.
 | Gate | Resultaat |
 | --- | --- |
 | Bridge statisch | 9/9 PASS |
-| PostgreSQL-scenario’s | 10/10 PASS |
+| PostgreSQL-scenario’s | 10/10 PASS met `pgcrypto` expliciet in schema `extensions` |
 | Bridge transactionele fixture | PASS |
 | Bridge → CP-A compile en CP-A-fixture | PASS |
 | CP-A gericht | 5/5 PASS |
@@ -98,4 +100,4 @@ Na merge blijven zonder afzonderlijke opdracht expliciet verboden: Netlify-deplo
 
 ## Next approved step
 
-Push de nieuwe releasebranch en maak een PR tegen codex/rc1-clean-migration-lineage voor een Netlify Deploy Preview, waarna CP-A.1 opnieuw vanaf read-only preflight wordt uitgevoerd.
+Push na afzonderlijke toestemming uitsluitend de nieuwe branch-tip, actualiseer bestaande draft-PR #4 met de nieuwe checksum en rollbackoorzaak, herhaal de CP-A-stagingpreflight en pas alleen de gecorrigeerde CP-A-migratie toe. Integreer en deploy pas na een groene database-poststate. De branch is in deze correctieopdracht niet gepusht en PR #4 is niet remote gewijzigd.

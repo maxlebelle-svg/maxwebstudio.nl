@@ -124,7 +124,7 @@ language sql
 stable
 set search_path = pg_catalog, public
 as $function$
-  select encode(public.digest(convert_to(jsonb_build_object(
+  select encode(extensions.digest(convert_to(jsonb_build_object(
     'quoteId', q.id,
     'customerId', q.customer_id,
     'websiteId', q.website_id,

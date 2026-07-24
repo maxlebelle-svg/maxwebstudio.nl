@@ -28,8 +28,8 @@ De basis `fd5f7a80` is de actuele remote staging-releaselijn en exact de commit 
 | `public/offerte.html` | CP-A-patch | servergebonden offerteacceptatie-UX | `d104fbd22db41405f96b495fe8cf918e16b7da2b5624ad84cce5b749538bed86` |
 | `public/preview.html` | CP-A-patch | veilige parent-shell | `0c2e13fc092a0eaf92e09692d3b03ac4f37f9cd54e76376b6be8d24288eb8a30` |
 | `public/preview-embed.html` | nieuw CP-A-bestand | geïsoleerde previewrendering | `39609f6278a721907854ed94314071f813a2b94306cc0721e8a7c656ce7d1654` |
-| `supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql` | nieuw CP-A-bestand | append-only trust chain, RLS en RPC’s | `757d304cd9200baf438e0968f00508cfbecb56648aeefcd5486516734c007a84` |
-| `tests/cp-a-portal-trust-chain.test.js` | nieuw CP-A-bestand | gerichte security- en trust-chaintests | `211686a195bb1b40c84b0bfb9d7deba7add65dcc6421bbcf02b907f07a922f8e` |
+| `supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql` | nieuw CP-A-bestand; vóór eerste remote toepassing lokaal gecorrigeerd voor het bewezen Supabase-extensieschema | append-only trust chain, RLS en RPC’s | `a418a8b05b03879f572c0ebd5862acd2ce36d3eae8e35db6aefbd5fa7c7586c2` |
+| `tests/cp-a-portal-trust-chain.test.js` | nieuw CP-A-bestand | gerichte security-, trust-chain- en expliciete `extensions.digest`-regressiedekking | `4ceb4177707d283d9628a601ba5931126829c23c264ea18df66bb721568f05aa` |
 | `tests/fixtures/cp-a-portal-trust-chain-functional.sql` | nieuw CP-A-bestand | transactionele databasefixture | `7a47ea13dd1d26e6a37c7063a5947347a617bc9b889f9b0435dbe5a1fb664392` |
 | `docs/CP_A_P0_CUSTOMER_PORTAL_TRUST_CHAIN_REMEDIATION.md` | bestaand CP-A-bewijs | implementatie- en dreigingsbewijs | `603a885445c327582495a8efe0b4e25848052e7eab44dadfdc23e69f7caf267e` |
 | `docs/releases/CP_A_WORKTREE_INVENTORY.md` | gegenereerd releasebewijs | volledige 857-padclassificatie | `4a52df7f0e78847615397192d1f8bb53fdc71cdafda3fa1724959ae55b6a9264` |
@@ -64,6 +64,8 @@ Geen migratie is toegepast. De 20 ongetrackte migratiebestanden uit de bron-work
 | `20260724120000_cp_a_portal_trust_chain.sql` | CP-A trust chain | ja | opnemen |
 
 De CP-A-versie kwam niet voor in de basisboom; er is dus geen dubbele migratie-identiteit. De migratie compileerde zelfstandig tegen de vereiste bestaande contracten en de transactionele fixture slaagde. Geen van de overige 19 bronmigraties is een CP-A-afhankelijkheid.
+
+Voor de eerste remote toepassing bewees een stagingpoging een volledig teruggerolde schemaresolutiefout: Supabase installeert `pgcrypto` in `extensions`, niet in `public`. Read-only catalogusbewijs bevestigde daarna dat versie `20260724120000` en alle CP-A-objecten zowel op staging als productie afwezig waren. Daarom is dezelfde nog nergens toegepaste migratie minimaal gecorrigeerd van `public.digest` naar `extensions.digest`. Oude checksum: `757d304cd9200baf438e0968f00508cfbecb56648aeefcd5486516734c007a84`; nieuwe checksum: `a418a8b05b03879f572c0ebd5862acd2ce36d3eae8e35db6aefbd5fa7c7586c2`.
 
 ## Release- en doelbewijs
 

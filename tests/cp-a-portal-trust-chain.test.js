@@ -223,6 +223,8 @@ test("migration constrains direct writes, immutable identities and atomic audit 
     "grant execute on function public.record_quote_acceptance",
   ]) assert.match(sql.toLowerCase(), new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(sql, /accepted quote content is immutable/);
+  assert.match(sql, /extensions\.digest\(convert_to\(/);
+  assert.doesNotMatch(sql, /public\.digest\(/);
   assert.match(sql, /preview_record\.package_checksum is distinct from lower\(input_expected_checksum\)/);
   assert.match(sql, /current_checksum is distinct from lower\(input_expected_checksum\)/);
   assert.doesNotMatch(file("public/offerte.html"), /maxwebstudioQuotes|localStorage\.setItem|logDemoEmail/);
