@@ -1,31 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
-const SUBSCRIPTION_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
-  "billing_cycle",
-  "monthly_amount",
-  "status",
-  "start_date",
-  "next_invoice_date",
-  "mollie_customer_id",
-  "mollie_subscription_id",
-  "mollie_subscription_status",
-  "mollie_mandate_id",
-  "last_payment_at",
-  "next_payment_at",
-  "canceled_at",
-  "paused_at",
-  "mandate_status",
-  "mandate_reference",
-  "mandate_checkout_url",
-  "mandate_payment_id",
-  "mandate_payment_status",
-  "subscription_synced_at",
-  "webhook_last_event",
-  "webhook_last_received_at",
-].join(",");
+const { SUBSCRIPTION_FIELDS, canonicalSubscriptionPatch, subscriptionView } = require("./_canonical-finance");
 const PROFILE_FIELDS = "id,auth_user_id,name,company,email";
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -48,11 +22,11 @@ exports.handler = async (event) => {
     const subscription = await fetchSubscription(config.supabaseUrl, config.serviceRoleKey, subscriptionId);
     if (!subscription) return jsonResponse(404, { success: false, error: "Abonnement niet gevonden." });
 
-    const profile = await fetchProfile(config.supabaseUrl, config.serviceRoleKey, subscription.profile_id);
+    const profile = await fetchProfileForCustomer(config.supabaseUrl, config.serviceRoleKey, subscription.customer_id);
     const customerEmail = cleanEmail(profile?.email);
     if (!customerEmail) return jsonResponse(400, { success: false, error: "Klantprofiel heeft geen geldig e-mailadres." });
 
-    const amount = Number(subscription.monthly_amount);
+    const amount = Number(subscription.total_incl_vat);
     if (!Number.isFinite(amount) || amount <= 0) {
       return jsonResponse(400, { success: false, error: "Abonnementsbedrag moet groter zijn dan 0." });
     }
@@ -169,11 +143,19 @@ function parsePayload(body) {
 }
 
 async function fetchSubscription(supabaseUrl, serviceRoleKey, subscriptionId) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${SUBSCRIPTION_FIELDS}&id=eq.${encodeURIComponent(subscriptionId)}&limit=1`, {
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/subscriptions?select=${SUBSCRIPTION_FIELDS}&id=eq.${encodeURIComponent(subscriptionId)}&limit=1`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
   });
-  return Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? subscriptionView(row) : row;
+}
+
+async function fetchProfileForCustomer(supabaseUrl, serviceRoleKey, customerId) {
+  if (!customerId) return null;
+  const customers = await supabaseFetch(`${supabaseUrl}/rest/v1/customers?select=id,profile_id&id=eq.${encodeURIComponent(customerId)}&limit=1`, { method: "GET", headers: restHeaders(serviceRoleKey) });
+  const customer = Array.isArray(customers) ? customers[0] : customers;
+  return fetchProfile(supabaseUrl, serviceRoleKey, customer?.profile_id);
 }
 
 async function fetchProfile(supabaseUrl, serviceRoleKey, profileId) {
@@ -239,8 +221,8 @@ async function createMandatePayment(config, mollieCustomerId, subscription, prof
       metadata: {
         source: "admin_crm_subscription_mandate",
         subscriptionId: cleanText(subscription.id),
-        profileId: cleanText(subscription.profile_id),
-        packageName: cleanText(subscription.package_name),
+        customerId: cleanText(subscription.customer_id),
+        packageName: cleanText(subscription.plan),
         customerEmail: email,
         customerName: cleanText(profile.company) || cleanText(profile.name),
       },
@@ -347,8 +329,8 @@ async function createMollieSubscription(mollieApiKey, mollieCustomerId, subscrip
     metadata: {
       source: "max_web_studio_admin_crm",
       subscriptionId: cleanText(subscription.id),
-      profileId: cleanText(subscription.profile_id),
-      packageName: cleanText(subscription.package_name),
+      customerId: cleanText(subscription.customer_id),
+      packageName: cleanText(subscription.plan),
     },
   };
 
@@ -418,7 +400,9 @@ function subscriptionPatchFromMollie(mollieSubscription, mandate, extra = {}) {
 }
 
 async function patchSubscription(supabaseUrl, serviceRoleKey, subscriptionId, patch) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
+  const current = await fetchSubscription(supabaseUrl, serviceRoleKey, subscriptionId);
+  const canonicalPatch = canonicalSubscriptionPatch(patch, current?.metadata || {});
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -426,11 +410,11 @@ async function patchSubscription(supabaseUrl, serviceRoleKey, subscriptionId, pa
       "Content-Profile": "public",
       Prefer: "return=representation",
     },
-    body: JSON.stringify(patch),
+    body: JSON.stringify(canonicalPatch),
   });
   const saved = Array.isArray(data) ? data[0] : data;
   if (!saved) throw new Error("Supabase returned no subscription after update.");
-  return saved;
+  return subscriptionView(saved);
 }
 
 async function supabaseFetch(url, options) {
@@ -457,10 +441,11 @@ async function supabaseFetch(url, options) {
 function normalizeSubscription(row) {
   return {
     id: cleanText(row.id),
-    profileId: cleanText(row.profile_id),
-    packageName: cleanText(row.package_name),
+    profileId: cleanText(row.customer_id),
+    customerId: cleanText(row.customer_id),
+    packageName: cleanText(row.plan || row.package_name),
     billingCycle: cleanText(row.billing_cycle),
-    monthlyAmount: Number(row.monthly_amount) || 0,
+    monthlyAmount: Number(row.total_incl_vat ?? row.monthly_amount) || 0,
     status: cleanText(row.status),
     mollieCustomerId: cleanText(row.mollie_customer_id),
     mollieSubscriptionId: cleanText(row.mollie_subscription_id),
@@ -480,15 +465,12 @@ function normalizeSubscription(row) {
 }
 
 function subscriptionAmountForCycle(subscription) {
-  const amount = Number(subscription.monthly_amount);
+  const amount = Number(subscription.total_incl_vat ?? subscription.monthly_amount);
   if (!Number.isFinite(amount) || amount <= 0) {
     const error = new Error("Abonnementsbedrag moet groter zijn dan 0.");
     error.statusCode = 400;
     throw error;
   }
-  const cycle = cleanText(subscription.billing_cycle || "monthly").toLowerCase();
-  if (cycle === "quarterly") return amount * 3;
-  if (cycle === "yearly") return amount * 12;
   return amount;
 }
 
@@ -500,7 +482,7 @@ function billingInterval(value) {
 }
 
 function subscriptionDescription(subscription) {
-  const packageName = cleanText(subscription.package_name) || "Onderhoud";
+  const packageName = cleanText(subscription.plan || subscription.package_name) || "Onderhoud";
   return `Max Web Studio ${packageName} onderhoud`.slice(0, 255);
 }
 

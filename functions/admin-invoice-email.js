@@ -6,11 +6,10 @@ const { createTimelineEvent } = require("./services/timelineService");
 const PROFILE_FIELDS = "id,auth_user_id,name,company,email";
 const INVOICE_FIELDS = [
   "id",
-  "profile_id",
-  "customer_auth_user_id",
+  "customer_id",
   "invoice_number",
   "title",
-  "amount",
+  "total",
   "status",
   "due_date",
   "paid_at",
@@ -77,7 +76,8 @@ exports.handler = async (event) => {
     const invoice = await fetchInvoice(supabaseUrl, serviceRoleKey, invoiceId);
     if (!invoice) return jsonResponse(404, { success: false, error: "Factuur niet gevonden." });
 
-    const profile = await fetchProfile(supabaseUrl, serviceRoleKey, invoice.profile_id);
+    const customer = await fetchCustomer(supabaseUrl, serviceRoleKey, invoice.customer_id);
+    const profile = await fetchProfile(supabaseUrl, serviceRoleKey, customer?.profile_id);
     const customerEmail = cleanEmail(profile?.email);
     if (!customerEmail) {
       await patchInvoiceEmailState(supabaseUrl, serviceRoleKey, invoice.id, { email_last_error: "Geen klant e-mailadres gevonden." });
@@ -99,7 +99,7 @@ exports.handler = async (event) => {
       suppressTimelineEvent: true,
       metadata: {
         invoiceNumber: cleanText(invoice.invoice_number),
-        profileId: cleanText(invoice.profile_id),
+        customerId: cleanText(invoice.customer_id),
       },
     });
 
@@ -126,7 +126,7 @@ exports.handler = async (event) => {
       severity: "success",
       metadata: {
         dedupeKey: `invoice_email:${invoice.id}:${emailType}:${new Date().toISOString().slice(0, 16)}`,
-        profileId: invoice.profile_id,
+        customerId: invoice.customer_id,
         emailType,
         logId: result.logId || "",
       },
@@ -170,7 +170,17 @@ function parsePayload(body) {
 }
 
 async function fetchInvoice(supabaseUrl, serviceRoleKey, invoiceId) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?select=${INVOICE_FIELDS}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`, {
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/invoices?select=${INVOICE_FIELDS}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function fetchCustomer(supabaseUrl, serviceRoleKey, customerId) {
+  const cleanCustomerId = cleanText(customerId);
+  if (!cleanCustomerId) return null;
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customers?select=id,profile_id,auth_user_id&id=eq.${encodeURIComponent(cleanCustomerId)}&limit=1`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
   });
@@ -188,7 +198,7 @@ async function fetchProfile(supabaseUrl, serviceRoleKey, profileId) {
 }
 
 async function patchInvoiceEmailState(supabaseUrl, serviceRoleKey, invoiceId, patch) {
-  return supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?id=eq.${encodeURIComponent(invoiceId)}`, {
+  return supabaseFetch(`${supabaseUrl}/rest/v1/invoices?id=eq.${encodeURIComponent(invoiceId)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -208,7 +218,7 @@ function buildInvoiceEmail(emailType, invoice, profile) {
   const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
   const invoiceNumber = cleanText(invoice.invoice_number) || "je factuur";
   const title = cleanText(invoice.title) || "Factuur";
-  const amount = formatMoney(invoice.amount);
+  const amount = formatMoney(invoice.total);
   const dueDate = formatDate(invoice.due_date);
   const portalUrl = absoluteUrl("/client-dashboard.html");
   const invoiceUrl = absoluteUrl(`/factuur.html?supabaseInvoiceId=${encodeURIComponent(invoice.id)}`);

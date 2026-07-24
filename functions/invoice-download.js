@@ -31,7 +31,8 @@ exports.handler = async (event) => {
     if (!user?.id) return jsonResponse(401, { success: false, error: "Niet ingelogd." });
 
     const invoice = await fetchInvoice(supabaseUrl, serviceRoleKey, invoiceId);
-    if (!invoice || invoice.customer_auth_user_id !== user.id) {
+    const customer = invoice?.customer_id ? await fetchCustomer(supabaseUrl, serviceRoleKey, invoice.customer_id) : null;
+    if (!invoice || !customer || customer.auth_user_id !== user.id) {
       return jsonResponse(404, { success: false, error: "Factuur niet gevonden." });
     }
 
@@ -83,7 +84,7 @@ async function fetchAuthenticatedUser(supabaseUrl, serviceRoleKey, token) {
 
 async function fetchInvoice(supabaseUrl, serviceRoleKey, invoiceId) {
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/customer_invoices?select=id,customer_auth_user_id,invoice_number,title,pdf_file_path&id=eq.${encodeURIComponent(invoiceId)}&limit=1`,
+    `${supabaseUrl}/rest/v1/invoices?select=id,customer_id,invoice_number,title,pdf_file_path&id=eq.${encodeURIComponent(invoiceId)}&limit=1`,
     {
       method: "GET",
       headers: {
@@ -107,6 +108,25 @@ async function fetchInvoice(supabaseUrl, serviceRoleKey, invoiceId) {
   }
 
   return Array.isArray(data) ? data[0] : data;
+}
+
+async function fetchCustomer(supabaseUrl, serviceRoleKey, customerId) {
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/customers?select=id,profile_id,auth_user_id&id=eq.${encodeURIComponent(customerId)}&limit=1`,
+    { method: "GET", headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: "application/json", "Accept-Profile": "public" } }
+  );
+  const data = await response.json().catch(() => []);
+  if (!response.ok) throw Object.assign(new Error("Klantkoppeling kon niet worden gecontroleerd."), { statusCode: 500 });
+  const customer = Array.isArray(data) ? data[0] || null : data;
+  if (!customer || customer.auth_user_id || !customer.profile_id) return customer;
+  const profileResponse = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id&id=eq.${encodeURIComponent(customer.profile_id)}&limit=1`,
+    { method: "GET", headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: "application/json", "Accept-Profile": "public" } }
+  );
+  const profiles = await profileResponse.json().catch(() => []);
+  if (!profileResponse.ok) throw Object.assign(new Error("Profielkoppeling kon niet worden gecontroleerd."), { statusCode: 500 });
+  const profile = Array.isArray(profiles) ? profiles[0] || null : profiles;
+  return { ...customer, auth_user_id: profile?.auth_user_id || null };
 }
 
 async function createSignedUrl(supabaseUrl, serviceRoleKey, storagePath) {

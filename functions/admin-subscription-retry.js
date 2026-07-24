@@ -1,40 +1,7 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
-
-const SUBSCRIPTION_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
-  "billing_cycle",
-  "monthly_amount",
-  "status",
-  "mollie_customer_id",
-  "mollie_subscription_id",
-  "mollie_subscription_status",
-  "mollie_mandate_id",
-  "last_payment_at",
-  "next_payment_at",
-  "mandate_status",
-  "mandate_reference",
-  "mandate_checkout_url",
-  "mandate_payment_id",
-  "mandate_payment_status",
-  "last_failed_payment_at",
-  "last_failed_payment_id",
-  "failed_payment_count",
-  "retry_status",
-  "retry_next_action_at",
-  "retry_last_email_sent_at",
-  "retry_last_admin_note",
-  "subscription_risk_level",
-  "subscription_last_error",
-  "subscription_synced_at",
-  "webhook_last_event",
-  "webhook_last_received_at",
-  "updated_at",
-].join(",");
+const { SUBSCRIPTION_FIELDS, canonicalSubscriptionPatch, subscriptionView } = require("./_canonical-finance");
 const PROFILE_FIELDS = "id,auth_user_id,name,company,email";
 const allowedActions = new Set(["mark_resolved", "send_retry_email", "add_admin_note", "sync"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -111,7 +78,7 @@ async function addAdminNote(config, subscription, payload) {
 }
 
 async function sendRetryEmail(config, subscription) {
-  const profile = await fetchProfile(config.supabaseUrl, config.serviceRoleKey, subscription.profile_id);
+  const profile = await fetchProfileForCustomer(config.supabaseUrl, config.serviceRoleKey, subscription.customer_id);
   const customerEmail = cleanEmail(profile?.email);
   if (!customerEmail) {
     await patchSubscription(config.supabaseUrl, config.serviceRoleKey, subscription.id, {
@@ -133,8 +100,8 @@ async function sendRetryEmail(config, subscription) {
     triggeredBy: "admin_subscription_retry",
     metadata: {
       subscriptionId: subscription.id,
-      profileId: subscription.profile_id,
-      packageName: subscription.package_name,
+      customerId: subscription.customer_id,
+      packageName: subscription.plan,
       failedPaymentCount: subscription.failed_payment_count,
     },
   });
@@ -225,11 +192,19 @@ function validateUuid(value, message) {
 }
 
 async function fetchSubscription(supabaseUrl, serviceRoleKey, subscriptionId) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${SUBSCRIPTION_FIELDS}&id=eq.${encodeURIComponent(subscriptionId)}&limit=1`, {
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/subscriptions?select=${SUBSCRIPTION_FIELDS}&id=eq.${encodeURIComponent(subscriptionId)}&limit=1`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
   });
-  return Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? subscriptionView(row) : row;
+}
+
+async function fetchProfileForCustomer(supabaseUrl, serviceRoleKey, customerId) {
+  if (!customerId) return null;
+  const customers = await supabaseFetch(`${supabaseUrl}/rest/v1/customers?select=id,profile_id&id=eq.${encodeURIComponent(customerId)}&limit=1`, { method: "GET", headers: restHeaders(serviceRoleKey) });
+  const customer = Array.isArray(customers) ? customers[0] : customers;
+  return fetchProfile(supabaseUrl, serviceRoleKey, customer?.profile_id);
 }
 
 async function fetchProfile(supabaseUrl, serviceRoleKey, profileId) {
@@ -243,7 +218,9 @@ async function fetchProfile(supabaseUrl, serviceRoleKey, profileId) {
 }
 
 async function patchSubscription(supabaseUrl, serviceRoleKey, subscriptionId, patch) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
+  const current = await fetchSubscription(supabaseUrl, serviceRoleKey, subscriptionId);
+  const canonicalPatch = canonicalSubscriptionPatch(patch, current?.metadata || {});
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -251,9 +228,10 @@ async function patchSubscription(supabaseUrl, serviceRoleKey, subscriptionId, pa
       "Content-Profile": "public",
       Prefer: "return=representation",
     },
-    body: JSON.stringify(patch),
+    body: JSON.stringify(canonicalPatch),
   });
-  return Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? subscriptionView(row) : row;
 }
 
 async function fetchMollieSubscription(mollieApiKey, mollieCustomerId, mollieSubscriptionId) {
@@ -295,7 +273,7 @@ function subscriptionPatchFromMollie(mollieSubscription) {
 function buildRetryEmail(subscription, profile) {
   const companySettings = getCompanySettings();
   const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
-  const packageName = cleanText(subscription.package_name) || "onderhoudsabonnement";
+  const packageName = cleanText(subscription.plan || subscription.package_name) || "onderhoudsabonnement";
   const portalUrl = absoluteUrl("/client-dashboard.html");
   const mandateUrl = cleanText(subscription.mandate_checkout_url);
   const actionUrl = mandateUrl || portalUrl;

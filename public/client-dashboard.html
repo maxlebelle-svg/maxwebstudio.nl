@@ -685,79 +685,40 @@
             }
           }
 
-          const subscriptionProviderStatusColumn = ["mo", "llie_subscription_status"].join("");
-          const invoiceCheckoutColumn = ["mo", "llie_checkout_url"].join("");
-          const invoiceProviderStatusColumn = ["mo", "llie_payment_status"].join("");
-          let { data: subscriptionRows, error: subscriptionError } = await state.client
-            .from("customer_subscriptions")
-            .select(["id", "package_name", "billing_cycle", "monthly_amount", "status", "start_date", "next_invoice_date", subscriptionProviderStatusColumn, "last_payment_at", "next_payment_at", "canceled_at", "paused_at", "resumed_at", "cancellation_requested_at", "mandate_status", "mandate_checkout_url", "mandate_payment_status", "retry_status", "retry_next_action_at", "retry_last_email_sent_at", "subscription_risk_level", "subscription_synced_at", "updated_at"].join(","))
-            .eq("customer_auth_user_id", user.id)
-            .order("updated_at", { ascending: false })
-            .limit(20);
-
-          if (subscriptionError) {
-            const subscriptionSchemaErrorText = `${subscriptionError.code || ""} ${subscriptionError.message || ""}`.toLowerCase();
-            if (subscriptionSchemaErrorText.includes("column") || subscriptionSchemaErrorText.includes("schema cache")) {
-              const fallback = await state.client
-                .from("customer_subscriptions")
-                .select(["id", "package_name", "billing_cycle", "monthly_amount", "status", "start_date", "next_invoice_date", subscriptionProviderStatusColumn, "last_payment_at", "next_payment_at", "updated_at"].join(","))
-                .eq("customer_auth_user_id", user.id)
-                .order("updated_at", { ascending: false })
-                .limit(20);
-              subscriptionRows = fallback.data;
-              subscriptionError = fallback.error;
-              if (subscriptionError) {
-                const fallbackErrorText = `${subscriptionError.code || ""} ${subscriptionError.message || ""}`.toLowerCase();
-                if (fallbackErrorText.includes("column") || fallbackErrorText.includes("schema cache")) {
-                  const legacyFallback = await state.client
-                    .from("customer_subscriptions")
-                    .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,updated_at")
-                    .eq("customer_auth_user_id", user.id)
-                    .order("updated_at", { ascending: false })
-                    .limit(20);
-                  subscriptionRows = legacyFallback.data;
-                  subscriptionError = legacyFallback.error;
-                }
-              }
-            }
+          const financeResponse = await fetch("/.netlify/functions/client-finance-context", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${session.access_token}`, Accept: "application/json" },
+            cache: "no-store",
+          });
+          const financePayload = await financeResponse.json().catch(() => null);
+          if (!financeResponse.ok || !financePayload?.success) {
+            throw new Error(financePayload?.error || "Financegegevens konden niet veilig worden geladen.");
           }
-
-          const subscriptionErrorText = `${subscriptionError?.code || ""} ${subscriptionError?.message || ""}`.toLowerCase();
-          if (subscriptionError && !subscriptionErrorText.includes("customer_subscriptions") && !subscriptionErrorText.includes("42p01")) {
-            throw subscriptionError;
-          }
-
-          let { data: invoiceRows, error: invoiceError } = await state.client
-            .from("customer_invoices")
-            .select(["id", "invoice_number", "title", "amount", "status", "due_date", "paid_at", "pdf_file_path", invoiceCheckoutColumn, invoiceProviderStatusColumn, "created_at"].join(","))
-            .eq("customer_auth_user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(20);
-
-          if (invoiceError) {
-            const schemaErrorText = `${invoiceError.code || ""} ${invoiceError.message || ""}`.toLowerCase();
-            if (schemaErrorText.includes("column") || schemaErrorText.includes("schema cache")) {
-              const fallback = await state.client
-                .from("customer_invoices")
-                .select("id,invoice_number,title,amount,status,due_date,paid_at,pdf_file_path,created_at")
-                .eq("customer_auth_user_id", user.id)
-                .order("created_at", { ascending: false })
-                .limit(20);
-              invoiceRows = fallback.data;
-              invoiceError = fallback.error;
-            }
-          }
-
-          const invoiceErrorText = `${invoiceError?.code || ""} ${invoiceError?.message || ""}`.toLowerCase();
-          if (invoiceError && !invoiceErrorText.includes("customer_invoices") && !invoiceErrorText.includes("42p01")) {
-            throw invoiceError;
-          }
+          const invoiceRows = (financePayload.finance?.invoices || []).map((invoice) => ({
+            ...invoice,
+            invoice_number: invoice.invoiceNumber,
+            due_date: invoice.dueAt,
+            paid_at: invoice.paidAt,
+            pdf_file_path: invoice.downloadAvailable ? "available" : "",
+            mollie_checkout_url: invoice.paymentAvailable ? "available" : "",
+            mollie_payment_status: invoice.paymentStatus,
+            created_at: invoice.createdAt,
+          }));
+          const subscriptionRows = (financePayload.finance?.subscriptions || []).map((subscription) => ({
+            ...subscription,
+            package_name: subscription.plan,
+            billing_cycle: subscription.billingInterval,
+            monthly_amount: subscription.amount,
+            start_date: subscription.startsAt,
+            next_invoice_date: subscription.renewsAt,
+            updated_at: subscription.updatedAt,
+          }));
 
           state.profile = profile;
           state.websites = !websiteError && Array.isArray(websites) ? websites : [];
           state.requests = Array.isArray(requests) ? requests : [];
-          state.subscriptions = !subscriptionError && Array.isArray(subscriptionRows) ? subscriptionRows : [];
-          state.invoices = !invoiceError && Array.isArray(invoiceRows) ? invoiceRows : [];
+          state.subscriptions = Array.isArray(subscriptionRows) ? subscriptionRows : [];
+          state.invoices = Array.isArray(invoiceRows) ? invoiceRows : [];
           renderProfile(user, profile, state.websites);
           renderBilling();
           renderMetrics(state.requests);

@@ -1,169 +1,19 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { createTimelineEvent } = require("./services/timelineService");
+const {
+  INVOICE_TABLE,
+  SUBSCRIPTION_TABLE,
+  INVOICE_FIELDS,
+  SUBSCRIPTION_FIELDS,
+  canonicalInvoiceRecord,
+  canonicalSubscriptionRecord,
+  invoiceView,
+  subscriptionView,
+} = require("./_canonical-finance");
 const PROFILE_FIELDS = ["id", "auth_user_id", "name", "company", "email", "package"].join(",");
 const CUSTOMER_FIELDS = ["id", "auth_user_id", "profile_id", "name", "company", "email", "package"].join(",");
-const SUBSCRIPTION_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
-  "billing_cycle",
-  "monthly_amount",
-  "status",
-  "start_date",
-  "next_invoice_date",
-  "mollie_customer_id",
-  "mollie_subscription_id",
-  "mollie_subscription_status",
-  "mollie_mandate_id",
-  "last_payment_at",
-  "next_payment_at",
-  "canceled_at",
-  "paused_at",
-  "mandate_status",
-  "mandate_reference",
-  "mandate_checkout_url",
-  "mandate_payment_id",
-  "mandate_payment_status",
-  "subscription_synced_at",
-  "webhook_last_event",
-  "webhook_last_received_at",
-  "admin_action_last_type",
-  "admin_action_last_at",
-  "admin_action_last_error",
-  "cancellation_reason",
-  "cancellation_requested_at",
-  "resumed_at",
-  "last_failed_payment_at",
-  "last_failed_payment_id",
-  "failed_payment_count",
-  "retry_status",
-  "retry_next_action_at",
-  "retry_last_email_sent_at",
-  "retry_last_admin_note",
-  "subscription_risk_level",
-  "subscription_last_error",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
-const BASE_SUBSCRIPTION_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
-  "billing_cycle",
-  "monthly_amount",
-  "status",
-  "start_date",
-  "next_invoice_date",
-  "mollie_customer_id",
-  "mollie_subscription_id",
-  "mollie_subscription_status",
-  "mollie_mandate_id",
-  "last_payment_at",
-  "next_payment_at",
-  "canceled_at",
-  "paused_at",
-  "mandate_status",
-  "mandate_reference",
-  "mandate_checkout_url",
-  "mandate_payment_id",
-  "mandate_payment_status",
-  "subscription_synced_at",
-  "webhook_last_event",
-  "webhook_last_received_at",
-  "admin_action_last_type",
-  "admin_action_last_at",
-  "admin_action_last_error",
-  "cancellation_reason",
-  "cancellation_requested_at",
-  "resumed_at",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
-const PRE_ACTION_SUBSCRIPTION_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
-  "billing_cycle",
-  "monthly_amount",
-  "status",
-  "start_date",
-  "next_invoice_date",
-  "mollie_customer_id",
-  "mollie_subscription_id",
-  "mollie_subscription_status",
-  "mollie_mandate_id",
-  "last_payment_at",
-  "next_payment_at",
-  "canceled_at",
-  "paused_at",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
-const LEGACY_SUBSCRIPTION_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
-  "billing_cycle",
-  "monthly_amount",
-  "status",
-  "start_date",
-  "next_invoice_date",
-  "mollie_customer_id",
-  "mollie_subscription_id",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
-const INVOICE_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "invoice_number",
-  "title",
-  "amount",
-  "status",
-  "due_date",
-  "paid_at",
-  "pdf_file_path",
-  "mollie_payment_id",
-  "mollie_checkout_url",
-  "mollie_payment_status",
-  "mollie_payment_created_at",
-  "mollie_payment_expires_at",
-  "email_sent_at",
-  "payment_reminder_sent_at",
-  "paid_email_sent_at",
-  "expired_email_sent_at",
-  "email_last_error",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
-const LEGACY_INVOICE_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "invoice_number",
-  "title",
-  "amount",
-  "status",
-  "due_date",
-  "paid_at",
-  "pdf_file_path",
-  "mollie_payment_id",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
 
-const allowedSubscriptionStatuses = new Set(["active", "planned", "paused", "cancelled", "canceled"]);
+const allowedSubscriptionStatuses = new Set(["active", "pending_mandate", "paused", "canceled", "expired", "archived"]);
 const allowedBillingCycles = new Set(["monthly", "quarterly", "yearly"]);
 const allowedInvoiceStatuses = new Set(["draft", "sent", "paid", "expired", "canceled", "failed"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -223,7 +73,7 @@ exports.handler = async (event) => {
       const id = validateUuid(payload.id, "Kies een geldig abonnement.");
       const status = normalizeSubscriptionStatus(payload.status);
       if (!allowedSubscriptionStatuses.has(status)) return jsonResponse(400, { success: false, error: "Kies een geldige abonnementsstatus." });
-      const savedSubscription = await patchRecord(supabaseUrl, serviceRoleKey, "customer_subscriptions", id, {
+      const savedSubscription = await patchRecord(supabaseUrl, serviceRoleKey, SUBSCRIPTION_TABLE, id, {
         status,
         updated_at: new Date().toISOString(),
       });
@@ -233,19 +83,18 @@ exports.handler = async (event) => {
     if (action === "save_invoice") {
       const invoice = validateInvoicePayload(payload, billingProfiles);
       console.info("Admin billing invoice write", {
-        table: "customer_invoices",
-        normalizedProfileId: invoice.profile_id,
-        customerAuthUserId: invoice.customer_auth_user_id || "",
+        table: INVOICE_TABLE,
+        customerId: invoice.customer_id,
       });
       if (!invoice.id) {
         const existingInvoice = await findExistingInvoice(supabaseUrl, serviceRoleKey, invoice);
         if (existingInvoice?.id) {
           invoice.id = existingInvoice.id;
           console.info("Admin billing invoice duplicate guarded by invoice number", {
-            table: "customer_invoices",
+            table: INVOICE_TABLE,
             invoiceId: invoice.id,
             invoiceNumber: invoice.invoice_number,
-            profileId: invoice.profile_id,
+            customerId: invoice.customer_id,
           });
         }
       }
@@ -263,7 +112,7 @@ exports.handler = async (event) => {
         severity: "info",
         metadata: {
           dedupeKey: `invoice:${invoice.id ? "updated" : "created"}:${savedInvoice?.id || invoice.invoice_number || Date.now()}`,
-          profileId: invoice.profile_id,
+          customerId: invoice.customer_id,
           invoiceNumber: invoice.invoice_number,
           amount: invoice.amount,
         },
@@ -276,11 +125,11 @@ exports.handler = async (event) => {
       const status = normalizeInvoiceStatus(payload.status);
       if (!allowedInvoiceStatuses.has(status)) return jsonResponse(400, { success: false, error: "Kies een geldige factuurstatus." });
       console.info("Admin billing invoice status update", {
-        table: "customer_invoices",
+        table: INVOICE_TABLE,
         invoiceId: id,
         status,
       });
-      const savedInvoice = await patchRecord(supabaseUrl, serviceRoleKey, "customer_invoices", id, {
+      const savedInvoice = await patchRecord(supabaseUrl, serviceRoleKey, INVOICE_TABLE, id, {
         status,
         paid_at: status === "paid" ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
@@ -299,7 +148,7 @@ exports.handler = async (event) => {
           severity: "success",
           metadata: {
             dedupeKey: `invoice_paid:${id}:${savedInvoice?.paid_at || ""}`,
-            profileId: savedInvoice?.profile_id || "",
+            customerId: savedInvoice?.customer_id || "",
             status,
           },
         });
@@ -314,11 +163,11 @@ exports.handler = async (event) => {
         return jsonResponse(403, { success: false, error: "Alleen super admin mag facturen definitief verwijderen." });
       }
       console.info("Admin billing invoice hard delete", {
-        table: "customer_invoices",
+        table: INVOICE_TABLE,
         invoiceId: id,
         role,
       });
-      await deleteRecord(supabaseUrl, serviceRoleKey, "customer_invoices", id);
+      await deleteRecord(supabaseUrl, serviceRoleKey, INVOICE_TABLE, id);
       return jsonResponse(200, { success: true, deleted: true, id });
     }
 
@@ -397,82 +246,37 @@ async function fetchCustomers(supabaseUrl, serviceRoleKey) {
 }
 
 async function fetchSubscriptions(supabaseUrl, serviceRoleKey) {
-  try {
-    return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
-      method: "GET",
-      headers: restHeaders(serviceRoleKey),
-    });
-  } catch (error) {
-    if (!isSchemaColumnError(error)) throw error;
-    try {
-      return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${BASE_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
-        method: "GET",
-        headers: restHeaders(serviceRoleKey),
-      });
-    } catch (fallbackError) {
-      if (!isSchemaColumnError(fallbackError)) throw fallbackError;
-      try {
-        return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${PRE_ACTION_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
-          method: "GET",
-          headers: restHeaders(serviceRoleKey),
-        });
-      } catch (legacyFallbackError) {
-        if (!isSchemaColumnError(legacyFallbackError)) throw legacyFallbackError;
-        return supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${LEGACY_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
-          method: "GET",
-          headers: restHeaders(serviceRoleKey),
-        });
-      }
-    }
-  }
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/${SUBSCRIPTION_TABLE}?select=${SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  return rows.map(subscriptionView);
 }
 
 async function fetchInvoices(supabaseUrl, serviceRoleKey) {
-  console.info("Admin billing invoice read", { table: "customer_invoices" });
-  try {
-    return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?select=${INVOICE_FIELDS}&order=created_at.desc.nullslast&limit=300`, {
-      method: "GET",
-      headers: restHeaders(serviceRoleKey),
-    });
-  } catch (error) {
-    if (!isSchemaColumnError(error)) throw error;
-    return supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?select=${LEGACY_INVOICE_FIELDS}&order=created_at.desc.nullslast&limit=300`, {
-      method: "GET",
-      headers: restHeaders(serviceRoleKey),
-    });
-  }
+  console.info("Admin billing invoice read", { table: INVOICE_TABLE });
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/${INVOICE_TABLE}?select=${INVOICE_FIELDS}&order=created_at.desc.nullslast&limit=300`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  return rows.map(invoiceView);
 }
 
 async function findExistingInvoice(supabaseUrl, serviceRoleKey, invoice = {}) {
   const invoiceNumber = cleanText(invoice.invoice_number);
-  const profileId = cleanText(invoice.profile_id);
-  if (!invoiceNumber || !profileId) return null;
+  const customerId = cleanText(invoice.customer_id);
+  if (!invoiceNumber || !customerId) return null;
   const params = new URLSearchParams({
     select: INVOICE_FIELDS,
     invoice_number: `eq.${invoiceNumber}`,
-    profile_id: `eq.${profileId}`,
+    customer_id: `eq.${customerId}`,
     limit: "1",
   });
-  try {
-    const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?${params.toString()}`, {
-      method: "GET",
-      headers: restHeaders(serviceRoleKey),
-    });
-    return Array.isArray(data) ? data[0] || null : null;
-  } catch (error) {
-    if (!isSchemaColumnError(error)) throw error;
-    const legacyParams = new URLSearchParams({
-      select: LEGACY_INVOICE_FIELDS,
-      invoice_number: `eq.${invoiceNumber}`,
-      profile_id: `eq.${profileId}`,
-      limit: "1",
-    });
-    const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?${legacyParams.toString()}`, {
-      method: "GET",
-      headers: restHeaders(serviceRoleKey),
-    });
-    return Array.isArray(data) ? data[0] || null : null;
-  }
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/${INVOICE_TABLE}?${params.toString()}`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  return Array.isArray(data) ? data[0] || null : null;
 }
 
 function validateSubscriptionPayload(payload, profiles) {
@@ -483,20 +287,20 @@ function validateSubscriptionPayload(payload, profiles) {
 
   if (id && !uuidPattern.test(id)) throwValidation("Kies een geldig abonnement.");
   if (!profile) throwValidation("Koppel het abonnement aan een geldige klant.");
+  if (!uuidPattern.test(cleanText(profile.customerId))) throwValidation("De canonieke customer_id-koppeling ontbreekt.");
   if (!allowedBillingCycles.has(billingCycle)) throwValidation("Kies een geldige facturatiecyclus.");
   if (!allowedSubscriptionStatuses.has(status)) throwValidation("Kies een geldige abonnementsstatus.");
 
   return {
     id,
-    profile_id: profile.id,
-    customer_auth_user_id: profile.authUserId || null,
-    package_name: cleanText(payload.packageName || profile.package || "Plus"),
+    customer_id: profile.customerId,
+    plan: cleanText(payload.packageName || profile.package || "Plus"),
     billing_cycle: billingCycle,
-    monthly_amount: nullableAmount(payload.monthlyAmount),
+    total_incl_vat: nullableAmount(payload.monthlyAmount),
     status,
     start_date: cleanText(payload.startDate) || null,
     next_invoice_date: cleanText(payload.nextInvoiceDate) || null,
-    notes: cleanText(payload.notes),
+    internal_notes: cleanText(payload.notes),
     updated_at: new Date().toISOString(),
   };
 }
@@ -508,17 +312,19 @@ function validateInvoicePayload(payload, profiles) {
 
   if (id && !uuidPattern.test(id)) throwValidation("Kies een geldige factuur.");
   if (!profile) throwValidation("Koppel de factuur aan een centrale klant.");
+  if (!uuidPattern.test(cleanText(profile.customerId))) throwValidation("De canonieke customer_id-koppeling ontbreekt.");
   if (!allowedInvoiceStatuses.has(status)) throwValidation("Kies een geldige factuurstatus.");
   const amount = nullableAmount(payload.amount ?? payload.total);
   const invoiceContext = buildInvoiceContext(payload, profile, amount);
 
   const record = {
     id,
-    profile_id: profile.id,
-    customer_auth_user_id: profile.authUserId || null,
+    customer_id: profile.customerId,
     invoice_number: cleanText(payload.invoiceNumber),
     title: cleanText(payload.title || "Factuur"),
-    amount,
+    subtotal: nullableAmount(payload.subtotal) ?? amount,
+    vat: nullableAmount(payload.vat ?? payload.vatAmount) ?? 0,
+    total: amount,
     status,
     due_date: cleanText(payload.dueDate) || null,
     paid_at: status === "paid" ? cleanText(payload.paidAt) || new Date().toISOString() : cleanText(payload.paidAt) || null,
@@ -536,15 +342,16 @@ function validateInvoicePayload(payload, profiles) {
   if (hasPayloadValue(payload, "mollie_payment_created_at")) record.mollie_payment_created_at = cleanText(payload.mollie_payment_created_at) || null;
   if (hasPayloadValue(payload, "molliePaymentExpiresAt")) record.mollie_payment_expires_at = cleanText(payload.molliePaymentExpiresAt) || null;
   if (hasPayloadValue(payload, "mollie_payment_expires_at")) record.mollie_payment_expires_at = cleanText(payload.mollie_payment_expires_at) || null;
+  record._lines = invoiceContext.lines;
   return record;
 }
 
 function normalizeSubscriptionStatus(value) {
   const status = cleanText(value || "active").toLowerCase();
-  if (status === "gepland" || status === "scheduled") return "planned";
+  if (status === "gepland" || status === "scheduled" || status === "planned") return "pending_mandate";
   if (status === "actief") return "active";
   if (status === "gepauzeerd") return "paused";
-  if (status === "opgezegd") return "cancelled";
+  if (status === "opgezegd" || status === "cancelled") return "canceled";
   return status;
 }
 
@@ -588,19 +395,45 @@ function profileByAnyId(ids = [], profiles = []) {
 }
 
 async function upsertSubscription(supabaseUrl, serviceRoleKey, subscription) {
-  const record = { ...subscription };
+  const record = canonicalSubscriptionRecord(subscription);
   if (!record.id) delete record.id;
-  return upsertRecord(supabaseUrl, serviceRoleKey, "customer_subscriptions", record);
+  return upsertRecord(supabaseUrl, serviceRoleKey, SUBSCRIPTION_TABLE, record);
 }
 
 async function upsertInvoice(supabaseUrl, serviceRoleKey, invoice) {
-  const record = { ...invoice };
+  const lines = Array.isArray(invoice._lines) ? invoice._lines : [];
+  const record = canonicalInvoiceRecord(invoice);
   if (!record.id) delete record.id;
   console.info("Admin billing invoice upsert target", {
-    table: "customer_invoices",
-    normalizedProfileId: record.profile_id,
+    table: INVOICE_TABLE,
+    customerId: record.customer_id,
   });
-  return upsertRecord(supabaseUrl, serviceRoleKey, "customer_invoices", record);
+  const saved = await upsertRecord(supabaseUrl, serviceRoleKey, INVOICE_TABLE, record);
+  await replaceInvoiceLines(supabaseUrl, serviceRoleKey, saved.id, lines);
+  return saved;
+}
+
+async function replaceInvoiceLines(supabaseUrl, serviceRoleKey, invoiceId, lines = []) {
+  await supabaseFetch(`${supabaseUrl}/rest/v1/invoice_lines?invoice_id=eq.${encodeURIComponent(invoiceId)}`, {
+    method: "DELETE",
+    headers: { ...restHeaders(serviceRoleKey), Prefer: "return=minimal" },
+  });
+  if (!lines.length) return [];
+  const records = lines.map((line, index) => ({
+    invoice_id: invoiceId,
+    description: cleanText(line.description),
+    quantity: Number(line.quantity) || 1,
+    unit_price: Number(line.unitPrice) || 0,
+    vat_rate: Number(line.vatRate) || 0,
+    line_total: Number(line.total) || 0,
+    position: index,
+  })).filter((line) => line.description);
+  if (!records.length) return [];
+  return supabaseFetch(`${supabaseUrl}/rest/v1/invoice_lines`, {
+    method: "POST",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", "Content-Profile": "public", Prefer: "return=representation" },
+    body: JSON.stringify(records),
+  });
 }
 
 async function upsertRecord(supabaseUrl, serviceRoleKey, table, record) {
@@ -646,23 +479,27 @@ async function deleteRecord(supabaseUrl, serviceRoleKey, table, id) {
 }
 
 function enrichSubscriptions(subscriptions, profiles) {
-  const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
-  return subscriptions.map((subscription) => ({
-    ...subscription,
-    customerName: profileMap.get(subscription.profileId)?.name || "",
-    customerCompany: profileMap.get(subscription.profileId)?.company || "",
-    customerEmail: profileMap.get(subscription.profileId)?.email || "",
-  }));
+  return subscriptions.map((subscription) => {
+    const profile = profileByAnyId([subscription.customerId, subscription.profileId], profiles);
+    return {
+      ...subscription,
+      customerName: profile?.name || "",
+      customerCompany: profile?.company || "",
+      customerEmail: profile?.email || "",
+    };
+  });
 }
 
 function enrichInvoices(invoices, profiles) {
-  const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
-  return invoices.map((invoice) => ({
-    ...invoice,
-    customerName: profileMap.get(invoice.profileId)?.name || "",
-    customerCompany: profileMap.get(invoice.profileId)?.company || "",
-    customerEmail: profileMap.get(invoice.profileId)?.email || "",
-  }));
+  return invoices.map((invoice) => {
+    const profile = profileByAnyId([invoice.customerId, invoice.profileId], profiles);
+    return {
+      ...invoice,
+      customerName: profile?.name || "",
+      customerCompany: profile?.company || "",
+      customerEmail: profile?.email || "",
+    };
+  });
 }
 
 function normalizeProfile(row) {
@@ -724,11 +561,12 @@ function mergeBillingProfile(target, source = {}) {
 function normalizeSubscription(row) {
   return {
     id: cleanText(row.id),
-    profileId: cleanText(row.profile_id),
-    customerAuthUserId: cleanText(row.customer_auth_user_id),
-    packageName: cleanText(row.package_name),
+    profileId: cleanText(row.customer_id),
+    customerId: cleanText(row.customer_id),
+    customerAuthUserId: "",
+    packageName: cleanText(row.plan || row.package_name),
     billingCycle: cleanText(row.billing_cycle || "monthly"),
-    monthlyAmount: normalizeNullableNumber(row.monthly_amount),
+    monthlyAmount: normalizeNullableNumber(row.total_incl_vat ?? row.monthly_amount),
     status: cleanText(row.status || "active"),
     startDate: cleanText(row.start_date),
     nextInvoiceDate: cleanText(row.next_invoice_date),
@@ -763,14 +601,14 @@ function normalizeSubscription(row) {
     retryLastAdminNote: cleanText(row.retry_last_admin_note),
     subscriptionRiskLevel: cleanText(row.subscription_risk_level || "normal"),
     subscriptionLastError: cleanText(row.subscription_last_error),
-    notes: cleanText(row.notes),
+    notes: cleanText(row.internal_notes || row.notes),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
   };
 }
 
 function normalizeInvoice(row) {
-  const amount = normalizeNullableNumber(row.amount);
+  const amount = normalizeNullableNumber(row.total ?? row.amount);
   const storedContext = parseInvoiceContextFromNotes(row.notes);
   const contextTotals = calculateInvoiceTotals(storedContext.lines || []);
   const total = storedContext.total || amount || contextTotals.total;
@@ -778,9 +616,9 @@ function normalizeInvoice(row) {
   const subtotal = storedContext.subtotal || (total ? roundCurrency(total - vat) : contextTotals.subtotal);
   return {
     id: cleanText(row.id),
-    profileId: cleanText(row.profile_id),
-    customerId: cleanText(row.profile_id),
-    customerAuthUserId: cleanText(row.customer_auth_user_id),
+    profileId: cleanText(row.customer_id),
+    customerId: cleanText(row.customer_id),
+    customerAuthUserId: "",
     invoiceNumber: cleanText(row.invoice_number),
     title: cleanText(row.title),
     amount: total,

@@ -5,13 +5,11 @@ const WEBSITE_FIELDS = "id,customer_id,profile_id,name,domain,live_url,status,ho
 const PROJECT_FIELDS = "id,customer_id,website_id,name,type,status,phase,progress,created_at,updated_at";
 const SUBSCRIPTION_FIELDS = [
   "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
+  "customer_id",
+  "plan",
   "billing_cycle",
-  "monthly_amount",
+  "total_incl_vat",
   "status",
-  "mollie_subscription_status",
   "mandate_status",
   "mandate_checkout_url",
   "last_payment_at",
@@ -23,11 +21,9 @@ const SUBSCRIPTION_FIELDS = [
   "retry_status",
   "retry_next_action_at",
   "subscription_risk_level",
-  "last_failed_payment_at",
-  "failed_payment_count",
 ].join(",");
 const QUOTE_FIELDS = "id,customer_id,website_id,project_id,quote_number,title,amount,currency,status,accepted_at,created_at,updated_at";
-const BILLING_INVOICE_FIELDS = "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,due_date,paid_at,mollie_payment_id,mollie_payment_status,created_at,updated_at";
+const BILLING_INVOICE_FIELDS = "id,customer_id,invoice_number,title,total,subtotal,vat,status,due_date,paid_at,mollie_payment_id,mollie_payment_status,created_at,updated_at";
 
 exports.handler = async (event) => {
   try {
@@ -56,7 +52,7 @@ exports.handler = async (event) => {
       fetchRows(supabaseUrl, serviceRoleKey, "websites", WEBSITE_FIELDS, "updated_at.desc", 1000),
       fetchRows(supabaseUrl, serviceRoleKey, "projects", PROJECT_FIELDS, "updated_at.desc", 1000),
       fetchRows(supabaseUrl, serviceRoleKey, "quotes", QUOTE_FIELDS, "updated_at.desc", 1000),
-      fetchRows(supabaseUrl, serviceRoleKey, "customer_subscriptions", SUBSCRIPTION_FIELDS, "updated_at.desc", 1000),
+      fetchRows(supabaseUrl, serviceRoleKey, "subscriptions", SUBSCRIPTION_FIELDS, "updated_at.desc", 1000),
       fetchInvoices(supabaseUrl, serviceRoleKey),
     ]);
 
@@ -190,7 +186,7 @@ function actionItems({ invoices, subscriptions, customers, leads }) {
     .forEach((subscription) => items.push({
       type: "retry_needed",
       label: "Mislukte incasso",
-      title: cleanText(subscription.package_name) || "Onderhoudsabonnement",
+      title: cleanText(subscription.plan) || "Onderhoudsabonnement",
       customer: customerLabel(customers.get(cleanText(subscription.customer_id || subscription.profile_id))),
       profileId: cleanText(subscription.customer_id || subscription.profile_id),
       severity: normalize(subscription.subscription_risk_level) === "high" ? "high" : "attention",
@@ -203,7 +199,7 @@ function actionItems({ invoices, subscriptions, customers, leads }) {
     .forEach((subscription) => items.push({
       type: "mandate_waiting",
       label: "Mandate wacht",
-      title: cleanText(subscription.package_name) || "Onderhoudsabonnement",
+      title: cleanText(subscription.plan) || "Onderhoudsabonnement",
       customer: customerLabel(customers.get(cleanText(subscription.customer_id || subscription.profile_id))),
       profileId: cleanText(subscription.customer_id || subscription.profile_id),
       severity: "planned",
@@ -216,7 +212,7 @@ function actionItems({ invoices, subscriptions, customers, leads }) {
     .forEach((subscription) => items.push({
       type: "high_risk",
       label: "Hoog risico",
-      title: cleanText(subscription.package_name) || "Onderhoudsabonnement",
+      title: cleanText(subscription.plan) || "Onderhoudsabonnement",
       customer: customerLabel(customers.get(cleanText(subscription.customer_id || subscription.profile_id))),
       profileId: cleanText(subscription.customer_id || subscription.profile_id),
       severity: "high",
@@ -323,7 +319,7 @@ async function fetchRows(supabaseUrl, serviceRoleKey, table, fields, order, limi
 }
 
 async function fetchInvoices(supabaseUrl, serviceRoleKey) {
-  const billingInvoices = await fetchRows(supabaseUrl, serviceRoleKey, "customer_invoices", BILLING_INVOICE_FIELDS, "created_at.desc.nullslast", 1000);
+  const billingInvoices = await fetchRows(supabaseUrl, serviceRoleKey, "invoices", BILLING_INVOICE_FIELDS, "created_at.desc.nullslast", 1000);
   return mergeInvoices(billingInvoices.map((invoice) => normalizeBillingInvoice(invoice)));
 }
 
@@ -342,9 +338,9 @@ function mergeInvoices(invoices) {
 function normalizeBillingInvoice(invoice) {
   return {
     ...invoice,
-    customer_id: cleanText(invoice.customer_id || invoice.profile_id),
-    amount: amount(invoice.amount),
-    revenue_source: "customer_invoices",
+    customer_id: cleanText(invoice.customer_id),
+    amount: invoiceAmount(invoice),
+    revenue_source: "invoices",
   };
 }
 
@@ -396,10 +392,10 @@ function isSoldLead(lead) {
 }
 
 function monthlyValue(subscription) {
-  const value = amount(subscription.monthly_amount);
+  const value = amount(subscription.total_incl_vat);
   const cycle = normalize(subscription.billing_cycle || "monthly");
-  if (cycle === "quarterly") return value;
-  if (cycle === "yearly") return value;
+  if (cycle === "quarterly") return value / 3;
+  if (cycle === "yearly") return value / 12;
   return value;
 }
 

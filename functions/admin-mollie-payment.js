@@ -4,13 +4,13 @@ const INVOICE_FIELDS = [
   "id",
   "invoice_number",
   "title",
-  "amount",
+  "total",
   "status",
   "mollie_payment_id",
   "mollie_checkout_url",
   "mollie_payment_status",
   "mollie_payment_expires_at",
-  "customer_auth_user_id",
+  "customer_id",
 ].join(",");
 const terminalMollieStatuses = new Set(["paid", "failed", "expired", "canceled"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -36,7 +36,7 @@ exports.handler = async (event) => {
     const invoice = await fetchInvoice(config.supabaseUrl, config.serviceRoleKey, invoiceId);
     if (!invoice) return jsonResponse(404, { success: false, error: "Factuur niet gevonden." });
 
-    const amount = Number(invoice.amount);
+    const amount = Number(invoice.total);
     if (!Number.isFinite(amount) || amount <= 0) {
       return jsonResponse(400, { success: false, error: "Factuurbedrag moet groter zijn dan 0." });
     }
@@ -168,7 +168,7 @@ function parsePayload(body) {
 
 async function fetchInvoice(supabaseUrl, serviceRoleKey, invoiceId) {
   const data = await supabaseFetch(
-    `${supabaseUrl}/rest/v1/customer_invoices?select=${INVOICE_FIELDS}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`,
+    `${supabaseUrl}/rest/v1/invoices?select=${INVOICE_FIELDS}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`,
     {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
@@ -223,7 +223,7 @@ function isMollieTestMode(apiKey) {
 }
 
 async function updateInvoice(supabaseUrl, serviceRoleKey, invoiceId, patch) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?id=eq.${encodeURIComponent(invoiceId)}`, {
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/invoices?id=eq.${encodeURIComponent(invoiceId)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -263,7 +263,7 @@ function normalizeInvoice(row) {
     id: cleanText(row.id),
     invoiceNumber: cleanText(row.invoice_number),
     title: cleanText(row.title),
-    amount: Number(row.amount) || 0,
+    amount: Number(row.total) || 0,
     status: cleanText(row.status),
     molliePaymentId: cleanText(row.mollie_payment_id),
     mollieCheckoutUrl: cleanText(row.mollie_checkout_url),

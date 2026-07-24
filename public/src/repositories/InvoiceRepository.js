@@ -124,8 +124,8 @@ export function listLocalInvoices() {
 }
 
 export async function listSupabaseInvoices() {
-  const rows = await supabaseProvider.getAll("customer_invoices", { limit: 100 });
-  const lineRows = [];
+  const rows = await supabaseProvider.getAll("invoices", { limit: 100 });
+  const lineRows = await supabaseProvider.getAll("invoice_lines", { limit: 500 });
   const linesByInvoiceId = new Map();
   lineRows.forEach((line) => {
     const invoiceId = line.invoice_id || "";
@@ -486,31 +486,31 @@ export function mapSupabaseInvoiceToLocal(row = {}, lineRows = []) {
     externalId: storedContext.localStorageId || "",
     supabaseInvoiceId: row.id,
     invoiceNumber: row.invoice_number,
-    profileId: row.profile_id || storedContext.localCustomerId || "",
-    customerId: row.profile_id || storedContext.localCustomerId || "",
-    customerAuthUserId: row.customer_auth_user_id || "",
-    supabaseCustomerId: row.profile_id || "",
-    websiteId: storedContext.localWebsiteId || "",
-    supabaseWebsiteId: storedContext.websiteSupabaseId || "",
-    projectId: storedContext.localProjectId || "",
-    supabaseProjectId: storedContext.projectSupabaseId || "",
-    sourceQuoteId: storedContext.localQuoteId || "",
-    supabaseQuoteId: storedContext.quoteSupabaseId || "",
-    subscriptionId: storedContext.localSubscriptionId || "",
-    supabaseSubscriptionId: storedContext.subscriptionSupabaseId || "",
+    profileId: storedContext.localCustomerId || "",
+    customerId: row.customer_id || storedContext.localCustomerId || "",
+    customerAuthUserId: "",
+    supabaseCustomerId: row.customer_id || "",
+    websiteId: row.website_id || storedContext.localWebsiteId || "",
+    supabaseWebsiteId: row.website_id || storedContext.websiteSupabaseId || "",
+    projectId: row.project_id || storedContext.localProjectId || "",
+    supabaseProjectId: row.project_id || storedContext.projectSupabaseId || "",
+    sourceQuoteId: row.source_quote_id || storedContext.localQuoteId || "",
+    supabaseQuoteId: row.source_quote_id || storedContext.quoteSupabaseId || "",
+    subscriptionId: row.subscription_id || storedContext.localSubscriptionId || "",
+    supabaseSubscriptionId: row.subscription_id || storedContext.subscriptionSupabaseId || "",
     type: storedContext.type,
     title: row.title,
     status: row.status,
     paymentStatus: row.mollie_payment_status || row.status,
-    invoiceDate: storedContext.invoiceDate || row.created_at?.slice?.(0, 10),
+    invoiceDate: row.invoice_date || storedContext.invoiceDate || row.created_at?.slice?.(0, 10),
     dueDate: row.due_date,
     paidAt: row.paid_at,
     lines,
-    subtotal: storedContext.subtotal,
-    vatAmount: storedContext.vat,
-    total: storedContext.total || row.amount,
-    amount: row.amount,
-    paymentLink: row.mollie_checkout_url,
+    subtotal: row.subtotal ?? storedContext.subtotal,
+    vatAmount: row.vat ?? storedContext.vat,
+    total: row.total ?? storedContext.total,
+    amount: row.total,
+    paymentLink: row.payment_link || row.mollie_checkout_url,
     mollieCheckoutUrl: row.mollie_checkout_url,
     molliePaymentId: row.mollie_payment_id,
     molliePaymentStatus: row.mollie_payment_status,
