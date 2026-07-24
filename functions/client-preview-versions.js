@@ -3,6 +3,8 @@ const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const APPROVAL_STATEMENT_VERSION = "website_preview_approval_nl_v1";
+const APPROVAL_STATEMENT = "Ik keur deze specifieke ontwerpversie goed. Ik begrijp dat latere inhoudelijke wijzigingen opnieuw goedkeuring kunnen vereisen.";
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -23,17 +25,24 @@ exports.handler = async (event) => {
       ? `id=eq.${versionId}&customer_id=eq.${customer.id}`
       : `customer_id=eq.${customer.id}`;
     const rows = await readRows(context, "website_preview_versions", [
-      "select=id,customer_id,project_id,website_id,version,title,customer_summary,change_summary,safe_preview_path,published_to_portal,published_at,review_deadline,allow_feedback,allow_approval,status,approved_at,feedback_items,metadata,created_at",
+      "select=id,customer_id,project_id,website_id,version,title,customer_summary,change_summary,safe_preview_path,published_to_portal,published_at,review_deadline,allow_feedback,allow_approval,status,package_checksum,is_active,feedback_items,metadata,created_at",
       filter,
       "published_to_portal=eq.true",
       "order=published_at.desc.nullslast,version.desc",
       "limit=25",
     ].join("&"));
 
+    const approvals = rows.length ? await readRows(context, "website_preview_approvals", [
+      "select=id,customer_id,project_id,website_id,preview_version_id,preview_version_number,preview_checksum,approved_by_profile_id,approved_at,approval_status,approval_statement_version,created_at",
+      `customer_id=eq.${customer.id}`,
+      `preview_version_id=in.(${rows.map((row) => row.id).join(",")})`,
+      "order=created_at.desc",
+    ].join("&")) : [];
+    const approvalByVersion = new Map(approvals.map((approval) => [cleanText(approval.preview_version_id), approval]));
     return jsonResponse(200, {
       success: true,
       customer: { id: customer.id, name: cleanText(customer.name), company: cleanText(customer.company || customer.company_name) },
-      previewVersions: rows.map(sanitizeClientVersion),
+      previewVersions: rows.map((row) => sanitizeClientVersion(row, approvalByVersion.get(cleanText(row.id)))),
     });
   } catch (error) {
     console.error("Client preview versions failed", { message: error.message, status: error.status || 500, code: error.code || "" });
@@ -227,35 +236,38 @@ function feedbackSideEffectKey(type, version, feedback) {
 
 async function approvePreviewVersion(context, customer, authUser, version, payload) {
   if (version.allow_approval === false) return jsonResponse(403, { success: false, error: "Goedkeuring is voor deze previewversie gesloten." });
-  if (version.approved_at) return jsonResponse(200, { success: true, duplicate: true, previewVersion: sanitizeClientVersion(version) });
-  const now = new Date().toISOString();
-  const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, {
-    approved_at: now,
-    approved_by_auth_user_id: authUser.id,
-    status: "approved",
-    approval_metadata: {
-      approvedByEmail: authUser.email || "",
-      approvedByCustomerId: customer.id,
-      note: cleanText(payload.note || payload.feedback).slice(0, 1000),
-      approvedAt: now,
-    },
-    updated_at: now,
-  });
-  const updated = rows[0] || { ...version, approved_at: now, approved_by_auth_user_id: authUser.id, status: "approved" };
-  await safeTimeline({
-    customerId: customer.id,
-    eventType: "preview_approved",
-    title: "Website-preview goedgekeurd",
-    description: `Preview V${version.version || 1} is goedgekeurd door de klant.`,
-    module: "website",
-    referenceType: "website_preview_version",
-    referenceId: version.id,
-    actorName: customer.name || authUser.email || "Klant",
-    actorRole: "customer",
-    severity: "success",
-    metadata: { dedupeKey: `preview_approved:${version.id}`, previewVersionId: version.id, websiteId: version.website_id || "" },
-  });
-  return jsonResponse(200, { success: true, previewVersion: sanitizeClientVersion(updated) });
+  if (!version.project_id || version.published_to_portal !== true || version.is_active !== true
+      || !["ready_for_review", "feedback_received", "approved"].includes(cleanText(version.status))
+      || !/^[0-9a-f]{64}$/.test(cleanText(version.package_checksum))) {
+    return jsonResponse(409, { success: false, error: "Deze ontwerpversie is niet meer goedkeurbaar. Ververs de pagina." });
+  }
+  const expectedChecksum = cleanText(payload.expectedChecksum || payload.expected_checksum);
+  if (!/^[0-9a-f]{64}$/.test(expectedChecksum)) {
+    return jsonResponse(400, { success: false, error: "De verwachte versie-identiteit ontbreekt." });
+  }
+  const idempotencyKey = cleanText(payload.idempotencyKey || payload.idempotency_key)
+    || hashText(["preview-approval", version.id, authUser.id, expectedChecksum].join(":"));
+  try {
+    const result = await callRpc(context, "record_website_preview_approval", {
+      input_preview_version_id: version.id,
+      input_customer_id: customer.id,
+      input_auth_user_id: authUser.id,
+      input_expected_checksum: expectedChecksum,
+      input_idempotency_key: idempotencyKey,
+      input_statement_version: APPROVAL_STATEMENT_VERSION,
+      input_statement_snapshot: APPROVAL_STATEMENT,
+    });
+    const approval = result?.approval || {};
+    return jsonResponse(200, {
+      success: true,
+      duplicate: result?.duplicate === true,
+      approval: sanitizeApproval(approval),
+      previewVersion: sanitizeClientVersion(version, approval),
+    });
+  } catch (error) {
+    if (error.code === "40001") return jsonResponse(409, { success: false, error: "De ontwerpversie is gewijzigd. Ververs de pagina en controleer de versie opnieuw." });
+    throw error;
+  }
 }
 
 async function readAuthUser(context, bearer) {
@@ -308,6 +320,14 @@ async function insertRows(context, table, record) {
   });
 }
 
+async function callRpc(context, name, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json" },
+    body: JSON.stringify(record),
+  });
+}
+
 async function readSingle(context, table, query) {
   const rows = await readRows(context, table, query);
   return Array.isArray(rows) ? rows[0] || null : null;
@@ -324,11 +344,14 @@ async function supabaseFetch(url, options) {
     error.details = data?.details || "";
     throw error;
   }
-  return Array.isArray(data) ? data : [];
+  return data;
 }
 
-function sanitizeClientVersion(row = {}) {
+function sanitizeClientVersion(row = {}, approval = null) {
   const safePath = cleanText(row.safe_preview_path) || `/preview.html?version=${encodeURIComponent(cleanText(row.id))}`;
+  const approvalMatches = approval?.approval_status === "active"
+    && cleanText(approval.preview_version_id) === cleanText(row.id)
+    && cleanText(approval.preview_checksum) === cleanText(row.package_checksum);
   return {
     id: cleanText(row.id),
     projectId: cleanText(row.project_id),
@@ -338,15 +361,32 @@ function sanitizeClientVersion(row = {}) {
     summary: cleanText(row.customer_summary),
     changeSummary: cleanText(row.change_summary),
     safePreviewPath: safePath,
+    thumbnailPath: `/preview-embed.html?version=${encodeURIComponent(cleanText(row.id))}`,
     publishedAt: cleanText(row.published_at),
     reviewDeadline: cleanText(row.review_deadline),
     allowFeedback: row.allow_feedback !== false,
     allowApproval: row.allow_approval !== false,
-    status: cleanText(row.status || "ready_for_review"),
-    approvedAt: cleanText(row.approved_at),
+    status: approvalMatches ? "approved" : cleanText(row.status || "ready_for_review"),
+    checksum: cleanText(row.package_checksum),
+    isActive: row.is_active === true,
+    approvedAt: approvalMatches ? cleanText(approval.approved_at) : "",
+    currentVersionIsApproved: approvalMatches,
+    approval: approvalMatches ? sanitizeApproval(approval) : null,
     feedbackCount: Array.isArray(row.feedback_items) ? row.feedback_items.length : 0,
     feedbackItems: Array.isArray(row.feedback_items) ? row.feedback_items.map(sanitizeFeedbackItem) : [],
     previewSource: cleanText(row.metadata?.previewSource),
+  };
+}
+
+function sanitizeApproval(row = {}) {
+  return {
+    id: cleanText(row.id),
+    previewVersionId: cleanText(row.preview_version_id),
+    previewVersionNumber: Number(row.preview_version_number || 0),
+    previewChecksum: cleanText(row.preview_checksum),
+    approvedAt: cleanText(row.approved_at),
+    status: cleanText(row.approval_status),
+    statementVersion: cleanText(row.approval_statement_version),
   };
 }
 

@@ -64,6 +64,8 @@ exports.handler = async (event) => {
         title: cleanText(version.title) || "Website-preview",
         version: Number(version.version || 1),
         status: cleanText(version.status || "ready_for_review"),
+        checksum: cleanText(version.package_checksum),
+        createdAt: cleanText(version.created_at),
         html,
       },
     });
@@ -102,7 +104,7 @@ function renderPackageHtml(previewPackage = {}, meta = {}) {
   const entry = fileMap.get("index.html") || files.find((file) => cleanText(file.path).endsWith("index.html")) || files.find((file) => isHtml(file.path));
   if (!entry) return missingPreviewHtml(meta.title);
   const rawHtml = fileContent(entry);
-  return injectPreviewRuntime(inlinePackageAssets(rawHtml, fileMap));
+  return applyPreviewSecurityPolicy(injectPreviewRuntime(inlinePackageAssets(rawHtml, fileMap)));
 }
 
 function inlinePackageAssets(html = "", fileMap = new Map()) {
@@ -127,7 +129,36 @@ function inlinePackageAssets(html = "", fileMap = new Map()) {
       if (!file) return match;
       return `url("${dataUriFor(file)}")`;
     })
-    .replace(/href=["']([^"']+\.html)["']/gi, (_match, path) => `href="#${escapeAttribute(cleanRelativePath(path).replace(/\.html$/i, ""))}"`);
+    .replace(/href=["']([^"']+\.html)["']/gi, (_match, path) => `href="#${escapeAttribute(cleanRelativePath(path).replace(/\.html$/i, ""))}"`)
+    .replace(/\s(href|src|action|formaction)="\s*(?:javascript|vbscript|data\s*:\s*text\/html)[^"]*"/gi, ' $1="#"')
+    .replace(/\s(href|src|action|formaction)='\s*(?:javascript|vbscript|data\s*:\s*text\/html)[^']*'/gi, " $1='#'")
+    .replace(/<base\b[^>]*>/gi, "");
+}
+
+function applyPreviewSecurityPolicy(html = "") {
+  const policy = [
+    "default-src 'none'",
+    "base-uri 'none'",
+    "object-src 'none'",
+    "connect-src 'none'",
+    "form-action 'none'",
+    "frame-src 'none'",
+    "child-src 'none'",
+    "worker-src 'none'",
+    "manifest-src 'none'",
+    "img-src data: blob: https:",
+    "media-src data: blob: https:",
+    "font-src data: https:",
+    "style-src 'unsafe-inline' https:",
+    "script-src 'unsafe-inline'",
+  ].join("; ");
+  const securityHead = [
+    `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(policy)}">`,
+    '<meta name="referrer" content="no-referrer">',
+  ].join("");
+  const source = String(html || "");
+  if (/<head\b[^>]*>/i.test(source)) return source.replace(/<head\b[^>]*>/i, (head) => `${head}${securityHead}`);
+  return `<!doctype html><html><head>${securityHead}</head><body>${source}</body></html>`;
 }
 
 function injectPreviewRuntime(html = "") {
@@ -144,6 +175,13 @@ function injectPreviewRuntime(html = "") {
     "if(!target)return;",
     "event.preventDefault();",
     "target.scrollIntoView({behavior:'smooth',block:'start'});",
+    "});",
+    "document.addEventListener('click',function(event){",
+    "if(event.defaultPrevented)return;",
+    "var link=event.target&&event.target.closest?event.target.closest('a[href]'):null;",
+    "if(!link)return;",
+    "var href=link.getAttribute('href')||'';",
+    "if(href.charAt(0)!=='#')event.preventDefault();",
     "});",
     "})();",
     "<\/script>",
@@ -401,6 +439,7 @@ exports._private = {
   getVersionParam,
   getQueryParams,
   inlinePackageAssets,
+  applyPreviewSecurityPolicy,
   normalizePackage,
   recoverVersionFromRequest,
   renderPackageHtml,

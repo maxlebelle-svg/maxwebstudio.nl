@@ -19,282 +19,218 @@
         <span>Max Webstudio</span>
       </a>
       <nav class="main-nav" aria-label="Hoofdnavigatie">
-        <a href="index.html#projecten">Demo's</a>
-        <a href="index.html#prijzen">Pakketten</a>
-        <a href="index.html#aanvraag">Contact</a>
+        <a href="klantportaal.html">Klantportaal</a>
+        <a href="login.html?mode=client">Inloggen</a>
       </nav>
-      <a class="header-cta" href="index.html#aanvraag">Plan gratis gesprek</a>
+      <a class="header-cta" href="klantportaal.html#facturen">Mijn documenten</a>
     </header>
 
     <main>
       <section class="page-hero payment-hero">
         <p class="eyebrow">Persoonlijke offerte</p>
         <h1 id="quote-page-title">Offerte laden...</h1>
-        <p id="quote-page-subtitle">Bekijk rustig wat inbegrepen is en geef akkoord wanneer alles klopt.</p>
+        <p id="quote-page-subtitle">We controleren je sessie en laden de actuele offerte veilig op.</p>
       </section>
-
       <section class="content-page payment-page quote-page-shell" id="quote-page">
         <article class="checkout-summary-card quote-public-card" id="quote-card" aria-live="polite">
           <p class="section-kicker">Offerte</p>
-          <h2>Offertegegevens</h2>
-          <p>Offerte niet gevonden. Open de offerte opnieuw via de link die je van Max Webstudio hebt ontvangen.</p>
+          <h2>Offertegegevens laden</h2>
+          <p>Een ogenblik geduld.</p>
         </article>
       </section>
     </main>
 
     <script type="module">
-      import {
-        getCompanySettings,
-        getMailtoLink,
-        getTelephoneLink,
-        getWhatsappLink,
-      } from "./src/services/companySettingsService.js";
+      import { getCompanySettings, getMailtoLink, getTelephoneLink, getWhatsappLink } from "./src/services/companySettingsService.js";
 
       (() => {
-        const companySettings = getCompanySettings();
-        const storageKey = "maxwebstudioQuotes";
-        const params = new URLSearchParams(window.location.search);
-        const quoteId = params.get("quoteId") || "";
-        const supabaseQuoteId = params.get("supabaseQuoteId") || "";
+        const settings = getCompanySettings();
+        const params = new URLSearchParams(location.search);
+        const quoteId = params.get("quoteId") || params.get("supabaseQuoteId") || "";
         const title = document.getElementById("quote-page-title");
         const subtitle = document.getElementById("quote-page-subtitle");
         const card = document.getElementById("quote-card");
-        const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
-        const formatDate = (value) => {
+        let acceptanceKey = globalThis.crypto?.randomUUID?.() || `quote-acceptance-${quoteId}-${Date.now()}`;
+
+        const text = (tag, className, value) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          node.textContent = value;
+          return node;
+        };
+        const money = (value, currency = "EUR") => new Intl.NumberFormat("nl-NL", { style: "currency", currency }).format(Number(value || 0));
+        const date = (value, withTime = false) => {
           if (!value) return "-";
-          const date = new Date(value);
-          return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("nl-NL");
+          const parsed = new Date(value);
+          if (Number.isNaN(parsed.getTime())) return String(value);
+          return withTime ? parsed.toLocaleString("nl-NL") : parsed.toLocaleDateString("nl-NL");
         };
 
-        function readQuotes() {
-          try {
-            const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
-            return Array.isArray(stored) ? stored : [];
-          } catch (error) {
-            return [];
+        function bearer() {
+          const keys = ["maxwebstudioSupabaseAuthSession", "maxwebstudioCurrentSession"];
+          for (const key of keys) {
+            try {
+              const session = JSON.parse(localStorage.getItem(key) || "null");
+              const token = session?.access_token || session?.session?.access_token || session?.accessToken || "";
+              if (token) return token;
+            } catch { /* Een onleesbare sessie is geen geldige sessie. */ }
           }
+          return "";
         }
 
-        function writeQuotes(quotes) {
-          localStorage.setItem(storageKey, JSON.stringify(quotes));
+        async function request(method = "GET", payload = null) {
+          const token = bearer();
+          if (!token) throw Object.assign(new Error("Log in om deze offerte veilig te bekijken."), { status: 401 });
+          const endpoint = method === "GET"
+            ? `/api/client-quote?quoteId=${encodeURIComponent(quoteId)}`
+            : "/api/client-quote";
+          const response = await fetch(endpoint, {
+            method,
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+              ...(payload ? { "Content-Type": "application/json" } : {}),
+            },
+            body: payload ? JSON.stringify(payload) : undefined,
+            cache: "no-store",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw Object.assign(new Error(data.error || "De offerte kon niet worden geladen."), { status: response.status });
+          return data;
         }
 
-        function logDemoEmail(quote) {
-          if (!quote?.isDemoJourney || !quote.demoJourneyId) return;
-          try {
-            const key = "maxwebstudioDemoEmails";
-            const emails = JSON.parse(localStorage.getItem(key) || "[]");
-            const exists = Array.isArray(emails) && emails.some((email) => email.demoJourneyId === quote.demoJourneyId && email.type === "offerte_geaccepteerd");
-            if (exists) return;
-            const email = {
-              id: `demo-email-offerte-geaccepteerd-${Date.now()}`,
-              customerId: quote.profileId || quote.customerId || "",
-              type: "offerte_geaccepteerd",
-              subject: "Demo-offerte geaccepteerd",
-              to: quote.customerEmail || "",
-              body: `Offerte ${quote.quoteNumber || ""} is lokaal geaccepteerd.`,
-              status: "demo/verzonden lokaal",
-              createdAt: new Date().toISOString(),
-              isDemoJourney: true,
-              demoJourneyId: quote.demoJourneyId,
-            };
-            localStorage.setItem(key, JSON.stringify([email, ...(Array.isArray(emails) ? emails : [])]));
-          } catch (error) {
-            console.warn("Demo e-mail kon niet worden opgeslagen", error);
+        function row(label, value) {
+          const wrap = document.createElement("div");
+          wrap.append(text("dt", "", label), text("dd", "", value || "-"));
+          return wrap;
+        }
+
+        function contacts(subject) {
+          const wrap = document.createElement("div");
+          wrap.className = "portal-actions";
+          const links = [
+            ["WhatsApp Max", getWhatsappLink(settings), true],
+            [settings.phoneDisplay, getTelephoneLink(settings), false],
+            [settings.primaryEmail, getMailtoLink(settings, subject), false],
+          ];
+          links.forEach(([label, href, external]) => {
+            const link = document.createElement("a");
+            link.className = "button secondary";
+            link.href = href;
+            link.textContent = label;
+            if (external) { link.target = "_blank"; link.rel = "noopener"; }
+            wrap.append(link);
+          });
+          return wrap;
+        }
+
+        function renderError(error) {
+          title.textContent = error.status === 401 ? "Log in om je offerte te bekijken" : "Offerte niet beschikbaar";
+          subtitle.textContent = "Klantgegevens worden nooit uit browseropslag als offertebron gebruikt.";
+          card.replaceChildren(
+            text("p", "section-kicker", error.status === 401 ? "Beveiligde toegang" : "Niet beschikbaar"),
+            text("h2", "", error.message || "De offerte kon niet worden geladen."),
+            text("p", "summary-note", "Open de offerte opnieuw vanuit je klantportaal. Blijft dit gebeuren, neem dan contact op."),
+          );
+          if (error.status === 401) {
+            const login = document.createElement("a");
+            login.className = "button primary";
+            login.href = `login.html?mode=client&next=${encodeURIComponent(location.pathname + location.search)}`;
+            login.textContent = "Inloggen";
+            card.append(login);
           }
+          card.append(contacts("Offerte niet beschikbaar"));
         }
 
-        function createRow(label, value) {
-          const row = document.createElement("div");
-          const dt = document.createElement("dt");
-          const dd = document.createElement("dd");
-          dt.textContent = label;
-          dd.textContent = value || "-";
-          row.append(dt, dd);
-          return row;
-        }
-
-        function findQuote(quotes) {
-          return quotes.find((item) => {
-            const ids = [item.id, item.quoteId, item.supabaseQuoteId, item._supabaseQuoteId].filter(Boolean).map(String);
-            return (quoteId && ids.includes(String(quoteId))) || (supabaseQuoteId && ids.includes(String(supabaseQuoteId)));
-          });
-        }
-
-        function updateStoredQuote(quote, patch = {}) {
-          const quotes = readQuotes();
-          const next = quotes.map((item) => {
-            const ids = [item.id, item.quoteId, item.supabaseQuoteId, item._supabaseQuoteId].filter(Boolean).map(String);
-            const matches = ids.includes(String(quote.id || quote.quoteId || quoteId || supabaseQuoteId));
-            return matches ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item;
-          });
-          writeQuotes(next);
-          return findQuote(next) || { ...quote, ...patch };
-        }
-
-        function markQuoteViewed(quote) {
-          if (quote.acceptedAt || quote.status === "geaccepteerd") return quote;
-          if (quote.viewedAt && quote.status !== "verzonden") return quote;
-          const patch = {
-            viewedAt: quote.viewedAt || new Date().toISOString(),
-            status: quote.status === "verzonden" ? "bekeken" : quote.status,
-          };
-          return updateStoredQuote(quote, patch);
-        }
-
-        function createText(tag, className, text) {
-          const element = document.createElement(tag);
-          if (className) element.className = className;
-          element.textContent = text;
-          return element;
-        }
-
-        function createCompanyContactActions(subject = "Vraag over offerte") {
-          const actions = document.createElement("div");
-          actions.className = "portal-actions";
-          const whatsapp = document.createElement("a");
-          whatsapp.className = "button secondary";
-          whatsapp.href = getWhatsappLink(companySettings);
-          whatsapp.target = "_blank";
-          whatsapp.rel = "noopener";
-          whatsapp.textContent = "WhatsApp Max";
-          const call = document.createElement("a");
-          call.className = "button secondary";
-          call.href = getTelephoneLink(companySettings);
-          call.textContent = companySettings.phoneDisplay;
-          const email = document.createElement("a");
-          email.className = "button secondary";
-          email.href = getMailtoLink(companySettings, subject);
-          email.textContent = companySettings.primaryEmail;
-          actions.append(whatsapp, call, email);
-          return actions;
-        }
-
-        function renderQuote() {
-          const quotes = readQuotes();
-          let quote = findQuote(quotes);
+        function renderQuote(quote) {
           card.replaceChildren();
-          if (!quote) {
-            title.textContent = "Offerte niet gevonden";
-            subtitle.textContent = "Controleer de link of neem contact op met Max Webstudio.";
-            card.append(
-              createText("p", "section-kicker", "Niet gevonden"),
-              createText("h2", "", "Deze offerte kan niet worden geladen."),
-              createText("p", "summary-note", "Open de offerte opnieuw via de link die je hebt ontvangen. Blijft dit gebeuren? Neem dan even contact op."),
-              createCompanyContactActions("Offerte niet gevonden")
-            );
-            return;
-          }
-          quote = markQuoteViewed(quote);
-
           title.textContent = quote.title || "Jouw offerte van Max Webstudio";
-          subtitle.textContent = `${quote.customerCompany || quote.customerName || "Klant"} - ${quote.quoteNumber || "Offerte"}`;
+          subtitle.textContent = `${quote.quoteNumber} · versie ${quote.version}`;
 
-          const kicker = document.createElement("p");
-          kicker.className = "section-kicker";
-          kicker.textContent = quote.status === "geaccepteerd" ? "Akkoord ontvangen" : "Offerte klaar voor review";
-          const heading = document.createElement("h2");
-          heading.textContent = quote.quoteNumber || "Offerte";
-          const proposal = document.createElement("p");
-          proposal.textContent = quote.proposal || "Bedankt voor je aanvraag. Hieronder vind je het voorstel, de planning en wat Max Webstudio voor je verzorgt.";
-
+          const accepted = Boolean(quote.acceptance);
           const meta = document.createElement("dl");
           meta.className = "summary-lines";
           meta.append(
-            createRow("Klant", quote.customerCompany || quote.customerName || "-"),
-            createRow("Website", quote.websiteDomain || quote.websiteName || "Wordt afgestemd"),
-            createRow("Project", quote.projectName || quote.type || "-"),
-            createRow("Offertedatum", formatDate(quote.quoteDate)),
-            createRow("Geldig tot", formatDate(quote.validUntil)),
-            createRow("Status", quote.status || "concept")
+            row("Offertenummer", quote.quoteNumber),
+            row("Versie", String(quote.version)),
+            row("Offertedatum", date(quote.quoteDate)),
+            row("Geldig tot", date(quote.validUntil)),
+            row("Status", accepted ? "Geaccepteerd" : quote.status),
           );
 
           const lines = document.createElement("div");
           lines.className = "summary-lines";
-          (quote.lines || []).forEach((line) => {
-            const item = document.createElement("div");
-            item.append(createRow(`${line.quantity || 1}x ${line.description || "Offertregel"}`, money(Number(line.quantity || 0) * Number(line.unitPrice || 0))));
-            lines.append(item);
-          });
+          quote.lines.forEach((line) => lines.append(row(`${line.quantity}x ${line.description}`, money(line.lineTotal || line.quantity * line.unitPrice, quote.currency))));
 
           const total = document.createElement("div");
           total.className = "summary-total";
-          total.innerHTML = `<span>Totaal incl. btw</span><strong>${money(quote.total)}</strong><small>Subtotaal ${money(quote.subtotal)} · BTW ${money(quote.vat)}</small>`;
+          total.append(
+            text("span", "", "Totaal incl. btw"),
+            text("strong", "", money(quote.total, quote.currency)),
+            text("small", "", `Subtotaal ${money(quote.subtotal, quote.currency)} · BTW ${money(quote.vat, quote.currency)}`),
+          );
 
-          const included = document.createElement("ul");
-          included.className = "summary-included quote-included-list";
-          [
-            "Website-opzet volgens afgesproken pakket",
-            "Mobielvriendelijke oplevering",
-            "Basiscontrole voor snelheid, veiligheid en vindbaarheid",
-            "Klantportaal voor voortgang, berichten en wijzigingen",
-          ].forEach((item) => included.append(createText("li", "", item)));
+          card.append(
+            text("p", "section-kicker", accepted ? "Akkoord ontvangen" : "Offerte klaar voor beoordeling"),
+            text("h2", "", quote.quoteNumber),
+            text("p", "", quote.proposal || "Hieronder staat het voorstel zoals dat server-side is vastgelegd."),
+            meta,
+            text("h3", "", "Offertregels"),
+            lines,
+            total,
+          );
 
-          const faq = document.createElement("div");
-          faq.className = "quote-faq";
-          [
-            ["Wat gebeurt er na akkoord?", "Max Webstudio zet je project klaar, activeert je klantportaal en stemt de planning met je af."],
-            ["Is dit al een betaling?", "Nee. Akkoord geven bevestigt de offerte. Betaling en facturatie volgen apart."],
-            ["Kan ik nog iets wijzigen?", "Ja. Reageer eerst even voordat je akkoord geeft, dan passen we de offerte aan."],
-          ].forEach(([question, answer]) => {
-            const item = document.createElement("div");
-            item.append(createText("strong", "", question), createText("p", "", answer));
-            faq.append(item);
-          });
-
-          const acceptForm = document.createElement("form");
-          acceptForm.className = "quote-accept-form";
-          const nameLabel = document.createElement("label");
-          nameLabel.textContent = "Naam voor akkoord";
-          const nameInput = document.createElement("input");
-          nameInput.type = "text";
-          nameInput.required = true;
-          nameInput.value = quote.acceptedByName || quote.customerName || "";
-          nameLabel.append(nameInput);
-          const emailLabel = document.createElement("label");
-          emailLabel.textContent = "E-mailadres";
-          const emailInput = document.createElement("input");
-          emailInput.type = "email";
-          emailInput.required = true;
-          emailInput.value = quote.acceptedByEmail || quote.customerEmail || "";
-          emailLabel.append(emailInput);
-          const consentLabel = document.createElement("label");
-          consentLabel.className = "quote-consent";
-          const consent = document.createElement("input");
-          consent.type = "checkbox";
-          consent.required = true;
-          consentLabel.append(consent, document.createTextNode(" Ik ga akkoord met deze offerte en begrijp dat Max Webstudio daarna contact opneemt over de vervolgstap."));
-          const accept = document.createElement("button");
-          accept.className = "button primary";
-          accept.type = "submit";
-          accept.textContent = quote.status === "geaccepteerd" ? "Offerte geaccepteerd" : "Akkoord geven";
-          accept.disabled = quote.status === "geaccepteerd";
-          const feedback = createText("p", "admin-form-message", "");
-          acceptForm.append(nameLabel, emailLabel, consentLabel, accept, feedback);
-          acceptForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            const acceptedAt = new Date().toISOString();
-            const acceptedQuote = updateStoredQuote(quote, {
-              status: "geaccepteerd",
-              acceptedAt,
-              acceptedByName: nameInput.value.trim(),
-              acceptedByEmail: emailInput.value.trim(),
-              acceptanceMethod: "public_quote_page",
+          if (accepted) {
+            card.append(
+              text("h3", "", "Acceptatie vastgelegd"),
+              text("p", "admin-form-message success", `Deze offerteversie is geaccepteerd op ${date(quote.acceptance.acceptedAt, true)}. De vastgelegde status blijft ook na uitloggen, cachewissen of gebruik van een andere computer bestaan.`),
+            );
+          } else if (quote.acceptable) {
+            const form = document.createElement("form");
+            form.className = "quote-accept-form";
+            const consentLabel = document.createElement("label");
+            consentLabel.className = "quote-consent";
+            const consent = document.createElement("input");
+            consent.type = "checkbox";
+            consent.required = true;
+            consentLabel.append(consent, document.createTextNode(` Ik ga akkoord met offerte ${quote.quoteNumber}, versie ${quote.version}, voor ${money(quote.total, quote.currency)}. Ik begrijp dat dit geen betaling is.`));
+            const button = text("button", "button primary", "Deze offerteversie accepteren");
+            button.type = "submit";
+            const feedback = text("p", "admin-form-message", "Na bevestiging wordt het akkoord server-side en onveranderlijk aan deze versie gekoppeld.");
+            form.append(consentLabel, button, feedback);
+            form.addEventListener("submit", async (event) => {
+              event.preventDefault();
+              button.disabled = true;
+              button.textContent = "Akkoord vastleggen...";
+              feedback.textContent = "De actuele versie en bedragen worden nogmaals server-side gecontroleerd.";
+              try {
+                const data = await request("POST", {
+                  action: "accept",
+                  quoteId: quote.id,
+                  expectedVersion: quote.version,
+                  expectedChecksum: quote.checksum,
+                  idempotencyKey: acceptanceKey,
+                });
+                renderQuote(data.quote);
+              } catch (error) {
+                feedback.textContent = error.message || "Akkoord kon niet worden vastgelegd.";
+                button.disabled = false;
+                button.textContent = "Opnieuw proberen";
+              }
             });
-            logDemoEmail(acceptedQuote);
-            renderQuote();
-          });
+            card.append(text("h3", "", "Offerte accepteren"), form);
+          } else {
+            card.append(text("p", "admin-form-message", "Deze offerte is niet meer accepteerbaar. Vraag Max Webstudio om de actuele offerteversie."));
+          }
 
-          const note = document.createElement("p");
-          note.className = `admin-form-message ${quote.status === "geaccepteerd" ? "success" : ""}`;
-          note.textContent = quote.status === "geaccepteerd"
-            ? `Akkoord ontvangen op ${formatDate(quote.acceptedAt || quote.updatedAt)}. Max Webstudio neemt contact op over de start.`
-            : "Akkoord geven is nog geen online betaling. Je bevestigt hiermee dat Max Webstudio het project mag voorbereiden.";
-
-          card.append(kicker, heading, proposal, meta, createText("h3", "", "Wat is inbegrepen?"), included, lines, total, createText("h3", "", "Veelgestelde vragen"), faq, acceptForm, note, createCompanyContactActions(`Vraag over ${quote.quoteNumber || "offerte"}`));
+          card.append(contacts(`Vraag over ${quote.quoteNumber}`));
         }
 
-        renderQuote();
+        if (!quoteId) {
+          renderError(Object.assign(new Error("Offerte-ID ontbreekt in de link."), { status: 400 }));
+          return;
+        }
+        request().then((data) => renderQuote(data.quote)).catch(renderError);
       })();
     </script>
   </body>

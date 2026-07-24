@@ -1438,7 +1438,7 @@
                   <span class="portal-website-preview-dots" aria-hidden="true"><i></i><i></i><i></i></span>
                   <strong>Veilige preview · versie ${escapeHtml(String(latest.version || 1))}</strong>
                 </div>
-                <iframe class="portal-website-mini-preview" title="Veilige preview van ${escapeHtml(latest.title || "je website")}" src="${escapeHtml(latest.safePreviewPath)}" loading="lazy"></iframe>
+                <iframe class="portal-website-mini-preview" title="Veilige preview van ${escapeHtml(latest.title || "je website")}" src="${escapeHtml(latest.thumbnailPath || latest.safePreviewPath)}" loading="lazy"></iframe>
                 <div class="portal-website-preview-caption">
                   <strong>${escapeHtml(latest.title || "Je ontwerp staat klaar")}</strong>
                   <span>${escapeHtml(customerPreviewSummary(latest))}</span>
@@ -1460,6 +1460,8 @@
           demoFeedbackForm.hidden = !(canFeedback || canApprove);
           demoFeedbackForm.dataset.previewVersionId = latest.id;
           demoFeedbackForm.dataset.previewVersionLabel = `versie ${latest.version || 1}`;
+          demoFeedbackForm.dataset.previewChecksum = latest.checksum || "";
+          demoFeedbackForm.dataset.approvalIdempotencyKey = globalThis.crypto?.randomUUID?.() || `preview-approval-${latest.id}-${Date.now()}`;
           demoFeedbackForm.dataset.openFeedbackCount = String(counts.active || 0);
           demoFeedbackSubmit.hidden = !canFeedback;
           demoApproveSubmit.hidden = !canApprove;
@@ -1526,6 +1528,7 @@
             : `<span class="portal-message">De previewlink verschijnt zodra de eerste versie klaarstaat.</span>`;
           renderPreviewReview(journey.previewReview || null);
           demoFeedbackForm.hidden = !previewAvailable;
+          demoApproveSubmit.hidden = true;
           demoFeedbackField.value = journey.feedback || "";
         }
 
@@ -3220,7 +3223,7 @@
             const iframe = document.createElement("iframe");
             iframe.className = "portal-website-mini-preview";
             iframe.title = `Veilige preview van ${previewVersion.title || website.name || "je website"}`;
-            iframe.src = previewVersion.safePreviewPath;
+            iframe.src = previewVersion.thumbnailPath || previewVersion.safePreviewPath;
             iframe.loading = "lazy";
             const caption = document.createElement("div");
             caption.className = "portal-website-preview-caption";
@@ -3229,6 +3232,13 @@
             title.textContent = previewVersion.title || website.name || "Je ontwerp staat klaar";
             text.textContent = customerPreviewSummary(previewVersion);
             caption.append(title, text);
+            const open = document.createElement("a");
+            open.className = "button secondary portal-preview-open-full";
+            open.href = previewVersion.safePreviewPath;
+            open.target = "_blank";
+            open.rel = "noopener";
+            open.textContent = "Bekijk ontwerp";
+            caption.append(open);
             frame.append(toolbar, iframe, caption);
             return frame;
           }
@@ -5504,6 +5514,7 @@
 
         demoApproveSubmit?.addEventListener("click", async () => {
           const previewVersionId = demoFeedbackForm.dataset.previewVersionId || "";
+          const previewChecksum = demoFeedbackForm.dataset.previewChecksum || "";
           const versionLabel = demoFeedbackForm.dataset.previewVersionLabel || "deze versie";
           const openFeedbackCount = Number(demoFeedbackForm.dataset.openFeedbackCount || 0);
           const confirmText = openFeedbackCount > 0
@@ -5518,17 +5529,15 @@
               await previewVersionRequest({
                 action: "approve",
                 previewVersionId,
+                expectedChecksum: previewChecksum,
+                idempotencyKey: demoFeedbackForm.dataset.approvalIdempotencyKey || "",
                 note: String(demoFeedbackField.value || "").trim(),
               });
               const versions = await loadPublishedPreviewVersions();
               publishedPreviewVersions = dedupePreviewVersions(versions);
               renderPublishedWebsitePreviews(publishedPreviewVersions);
             } else {
-              const data = await demoJourneyRequest("POST", {
-                action: "approve_preview",
-                feedback: String(demoFeedbackField.value || "").trim(),
-              });
-              renderDemoJourney({ journey: data.journey, events: data.events });
+              throw new Error("Goedkeuring is pas mogelijk wanneer een specifieke ontwerpversie is gepubliceerd.");
             }
             setDemoFeedbackStatus("Dank je, je akkoord is ontvangen. We bereiden de afronding voor.", "success");
           } catch (error) {

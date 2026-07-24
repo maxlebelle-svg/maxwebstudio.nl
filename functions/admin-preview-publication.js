@@ -23,6 +23,7 @@ const previewVersionFields = [
   "preview_score",
   "quality_report",
   "generated_package",
+  "package_checksum",
   "is_active",
   "published_to_portal",
   "published_at",
@@ -99,7 +100,29 @@ async function listPreviewVersions(context, params = {}) {
     selectedCustomerId,
     selectedProjectId,
   });
-  return jsonResponse(200, { success: true, website: sanitizeWebsite(website), previewVersions: versions.map(sanitizeAdminVersion) });
+  const approvals = await approvalsForVersions(context, versions);
+  return jsonResponse(200, {
+    success: true,
+    website: sanitizeWebsite(website),
+    previewVersions: versions.map((version) => sanitizeAdminVersion(
+      version,
+      approvals.byVersion.get(cleanText(version.id)) || approvals.byProject.get(cleanText(version.project_id))
+    )),
+  });
+}
+
+async function approvalsForVersions(context, versions = []) {
+  const ids = versions.map((version) => uuidOrEmpty(version.id)).filter(Boolean);
+  if (!ids.length) return { byVersion: new Map(), byProject: new Map() };
+  const rows = await readRows(context, "website_preview_approvals", [
+    "select=id,project_id,preview_version_id,preview_version_number,preview_checksum,approved_by_profile_id,approved_at,approval_status,approval_statement_version",
+    `preview_version_id=in.(${ids.join(",")})`,
+    "order=created_at.desc",
+  ].join("&"));
+  return {
+    byVersion: new Map(rows.map((row) => [cleanText(row.preview_version_id), row])),
+    byProject: new Map(rows.filter((row) => row.approval_status === "active").map((row) => [cleanText(row.project_id), row])),
+  };
 }
 
 async function publishActiveCustomerPreview(context, payload = {}) {
@@ -605,7 +628,7 @@ function restHeaders(serviceRoleKey) {
   };
 }
 
-function sanitizeAdminVersion(row = {}) {
+function sanitizeAdminVersion(row = {}, approval = null) {
   const ownership = row._ownership || {};
   const legacy = Boolean(!cleanText(row.website_id) && cleanText(row.demo_journey_id));
   return {
@@ -632,7 +655,19 @@ function sanitizeAdminVersion(row = {}) {
     allowFeedback: row.allow_feedback !== false,
     allowApproval: row.allow_approval !== false,
     status: cleanText(row.status),
-    approvedAt: cleanText(row.approved_at),
+    approvedAt: approval?.approval_status === "active" && cleanText(approval.preview_checksum) === cleanText(row.package_checksum)
+      ? cleanText(approval.approved_at)
+      : "",
+    approval: approval ? {
+      id: cleanText(approval.id),
+      previewVersionId: cleanText(approval.preview_version_id),
+      previewVersionNumber: Number(approval.preview_version_number || 0),
+      previewChecksum: cleanText(approval.preview_checksum),
+      approvedByProfileId: cleanText(approval.approved_by_profile_id),
+      approvedAt: cleanText(approval.approved_at),
+      status: cleanText(approval.approval_status),
+    } : null,
+    activeVersionDiffersFromApproved: Boolean(approval && (row.is_active !== true || cleanText(approval.preview_checksum) !== cleanText(row.package_checksum))),
     feedbackCount: Array.isArray(row.feedback_items) ? row.feedback_items.length : 0,
     previewSource: normalizePreviewSource(row.metadata?.previewSource),
     createdAt: cleanText(row.created_at),
