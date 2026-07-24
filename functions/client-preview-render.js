@@ -1,6 +1,7 @@
 const { corsHeaders } = require("./_cors");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const checksumPattern = /^[0-9a-f]{64}$/;
 const previewVersionFields = [
   "id",
   "customer_id",
@@ -14,11 +15,13 @@ const previewVersionFields = [
   "preview_url",
   "preview_token",
   "generated_package",
+  "package_checksum",
   "quality_report",
   "metadata",
   "published_to_portal",
   "published_at",
   "status",
+  "created_at",
 ].join(",");
 
 exports.handler = async (event) => {
@@ -44,6 +47,7 @@ exports.handler = async (event) => {
       "limit=1",
     ].join("&"));
     if (!version?.id) return jsonResponse(404, { success: false, error: "Deze ontwerpversie is niet beschikbaar voor dit klantaccount." });
+    const identity = previewIdentity(version);
 
     const packageResult = await resolvePreviewPackage(context, version);
     if (!packageResult.package?.files?.length) {
@@ -60,12 +64,10 @@ exports.handler = async (event) => {
     return jsonResponse(200, {
       success: true,
       preview: {
-        id: version.id,
+        ...identity,
         title: cleanText(version.title) || "Website-preview",
         version: Number(version.version || 1),
         status: cleanText(version.status || "ready_for_review"),
-        checksum: cleanText(version.package_checksum),
-        createdAt: cleanText(version.created_at),
         html,
       },
     });
@@ -77,6 +79,16 @@ exports.handler = async (event) => {
     });
   }
 };
+
+function previewIdentity(version = {}) {
+  const id = uuidOrEmpty(version.id);
+  const checksum = cleanText(version.package_checksum).toLowerCase();
+  const createdAt = cleanText(version.created_at);
+  if (!id || !checksumPattern.test(checksum) || !createdAt) {
+    throw httpError("Deze ontwerpversie mist een geldige versie-identiteit.", 409);
+  }
+  return { id, checksum, createdAt };
+}
 
 async function resolvePreviewPackage(context, version = {}) {
   const versionPackage = normalizePackage(version.generated_package);
@@ -436,6 +448,8 @@ function escapeAttribute(value = "") {
 }
 
 exports._private = {
+  previewVersionFields,
+  previewIdentity,
   getVersionParam,
   getQueryParams,
   inlinePackageAssets,
