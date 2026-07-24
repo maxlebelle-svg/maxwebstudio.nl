@@ -50,16 +50,39 @@ De eerder gedocumenteerde baseline noemde 283/293. Een verse run op exact `cd3c8
 
 - Basiscommit: `cd3c87fb3bf9aaa9530216dc841b1ff5486caf38`
 - Branch: `release/preview-approval-version-identity-fix`
+- Applicatiereleasecommit: `3169b504a9d9ef57b93e4a475c499b474e825ae1`
+- PR: `#6`, vier bestanden, checks groen
+- Integratie: fast-forward-only naar `codex/rc1-clean-migration-lineage`
+- Staging site-ID: `67b2b8af-83fc-4c61-9cd8-2f78842b7615`
+- Staging deploy-ID: `6a63f1f38659920008a85623`
+- Staging projectref: `xlxpuuycigeqhgxqtzni`
 - Migratie nodig: nee
 - Databasewijziging: nee
 - Productiewijziging: nee
 - E-mails: nee
 - Betalingen/providercalls: nee
 
-De definitieve releasecommit, PR, stagingdeploy, browseracceptatie en credentialrotatie worden na gecontroleerde uitvoering in dit rapport aangevuld.
+Netlify rapporteert de productiestagingdeploy als `ready`, context `production`, branch `codex/rc1-clean-migration-lineage` en commit exact `3169b504a9d9ef57b93e4a475c499b474e825ae1`.
 
 ## Stagingacceptatie
 
-Status vóór release: lokaal groen; staginguitvoering nog niet gestart.
+| Controle | Resultaat |
+| --- | --- |
+| Vers geladen preview bevat servermoment en volledige identity | PASS |
+| Factorypreview, quality report en sandbox | PASS |
+| Customer A approvalrequest | PASS 1/1 |
+| Immutable approvalrecord | PASS 1 record, actief, checksum geldig |
+| Trust-event | PASS 1 record, checksum en actor gelijk aan approval |
+| Refresh en sessieherstel | PASS |
+| Retry | PASS, hetzelfde goedkeuringsmoment |
+| Dubbelklik | PASS, hetzelfde goedkeuringsmoment |
+| Betaling gestart | nee |
+| Customer A password rotated | ja |
+| E-mails of magic links | nee |
+| Productie/productiedatabase gewijzigd | nee/nee |
+
+De stagingdatabase bevat één preview voor Customer A en één voor Customer B, met geldige en verschillende tenantgebonden records, nul overlappende preview-ID's, één actieve approval voor A en nul approvals voor B. De bestaande CP-A-tests bewijzen verkeerde checksum, andere klant, retry/parallelle request en versie-isolatie. De vóór deze fix behaalde live login 3/3 en cross-customer isolatie 4/4 blijven inhoudelijk geldig omdat deze release geen auth-, RLS-, approval- of tenantcode wijzigde.
+
+Resterende acceptatieblokkade: Customer B en admin zijn na de nieuwe approval niet opnieuw interactief ingelogd. Hun tijdelijke credentials zijn conform het beveiligingsbeleid niet in repository, documentatie of agentopslag bewaard. Daardoor kon de admin-UIweergave van de nieuwe approval niet opnieuw worden geopend zonder nieuwe credentialwijziging. De database- en readmodelconsistentie zijn wel bevestigd, maar de expliciet gevraagde post-approval UI-loginchecks zijn nog niet opnieuw uitgevoerd.
 
 BLOCKED_CP_A_STAGING_ACCEPTANCE
