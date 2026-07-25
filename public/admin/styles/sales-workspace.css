@@ -398,7 +398,7 @@
     );
   }
 
-  .admin-body[data-admin-page="sales"] .admin-crm-main > .sales-workspace-section {
+  .admin-body[data-admin-page="sales"] .admin-crm-main > #leadfinder.sales-workspace-section {
     width: calc(100% + var(--sales-full-width-offset));
     max-width: none;
     margin-left: calc(-1 * var(--sales-full-width-offset));
