@@ -75,7 +75,7 @@ const MODULES = Object.freeze({
   },
   quotes: {
     table: "quotes",
-    select: "id,customer_id,website_id,project_id,quote_number,title,description,amount,currency,status,valid_until,accepted_at,created_at,updated_at,metadata",
+    select: "id,customer_id,website_id,project_id,quote_number,type,title,status,quote_date,valid_until,subtotal,vat,total,converted_to_invoice_id,accepted_at,sent_at,proposal,notes,is_demo,environment,metadata,archived_at,deleted_at,created_at,updated_at,quote_version",
     order: "updated_at.desc.nullslast",
     optional: true,
     salesReadable: true,
@@ -643,13 +643,11 @@ function restHeaders(serviceRoleKey) {
 
 function isMissingTableError(error = {}) {
   const message = cleanText(error.message).toLowerCase();
-  const details = cleanText(error.details).toLowerCase();
+  if (isMissingColumnError(error)) return false;
   return error.status === 404
     || error.code === "42P01"
     || error.code === "PGRST205"
     || message.includes("could not find the table")
-    || message.includes("schema cache")
-    || details.includes("schema cache")
     || message.includes("does not exist");
 }
 
@@ -929,14 +927,25 @@ function mapQuote(row = {}) {
     websiteId: cleanText(row.website_id),
     projectId: cleanText(row.project_id),
     quoteNumber: cleanText(row.quote_number),
+    type: cleanText(row.type || "Website"),
     title: cleanText(row.title),
-    proposal: cleanText(row.description),
-    amount: Number(row.amount || 0),
-    total: Number(row.amount || 0),
-    currency: cleanText(row.currency || "EUR"),
+    quoteDate: cleanText(row.quote_date),
+    proposal: cleanText(row.proposal),
+    notes: cleanText(row.notes),
+    amount: Number(row.total || 0),
+    subtotal: Number(row.subtotal || 0),
+    vat: Number(row.vat || 0),
+    total: Number(row.total || 0),
+    currency: "EUR",
     status: statusToDutch(row.status, "concept"),
     validUntil: cleanText(row.valid_until),
     acceptedAt: cleanText(row.accepted_at),
+    sentAt: cleanText(row.sent_at),
+    convertedToInvoiceId: cleanText(row.converted_to_invoice_id),
+    isDemo: Boolean(row.is_demo),
+    environment: cleanText(row.environment || "production"),
+    quoteVersion: Number(row.quote_version || 1),
+    isArchived: Boolean(row.archived_at || row.deleted_at),
     metadata: metadata(row),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
