@@ -81,8 +81,12 @@ Netlify rapporteert de productiestagingdeploy als `ready`, context `production`,
 | E-mails of magic links | nee |
 | Productie/productiedatabase gewijzigd | nee/nee |
 
-De stagingdatabase bevat één preview voor Customer A en één voor Customer B, met geldige en verschillende tenantgebonden records, nul overlappende preview-ID's, één actieve approval voor A en nul approvals voor B. De bestaande CP-A-tests bewijzen verkeerde checksum, andere klant, retry/parallelle request en versie-isolatie. De vóór deze fix behaalde live login 3/3 en cross-customer isolatie 4/4 blijven inhoudelijk geldig omdat deze release geen auth-, RLS-, approval- of tenantcode wijzigde.
+De stagingdatabase bevat één preview voor Customer A en één voor Customer B, met geldige en verschillende tenantgebonden records en nul overlappende preview-ID's. Beide klanten hebben exact één actieve approval en één bijbehorend trust-event. Per klant zijn preview-ID, versienummer, checksum en actor tussen approval en trust-event gelijk.
 
-Resterende acceptatieblokkade: Customer B en admin zijn na de nieuwe approval niet opnieuw interactief ingelogd. Hun tijdelijke credentials zijn conform het beveiligingsbeleid niet in repository, documentatie of agentopslag bewaard. Daardoor kon de admin-UIweergave van de nieuwe approval niet opnieuw worden geopend zonder nieuwe credentialwijziging. De database- en readmodelconsistentie zijn wel bevestigd, maar de expliciet gevraagde post-approval UI-loginchecks zijn nog niet opnieuw uitgevoerd.
+Customer B is na de release interactief ingelogd. Dashboard, sessieherstel en de eigen goedgekeurde preview zijn bevestigd. Een directe poging om de preview-ID van Customer A te openen eindigde veilig in `Geen toegang`; de approvalactie bleef uitgeschakeld. Customer B zag geen bedrijfs-, project-, preview- of offertedata van Customer A.
 
-BLOCKED_CP_A_STAGING_ACCEPTANCE
+De admin is daarna interactief ingelogd. Het klantenoverzicht toont Customer A en Customer B als twee afzonderlijke actieve stagingrelaties, ieder met de juiste testidentiteit en actieve portaalkoppeling. De generieke klant- en projectwerkruimte gebruikt een oudere CRM-databron en toont de CP-A-fixturewebsites niet; dit verandert de rechtstreeks bevestigde approval/readmodelconsistentie niet en valt buiten de CP-A trust chain.
+
+De bestaande CP-A-tests bewijzen daarnaast verkeerde checksum, andere klant, retry/parallelle request en versie-isolatie. Er zijn geen credentials in repository, documentatie of logs opgenomen.
+
+PASS_CP_A_STAGING_ACCEPTANCE_READY_FOR_PRODUCTION_RELEASE_REVIEW

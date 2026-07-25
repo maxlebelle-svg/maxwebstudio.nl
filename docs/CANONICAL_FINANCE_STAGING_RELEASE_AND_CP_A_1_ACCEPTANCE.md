@@ -20,13 +20,16 @@ De branch `release/preview-approval-version-identity-fix` vanaf `cd3c87fb3bf9aaa
 | Customer A live approval | PASS 1/1 |
 | Approval/trust-event | PASS 1/1 en 1/1, identity en actor gelijk |
 | Refresh, sessieherstel, retry en dubbelklik | PASS 4/4 |
-| Customer B en isolatie | eerdere live 4/4 blijft geldig; post-approval UI-login niet opnieuw uitgevoerd |
-| Adminconsistentie | database/readmodel PASS; post-approval admin-UI-login niet opnieuw uitgevoerd |
+| Customer B live approval | PASS 1/1 |
+| Customer B sessieherstel | PASS 1/1 |
+| Cross-customer isolatie | PASS 4/4; directe A-preview-ID veilig geweigerd voor B |
+| Adminlogin en klantenoverzicht | PASS; A en B afzonderlijk zichtbaar met juiste testidentiteit en actieve portalstatus |
+| Admin approvalconsistentie | PASS via database/readmodel; preview-ID, versienummer, checksum en actor gelijk |
 | Customer A passwordrotatie | ja, server-side; geen waarde opgeslagen of getoond |
 | Productie | niet gewijzigd |
 
-Er is geen migratie toegepast, geen stagingdatabase-schema gewijzigd, geen e-mail of magic link verstuurd en geen betaling of providercall gestart. Customer A en B hebben ieder één eigen previewrecord zonder ID-overlap; alleen A heeft de nieuwe actieve approval.
+Er is geen migratie toegepast, geen stagingdatabase-schema gewijzigd, geen e-mail of magic link verstuurd en geen betaling of providercall gestart. Customer A en B hebben ieder één eigen previewrecord zonder ID-overlap, exact één actieve approval en exact één bijbehorend trust-event. Customer B kon uitsluitend de eigen klant-, project-, preview- en offertedata zien. De directe poging om de preview-ID van Customer A te openen werd veilig geweigerd.
 
-De release en kernacceptatie zijn groen. De afsluitstatus blijft geblokkeerd totdat de eigenaar met de reeds buiten de repository bewaarde Customer B- en admincredentials de twee expliciet gevraagde post-approval UI-logins beschikbaar maakt. Accounts of wachtwoorden voor B/admin zijn niet gewijzigd om die controle te forceren.
+De adminlogin is interactief bevestigd. Het klantenoverzicht toont beide CP-A-testklanten afzonderlijk en met de juiste testidentiteit. De generieke CRM-projectwerkruimte gebruikt een oudere databron en toont de CP-A-fixtureprojecten niet; dat is geen fout in de CP-A approval- of trust-eventketen en verandert de rechtstreeks bevestigde readmodelconsistentie niet.
 
-BLOCKED_CP_A_STAGING_ACCEPTANCE
+PASS_CP_A_STAGING_ACCEPTANCE_READY_FOR_PRODUCTION_RELEASE_REVIEW
