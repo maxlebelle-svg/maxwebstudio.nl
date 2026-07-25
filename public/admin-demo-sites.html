@@ -806,8 +806,10 @@
                 <button class="button secondary is-disabled" id="demo-journey-open-preview" type="button" aria-disabled="true">Preview openen</button>
                 <button class="button secondary is-disabled" id="demo-journey-download-zip" type="button" aria-disabled="true">ZIP downloaden</button>
                 <button class="button secondary is-disabled" id="demo-journey-copy-preview-link" type="button" aria-disabled="true">Link kopiëren</button>
+                <button class="button secondary is-disabled" id="demo-journey-send-business-whatsapp" type="button" aria-disabled="true">Verstuur zakelijk</button>
                 <button class="button secondary is-disabled" id="demo-journey-open-portal" type="button" aria-disabled="true">Klantportaal openen</button>
               </div>
+              <p class="admin-muted-note">“Verstuur zakelijk” opent WhatsApp Web. Meld daar eenmalig aan met het zakelijke nummer 085 130 2326.</p>
             </article>
           </div>
 
@@ -21215,6 +21217,7 @@
             openPreview: document.getElementById("demo-journey-open-preview"),
             openPortal: document.getElementById("demo-journey-open-portal"),
             copyPreviewLink: document.getElementById("demo-journey-copy-preview-link"),
+            sendBusinessWhatsapp: document.getElementById("demo-journey-send-business-whatsapp"),
             save: document.getElementById("demo-journey-save"),
             generateBriefing: document.getElementById("demo-journey-generate-briefing"),
             generatePreview: document.getElementById("demo-journey-generate-preview"),
@@ -21990,6 +21993,35 @@
           const absoluteUrl = absolutePreviewUrl(url);
           if (!absoluteUrl) return "";
           return `${absoluteUrl}${absoluteUrl.includes("?") ? "&" : "?"}format=zip`;
+        }
+
+        function whatsappRecipientNumber(value = "") {
+          let phone = String(value || "").replace(/\D/g, "");
+          if (phone.startsWith("00")) phone = phone.slice(2);
+          if (phone.startsWith("0")) phone = `31${phone.slice(1)}`;
+          return /^\d{8,15}$/.test(phone) ? phone : "";
+        }
+
+        function businessWhatsappPreviewUrl(previewUrl = "") {
+          const phone = whatsappRecipientNumber(elements.phone?.value || journey?.phone || selectedLead()?.phone);
+          const url = absolutePreviewUrl(previewUrl);
+          if (!phone || !url) return "";
+          const contactName = String(elements.contact?.value || journey?.contactName || selectedLead()?.contactName || "").trim();
+          const businessName = String(elements.business?.value || journey?.businessName || selectedLead()?.companyName || "jullie bedrijf").trim();
+          const greeting = contactName ? `Hoi ${contactName}, Max le Belle van Maxwebstudio.nl hier 👋` : "Hoi, Max le Belle van Maxwebstudio.nl hier 👋";
+          const message = [
+            greeting,
+            "",
+            `Zoals beloofd heb ik een demo gemaakt voor ${businessName}. Je kunt hem hier rustig bekijken:`,
+            "",
+            url,
+            "",
+            "Ik ben benieuwd wat je ervan vindt! Laat vooral eerlijk weten wat je aanspreekt en wat je eventueel anders zou willen zien 😊",
+            "",
+            "Groet,",
+            "Max",
+          ].join("\n");
+          return `https://web.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`;
         }
 
         function setActionLink(link, url = "", unavailableMessage = "Genereer eerst een preview") {
@@ -22949,6 +22981,11 @@
           setActionLink(elements.openPreview, journey?.previewUrl || "", "Genereer eerst een preview");
           setActionLink(elements.downloadZip, journey?.previewUrl ? previewZipUrl(journey.previewUrl) : "", "Genereer eerst een preview");
           setActionLink(elements.copyPreviewLink, journey?.previewUrl || "", "Genereer eerst een preview");
+          setActionLink(
+            elements.sendBusinessWhatsapp,
+            businessWhatsappPreviewUrl(journey?.previewUrl || ""),
+            journey?.previewUrl ? "Voeg eerst een geldig telefoonnummer toe." : "Genereer eerst een preview."
+          );
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
           renderGuidedWorkflow();
@@ -23122,6 +23159,12 @@
               return;
             }
             copyText(url, elements.message);
+          });
+          elements.sendBusinessWhatsapp?.addEventListener("click", (event) => {
+            openActionUrl(event, elements.sendBusinessWhatsapp, "Genereer eerst een preview en voeg een geldig telefoonnummer toe.");
+            if (elements.sendBusinessWhatsapp?.dataset?.url) {
+              setMessage(elements.message, "Zakelijke WhatsApp Web geopend. Controleer vóór verzenden dat 085 130 2326 actief is.", "success");
+            }
           });
           elements.openPortal?.addEventListener("click", (event) => openActionUrl(event, elements.openPortal, "Er is nog geen klantportaal gekoppeld."));
           elements.workspacePreview?.addEventListener("click", (event) => openActionUrl(event, elements.workspacePreview, "Genereer eerst een preview."));
