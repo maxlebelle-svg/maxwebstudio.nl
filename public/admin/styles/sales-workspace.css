@@ -389,3 +389,18 @@
   .sales-next-action-card { grid-template-columns: 1fr; }
   .sales-next-action-card > .button { grid-column: 1; grid-row: auto; margin-top: .35rem; }
 }
+
+/* Keep dashboard metrics beside the sidebar, then use the full shell for Leads. */
+@media (min-width: 1181px) {
+  .admin-body[data-admin-page="sales"] {
+    --sales-full-width-offset: calc(
+      var(--admin-sidebar-width, 288px) + clamp(18px, 2.4vw, 34px)
+    );
+  }
+
+  .admin-body[data-admin-page="sales"] .admin-crm-main > .sales-workspace-section {
+    width: calc(100% + var(--sales-full-width-offset));
+    max-width: none;
+    margin-left: calc(-1 * var(--sales-full-width-offset));
+  }
+}
