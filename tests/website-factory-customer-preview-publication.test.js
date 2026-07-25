@@ -111,11 +111,12 @@ test("thumbnail embed is authenticated, persistent and has a visible fallback", 
   assert.match(netlifyConfig, /for = "\/\*"[\s\S]*?frame-ancestors 'none'/);
 });
 
-test("secure preview approves and pays the exact published version", () => {
+test("secure preview approves the exact checksum-bound published version and keeps payment separate", () => {
   assert.match(portal, /open\.className = "button primary portal-preview-open-full"/);
   assert.match(securePreview, /class="button primary is-disabled" id="payment-link"[^>]*>Betaal aanbetaling<\/a>/);
-  assert.match(securePreview, /action: "approve", previewVersionId: versionId/);
-  assert.match(securePreview, /approvedPreviewVersionId !== versionId/);
+  assert.match(securePreview, /previewVersionId: loadedPreview\.id/);
+  assert.match(securePreview, /expectedChecksum: loadedPreview\.checksum/);
+  assert.match(securePreview, /approvedPreviewVersionId: loadedPreview\.id/);
   assert.match(securePreview, /action: "create_payment", previewVersionId:/);
   assert.doesNotMatch(securePreview, /create-payment|commercial-order/);
   assert.doesNotMatch(securePreview, /action: "approve_preview"/);

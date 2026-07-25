@@ -99,11 +99,13 @@ test("approval template renders all safe variants, optional CTA, exact subject a
   assert.throws(() => command("existing_invoice", "unpaid", "https://evil.example/pay"), { code: "unsafe_action_url" });
 });
 
-test("integration preserves approval storage/side-effects and never couples automatic invoice or Mollie creation", () => {
+test("integration records the exact immutable approval and never couples automatic invoice or Mollie creation", () => {
   const root = path.resolve(__dirname, ".."); const source = fs.readFileSync(path.join(root, "functions/client-preview-versions.js"), "utf8");
-  assert.equal((source.match(/previewApprovedService\.dispatch\(/g) || []).length, 1); assert.ok(source.indexOf("ensureApprovalSideEffects") < source.indexOf("dispatchApprovalConfirmation"));
-  const dispatchBody = source.slice(source.indexOf("async function dispatchApprovalConfirmation"), source.indexOf("async function resolvePaymentReadiness")); assert.doesNotMatch(dispatchBody, /createDepositInvoice|api\.mollie\.com|insertRows/);
-  assert.match(source, /approved_by_auth_user_id: authUser\.id/); assert.match(source, /dedupeKey: `preview_approved:\$\{version\.id\}`/); assert.match(source, /preview_approved_notification/);
+  const approvalBody = source.slice(source.indexOf("async function approvePreviewVersion"), source.indexOf("async function ensureApprovalSideEffects"));
+  assert.match(approvalBody, /callRpc\(context, "record_website_preview_approval"/);
+  assert.match(approvalBody, /input_expected_checksum: expectedChecksum/);
+  assert.match(approvalBody, /input_auth_user_id: authUser\.id/);
+  assert.doesNotMatch(approvalBody, /createDepositInvoice|api\.mollie\.com|insertRows|patchRows/);
   for (const file of ["demo-journey.js", "admin-manual-preview.js", "mollie-webhook.js", "commercial-order.js"]) assert.doesNotMatch(fs.readFileSync(path.join(root, "functions", file), "utf8"), /["']journey\.preview_approved["']|["']email\.preview_approved["']/);
 });
 

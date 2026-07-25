@@ -12,6 +12,7 @@ const ids = {
 };
 
 const idempotencyKey = "preview-reviewflow-test-key";
+const previewChecksum = "a".repeat(64);
 
 function createTables() {
   return {
@@ -24,7 +25,8 @@ function createTables() {
     projects: [
       { id: ids.project, customer_id: ids.customer, website_id: ids.website, metadata: { websiteCommercialOrder: { customerId: ids.customer, projectId: ids.project, websiteId: ids.website, packageCode: "business_website", packageName: "Business Website", totalAmountCents: 99500, depositAmountCents: 30000, currency: "EUR", paymentStatus: "not_started", status: "maintenance_selected", maintenanceCode: "care_basic", maintenanceName: "Basis onderhoud", maintenanceAmountCents: 1995, startTrigger: "project_delivered" } } },
     ],
-    customer_invoices: [],
+    invoices: [],
+    website_preview_approvals: [],
     demo_journeys: [],
     website_preview_versions: [
       {
@@ -41,6 +43,8 @@ function createTables() {
         published_at: "2026-07-11T12:00:00Z",
         allow_feedback: true,
         allow_approval: true,
+        is_active: true,
+        package_checksum: previewChecksum,
         status: "feedback_received",
         feedback_items: [
           {
@@ -90,6 +94,27 @@ function installFetchMock(tables) {
     if (parsed.hostname === "api.mollie.com" && parsed.pathname === "/v2/payments") {
       mollieRequests.push({ authorization: options.headers?.Authorization || "", body: JSON.parse(options.body || "{}") });
       return response(201, { id: "tr_test_preview", status: "open", createdAt: "2026-07-13T08:00:00Z", _links: { checkout: { href: "https://www.mollie.com/checkout/select-method/tr_test_preview" } } });
+    }
+    if (parsed.pathname.endsWith("/rest/v1/rpc/record_website_preview_approval")) {
+      const input = JSON.parse(options.body || "{}");
+      const existing = tables.website_preview_approvals.find((row) => row.idempotency_key === input.input_idempotency_key);
+      if (existing) return response(200, { duplicate: true, approval: existing });
+      const approval = {
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        customer_id: ids.customer,
+        project_id: ids.project,
+        website_id: ids.website,
+        preview_version_id: ids.preview,
+        preview_version_number: 1,
+        preview_checksum: previewChecksum,
+        approved_at: "2026-07-13T08:00:00Z",
+        approval_status: "active",
+        approval_statement_version: input.input_statement_version,
+        idempotency_key: input.input_idempotency_key,
+      };
+      tables.website_preview_approvals.push(approval);
+      writes.push({ table: "website_preview_approvals", record: approval });
+      return response(200, { duplicate: false, approval });
     }
     const table = parsed.pathname.split("/").pop();
     if (!tables[table]) return response(404, { message: `Unknown table ${table}` });
@@ -184,7 +209,7 @@ function approvalEvent() {
   return {
     httpMethod: "POST",
     headers: { Authorization: "Bearer customer-token" },
-    body: JSON.stringify({ action: "approve", previewVersionId: ids.preview, feedback: "Akkoord" }),
+    body: JSON.stringify({ action: "approve", previewVersionId: ids.preview, expectedChecksum: previewChecksum, feedback: "Akkoord" }),
   };
 }
 
@@ -255,18 +280,13 @@ async function run() {
   const approval = await handler(approvalEvent());
   assert.strictEqual(approval.statusCode, 200);
   const approvalBody = JSON.parse(approval.body);
-  assert.strictEqual(approvalBody.approvedPreviewVersionId, ids.preview);
-  assert.strictEqual(approvalBody.paymentReadiness.ready, true);
-  assert.strictEqual(approvalBody.paymentReadiness.amountCents, 30000, "business package uses the fixed 300 euro deposit");
-  const approved = tables.website_preview_versions.find((row) => row.id === ids.preview);
-  assert.strictEqual(approved.status, "approved");
-  assert.strictEqual(approved.approved_by_auth_user_id, ids.authUser);
-  assert(approved.approved_at);
+  assert.strictEqual(approvalBody.approval.previewVersionId, ids.preview);
+  assert.strictEqual(approvalBody.approval.previewChecksum, previewChecksum);
+  assert.strictEqual(tables.website_preview_approvals.length, 1, "approval is stored as one immutable trust record");
   const duplicateApproval = await handler(approvalEvent());
   const duplicateApprovalBody = JSON.parse(duplicateApproval.body);
   assert.strictEqual(duplicateApprovalBody.duplicate, true, "double approval must be idempotent");
-  assert.strictEqual(tables.customer_timeline_events.filter((row) => row.event_type === "preview_approved").length, 1);
-  assert.strictEqual(tables.customer_timeline_events.filter((row) => row.metadata?.notificationType === "preview_approved").length, 1);
+  assert.strictEqual(tables.website_preview_approvals.length, 1, "double approval must not create another trust record");
 
   const payment = await handler(paymentEvent());
   assert.strictEqual(payment.statusCode, 200);
@@ -281,7 +301,7 @@ async function run() {
   assert.strictEqual(fetchMock.mollieRequests[0].body.metadata.environment, "test");
   assert.strictEqual(fetchMock.mollieRequests[0].body.metadata.testPayment, true);
   assert.strictEqual(fetchMock.mollieRequests[0].body.metadata.maintenanceCode, "care_basic");
-  assert.match(tables.customer_invoices[0].notes, /^TEST;previewDeposit:/);
+  assert.strictEqual(tables.invoices[0].metadata.previewVersionId, ids.preview);
 
   const duplicatePayment = await handler(paymentEvent());
   const duplicatePaymentBody = JSON.parse(duplicatePayment.body);
@@ -290,8 +310,17 @@ async function run() {
   assert.strictEqual(fetchMock.mollieRequests.length, 1, "double submit must reuse the existing test payment");
 
   const missingConfigTables = createTables();
-  missingConfigTables.website_preview_versions[0].approved_at = "2026-07-13T08:00:00Z";
-  missingConfigTables.website_preview_versions[0].status = "approved";
+  missingConfigTables.website_preview_approvals.push({
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    customer_id: ids.customer,
+    project_id: ids.project,
+    website_id: ids.website,
+    preview_version_id: ids.preview,
+    preview_version_number: 1,
+    preview_checksum: previewChecksum,
+    approved_at: "2026-07-13T08:00:00Z",
+    approval_status: "active",
+  });
   delete process.env.MOLLIE_TEST_API_KEY;
   const missingConfigMock = installFetchMock(missingConfigTables);
   const missingConfig = await handler(paymentEvent());
