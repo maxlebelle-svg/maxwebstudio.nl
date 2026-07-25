@@ -364,7 +364,7 @@
               </div>
             </form>
 
-            <article class="admin-card leadfinder-detail-card" id="leadfinder-detail">
+            <article class="admin-card leadfinder-detail-card is-empty" id="leadfinder-detail">
               <div class="sales-lead-detail-toolbar">
                 <button class="button secondary" id="leadfinder-back-to-list" type="button">Terug naar alle leads</button>
                 <div>
@@ -21406,8 +21406,11 @@
         if (!lead?.id) {
           target.innerHTML = `
             <div class="sales-business-empty">
-              <strong>Google Maps bedrijfskaart</strong>
-              <span>Selecteer een lead om bedrijfsgegevens, route en contactinformatie te zien.</span>
+              <span class="sales-business-empty-icon" aria-hidden="true">↗</span>
+              <div>
+                <strong>Kies een lead uit de lijst</strong>
+                <span>Daarna verschijnen bedrijfsgegevens, contactacties, pipeline en opvolging overzichtelijk op één plek.</span>
+              </div>
             </div>
           `;
           return;
@@ -23176,6 +23179,7 @@
 
       function setLeadfinderDetailMode(open = Boolean(selectedLeadFinderId)) {
         leadfinderElements.section?.classList.toggle("is-lead-detail-open", Boolean(open));
+        leadfinderElements.detail?.classList.toggle("is-empty", !open);
         document.body.classList.toggle("is-lead-profile-open", Boolean(open));
       }
 
