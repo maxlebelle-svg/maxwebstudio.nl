@@ -60,9 +60,8 @@ async function findHealthWebsite(scope = {}, env, fetchImpl) {
 async function findMaintenanceSubscription(projectId, env, fetchImpl) {
   if (!UUID.test(text(projectId))) return { available: true, row: null, reason: "project_id_missing" };
   const config = cfg(env); if (!config.available) return unavailable("missing_supabase_config");
-  const marker = `websiteMaintenanceProject:${projectId}`;
-  const query = new URLSearchParams({ select: "id,status,package_name,start_date,updated_at", notes: `ilike.*${marker}*`, order: "updated_at.desc.nullslast", limit: "1" });
-  try { const rows = await request(fetchImpl, `${config.url}/rest/v1/customer_subscriptions?${query}`, { headers: headers(config.key) }); return { available: true, row: rows?.[0] || null, reason: "maintenance_read" }; }
+  const query = new URLSearchParams({ select: "id,status,plan,start_date,updated_at", project_id: `eq.${projectId}`, order: "updated_at.desc.nullslast", limit: "1" });
+  try { const rows = await request(fetchImpl, `${config.url}/rest/v1/subscriptions?${query}`, { headers: headers(config.key) }); return { available: true, row: rows?.[0] ? { ...rows[0], package_name: rows[0].plan } : null, reason: "maintenance_read" }; }
   catch { return { available: false, row: null, reason: "maintenance_read_failed" }; }
 }
 

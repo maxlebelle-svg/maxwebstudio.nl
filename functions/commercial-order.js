@@ -70,7 +70,7 @@ exports.handler = async (event) => {
     const checkoutUrl = payment?._links?.checkout?.href || "";
     if (!payment.id || !checkoutUrl) return jsonResponse(502, { success: false, error: "Betaalverzoek kon niet worden aangemaakt." });
 
-    const updatedInvoice = await patchRecord(config, "customer_invoices", invoice.id, {
+    const updatedInvoice = await patchRecord(config, "invoices", invoice.id, {
       mollie_payment_id: payment.id,
       mollie_checkout_url: checkoutUrl,
       mollie_payment_status: cleanText(payment.status || "open"),
@@ -360,12 +360,15 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
     input.notes,
     `\n---\nFactuurregels: ${JSON.stringify(context)}`,
   ].filter(Boolean).join("\n");
-  return upsertRecord(config, "customer_invoices", {
-    profile_id: profile.id,
-    customer_auth_user_id: profile.auth_user_id || null,
+  const invoiceSubtotal = round(totals.paymentAmount / 1.21);
+  const invoiceVat = round(totals.paymentAmount - invoiceSubtotal);
+  return upsertRecord(config, "invoices", {
+    customer_id: customer.id,
     invoice_number: invoiceNumber,
     title: `${input.testOrder ? "TEST - " : ""}${input.paymentChoice === "full" ? "Opdrachtbevestiging Max Webstudio" : "Aanbetaling opdrachtbevestiging Max Webstudio"}`,
-    amount: totals.paymentAmount,
+    subtotal: invoiceSubtotal,
+    vat: invoiceVat,
+    total: totals.paymentAmount,
     status: "draft",
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
     notes,
@@ -416,9 +419,9 @@ async function createMolliePayment(config, invoice, input, totals) {
 async function fetchExistingOrderInvoice(config, orderId) {
   const safeOrderId = cleanText(orderId);
   if (!safeOrderId) return null;
-  const fields = "id,invoice_number,title,amount,status,notes,mollie_payment_id,mollie_checkout_url,mollie_payment_status";
+  const fields = "id,invoice_number,title,total,status,notes,mollie_payment_id,mollie_checkout_url,mollie_payment_status";
   const filter = `notes=ilike.*${encodeURIComponent(safeOrderId)}*`;
-  return fetchSingle(config, "customer_invoices", fields, filter).catch(() => null);
+  return fetchSingle(config, "invoices", fields, filter).catch(() => null);
 }
 
 async function fetchSingle(config, table, fields, filter) {
@@ -477,7 +480,7 @@ function normalizeInvoice(row = {}) {
     id: cleanText(row.id),
     invoiceNumber: cleanText(row.invoice_number),
     title: cleanText(row.title),
-    amount: Number(row.amount) || 0,
+    amount: Number(row.total) || 0,
     status: cleanText(row.status),
     molliePaymentId: cleanText(row.mollie_payment_id),
     mollieCheckoutUrl: cleanText(row.mollie_checkout_url),

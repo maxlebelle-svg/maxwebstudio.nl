@@ -62,13 +62,10 @@ async function readSnapshot({ customer, config, fetchImpl, log }) {
 }
 
 async function readInvoiceForCustomer(fetchImpl, config, customer) {
-  const profileId = uuid(customer.profile_id);
-  const authUserId = uuid(customer.auth_user_id);
-  if (profileId) {
-    const result = await safeRead(fetchImpl, config, "customer_invoices", query({ select: "id,profile_id,customer_auth_user_id,status,mollie_payment_status,paid_at,notes,created_at,updated_at", profile_id: `eq.${profileId}`, order: "updated_at.desc", limit: "1" }));
-    if (result.rows.length || !authUserId) return result;
-  }
-  return authUserId ? safeRead(fetchImpl, config, "customer_invoices", query({ select: "id,profile_id,customer_auth_user_id,status,mollie_payment_status,paid_at,notes,created_at,updated_at", customer_auth_user_id: `eq.${authUserId}`, order: "updated_at.desc", limit: "1" })) : emptyRead();
+  const customerId = uuid(customer.id);
+  return customerId
+    ? safeRead(fetchImpl, config, "invoices", query({ select: "id,customer_id,status,mollie_payment_status,paid_at,notes,created_at,updated_at", customer_id: `eq.${customerId}`, order: "updated_at.desc", limit: "1" }))
+    : emptyRead();
 }
 
 async function safeRead(fetchImpl, config, table, search) {

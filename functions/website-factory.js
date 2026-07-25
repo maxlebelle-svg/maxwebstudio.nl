@@ -12,7 +12,7 @@ const { createWebsiteLiveService } = require("./journey/websiteLive/service");
 const { prepareHeroEditorPackage } = require("./_preview-editor-hero");
 const { prepareImageEditorPackage } = require("./_preview-editor-image");
 const { prepareTextEditorPackage } = require("./_preview-editor-text");
-const { randomUUID } = require("crypto");
+const { randomUUID, createHash } = require("crypto");
 const {
   buildLogs,
   buildWebsitePackage,
@@ -318,7 +318,7 @@ async function persistCommercialPackage(context, { customer, project, website, p
   if (!selected) throw Object.assign(new Error("Onbekend websitepakket."), { status: 400, code: "website_package_invalid" });
   if (current.packageCode && current.packageCode !== selected.packageCode) {
     if (current.paymentStatus === "paid") throw Object.assign(new Error("Een betaald websitepakket kan niet stil worden gewijzigd."), { status: 409, code: "paid_package_immutable" });
-    const openInvoices = await supabaseFetch(`${context.supabaseUrl}/rest/v1/customer_invoices?select=id,status,mollie_payment_status&notes=ilike.*${encodeURIComponent(`project:${project.id}`)}*&limit=2`, { method: "GET", headers: restHeaders(context.serviceRoleKey) }).catch(() => []);
+    const openInvoices = await supabaseFetch(`${context.supabaseUrl}/rest/v1/invoices?select=id,status,mollie_payment_status&project_id=eq.${encodeURIComponent(project.id)}&limit=2`, { method: "GET", headers: restHeaders(context.serviceRoleKey) }).catch(() => []);
     if (openInvoices.some((invoice) => !["paid", "canceled", "cancelled", "expired", "failed"].includes(cleanText(invoice.mollie_payment_status || invoice.status).toLowerCase()))) {
       throw Object.assign(new Error("Annuleer eerst het openstaande betaalverzoek voordat je het pakket wijzigt."), { status: 409, code: "open_package_payment_exists" });
     }
@@ -1596,6 +1596,7 @@ async function createPreviewVersion(context, payload = {}) {
     preview_score: Number(payload.previewScore || payload.preview_score || 0),
     quality_report: payload.qualityReport || payload.quality_report || {},
     generated_package: generatedPackage,
+    package_checksum: createHash("sha256").update(JSON.stringify(generatedPackage)).digest("hex"),
     metadata: {
       ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
       previewSource: "website_factory",

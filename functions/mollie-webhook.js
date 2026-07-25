@@ -6,6 +6,7 @@ const { createTimelineEvent } = require("./services/timelineService");
 const { createPaymentPaidService } = require("./journey/paymentPaid/service");
 const { resolvePaymentPaidContext } = require("./journey/paymentPaid/contextResolver");
 const paymentPaidService = createPaymentPaidService();
+const { SUBSCRIPTION_FIELDS, canonicalSubscriptionPatch, subscriptionView } = require("./_canonical-finance");
 
 const knownStatuses = new Set([
   "paid",
@@ -355,7 +356,7 @@ async function fetchCustomerSubscriptionById(supabaseUrl, serviceRoleKey, id) {
 
 async function fetchCustomerSubscriptionByMandatePaymentId(supabaseUrl, serviceRoleKey, paymentId) {
   if (!paymentId) return null;
-  return fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, `mandate_payment_id=eq.${encodeURIComponent(paymentId)}`);
+  return fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, `metadata->financeOperations->>mandate_payment_id=eq.${encodeURIComponent(paymentId)}`);
 }
 
 async function fetchCustomerSubscriptionByMollieSubscriptionId(supabaseUrl, serviceRoleKey, mollieSubscriptionId) {
@@ -364,70 +365,11 @@ async function fetchCustomerSubscriptionByMollieSubscriptionId(supabaseUrl, serv
 }
 
 async function fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, filter) {
-  const fullFields = [
-    "id",
-    "profile_id",
-    "customer_auth_user_id",
-    "package_name",
-    "billing_cycle",
-    "monthly_amount",
-    "status",
-    "start_date",
-    "next_invoice_date",
-    "mollie_customer_id",
-    "mollie_subscription_id",
-    "mollie_subscription_status",
-    "mollie_mandate_id",
-    "last_payment_at",
-    "next_payment_at",
-    "canceled_at",
-    "paused_at",
-    "mandate_status",
-    "mandate_reference",
-    "mandate_checkout_url",
-    "mandate_payment_id",
-    "mandate_payment_status",
-    "retry_status",
-    "retry_next_action_at",
-    "retry_last_email_sent_at",
-    "retry_last_admin_note",
-    "subscription_risk_level",
-    "subscription_last_error",
-    "last_failed_payment_at",
-    "last_failed_payment_id",
-    "failed_payment_count",
-  ].join(",");
-  const baseFields = [
-    "id",
-    "profile_id",
-    "customer_auth_user_id",
-    "package_name",
-    "billing_cycle",
-    "monthly_amount",
-    "status",
-    "start_date",
-    "next_invoice_date",
-    "mollie_customer_id",
-    "mollie_subscription_id",
-    "mollie_subscription_status",
-    "mollie_mandate_id",
-    "last_payment_at",
-    "next_payment_at",
-    "canceled_at",
-    "paused_at",
-    "mandate_status",
-    "mandate_reference",
-    "mandate_checkout_url",
-    "mandate_payment_id",
-    "mandate_payment_status",
-  ].join(",");
-  const result = await fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRoleKey, filter, fullFields);
-  if (result !== false) return result;
-  return fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRoleKey, filter, baseFields);
+  return fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRoleKey, filter, SUBSCRIPTION_FIELDS);
 }
 
 async function fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRoleKey, filter, fields) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${fields}&${filter}&limit=1`, {
+  const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?select=${fields}&${filter}&limit=1`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
   });
@@ -443,18 +385,21 @@ async function fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRol
     return null;
   }
 
-  return Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? subscriptionView(row) : row;
 }
 
 async function patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscriptionId, patch) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/customer_subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
+  const current = await fetchCustomerSubscriptionById(supabaseUrl, serviceRoleKey, subscriptionId);
+  const canonicalPatch = canonicalSubscriptionPatch(patch, current?.metadata || {});
+  const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
       "Content-Type": "application/json",
       Prefer: "return=representation",
     },
-    body: JSON.stringify(patch),
+    body: JSON.stringify(canonicalPatch),
   });
   const data = await response.json().catch(() => ({}));
 
@@ -467,7 +412,8 @@ async function patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscripti
     return null;
   }
 
-  return Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? subscriptionView(row) : row;
 }
 
 async function findValidMandate(mollieApiKey, mollieCustomerId) {
@@ -502,7 +448,7 @@ async function createMollieSubscription(mollieApiKey, mollieCustomerId, subscrip
       metadata: {
         source: "max_web_studio_admin_crm",
         subscriptionId: cleanText(subscription.id),
-        profileId: cleanText(subscription.profile_id),
+        customerId: cleanText(subscription.customer_id),
         packageName: cleanText(subscription.package_name),
       },
     }),
@@ -595,7 +541,7 @@ async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
     supabaseUrl,
     serviceRoleKey,
     paymentId,
-    "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,paid_at,pdf_file_path,paid_email_sent_at,email_last_error,notes,mollie_payment_id"
+    "id,customer_id,invoice_number,title,total,status,paid_at,pdf_file_path,paid_email_sent_at,email_last_error,notes,mollie_payment_id"
   );
   if (invoice !== false) return invoice;
 
@@ -603,13 +549,13 @@ async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
     supabaseUrl,
     serviceRoleKey,
     paymentId,
-    "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,paid_at,pdf_file_path,notes,mollie_payment_id"
+    "id,customer_id,invoice_number,title,total,status,paid_at,pdf_file_path,notes,mollie_payment_id"
   );
 }
 
 async function fetchInvoiceByPaymentIdWithFields(supabaseUrl, serviceRoleKey, paymentId, fields) {
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/customer_invoices?select=${fields}&mollie_payment_id=eq.${encodeURIComponent(paymentId)}&limit=2`,
+    `${supabaseUrl}/rest/v1/invoices?select=${fields}&mollie_payment_id=eq.${encodeURIComponent(paymentId)}&limit=1`,
     {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
@@ -636,7 +582,7 @@ async function fetchInvoiceByPaymentIdWithFields(supabaseUrl, serviceRoleKey, pa
 
 async function sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) {
   try {
-    const profile = await fetchInvoiceProfile(supabaseUrl, serviceRoleKey, invoice.profile_id);
+    const profile = await fetchCustomerProfile(supabaseUrl, serviceRoleKey, invoice.customer_id);
     const customerEmail = cleanEmail(profile?.email);
 
     if (!customerEmail) {
@@ -678,7 +624,7 @@ async function sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) {
       severity: "success",
       metadata: {
         dedupeKey: `mollie_invoice_paid:${invoice.id}:${invoice.mollie_payment_id || invoice.paid_at || ""}`,
-        profileId: invoice.profile_id || "",
+        customerId: invoice.customer_id || "",
         paymentId: invoice.mollie_payment_id || "",
       },
     });
@@ -728,7 +674,7 @@ function paymentTimelineEvent(invoice = {}, payment = {}, invoiceStatus = "") {
     severity: config.severity,
     metadata: {
       dedupeKey: `mollie_payment:${config.eventType}:${invoice.id}:${cleanText(payment.id)}:${status}`,
-      profileId: invoice.profile_id || "",
+      customerId: invoice.customer_id || "",
       paymentId: cleanText(payment.id),
       mollieStatus: status,
       invoiceStatus: cleanText(invoiceStatus),
@@ -739,7 +685,7 @@ function paymentTimelineEvent(invoice = {}, payment = {}, invoiceStatus = "") {
 async function sendSubscriptionRetryEmailIfNeeded(supabaseUrl, serviceRoleKey, subscription) {
   try {
     if (!subscription || subscription.retry_last_email_sent_at) return;
-    const profile = await fetchInvoiceProfile(supabaseUrl, serviceRoleKey, subscription.profile_id);
+    const profile = await fetchCustomerProfile(supabaseUrl, serviceRoleKey, subscription.customer_id);
     const customerEmail = cleanEmail(profile?.email);
 
     if (!customerEmail) {
@@ -793,7 +739,7 @@ async function finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invo
     const website = await ensurePaidCommercialWebsite(supabaseUrl, serviceRoleKey, customer, profile, context);
     const project = await ensurePaidCommercialProject(supabaseUrl, serviceRoleKey, customer, website, context);
     await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, {
-      customer_auth_user_id: profile.auth_user_id || invoice.customer_auth_user_id || null,
+      customer_id: customer.id,
       notes: mergeInvoiceContext(invoice.notes, {
         ...context,
         customerId: customer.id,
@@ -867,7 +813,12 @@ async function finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invo
 }
 
 async function ensurePaidCommercialProfile(supabaseUrl, serviceRoleKey, invoice, context) {
-  let profile = await fetchRecord(supabaseUrl, serviceRoleKey, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `id=eq.${encodeURIComponent(invoice.profile_id)}`);
+  const linkedCustomer = invoice.customer_id
+    ? await fetchRecord(supabaseUrl, serviceRoleKey, "customers", "id,profile_id,auth_user_id", `id=eq.${encodeURIComponent(invoice.customer_id)}`)
+    : null;
+  let profile = linkedCustomer?.profile_id
+    ? await fetchRecord(supabaseUrl, serviceRoleKey, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `id=eq.${encodeURIComponent(linkedCustomer.profile_id)}`)
+    : null;
   const email = cleanEmail(profile?.email || context.customerEmail || context.email);
   if (!profile && email) {
     profile = await fetchRecord(supabaseUrl, serviceRoleKey, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `email=eq.${encodeURIComponent(email)}`);
@@ -878,7 +829,7 @@ async function ensurePaidCommercialProfile(supabaseUrl, serviceRoleKey, invoice,
     company: profile?.company || context.customerCompany,
   });
   return upsertCommercialRecord(supabaseUrl, serviceRoleKey, "profiles", {
-    id: profile?.id || invoice.profile_id || undefined,
+    id: profile?.id || linkedCustomer?.profile_id || undefined,
     auth_user_id: authUser?.id || profile?.auth_user_id || null,
     name: profile?.name || context.customerName || context.customerCompany || "",
     company: profile?.company || context.customerCompany || "",
@@ -1169,6 +1120,14 @@ async function fetchInvoiceProfile(supabaseUrl, serviceRoleKey, profileId) {
   return Array.isArray(data) ? data[0] : data;
 }
 
+async function fetchCustomerProfile(supabaseUrl, serviceRoleKey, customerId) {
+  if (!customerId) return null;
+  const customer = await fetchRecord(supabaseUrl, serviceRoleKey, "customers", "id,profile_id,auth_user_id", `id=eq.${encodeURIComponent(customerId)}`);
+  if (!customer?.profile_id) return null;
+  const profile = await fetchInvoiceProfile(supabaseUrl, serviceRoleKey, customer.profile_id);
+  return profile ? { ...profile, auth_user_id: profile.auth_user_id || customer.auth_user_id || null } : null;
+}
+
 function buildPaidConfirmationEmail(invoice, profile) {
   const companySettings = getCompanySettings();
   const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
@@ -1180,7 +1139,7 @@ function buildPaidConfirmationEmail(invoice, profile) {
     "",
     `Bedankt, we hebben de betaling voor factuur ${invoiceNumber} ontvangen.`,
     `Factuur: ${title}.`,
-    `Bedrag: ${formatMoney(invoice.amount)}.`,
+    `Bedrag: ${formatMoney(invoice.total)}.`,
     cleanText(invoice.pdf_file_path) ? "De factuur-PDF blijft veilig beschikbaar in je klantportaal." : "",
     "",
     "Je klantportaal en projectintake staan klaar om verder te gaan.",
@@ -1249,7 +1208,7 @@ function renderEmailHtml(heading, text, portalUrl, options = {}) {
 }
 
 async function patchInvoice(supabaseUrl, serviceRoleKey, invoiceId, patch) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/customer_invoices?id=eq.${encodeURIComponent(invoiceId)}`, {
+  const response = await fetch(`${supabaseUrl}/rest/v1/invoices?id=eq.${encodeURIComponent(invoiceId)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -1328,11 +1287,8 @@ function formatMoney(value) {
 }
 
 function subscriptionAmountForCycle(subscription) {
-  const amount = Number(subscription.monthly_amount);
+  const amount = Number(subscription.total_incl_vat ?? subscription.monthly_amount);
   if (!Number.isFinite(amount) || amount <= 0) return 0;
-  const cycle = cleanText(subscription.billing_cycle || "monthly").toLowerCase();
-  if (cycle === "quarterly") return amount * 3;
-  if (cycle === "yearly") return amount * 12;
   return amount;
 }
 
@@ -1344,7 +1300,7 @@ function billingInterval(value) {
 }
 
 function subscriptionDescription(subscription) {
-  const packageName = cleanText(subscription.package_name) || "Onderhoud";
+  const packageName = cleanText(subscription.plan || subscription.package_name) || "Onderhoud";
   return `Max Web Studio ${packageName} onderhoud`.slice(0, 255);
 }
 

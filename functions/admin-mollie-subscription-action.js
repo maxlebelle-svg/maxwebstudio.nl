@@ -1,40 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
-const SUBSCRIPTION_FIELDS = [
-  "id",
-  "profile_id",
-  "customer_auth_user_id",
-  "package_name",
-  "billing_cycle",
-  "monthly_amount",
-  "status",
-  "start_date",
-  "next_invoice_date",
-  "mollie_customer_id",
-  "mollie_subscription_id",
-  "mollie_subscription_status",
-  "mollie_mandate_id",
-  "last_payment_at",
-  "next_payment_at",
-  "canceled_at",
-  "paused_at",
-  "mandate_status",
-  "mandate_reference",
-  "mandate_checkout_url",
-  "mandate_payment_id",
-  "mandate_payment_status",
-  "subscription_synced_at",
-  "webhook_last_event",
-  "webhook_last_received_at",
-  "admin_action_last_type",
-  "admin_action_last_at",
-  "admin_action_last_error",
-  "cancellation_reason",
-  "cancellation_requested_at",
-  "resumed_at",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
+const { SUBSCRIPTION_FIELDS, canonicalSubscriptionPatch, subscriptionView } = require("./_canonical-finance");
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allowedActions = new Set(["pause", "resume", "cancel", "sync"]);
 
@@ -259,15 +224,18 @@ function validateUuid(value, message) {
 }
 
 async function fetchSubscription(supabaseUrl, serviceRoleKey, subscriptionId) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${SUBSCRIPTION_FIELDS}&id=eq.${encodeURIComponent(subscriptionId)}&limit=1`, {
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/subscriptions?select=${SUBSCRIPTION_FIELDS}&id=eq.${encodeURIComponent(subscriptionId)}&limit=1`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
   });
-  return Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? subscriptionView(row) : row;
 }
 
 async function patchSubscription(supabaseUrl, serviceRoleKey, subscriptionId, patch) {
-  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
+  const current = await fetchSubscription(supabaseUrl, serviceRoleKey, subscriptionId);
+  const canonicalPatch = canonicalSubscriptionPatch(patch, current?.metadata || {});
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -275,9 +243,10 @@ async function patchSubscription(supabaseUrl, serviceRoleKey, subscriptionId, pa
       "Content-Profile": "public",
       Prefer: "return=representation",
     },
-    body: JSON.stringify(patch),
+    body: JSON.stringify(canonicalPatch),
   });
-  return Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? subscriptionView(row) : row;
 }
 
 async function cancelMollieSubscription(mollieApiKey, mollieCustomerId, mollieSubscriptionId) {

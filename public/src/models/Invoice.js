@@ -18,8 +18,6 @@
  * @property {number} vatAmount
  * @property {number} total
  *
- * Supabase table: customer_invoices
- * Migratie: production gebruikt customer_invoices en bewaart regelcontext in notes.
- * als fallback totdat provider switch en live migratie expliciet worden goedgekeurd.
+ * Canonieke Supabase-tabellen: invoices en invoice_lines.
  */
-export const invoiceModel = { table: "customer_invoices", linesTable: "", primaryKey: "id" };
+export const invoiceModel = { table: "invoices", linesTable: "invoice_lines", primaryKey: "id" };

@@ -23,9 +23,10 @@ exports.handler = async (event) => {
     }
 
     const context = parseInvoiceContext(invoice.notes);
-    const profile = invoice.profile_id ? await fetchProfile(config, invoice.profile_id) : null;
+    const customer = invoice.customer_id ? await fetchCustomer(config, invoice.customer_id) : null;
+    const profile = customer?.profile_id ? await fetchProfile(config, customer.profile_id) : null;
     const status = mapPublicStatus(invoice);
-    const portalReady = Boolean(profile?.auth_user_id || invoice.customer_auth_user_id);
+    const portalReady = Boolean(customer?.auth_user_id || profile?.auth_user_id);
     const emailSent = Boolean(invoice.paid_email_sent_at || context.commercialOrderCompletedAt || context.portalStatus === "completed");
 
     return jsonResponse(200, publicStatus({
@@ -74,11 +75,10 @@ async function fetchInvoiceByOrder(config, orderId) {
 async function fetchInvoice(config, filter) {
   const fields = [
     "id",
-    "profile_id",
-    "customer_auth_user_id",
+    "customer_id",
     "invoice_number",
     "title",
-    "amount",
+    "total",
     "status",
     "paid_at",
     "paid_email_sent_at",
@@ -88,11 +88,11 @@ async function fetchInvoice(config, filter) {
     "mollie_payment_status",
   ].join(",");
   const fallbackFields = fields.replace(",paid_email_sent_at,email_last_error", "");
-  const response = await supabaseFetch(config, `/rest/v1/customer_invoices?select=${encodeURIComponent(fields)}&${filter}&limit=1`);
+  const response = await supabaseFetch(config, `/rest/v1/invoices?select=${encodeURIComponent(fields)}&${filter}&limit=1`);
   if (response.ok) return firstRow(response.data);
   if (!isSchemaColumnError(response.data)) throw new Error(response.data?.message || "Invoice lookup failed");
 
-  const fallback = await supabaseFetch(config, `/rest/v1/customer_invoices?select=${encodeURIComponent(fallbackFields)}&${filter}&limit=1`);
+  const fallback = await supabaseFetch(config, `/rest/v1/invoices?select=${encodeURIComponent(fallbackFields)}&${filter}&limit=1`);
   if (!fallback.ok) throw new Error(fallback.data?.message || "Invoice lookup failed");
   return firstRow(fallback.data);
 }
@@ -100,6 +100,13 @@ async function fetchInvoice(config, filter) {
 async function fetchProfile(config, profileId) {
   const fields = "id,auth_user_id,status,metadata";
   const response = await supabaseFetch(config, `/rest/v1/profiles?select=${encodeURIComponent(fields)}&id=eq.${encodeURIComponent(profileId)}&limit=1`);
+  if (response.ok) return firstRow(response.data);
+  return null;
+}
+
+async function fetchCustomer(config, customerId) {
+  const fields = "id,profile_id,auth_user_id";
+  const response = await supabaseFetch(config, `/rest/v1/customers?select=${encodeURIComponent(fields)}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
   if (response.ok) return firstRow(response.data);
   return null;
 }

@@ -11,7 +11,6 @@
  * @property {string} nextInvoiceDate
  * @property {string} lastInvoiceId
  *
- * Supabase table: customer_subscriptions
- * Migratie: Mollie velden later toevoegen zonder local demo te breken.
+ * Canonieke Supabase-tabel: subscriptions.
  */
-export const subscriptionModel = { table: "customer_subscriptions", primaryKey: "id" };
+export const subscriptionModel = { table: "subscriptions", primaryKey: "id" };
