@@ -66,7 +66,14 @@
             <i></i><i></i><i></i>
             <span id="preview-url-label">preview.maxwebstudio.nl/project</span>
           </div>
-          <iframe id="published-preview-frame" title="Gepubliceerde website-preview" hidden></iframe>
+          <iframe
+            id="published-preview-frame"
+            title="Gepubliceerde website-preview"
+            sandbox="allow-scripts"
+            referrerpolicy="no-referrer"
+            allow="camera 'none'; microphone 'none'; geolocation 'none'; clipboard-read 'none'; clipboard-write 'none'; payment 'none'; fullscreen 'none'"
+            hidden
+          ></iframe>
           <div class="secure-preview-site" id="preview-fallback-site">
             <nav><strong id="preview-company">Jouw bedrijf</strong><span>Home</span><span>Diensten</span><span>Contact</span></nav>
             <section>
@@ -87,10 +94,10 @@
         <div class="preview-checkout-actions">
           <article class="secure-preview-card secure-preview-decision-main">
             <span>Akkoordmoment</span>
-            <strong>Tevreden met de richting?</strong>
-            <p>Geef akkoord op de preview. Daarna zetten we de aanbetaling klaar. De definitieve opleverbestanden blijven beveiligd tot de laatste betaling op dag 5 is bevestigd.</p>
+            <strong id="preview-approval-title">Tevreden met deze ontwerpversie?</strong>
+            <p id="preview-approval-copy">Je goedkeuring wordt vastgelegd voor precies de versie die je hier ziet. Latere wijzigingen kunnen een nieuwe goedkeuring vereisen.</p>
             <div class="secure-preview-form">
-              <label for="preview-consent"><input type="checkbox" id="preview-consent" /> Ik ben akkoord met de richting van de preview.</label>
+              <label for="preview-consent"><input type="checkbox" id="preview-consent" /> Ik keur deze specifieke ontwerpversie goed en begrijp dat latere wijzigingen opnieuw goedkeuring kunnen vereisen.</label>
               <label class="sr-only" for="preview-feedback">Feedback of aandachtspunten</label>
               <textarea id="preview-feedback" rows="4" placeholder="Feedback of aandachtspunten voor dag 4, optioneel"></textarea>
               <button class="button primary" id="preview-approve" type="button">Akkoord geven</button>
@@ -183,8 +190,12 @@
         const previewKey = "maxwebstudioActivePreviewContext";
         const previewFrame = document.getElementById("published-preview-frame");
         const fallbackSite = document.getElementById("preview-fallback-site");
+        const approvalTitle = document.getElementById("preview-approval-title");
+        const approvalCopy = document.getElementById("preview-approval-copy");
         let publishedPreviewVersion = null;
         let paymentReadiness = null;
+        let loadedPreview = null;
+        let approvalIdempotencyKey = "";
 
         function readJson(key, fallback = null) {
           try {
@@ -245,6 +256,10 @@
           }
           title.textContent = `${data.preview.title || "Website-preview"} staat klaar.`;
           urlLabel.textContent = `preview.maxwebstudio.nl/versie-${data.preview.version || 1}`;
+          loadedPreview = data.preview;
+          approvalIdempotencyKey = globalThis.crypto?.randomUUID?.() || `preview-approval-${versionId}-${Date.now()}`;
+          approvalTitle.textContent = `Ontwerpversie ${data.preview.version || 1} goedkeuren`;
+          approvalCopy.textContent = `Gemaakt op ${data.preview.createdAt ? new Date(data.preview.createdAt).toLocaleString("nl-NL") : "een vastgelegd moment"}. Je goedkeuring wordt onveranderlijk aan deze versie gekoppeld.`;
           previewFrame.srcdoc = data.preview.html;
           const stateResponse = await fetch(`/.netlify/functions/client-preview-versions?versionId=${encodeURIComponent(versionId)}`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
           const state = await stateResponse.json().catch(() => ({}));
@@ -255,15 +270,16 @@
           fallbackSite.hidden = true;
           accessTitle.textContent = "Preview gekoppeld";
           accessText.textContent = "Deze ontwerpversie is veilig gekoppeld aan je klantaccount.";
-          approve.disabled = publishedPreviewVersion?.approvedAt ? true : !consent.checked;
-          actionMessage.textContent = publishedPreviewVersion?.approvedAt ? "Ontwerp goedgekeurd." : "Vink akkoord aan om deze preview goed te keuren.";
+          approve.disabled = publishedPreviewVersion?.currentVersionIsApproved ? true : !consent.checked;
+          consent.disabled = Boolean(publishedPreviewVersion?.currentVersionIsApproved);
+          actionMessage.textContent = publishedPreviewVersion?.currentVersionIsApproved ? "Deze ontwerpversie is al goedgekeurd." : "Vink akkoord aan om deze preview goed te keuren.";
           renderPaymentReadiness(paymentReadiness);
           return true;
         }
 
         consent.addEventListener("change", () => {
-          approve.disabled = Boolean(publishedPreviewVersion?.approvedAt) || !consent.checked;
-          if (!consent.checked && !publishedPreviewVersion?.approvedAt) actionMessage.textContent = "Vink eerst aan dat je akkoord bent met de richting van de preview.";
+          approve.disabled = Boolean(publishedPreviewVersion?.currentVersionIsApproved) || !consent.checked;
+          if (!consent.checked && !publishedPreviewVersion?.currentVersionIsApproved) actionMessage.textContent = "Vink eerst aan dat je akkoord bent met deze ontwerpversie.";
         });
 
         function euro(cents = 0) {
@@ -432,37 +448,41 @@
           }
           approve.disabled = true;
           actionMessage.textContent = "Akkoord verwerken...";
-          writePreviewContext({
-            status: "preview_approved",
-            previewApprovedAt: new Date().toISOString(),
-            feedback: feedback.value.trim(),
-            paymentStatus: "deposit_pending",
-          });
           try {
             const token = currentAccessToken();
-            if (!token) throw new Error("Log opnieuw in om akkoord te geven.");
-            {
-              const versionId = params.get("version") || "";
-              const response = await fetch("/.netlify/functions/client-preview-versions", {
-                method: "POST",
-                headers: {
-                  Accept: "application/json",
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ action: "approve", previewVersionId: versionId, feedback: feedback.value.trim() }),
-              });
-              const data = await response.json().catch(() => ({}));
-              if (!response.ok || data.success === false) throw new Error(data.error || "Akkoord kon niet worden verwerkt.");
-              if (data.approvedPreviewVersionId !== versionId) throw new Error("De goedgekeurde versie wijkt af van de zichtbare preview.");
-              publishedPreviewVersion = data.previewVersion;
-              renderPaymentReadiness(data.paymentReadiness);
-            }
-            actionMessage.textContent = "Ontwerp goedgekeurd. De betaalstap staat klaar.";
+            if (!token || !loadedPreview?.id || !loadedPreview?.checksum) throw new Error("De versie-identiteit ontbreekt. Ververs de pagina.");
+            const response = await fetch("/api/client-preview-versions", {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                action: "approve",
+                previewVersionId: loadedPreview.id,
+                expectedChecksum: loadedPreview.checksum,
+                idempotencyKey: approvalIdempotencyKey,
+                note: feedback.value.trim(),
+              }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.error || "Akkoord kon niet worden verwerkt.");
+            writePreviewContext({
+              approvedPreviewVersionId: loadedPreview.id,
+              approvedPreviewChecksum: loadedPreview.checksum,
+              previewApprovedAt: data.approval?.approvedAt || "",
+            });
+            publishedPreviewVersion = data.previewVersion;
+            actionMessage.textContent = `Ontwerpversie ${loadedPreview.version || 1} is goedgekeurd${data.approval?.approvedAt ? ` op ${new Date(data.approval.approvedAt).toLocaleString("nl-NL")}` : ""}.`;
+            consent.disabled = true;
+            approve.disabled = true;
+            paymentTitle.textContent = "Goedkeuring ontvangen";
+            paymentText.textContent = "Een betaalstap wordt alleen apart en server-side beschikbaar gemaakt; er is nu geen betaling gestart.";
           } catch (error) {
             actionMessage.textContent = error.message || "Akkoord kon niet worden verwerkt.";
           } finally {
-            approve.disabled = Boolean(publishedPreviewVersion?.approvedAt) || !consent.checked;
+            if (!consent.disabled) approve.disabled = false;
           }
         });
 

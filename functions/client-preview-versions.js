@@ -6,10 +6,13 @@ const { buildWebsiteCommercialOrder, maintenanceCatalog, readWebsiteCommercialOr
 const { createFeedbackReceivedService } = require("./journey/feedbackReceived/service");
 const { createPreviewApprovedService } = require("./journey/previewApproved/service");
 const { resolveApprovalNextStep } = require("./journey/previewApproved/nextStepResolver");
+const { canonicalInvoiceRecord } = require("./_canonical-finance");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const feedbackReceivedService = createFeedbackReceivedService();
 const previewApprovedService = createPreviewApprovedService();
+const APPROVAL_STATEMENT_VERSION = "website_preview_approval_nl_v1";
+const APPROVAL_STATEMENT = "Ik keur deze specifieke ontwerpversie goed. Ik begrijp dat latere inhoudelijke wijzigingen opnieuw goedkeuring kunnen vereisen.";
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -30,7 +33,7 @@ exports.handler = async (event) => {
       ? `id=eq.${versionId}&customer_id=eq.${customer.id}`
       : `customer_id=eq.${customer.id}`;
     const rows = await readRows(context, "website_preview_versions", [
-      "select=id,customer_id,project_id,website_id,version,title,customer_summary,change_summary,safe_preview_path,published_to_portal,published_at,review_deadline,allow_feedback,allow_approval,status,approved_at,feedback_items,metadata,created_at",
+      "select=id,customer_id,project_id,website_id,version,title,customer_summary,change_summary,safe_preview_path,published_to_portal,published_at,review_deadline,allow_feedback,allow_approval,status,package_checksum,is_active,approved_at,feedback_items,metadata,created_at",
       filter,
       "published_to_portal=eq.true",
       "order=published_at.desc.nullslast,version.desc",
@@ -41,17 +44,25 @@ exports.handler = async (event) => {
     const orderedRows = currentPreviewVersionId
       ? [...rows].sort((a, b) => Number(cleanText(b.id) === currentPreviewVersionId) - Number(cleanText(a.id) === currentPreviewVersionId))
       : rows;
+    const approvals = orderedRows.length ? await readRows(context, "website_preview_approvals", [
+      "select=id,customer_id,project_id,website_id,preview_version_id,preview_version_number,preview_checksum,approved_by_profile_id,approved_at,approval_status,approval_statement_version,created_at",
+      `customer_id=eq.${customer.id}`,
+      `preview_version_id=in.(${orderedRows.map((row) => row.id).join(",")})`,
+      "order=created_at.desc",
+    ].join("&")) : [];
+    const approvalByVersion = new Map(approvals.map((approval) => [cleanText(approval.preview_version_id), approval]));
     const currentVersion = orderedRows.find((row) => cleanText(row.id) === currentPreviewVersionId) || null;
-    const paymentReadiness = currentVersion ? await resolvePaymentReadiness(context, customer, currentVersion) : unavailablePayment("preview_not_published");
+    const currentApproval = currentVersion ? approvalByVersion.get(cleanText(currentVersion.id)) : null;
+    const paymentReadiness = currentVersion ? await resolvePaymentReadiness(context, customer, currentVersion, currentApproval) : unavailablePayment("preview_not_published");
     return jsonResponse(200, {
       success: true,
       customer: { id: customer.id, name: cleanText(customer.name), company: cleanText(customer.company || customer.company_name) },
       currentPreviewVersionId,
       currentPreviewVersion: currentVersion
-        ? sanitizeClientVersion(currentVersion, currentPreviewVersionId)
+        ? sanitizeClientVersion(currentVersion, currentPreviewVersionId, approvalByVersion.get(cleanText(currentVersion.id)))
         : null,
       paymentReadiness,
-      previewVersions: orderedRows.map((row) => sanitizeClientVersion(row, currentPreviewVersionId)),
+      previewVersions: orderedRows.map((row) => sanitizeClientVersion(row, currentPreviewVersionId, approvalByVersion.get(cleanText(row.id)))),
     });
   } catch (error) {
     console.error("Client preview versions failed", { message: error.message, status: error.status || 500, code: error.code || "" });
@@ -70,7 +81,6 @@ async function handlePreviewAction(context, customer, authUser, payload = {}) {
   const versionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
   if (!versionId) return jsonResponse(400, { success: false, error: "Previewversie ontbreekt." });
   const currentVersionId = uuidOrEmpty(customer.metadata?.publishedPreviewVersionId);
-  if (!currentVersionId || currentVersionId !== versionId) return jsonResponse(409, { success: false, code: "preview_version_not_current", error: "Deze preview is niet de huidige gepubliceerde klantversie." });
   const version = await readSingle(context, "website_preview_versions", [
     "select=*",
     `id=eq.${versionId}`,
@@ -79,10 +89,12 @@ async function handlePreviewAction(context, customer, authUser, payload = {}) {
     "limit=1",
   ].join("&"));
   if (!version?.id) return jsonResponse(404, { success: false, error: "Previewversie niet gevonden voor dit klantaccount." });
+  if (!currentVersionId || currentVersionId !== versionId) return jsonResponse(409, { success: false, code: "preview_version_not_current", error: "Deze preview is niet de huidige gepubliceerde klantversie." });
   if (action === "feedback") return savePreviewFeedback(context, customer, authUser, version, payload);
   if (action === "approve") return approvePreviewVersion(context, customer, authUser, version, payload);
-  if (action === "select_maintenance") return saveMaintenanceSelection(context, customer, authUser, version, payload);
-  if (action === "create_payment") return createPreviewDepositPayment(context, customer, authUser, version);
+  const approval = await readActiveApproval(context, customer.id, version.id);
+  if (action === "select_maintenance") return saveMaintenanceSelection(context, customer, authUser, version, payload, approval);
+  if (action === "create_payment") return createPreviewDepositPayment(context, customer, authUser, version, approval);
   return jsonResponse(400, { success: false, error: "Onbekende previewactie." });
 }
 
@@ -278,17 +290,38 @@ function feedbackSideEffectKey(type, version, feedback) {
 
 async function approvePreviewVersion(context, customer, authUser, version, payload) {
   if (version.allow_approval === false) return jsonResponse(403, { success: false, error: "Goedkeuring is voor deze previewversie gesloten." });
-  const duplicate = Boolean(version.approved_at);
-  let updated = version;
-  if (!duplicate) {
-    const now = new Date().toISOString();
-    const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, { approved_at: now, approved_by_auth_user_id: authUser.id, status: "approved", approval_metadata: { approvedByEmail: authUser.email || "", approvedByCustomerId: customer.id, note: cleanText(payload.note || payload.feedback).slice(0, 1000), approvedAt: now }, updated_at: now });
-    updated = rows[0] || { ...version, approved_at: now, approved_by_auth_user_id: authUser.id, status: "approved" };
+  if (!version.project_id || version.published_to_portal !== true || version.is_active !== true
+      || !["ready_for_review", "feedback_received", "approved"].includes(cleanText(version.status))
+      || !/^[0-9a-f]{64}$/.test(cleanText(version.package_checksum))) {
+    return jsonResponse(409, { success: false, error: "Deze ontwerpversie is niet meer goedkeurbaar. Ververs de pagina." });
   }
-  const sideEffects = await ensureApprovalSideEffects(customer, authUser, updated);
-  const resolution = await resolveApprovalFinancialContext(context, customer, updated);
-  const mailOwnership = await dispatchApprovalConfirmation(customer, authUser, updated, resolution, sideEffects);
-  return jsonResponse(200, { success: true, duplicate, approvedPreviewVersionId: version.id, previewVersion: sanitizeClientVersion(updated, version.id), paymentReadiness: await resolvePaymentReadiness(context, customer, updated), approvalNextStep: publicApprovalNextStep(resolution), approvalSideEffects: sideEffects, mailOwnership });
+  const expectedChecksum = cleanText(payload.expectedChecksum || payload.expected_checksum);
+  if (!/^[0-9a-f]{64}$/.test(expectedChecksum)) {
+    return jsonResponse(400, { success: false, error: "De verwachte versie-identiteit ontbreekt." });
+  }
+  const idempotencyKey = cleanText(payload.idempotencyKey || payload.idempotency_key)
+    || hashText(["preview-approval", version.id, authUser.id, expectedChecksum].join(":"));
+  try {
+    const result = await callRpc(context, "record_website_preview_approval", {
+      input_preview_version_id: version.id,
+      input_customer_id: customer.id,
+      input_auth_user_id: authUser.id,
+      input_expected_checksum: expectedChecksum,
+      input_idempotency_key: idempotencyKey,
+      input_statement_version: APPROVAL_STATEMENT_VERSION,
+      input_statement_snapshot: APPROVAL_STATEMENT,
+    });
+    const approval = result?.approval || {};
+    return jsonResponse(200, {
+      success: true,
+      duplicate: result?.duplicate === true,
+      approval: sanitizeApproval(approval),
+      previewVersion: sanitizeClientVersion(version, version.id, approval),
+    });
+  } catch (error) {
+    if (error.code === "40001") return jsonResponse(409, { success: false, error: "De ontwerpversie is gewijzigd. Ververs de pagina en controleer de versie opnieuw." });
+    throw error;
+  }
 }
 
 async function ensureApprovalSideEffects(customer, authUser, version) {
@@ -327,7 +360,7 @@ async function resolveApprovalFinancialContext(context, customer, version) {
   try {
     const project = await resolveCommercialProject(context, customer, version);
     const website = version.website_id ? await readSingle(context, "websites", `select=id,customer_id,status&customer_id=eq.${encodeURIComponent(customer.id)}&id=eq.${encodeURIComponent(version.website_id)}&limit=1`).catch(() => null) : null;
-    const invoices = customer.auth_user_id ? await readRows(context, "customer_invoices", `select=id,status,paid_at,notes,mollie_payment_id,mollie_checkout_url,mollie_payment_status&customer_auth_user_id=eq.${encodeURIComponent(customer.auth_user_id)}&order=created_at.desc&limit=25`).catch(() => []) : [];
+    const invoices = await readRows(context, "invoices", `select=id,status,paid_at,notes,mollie_payment_id,mollie_checkout_url,mollie_payment_status&customer_id=eq.${encodeURIComponent(customer.id)}&order=created_at.desc&limit=25`).catch(() => []);
     return resolveApprovalNextStep({ customerId: customer.id, previewVersionId: version.id, project, website, invoices });
   } catch {
     return resolveApprovalNextStep({ customerId: customer.id, previewVersionId: version.id });
@@ -346,9 +379,10 @@ async function dispatchApprovalConfirmation(customer, authUser, version, resolut
 
 function publicApprovalNextStep(value = {}) { return { journeyType: cleanText(value.journeyType), orderSource: cleanText(value.orderSource), paymentState: cleanText(value.paymentState), invoiceState: cleanText(value.invoiceState), amountState: cleanText(value.amountState), nextStepType: cleanText(value.nextStepType), customerActionRequired: value.customerActionRequired === true, internalActionRequired: value.internalActionRequired === true, reasonCode: cleanText(value.reasonCode), confidence: cleanText(value.confidence) }; }
 
-async function resolvePaymentReadiness(context, customer, version) {
+async function resolvePaymentReadiness(context, customer, version, approval = null) {
+  const approved = approvalMatchesVersion(approval, version);
   let project = await resolveCommercialProject(context, customer, version);
-  if (!project) return unavailablePayment("website_commercial_order_ambiguous", { approved: Boolean(version.approved_at), previewVersionId: version.id });
+  if (!project) return unavailablePayment("website_commercial_order_ambiguous", { approved, previewVersionId: version.id });
   let order = readWebsiteCommercialOrder(project);
   if (!order && project?.id) {
     const journeys = await readRows(context, "demo_journeys", `select=id,customer_id,preview_package,generated_briefing&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=1`);
@@ -363,20 +397,20 @@ async function resolvePaymentReadiness(context, customer, version) {
       }
     }
   }
-  if (!order) return unavailablePayment("website_package_missing", { approved: Boolean(version.approved_at), previewVersionId: version.id });
+  if (!order) return unavailablePayment("website_package_missing", { approved, previewVersionId: version.id });
   const packageKey = order.packageCode;
   const amountCents = Number(order.depositAmountCents || 0);
   const invoice = await findDepositInvoice(context, customer, version);
   const status = cleanText(invoice?.mollie_payment_status || invoice?.status).toLowerCase();
   const paid = status === "paid" || Boolean(invoice?.paid_at);
   const amountInclVatCents = Math.round(amountCents * 1.21);
-  const invoiceAmountMatches = !invoice?.id || Math.round(Number(invoice.amount || 0) * 100) === amountInclVatCents;
+  const invoiceAmountMatches = !invoice?.id || Math.round(Number(invoice.total || 0) * 100) === amountInclVatCents;
   const reusable = Boolean(invoiceAmountMatches && invoice?.mollie_payment_id && invoice?.mollie_checkout_url && !["failed", "expired", "canceled", "cancelled"].includes(status));
   return {
-    ready: Boolean(version.approved_at) && Boolean(order.maintenanceCode) && !paid,
-    approved: Boolean(version.approved_at),
+    ready: approved && Boolean(order.maintenanceCode) && !paid,
+    approved,
     paid,
-    status: paid ? "paid" : reusable ? status || "open" : version.approved_at ? "ready" : "awaiting_approval",
+    status: paid ? "paid" : reusable ? status || "open" : approved ? "ready" : "awaiting_approval",
     amountCents,
     amount: (amountCents / 100).toFixed(2),
     amountInclVatCents,
@@ -408,9 +442,9 @@ async function resolvePaymentReadiness(context, customer, version) {
   };
 }
 
-async function createPreviewDepositPayment(context, customer, authUser, version) {
-  if (!version.approved_at) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
-  const readiness = await resolvePaymentReadiness(context, customer, version);
+async function createPreviewDepositPayment(context, customer, authUser, version, approval) {
+  if (!approvalMatchesVersion(approval, version)) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
+  const readiness = await resolvePaymentReadiness(context, customer, version, approval);
   if (!readiness.amountCents) return jsonResponse(409, { success: false, code: "website_package_missing", error: "De betaalgegevens worden nog voorbereid." });
   if (!readiness.maintenanceSelected) return jsonResponse(409, { success: false, code: "maintenance_selection_required", error: "Kies eerst een onderhoudsoptie." });
   if (readiness.invoiceId && readiness.invoiceAmountMatches === false) return jsonResponse(409, { success: false, code: "deposit_invoice_amount_mismatch", error: "Het bestaande betaalverzoek heeft een afwijkend bedrag en moet eerst veilig worden geannuleerd." });
@@ -426,7 +460,7 @@ async function createPreviewDepositPayment(context, customer, authUser, version)
     });
     return jsonResponse(503, { success: false, code, error: "Deze testbetaling kan momenteel niet worden gestart." });
   }
-  const invoice = readiness.invoiceId ? await readSingle(context, "customer_invoices", `select=*&id=eq.${encodeURIComponent(readiness.invoiceId)}&limit=1`) : await createDepositInvoice(context, customer, version, readiness);
+  const invoice = readiness.invoiceId ? await readSingle(context, "invoices", `select=*&id=eq.${encodeURIComponent(readiness.invoiceId)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`) : await createDepositInvoice(context, customer, version, readiness);
   const paymentResponse = await fetch("https://api.mollie.com/v2/payments", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
@@ -441,19 +475,36 @@ async function createPreviewDepositPayment(context, customer, authUser, version)
   const payment = await paymentResponse.json().catch(() => ({}));
   const checkoutUrl = cleanText(payment?._links?.checkout?.href);
   if (!paymentResponse.ok || !payment.id || !checkoutUrl) return jsonResponse(502, { success: false, code: "mollie_payment_failed", error: "De testbetaling kon niet worden aangemaakt." });
-  const rows = await patchRows(context, "customer_invoices", `id=eq.${invoice.id}`, { mollie_payment_id: payment.id, mollie_checkout_url: checkoutUrl, mollie_payment_status: cleanText(payment.status || "open"), mollie_payment_created_at: cleanText(payment.createdAt) || new Date().toISOString(), mollie_payment_expires_at: cleanText(payment.expiresAt) || null, status: "sent", updated_at: new Date().toISOString() });
+  const rows = await patchRows(context, "invoices", `id=eq.${invoice.id}&customer_id=eq.${encodeURIComponent(customer.id)}`, { mollie_payment_id: payment.id, mollie_checkout_url: checkoutUrl, mollie_payment_status: cleanText(payment.status || "open"), mollie_payment_created_at: cleanText(payment.createdAt) || new Date().toISOString(), mollie_payment_expires_at: cleanText(payment.expiresAt) || null, status: "sent", updated_at: new Date().toISOString() });
   console.info("Preview test payment created", { code: "mollie_test_payment_created", paymentMode: "test", previewVersionId: version.id, invoiceId: invoice.id });
   const updatedReadiness = { ...readiness, ready: true, status: cleanText(payment.status || "open"), checkoutUrl, invoiceId: invoice.id, paymentId: payment.id };
   return jsonResponse(200, { success: true, reused: false, testMode: true, paymentReadiness: updatedReadiness, invoice: rows[0] || invoice });
 }
 
 async function findDepositInvoice(context, customer, version) {
-  return readSingle(context, "customer_invoices", `select=*&customer_auth_user_id=eq.${encodeURIComponent(customer.auth_user_id)}&notes=ilike.*${encodeURIComponent(`previewDeposit:${version.id}`)}*&order=created_at.desc&limit=1`).catch(() => null);
+  return readSingle(context, "invoices", `select=*&customer_id=eq.${encodeURIComponent(customer.id)}&metadata->>previewVersionId=eq.${encodeURIComponent(version.id)}&order=created_at.desc&limit=1`).catch(() => null);
 }
 
 async function createDepositInvoice(context, customer, version, readiness) {
   const now = new Date().toISOString();
-  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountInclVatCents / 100, status: "draft", notes: `TEST;previewDeposit:${version.id};customer:${customer.id};project:${readiness.projectId};package:${readiness.packageKey};maintenance:${readiness.maintenanceCode}`, created_at: now, updated_at: now });
+  const rows = await insertRows(context, "invoices", canonicalInvoiceRecord({
+    customer_id: customer.id,
+    project_id: readiness.projectId || null,
+    website_id: readiness.websiteId || null,
+    invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`,
+    type: "deposit",
+    title: "Website-aanbetaling",
+    subtotal: readiness.amountCents / 100,
+    vat: (readiness.amountInclVatCents - readiness.amountCents) / 100,
+    total: readiness.amountInclVatCents / 100,
+    status: "draft",
+    is_demo: true,
+    environment: "test",
+    notes: `TEST;previewDeposit:${version.id};project:${readiness.projectId};package:${readiness.packageKey};maintenance:${readiness.maintenanceCode}`,
+    metadata: { source: "customer_preview_deposit", previewVersionId: version.id, packageKey: readiness.packageKey, maintenanceCode: readiness.maintenanceCode },
+    created_at: now,
+    updated_at: now,
+  }));
   if (!rows[0]?.id) throw Object.assign(new Error("Aanbetalingsfactuur kon niet worden aangemaakt."), { status: 500 });
   return rows[0];
 }
@@ -468,8 +519,8 @@ async function resolveCommercialProject(context, customer, version) {
   return !version.project_id && projects.length !== 1 ? null : projects[0] || null;
 }
 
-async function saveMaintenanceSelection(context, customer, authUser, version, payload = {}) {
-  if (!version.approved_at) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
+async function saveMaintenanceSelection(context, customer, authUser, version, payload = {}, approval = null) {
+  if (!approvalMatchesVersion(approval, version)) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
   const project = await resolveCommercialProject(context, customer, version);
   const order = readWebsiteCommercialOrder(project);
   if (!project?.id || !order) return jsonResponse(409, { success: false, code: "website_package_missing", error: "Websitepakket ontbreekt." });
@@ -478,7 +529,24 @@ async function saveMaintenanceSelection(context, customer, authUser, version, pa
   const rows = await patchRows(context, "projects", `id=eq.${project.id}&customer_id=eq.${customer.id}`, { metadata: { ...(project.metadata || {}), websiteCommercialOrder: selected }, updated_at: selected.updatedAt });
   const savedProject = rows[0] || { ...project, metadata: { ...(project.metadata || {}), websiteCommercialOrder: selected } };
   await safeTimeline({ customerId: customer.id, eventType: "maintenance_selected", title: selected.maintenanceCode === "none" ? "Onderhoud geweigerd" : "Onderhoud gekozen", description: `${selected.maintenanceName} is vastgelegd en start ${selected.startTrigger === "project_delivered" ? "na oplevering" : "niet"}.`, module: "commercial", referenceType: "project", referenceId: project.id, actorName: customer.name || authUser.email || "Klant", actorRole: "customer", severity: "info", metadata: { dedupeKey: `maintenance_selected:${project.id}:${selected.maintenanceCode}`, maintenanceCode: selected.maintenanceCode, maintenanceAmountCents: selected.maintenanceAmountCents, startTrigger: selected.startTrigger } });
-  return jsonResponse(200, { success: true, duplicate: order.maintenanceCode === selected.maintenanceCode, commercialOrder: selected, paymentReadiness: await resolvePaymentReadiness(context, customer, version), projectId: savedProject.id });
+  return jsonResponse(200, { success: true, duplicate: order.maintenanceCode === selected.maintenanceCode, commercialOrder: selected, paymentReadiness: await resolvePaymentReadiness(context, customer, version, approval), projectId: savedProject.id });
+}
+
+async function readActiveApproval(context, customerId, previewVersionId) {
+  return readSingle(context, "website_preview_approvals", [
+    "select=id,preview_version_id,preview_checksum,approval_status,approved_at",
+    `customer_id=eq.${encodeURIComponent(customerId)}`,
+    `preview_version_id=eq.${encodeURIComponent(previewVersionId)}`,
+    "approval_status=eq.active",
+    "limit=1",
+  ].join("&")).catch(() => null);
+}
+
+function approvalMatchesVersion(approval, version) {
+  return approval?.approval_status === "active"
+    && cleanText(approval.preview_version_id) === cleanText(version?.id)
+    && /^[0-9a-f]{64}$/.test(cleanText(version?.package_checksum))
+    && cleanText(approval.preview_checksum) === cleanText(version.package_checksum);
 }
 
 async function readAuthUser(context, bearer) {
@@ -531,6 +599,14 @@ async function insertRows(context, table, record) {
   });
 }
 
+async function callRpc(context, name, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json" },
+    body: JSON.stringify(record),
+  });
+}
+
 async function readSingle(context, table, query) {
   const rows = await readRows(context, table, query);
   return Array.isArray(rows) ? rows[0] || null : null;
@@ -547,11 +623,14 @@ async function supabaseFetch(url, options) {
     error.details = data?.details || "";
     throw error;
   }
-  return Array.isArray(data) ? data : [];
+  return data;
 }
 
-function sanitizeClientVersion(row = {}, currentPreviewVersionId = "") {
+function sanitizeClientVersion(row = {}, currentPreviewVersionId = "", approval = null) {
   const safePath = cleanText(row.safe_preview_path) || `/preview.html?version=${encodeURIComponent(cleanText(row.id))}`;
+  const approvalMatches = approval?.approval_status === "active"
+    && cleanText(approval.preview_version_id) === cleanText(row.id)
+    && cleanText(approval.preview_checksum) === cleanText(row.package_checksum);
   return {
     id: cleanText(row.id),
     isCurrent: cleanText(row.id) === cleanText(currentPreviewVersionId),
@@ -567,11 +646,27 @@ function sanitizeClientVersion(row = {}, currentPreviewVersionId = "") {
     reviewDeadline: cleanText(row.review_deadline),
     allowFeedback: row.allow_feedback !== false,
     allowApproval: row.allow_approval !== false,
-    status: cleanText(row.status || "ready_for_review"),
-    approvedAt: cleanText(row.approved_at),
+    status: approvalMatches ? "approved" : cleanText(row.status || "ready_for_review"),
+    checksum: cleanText(row.package_checksum),
+    isActive: row.is_active === true,
+    approvedAt: approvalMatches ? cleanText(approval.approved_at) : "",
+    currentVersionIsApproved: approvalMatches,
+    approval: approvalMatches ? sanitizeApproval(approval) : null,
     feedbackCount: Array.isArray(row.feedback_items) ? row.feedback_items.length : 0,
     feedbackItems: Array.isArray(row.feedback_items) ? row.feedback_items.map(sanitizeFeedbackItem) : [],
     previewSource: cleanText(row.metadata?.previewSource),
+  };
+}
+
+function sanitizeApproval(row = {}) {
+  return {
+    id: cleanText(row.id),
+    previewVersionId: cleanText(row.preview_version_id),
+    previewVersionNumber: Number(row.preview_version_number || 0),
+    previewChecksum: cleanText(row.preview_checksum),
+    approvedAt: cleanText(row.approved_at),
+    status: cleanText(row.approval_status),
+    statementVersion: cleanText(row.approval_statement_version),
   };
 }
 

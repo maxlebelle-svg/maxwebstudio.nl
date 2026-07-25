@@ -1417,8 +1417,8 @@
           if (!latest) return false;
           if (!activePreviewVersionId) activePreviewVersionId = latest.id;
           const reviewState = reviewStateForPreview(latest);
-          const canFeedback = latest.allowFeedback && !latest.approvedAt;
-          const canApprove = latest.allowApproval && !latest.approvedAt;
+          const canFeedback = latest.allowFeedback && !latest.currentVersionIsApproved;
+          const canApprove = latest.allowApproval && !latest.currentVersionIsApproved && Boolean(latest.checksum);
           const counts = feedbackCounts(latest.feedbackItems || []);
           previewReviewTitle.textContent = latest.title || `Ontwerpversie ${latest.version || 1}`;
           demoJourneySummary.textContent = latest.summary || "Je website-preview staat klaar voor review.";
@@ -1460,7 +1460,7 @@
                   <span class="portal-website-preview-dots" aria-hidden="true"><i></i><i></i><i></i></span>
                   <strong>Veilige preview · versie ${escapeHtml(String(latest.version || 1))}</strong>
                 </div>
-                <iframe class="portal-website-mini-preview" title="Veilige preview van ${escapeHtml(latest.title || "je website")}" src="${escapeHtml(latest.thumbnailPath || latest.safePreviewPath)}" loading="lazy"></iframe>
+                <iframe class="portal-website-mini-preview" title="Veilige preview van ${escapeHtml(latest.title || "je website")}" src="${escapeHtml(latest.thumbnailPath || latest.safePreviewPath)}" sandbox="allow-scripts" referrerpolicy="no-referrer" allow="camera 'none'; microphone 'none'; geolocation 'none'; clipboard-read 'none'; clipboard-write 'none'; payment 'none'; fullscreen 'none'" loading="lazy"></iframe>
                 <div class="portal-website-preview-caption">
                   <strong>${escapeHtml(latest.title || "Je ontwerp staat klaar")}</strong>
                   <span>${escapeHtml(customerPreviewSummary(latest))}</span>
@@ -1481,6 +1481,7 @@
           launchChecklist.innerHTML = "";
           demoFeedbackForm.hidden = !(canFeedback || canApprove);
           demoFeedbackForm.dataset.previewVersionId = latest.id;
+          demoFeedbackForm.dataset.previewChecksum = latest.checksum || "";
           demoFeedbackForm.dataset.previewVersionLabel = `versie ${latest.version || 1}`;
           demoFeedbackForm.dataset.openFeedbackCount = String(counts.active || 0);
           demoFeedbackSubmit.hidden = !canFeedback;
@@ -5593,22 +5594,18 @@
           demoApproveSubmit.textContent = "Goedkeuring verwerken...";
           setDemoFeedbackStatus("Je goedkeuring wordt verwerkt...");
           try {
-            if (previewVersionId) {
-              await previewVersionRequest({
-                action: "approve",
-                previewVersionId,
-                note: String(demoFeedbackField.value || "").trim(),
-              });
-              const versions = await loadPublishedPreviewVersions();
-              publishedPreviewVersions = dedupePreviewVersions(versions);
-              renderPublishedWebsitePreviews(publishedPreviewVersions);
-            } else {
-              const data = await demoJourneyRequest("POST", {
-                action: "approve_preview",
-                feedback: String(demoFeedbackField.value || "").trim(),
-              });
-              renderDemoJourney({ journey: data.journey, events: data.events });
-            }
+            const expectedChecksum = demoFeedbackForm.dataset.previewChecksum || "";
+            if (!previewVersionId || !/^[0-9a-f]{64}$/.test(expectedChecksum)) throw new Error("De versie-identiteit ontbreekt. Ververs de pagina.");
+            await previewVersionRequest({
+              action: "approve",
+              previewVersionId,
+              expectedChecksum,
+              idempotencyKey: globalThis.crypto?.randomUUID?.() || `portal-preview-approval-${previewVersionId}-${Date.now()}`,
+              note: String(demoFeedbackField.value || "").trim(),
+            });
+            const versions = await loadPublishedPreviewVersions();
+            publishedPreviewVersions = dedupePreviewVersions(versions);
+            renderPublishedWebsitePreviews(publishedPreviewVersions);
             setDemoFeedbackStatus("Dank je, je akkoord is ontvangen. We bereiden de afronding voor.", "success");
           } catch (error) {
             setDemoFeedbackStatus(error.message || "Akkoord kon niet worden verwerkt.", "error");

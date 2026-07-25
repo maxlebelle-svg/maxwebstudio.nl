@@ -1,6 +1,7 @@
 const { corsHeaders } = require("./_cors");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const checksumPattern = /^[0-9a-f]{64}$/;
 const previewVersionFields = [
   "id",
   "customer_id",
@@ -14,11 +15,13 @@ const previewVersionFields = [
   "preview_url",
   "preview_token",
   "generated_package",
+  "package_checksum",
   "quality_report",
   "metadata",
   "published_to_portal",
   "published_at",
   "status",
+  "created_at",
 ].join(",");
 
 exports.handler = async (event) => {
@@ -44,6 +47,7 @@ exports.handler = async (event) => {
       "limit=1",
     ].join("&"));
     if (!version?.id) return jsonResponse(404, { success: false, error: "Deze ontwerpversie is niet beschikbaar voor dit klantaccount." });
+    const identity = previewIdentity(version);
 
     const packageResult = await resolvePreviewPackage(context, version);
     if (!packageResult.package?.files?.length) {
@@ -60,7 +64,7 @@ exports.handler = async (event) => {
     return jsonResponse(200, {
       success: true,
       preview: {
-        id: version.id,
+        ...identity,
         title: cleanText(version.title) || "Website-preview",
         version: Number(version.version || 1),
         status: cleanText(version.status || "ready_for_review"),
@@ -75,6 +79,16 @@ exports.handler = async (event) => {
     });
   }
 };
+
+function previewIdentity(version = {}) {
+  const id = uuidOrEmpty(version.id);
+  const checksum = cleanText(version.package_checksum).toLowerCase();
+  const createdAt = cleanText(version.created_at);
+  if (!id || !checksumPattern.test(checksum) || !createdAt) {
+    throw httpError("Deze ontwerpversie mist een geldige versie-identiteit.", 409);
+  }
+  return { id, checksum, createdAt };
+}
 
 async function resolvePreviewPackage(context, version = {}) {
   const versionPackage = normalizePackage(version.generated_package);
@@ -102,7 +116,7 @@ function renderPackageHtml(previewPackage = {}, meta = {}) {
   const entry = fileMap.get("index.html") || files.find((file) => cleanText(file.path).endsWith("index.html")) || files.find((file) => isHtml(file.path));
   if (!entry) return missingPreviewHtml(meta.title);
   const rawHtml = fileContent(entry);
-  return injectPreviewRuntime(inlinePackageAssets(rawHtml, fileMap));
+  return applyPreviewSecurityPolicy(injectPreviewRuntime(inlinePackageAssets(rawHtml, fileMap)));
 }
 
 function inlinePackageAssets(html = "", fileMap = new Map()) {
@@ -127,7 +141,36 @@ function inlinePackageAssets(html = "", fileMap = new Map()) {
       if (!file) return match;
       return `url("${dataUriFor(file)}")`;
     })
-    .replace(/href=["']([^"']+\.html)["']/gi, (_match, path) => `href="#${escapeAttribute(cleanRelativePath(path).replace(/\.html$/i, ""))}"`);
+    .replace(/href=["']([^"']+\.html)["']/gi, (_match, path) => `href="#${escapeAttribute(cleanRelativePath(path).replace(/\.html$/i, ""))}"`)
+    .replace(/\s(href|src|action|formaction)="\s*(?:javascript|vbscript|data\s*:\s*text\/html)[^"]*"/gi, ' $1="#"')
+    .replace(/\s(href|src|action|formaction)='\s*(?:javascript|vbscript|data\s*:\s*text\/html)[^']*'/gi, " $1='#'")
+    .replace(/<base\b[^>]*>/gi, "");
+}
+
+function applyPreviewSecurityPolicy(html = "") {
+  const policy = [
+    "default-src 'none'",
+    "base-uri 'none'",
+    "object-src 'none'",
+    "connect-src 'none'",
+    "form-action 'none'",
+    "frame-src 'none'",
+    "child-src 'none'",
+    "worker-src 'none'",
+    "manifest-src 'none'",
+    "img-src data: blob: https:",
+    "media-src data: blob: https:",
+    "font-src data: https:",
+    "style-src 'unsafe-inline' https:",
+    "script-src 'unsafe-inline'",
+  ].join("; ");
+  const securityHead = [
+    `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(policy)}">`,
+    '<meta name="referrer" content="no-referrer">',
+  ].join("");
+  const source = String(html || "");
+  if (/<head\b[^>]*>/i.test(source)) return source.replace(/<head\b[^>]*>/i, (head) => `${head}${securityHead}`);
+  return `<!doctype html><html><head>${securityHead}</head><body>${source}</body></html>`;
 }
 
 function injectPreviewRuntime(html = "") {
@@ -144,6 +187,13 @@ function injectPreviewRuntime(html = "") {
     "if(!target)return;",
     "event.preventDefault();",
     "target.scrollIntoView({behavior:'smooth',block:'start'});",
+    "});",
+    "document.addEventListener('click',function(event){",
+    "if(event.defaultPrevented)return;",
+    "var link=event.target&&event.target.closest?event.target.closest('a[href]'):null;",
+    "if(!link)return;",
+    "var href=link.getAttribute('href')||'';",
+    "if(href.charAt(0)!=='#')event.preventDefault();",
     "});",
     "})();",
     "<\/script>",
@@ -398,9 +448,12 @@ function escapeAttribute(value = "") {
 }
 
 exports._private = {
+  previewVersionFields,
+  previewIdentity,
   getVersionParam,
   getQueryParams,
   inlinePackageAssets,
+  applyPreviewSecurityPolicy,
   normalizePackage,
   recoverVersionFromRequest,
   renderPackageHtml,
