@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "release": "CX2 Sprint 3 magic-link account activation product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260726190000_cx2_magic_link_account_activation.sql"
+  ],
+  "authority": [
+    "docs/evidence/cx2-sprint-3-magic-link/STAGING_CERTIFICATION.json"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

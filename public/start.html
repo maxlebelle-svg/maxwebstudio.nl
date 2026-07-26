@@ -143,8 +143,77 @@
             <span class="cx2-preview-sheet-icon" id="cx2-preview-sheet-icon" aria-hidden="true">✏️</span>
             <h2 id="cx2-preview-sheet-title">Feedback</h2>
             <p id="cx2-preview-sheet-message">Feedback geven wordt in de volgende stap beschikbaar.</p>
+            <button type="button" id="cx2-preview-activate" hidden>Activeer mijn omgeving</button>
             <button type="button" id="cx2-preview-sheet-close">Begrepen</button>
           </section>
+        </div>
+      </section>
+
+      <section class="cx2-activation-dialog" id="cx2-activation-dialog" role="dialog" aria-modal="true" aria-labelledby="cx2-activation-title" hidden>
+        <div class="cx2-activation-card" data-state="ready">
+          <header class="cx2-activation-brand">
+            <img src="/assets/maxwebstudio-logo-mark.png" alt="" />
+            <span>Max Webstudio</span>
+          </header>
+
+          <div class="cx2-activation-state" id="cx2-activation-ready">
+            <span class="cx2-activation-icon" aria-hidden="true">✉️</span>
+            <p class="cx2-activation-kicker">Jouw persoonlijke omgeving</p>
+            <h2 id="cx2-activation-title">Bijna klaar! <span aria-hidden="true">🎉</span></h2>
+            <p>We sturen je een magische link waarmee je jouw persoonlijke omgeving veilig activeert.</p>
+            <label class="cx2-activation-email">E-mailadres
+              <span id="cx2-activation-email" aria-label="Je gecontroleerde e-mailadres">j***@example.nl</span>
+            </label>
+            <button class="cx2-activation-primary" id="cx2-activation-send" type="button">Verstuur magic link</button>
+            <button class="cx2-activation-link" data-cx2-wrong-email type="button">Dit e-mailadres klopt niet</button>
+          </div>
+
+          <div class="cx2-activation-state" id="cx2-activation-sending" role="status" hidden>
+            <span class="cx2-activation-spinner" aria-hidden="true"></span>
+            <h2>Even geduld…</h2>
+            <p>We bereiden jouw veilige activatielink voor.</p>
+          </div>
+
+          <div class="cx2-activation-state" id="cx2-activation-sent" hidden>
+            <span class="cx2-activation-icon cx2-activation-icon-success" aria-hidden="true">✓</span>
+            <p class="cx2-activation-kicker">Controleer je inbox</p>
+            <h2>E-mail verstuurd!</h2>
+            <p>We hebben de magische link gestuurd naar <strong id="cx2-activation-sent-email">j***@example.nl</strong>.</p>
+            <ol class="cx2-activation-steps">
+              <li><span>1</span>Open je e-mail.</li>
+              <li><span>2</span>Klik op de magische link.</li>
+              <li><span>3</span>Je wordt automatisch ingelogd.</li>
+              <li><span>4</span>Je project opent direct.</li>
+            </ol>
+            <button class="cx2-activation-secondary" id="cx2-activation-resend" type="button" disabled>Opnieuw versturen over <span id="cx2-activation-countdown">60</span>s</button>
+            <button class="cx2-activation-link" data-cx2-wrong-email type="button">Dit e-mailadres klopt niet</button>
+          </div>
+
+          <div class="cx2-activation-state" id="cx2-activation-callback" role="status" hidden>
+            <span class="cx2-activation-spinner" aria-hidden="true"></span>
+            <p class="cx2-activation-kicker">Veilige controle</p>
+            <h2>Activatie verwerken…</h2>
+            <p>We herstellen je sessie, controleren je uitnodiging en openen daarna het juiste project.</p>
+          </div>
+
+          <div class="cx2-activation-state" id="cx2-activation-success" hidden>
+            <span class="cx2-activation-icon cx2-activation-icon-success" aria-hidden="true">✓</span>
+            <p class="cx2-activation-kicker">Account geactiveerd</p>
+            <h2>Welkom terug, <span id="cx2-activation-first-name">daar</span> <span aria-hidden="true">👋</span></h2>
+            <p>Jouw persoonlijke omgeving is geactiveerd.</p>
+            <a class="cx2-activation-primary" id="cx2-activation-dashboard" href="/klantportaal.html?view=website">Naar mijn dashboard</a>
+          </div>
+
+          <div class="cx2-activation-state" id="cx2-activation-error" role="alert" hidden>
+            <span class="cx2-activation-icon cx2-activation-icon-error" aria-hidden="true">!</span>
+            <p class="cx2-activation-kicker">Veilig gestopt</p>
+            <h2>Activeren lukt nu niet.</h2>
+            <p id="cx2-activation-error-message">Je link kan verlopen of ingetrokken zijn. Vraag Max Webstudio zo nodig om een nieuwe link.</p>
+            <button class="cx2-activation-secondary" id="cx2-activation-retry" type="button">Opnieuw proberen</button>
+          </div>
+
+          <p class="cx2-activation-live" id="cx2-activation-live" role="status" aria-live="polite"></p>
+          <footer><span aria-hidden="true">♢</span> Veilig en zonder wachtwoord</footer>
         </div>
       </section>
     </main>

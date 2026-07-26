@@ -10,7 +10,7 @@ exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body || "{}");
     const action = clean(body.action || "open").toLowerCase();
-    if (!["open", "preview"].includes(action)) return invalidSession(context.environment);
+    if (!["open", "preview", "activation"].includes(action)) return invalidSession(context.environment);
     const secret = readSessionCookie(event.headers?.cookie || event.headers?.Cookie, context.environment);
     if (!secret) return invalidSession(context.environment, 401);
 
@@ -27,6 +27,18 @@ exports.handler = async (event) => {
       ? clean(publication.relationship_id) === clean(binding.lead_id) && !binding.customer_id
       : publication?.relationship_type === "customer" && clean(publication.relationship_id) === clean(binding.customer_id);
     if (!publication?.id || publication.enabled !== true || publication.revoked_at || clean(publication.preview_version_id) !== clean(version.id) || !ownershipMatches) return invalidLink();
+
+    if (action === "activation") {
+      const link = await one(context, "client_activation_links", `select=id,intended_email,status,expires_at&id=eq.${encodeURIComponent(binding.activation_link_id)}&limit=1`);
+      if (!link?.id || !["active", "opened"].includes(clean(link.status)) || new Date(link.expires_at).getTime() <= Date.now()) return invalidLink();
+      return json(200, {
+        success: true,
+        activation: {
+          maskedEmail: maskEmail(link.intended_email),
+          canActivate: true,
+        },
+      });
+    }
 
     if (action === "preview") {
       const resolved = await previewRenderer.resolvePreviewPackage(context, version);
@@ -73,8 +85,9 @@ async function rpc(context, name, body) {
 function restHeaders(key) { return { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json", "Accept-Profile": "public", "Content-Profile": "public" }; }
 function config() { const supabaseUrl = clean(process.env.SUPABASE_URL).replace(/\/$/, ""); const serviceRoleKey = clean(process.env.SUPABASE_SERVICE_ROLE_KEY); const environment = clean(process.env.APP_ENV || process.env.APP_ENVIRONMENT || "staging"); return { supabaseUrl, serviceRoleKey, environment, available: Boolean(supabaseUrl && serviceRoleKey) }; }
 function first(value) { return Array.isArray(value) ? value[0] || null : value || null; }
+function maskEmail(value = "") { const [local, domain] = clean(value).split("@"); if (!local || !domain) return "j***@***"; return `${local.slice(0, 1)}${"*".repeat(Math.min(5, Math.max(3, local.length - 1)))}@${domain}`; }
 function invalidLink() { return json(404, { success: false, error: "Deze persoonlijke link is ongeldig of niet meer actief." }); }
 function invalidSession(environment, statusCode = 404) { return json(statusCode, { success: false, error: "Deze persoonlijke link is ongeldig of niet meer actief." }, clearSessionCookie(environment)); }
 function json(statusCode, body, cookie = "") { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store, max-age=0", "Referrer-Policy": "no-referrer" }, multiValueHeaders: cookie ? { "Set-Cookie": [cookie] } : undefined, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { config, invalidLink, invalidSession, journeyId };
+exports._private = { config, invalidLink, invalidSession, journeyId, maskEmail };

@@ -470,6 +470,29 @@ export async function consumeRecoverySessionFromUrl() {
   return { success: true, provider: "supabase" };
 }
 
+export async function consumeMagicLinkSessionFromUrl() {
+  const config = await getRuntimeAuthConfig();
+  if (!config.active) return { success: false, reason: "auth_inactive" };
+  const hash = new URLSearchParams(String(window.location.hash || "").replace(/^#/, ""));
+  const accessToken = hash.get("access_token") || "";
+  const refreshToken = hash.get("refresh_token") || "";
+  const type = hash.get("type") || "magiclink";
+  if (!accessToken || !["magiclink", "signup", "invite"].includes(type)) return { success: false, reason: "no_magic_link_session" };
+  const expiresIn = Number(hash.get("expires_in") || 3600);
+  const session = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    token_type: hash.get("token_type") || "bearer",
+    expires_in: expiresIn,
+    expires_at: Number(hash.get("expires_at")) || Math.floor(Date.now() / 1000) + expiresIn,
+  };
+  storeSession(session);
+  const url = new URL(window.location.href);
+  url.hash = "";
+  window.history.replaceState({}, document.title, url.pathname + url.search);
+  return { success: true, provider: "supabase", session };
+}
+
 export async function updatePassword(newPassword) {
   if (!newPassword) throw new Error("Vul een nieuw wachtwoord in.");
   const config = await getRuntimeAuthConfig();
@@ -585,6 +608,7 @@ export const supabaseAuthProvider = {
   getUser,
   resetPassword,
   consumeRecoverySessionFromUrl,
+  consumeMagicLinkSessionFromUrl,
   updatePassword,
   onAuthStateChange,
   getStatus: getSupabaseAuthStatus,

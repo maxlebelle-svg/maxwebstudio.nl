@@ -50,13 +50,14 @@ test("preview behoudt sandbox, sessiebinding en veilige frontendgrenzen", () => 
   }
 });
 
-test("voorbereidende sheets voeren geen feedback, approval of accountmutatie uit", () => {
+test("preview voert geen feedback of approval uit en draagt accountactivatie expliciet over aan Sprint 3", () => {
   const publicSource = `${html}\n${script}`;
   assert.match(publicSource, /Feedback geven wordt in de volgende stap beschikbaar\./);
-  assert.match(publicSource, /Activeer straks jouw persoonlijke omgeving om verder te gaan\./);
+  assert.match(publicSource, /Activeer jouw persoonlijke omgeving om veilig verder te gaan\./);
   assert.match(script, /openActionSheet\("feedback"\)/);
   assert.match(script, /openActionSheet\("approval"\)/);
-  assert.doesNotMatch(script, /requestContext\("(?:feedback|approval|activate)"\)/i);
+  assert.doesNotMatch(script, /requestContext\("(?:feedback|approval)"\)/i);
+  assert.match(script, /requestContext\("activation"\)/);
 });
 
 test("loading, ready, failed, expired en revoked blijven veilige toestanden", () => {
