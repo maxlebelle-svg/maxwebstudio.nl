@@ -35,6 +35,22 @@ exports.handler = async (event) => {
           input_step_key: stepKey,
           input_idempotency_key: idempotencyKey,
         });
+      } else if (action === 'submit_assessment') {
+        const answers = input.answers;
+        if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
+          return json(400, { success: false, code: "INVALID_ASSESSMENT_ANSWERS", error: "Beantwoord alle toetsvragen." });
+        }
+        await rpc(context, 'partner_submit_assessment', {
+          input_auth_user_id: user.id,
+          input_assessment_version_code: text(input.assessmentVersionCode),
+          input_answers: answers,
+          input_idempotency_key: idempotencyKey,
+        });
+      } else if (action === 'finalize_certification') {
+        await rpc(context, 'partner_finalize_certification', {
+          input_auth_user_id: user.id,
+          input_idempotency_key: idempotencyKey,
+        });
       } else {
         return json(400, { success: false, code: "INVALID_ACTION", error: "Onbekende onboardingactie." });
       }
@@ -48,6 +64,9 @@ exports.handler = async (event) => {
     const training = gate.onboarding
       ? await fetchTraining(context, gate.onboarding.training_program_version)
       : { version: null, modules: [] };
+    const certification = gate.onboarding
+      ? await fetchCertification(context, gate.onboarding, gate.steps || [])
+      : { assessment: null, attempts: [], certificate: null };
     return json(200, {
       success: true,
       access: { allowed: gate.allowed, reason: gate.reason, redirectTo: gate.redirectTo || "" },
@@ -55,6 +74,7 @@ exports.handler = async (event) => {
       onboarding: safeOnboarding(gate.onboarding),
       steps: (gate.steps || []).map(safeStep),
       training,
+      certification,
     });
   } catch (error) {
     console.error("Partner onboarding request failed", { code: error.code || "", status: error.status || 500 });
@@ -107,6 +127,50 @@ async function fetchTraining(context, versionCode) {
   };
 }
 
+async function fetchCertification(context, onboarding, steps) {
+  const versions = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_assessment_versions?select=id,version_code,title,pass_score,max_attempts,questions&training_version_code=eq.${encodeURIComponent(onboarding.training_program_version)}&status=eq.published&limit=1`);
+  const version = versions?.[0] || null;
+  const attempts = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_assessment_attempts?select=id,attempt_number,score,passed,submitted_at&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=attempt_number.desc`);
+  const certificates = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_certificates?select=certificate_id,partner_name,certification_type,training_version_code,status,issued_at,expires_at,revoked_at,disclaimer&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=issued_at.desc&limit=1`);
+  const trainingReady = (steps || []).filter((step) => step.step_type === 'training' || Number(step.step_order) <= 7)
+    .every((step) => step.status === 'completed');
+  return {
+    assessment: version ? {
+      versionCode: version.version_code,
+      title: version.title,
+      passScore: Number(version.pass_score),
+      maxAttempts: Number(version.max_attempts),
+      available: trainingReady && (attempts || []).length < Number(version.max_attempts),
+      questions: (version.questions || []).map((question) => ({
+        id: question.id,
+        prompt: question.prompt,
+        options: Array.isArray(question.options) ? question.options : [],
+      })),
+    } : null,
+    attempts: (attempts || []).map((attempt) => ({
+      id: attempt.id,
+      attemptNumber: Number(attempt.attempt_number),
+      score: Number(attempt.score),
+      passed: Boolean(attempt.passed),
+      submittedAt: attempt.submitted_at,
+    })),
+    certificate: certificates?.[0] ? {
+      certificateId: certificates[0].certificate_id,
+      partnerName: certificates[0].partner_name,
+      certificationType: certificates[0].certification_type,
+      trainingVersionCode: certificates[0].training_version_code,
+      status: certificates[0].status,
+      issuedAt: certificates[0].issued_at,
+      expiresAt: certificates[0].expires_at,
+      revokedAt: certificates[0].revoked_at,
+      disclaimer: certificates[0].disclaimer,
+    } : null,
+  };
+}
+
 function config() {
   const supabaseUrl = text(process.env.SUPABASE_URL).replace(/\/$/, "");
   const anonKey = text(process.env.SUPABASE_ANON_KEY);
@@ -117,11 +181,11 @@ function config() {
 
 function safePartnerProfile(row) { return row ? { id: row.id, status: row.status, assignedManagerProfileId: row.assigned_manager_profile_id || null } : null; }
 function safeOnboarding(row) { return row ? { id: row.id, status: row.status, currentStep: row.current_step, trainingProgramVersion: row.training_program_version, startedAt: row.started_at, completedAt: row.completed_at, activatedAt: row.activated_at } : null; }
-function safeStep(row) { return { id: row.id, stepKey: row.step_key, order: Number(row.step_order), status: row.status, contentVersion: row.content_version, completedAt: row.completed_at }; }
+function safeStep(row) { return { id: row.id, stepKey: row.step_key, order: Number(row.step_order), type: row.step_type, status: row.status, contentVersion: row.content_version, completedAt: row.completed_at }; }
 function bearer(event) { const value = event.headers?.authorization || event.headers?.Authorization || ""; return value.startsWith("Bearer ") ? value.slice(7).trim() : ""; }
 function parse(body) { try { return JSON.parse(body || "{}"); } catch { throw coded("INVALID_JSON", 400, "Ongeldige invoer."); } }
 function text(value = "") { return String(value || "").trim(); }
 function coded(code, status, message) { return Object.assign(new Error(message), { code, status }); }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }, body: JSON.stringify(body) }; }
 
-exports._private = { safePartnerProfile, safeOnboarding, safeStep, fetchTraining };
+exports._private = { safePartnerProfile, safeOnboarding, safeStep, fetchTraining, fetchCertification };

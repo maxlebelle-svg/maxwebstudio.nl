@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+  <title>Partners | Max Webstudio Admin</title>
+  <link rel="stylesheet" href="/src/partner/admin-partners.css">
+  <script type="module" src="/src/admin-route-guard.js"></script>
+</head>
+<body>
+  <header class="topbar"><a href="/admin-dashboard.html"><b>MAX</b> WEBSTUDIO</a><span>Partnerbeheer</span></header>
+  <main>
+    <section class="hero"><div><p class="eyebrow">Adminportaal</p><h1>Partners</h1><p>Bekijk onboarding, toetsresultaten en certificering vanuit één controleerbaar overzicht.</p></div><div class="metric"><strong id="partnerCount">–</strong><span>partners zichtbaar</span></div></section>
+    <section class="verify panel"><div><p class="eyebrow">Certificaatcontrole</p><h2>Verifieer een certificaat-ID</h2><p>Controleer status, geldigheid en trainingsversie. Een certificaat is een interne kwalificatie.</p></div><form id="verifyForm"><label for="certificateId">Certificaat-ID</label><div><input id="certificateId" placeholder="MWS-PARTNER-…" required><button>Verifiëren</button></div></form><div id="verification" class="result" hidden></div></section>
+    <div class="toolbar"><h2>Onboardingoverzicht</h2><select id="statusFilter" aria-label="Filter status"><option value="">Alle statussen</option><option value="invited">Uitgenodigd</option><option value="in_progress">Bezig</option><option value="assessment_failed">Toets onvoldoende</option><option value="awaiting_documents">Wacht op afronding</option><option value="active">Actief</option><option value="revoked">Ingetrokken</option></select></div>
+    <p id="notice" class="notice">Partnergegevens worden geladen…</p><section id="partners" class="partners" aria-live="polite"></section>
+  </main>
+  <script type="module" src="/src/partner/admin-partners.js"></script>
+</body>
+</html>

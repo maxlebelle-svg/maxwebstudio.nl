@@ -65,7 +65,7 @@ async function fetchPartnerGate({ supabaseUrl, serviceRoleKey, profile }) {
   const onboarding = onboardings?.[0] || null;
   const steps = onboarding
     ? await rest(supabaseUrl, serviceRoleKey,
-      `partner_onboarding_steps?select=id,onboarding_id,step_key,step_order,status,content_version,completed_at&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=step_order.asc`)
+      `partner_onboarding_steps?select=id,onboarding_id,step_key,step_order,step_type,status,content_version,completed_at&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=step_order.asc`)
     : [];
 
   return {

@@ -26,6 +26,13 @@ exports.handler = async (event) => {
           input_reason: text(input.reason),
           input_idempotency_key: text(input.idempotencyKey) || `admin-reset:${crypto.randomUUID()}`,
         });
+      } else if (action === 'revoke_certificate') {
+        await rpc(context, 'partner_revoke_certificate', {
+          input_certificate_id: text(input.certificateId).toUpperCase(),
+          input_actor_profile_id: auth.admin.profileId,
+          input_reason: text(input.reason),
+          input_idempotency_key: text(input.idempotencyKey) || `certificate-revoke:${crypto.randomUUID()}`,
+        });
       } else {
         return json(400, { success: false, error: "Onbekende beheeractie." });
       }
@@ -34,11 +41,22 @@ exports.handler = async (event) => {
     const visible = auth.admin.role === 'sales_manager'
       ? partnerProfiles.filter((row) => row.assigned_manager_profile_id === auth.admin.profileId)
       : partnerProfiles;
+    const profileIds = visible.map((row) => row.profile_id);
+    const profiles = profileIds.length ? await rest(context.supabaseUrl, context.serviceRoleKey,
+      `profiles?select=id,name,email,role,status&id=in.(${profileIds.join(',')})`) : [];
     const ids = visible.map((row) => row.id);
     const onboardings = ids.length ? await rest(context.supabaseUrl, context.serviceRoleKey, `partner_onboardings?select=*&partner_profile_id=in.(${ids.join(',')})&order=created_at.desc`) : [];
     const onboardingIds = onboardings.map((row) => row.id);
     const steps = onboardingIds.length ? await rest(context.supabaseUrl, context.serviceRoleKey, `partner_onboarding_steps?select=*&onboarding_id=in.(${onboardingIds.join(',')})&order=step_order.asc`) : [];
-    return json(200, { success: true, partnerProfiles: visible, onboardings, steps });
+    const requestedCertificateId = text(event.queryStringParameters?.certificateId).toUpperCase();
+    const certificateFilter = onboardingIds.length
+      ? `${requestedCertificateId ? `certificate_id=eq.${encodeURIComponent(requestedCertificateId)}&` : ''}onboarding_id=in.(${onboardingIds.join(',')})`
+      : '';
+    const certificates = certificateFilter ? await rest(context.supabaseUrl, context.serviceRoleKey,
+      `partner_certificates?select=certificate_id,onboarding_id,partner_profile_id,partner_name,certification_type,training_version_code,status,issued_at,expires_at,revoked_at,revocation_reason,disclaimer&${certificateFilter}&order=issued_at.desc`) : [];
+    const attempts = onboardingIds.length ? await rest(context.supabaseUrl, context.serviceRoleKey,
+      `partner_assessment_attempts?select=id,onboarding_id,attempt_number,score,passed,submitted_at&onboarding_id=in.(${onboardingIds.join(',')})&order=submitted_at.desc`) : [];
+    return json(200, { success: true, profiles, partnerProfiles: visible, onboardings, steps, attempts, certificates });
   } catch (error) {
     console.error("Admin partner onboarding failed", { code: error.code || "", status: error.status || 500 });
     return json(error.status || 500, { success: false, error: error.status ? error.message : "Partneronboarding kon niet worden beheerd." });
