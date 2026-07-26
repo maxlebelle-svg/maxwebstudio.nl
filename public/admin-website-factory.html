@@ -2095,9 +2095,29 @@
             </label>
           </div>
           <div class="admin-onboarding-preview" id="new-customer-onboarding-preview" hidden>
-            <strong>Welkomstmail concept</strong>
-            <span id="new-customer-mail-subject">Nog geen concept klaar.</span>
-            <pre id="new-customer-mail-body"></pre>
+            <div class="admin-email-preview-heading">
+              <div>
+                <strong>E-mailvoorbeeld</strong>
+                <small>Zo ontvangt de klant de welkomstmail.</small>
+              </div>
+              <mark>Concept · niet verzonden</mark>
+            </div>
+            <div class="admin-email-preview-client" aria-label="Voorbeeld van de welkomstmail">
+              <div class="admin-email-preview-clientbar" aria-hidden="true">
+                <i></i><i></i><i></i>
+                <span>Nieuw bericht</span>
+              </div>
+              <div class="admin-email-preview-envelope">
+                <span class="admin-email-preview-avatar" aria-hidden="true">M</span>
+                <div>
+                  <strong>Max Webstudio</strong>
+                  <small>info@maxwebstudio.nl</small>
+                </div>
+                <span class="admin-email-preview-recipient" id="new-customer-mail-recipient">Aan: klant</span>
+              </div>
+              <div class="admin-email-preview-subject" id="new-customer-mail-subject">Nog geen concept klaar.</div>
+              <article class="admin-email-preview-message" id="new-customer-mail-body"></article>
+            </div>
           </div>
           <div class="admin-profile-actions">
             <button class="button primary" id="new-customer-save" type="submit">Klantportaal klaarzetten</button>
@@ -3348,6 +3368,7 @@
         const newCustomerOnboardingPreview = document.getElementById("new-customer-onboarding-preview");
         const newCustomerMailSubject = document.getElementById("new-customer-mail-subject");
         const newCustomerMailBody = document.getElementById("new-customer-mail-body");
+        const newCustomerMailRecipient = document.getElementById("new-customer-mail-recipient");
         const newSendWelcomeEmail = document.getElementById("new-send-welcome-email");
         const convertActiveLeadTopbar = document.getElementById("convert-active-lead-topbar");
         const leadCustomerModal = document.getElementById("lead-customer-modal");
@@ -11884,12 +11905,36 @@
           if (!mailPreview) {
             newCustomerOnboardingPreview.hidden = true;
             newCustomerMailSubject.textContent = "Nog geen concept klaar.";
-            newCustomerMailBody.textContent = "";
+            newCustomerMailRecipient.textContent = "Aan: klant";
+            newCustomerMailBody.replaceChildren();
             return;
           }
+          const name = String(document.getElementById("new-name")?.value || "klant").trim() || "klant";
+          const email = String(document.getElementById("new-email")?.value || "").trim();
+          const company = String(document.getElementById("new-company")?.value || "je bedrijf").trim() || "je bedrijf";
+          const website = String(document.getElementById("new-website")?.value || "").trim();
+          const packageName = String(document.getElementById("new-package")?.value || "Basis").trim() || "Basis";
           newCustomerOnboardingPreview.hidden = false;
           newCustomerMailSubject.textContent = mailPreview.subject || "Welkom bij Max Webstudio – je klantportaal staat klaar";
-          newCustomerMailBody.textContent = mailPreview.text || "";
+          newCustomerMailRecipient.textContent = `Aan: ${email || "e-mailadres klant"}`;
+          newCustomerMailBody.innerHTML = `
+            <div class="admin-email-brand">
+              <span class="admin-email-brand-mark" aria-hidden="true">M<span>•</span></span>
+              <span><strong>Max Webstudio</strong><small>BUILD BETTER ONLINE</small></span>
+            </div>
+            <p class="admin-email-eyebrow">JOUW PERSOONLIJKE KLANTPORTAAL</p>
+            <h3>Je klantportaal staat klaar.</h3>
+            <p>Hoi ${escapeHtml(name)},</p>
+            <p>Je persoonlijke klantportaal voor <strong>${escapeHtml(company)}</strong> is klaargezet. Hier volg je de voortgang van je website en vind je straks alles overzichtelijk op één plek.</p>
+            <div class="admin-email-project-card">
+              <span><small>Bedrijf</small><strong>${escapeHtml(company)}</strong></span>
+              ${website ? `<span><small>Website</small><strong>${escapeHtml(website)}</strong></span>` : ""}
+              <span><small>Pakket</small><strong>${escapeHtml(packageName)}</strong></span>
+            </div>
+            <span class="admin-email-primary-action" aria-disabled="true">Account activeren <b aria-hidden="true">→</b></span>
+            <div class="admin-email-security-note"><span aria-hidden="true">✓</span><p><strong>Veilig en persoonlijk</strong><small>Je stelt zelf veilig je toegang in. We versturen nooit een wachtwoord per e-mail.</small></p></div>
+            <p class="admin-email-signoff">Heb je vragen? We helpen je graag.<br /><strong>Team Max Webstudio</strong></p>
+            <footer><span>maxwebstudio.nl</span><span>info@maxwebstudio.nl</span><span>085 130 2326</span></footer>`;
         }
 
         async function postCustomer(payload) {
