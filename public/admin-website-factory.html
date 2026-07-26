@@ -102,6 +102,7 @@
           </label>
           <div class="admin-page-actions">
             <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
+            <button class="button secondary" id="convert-active-lead-topbar" type="button" hidden>Van deze lead een klant maken</button>
             <button class="button primary" id="open-new-customer-topbar" type="button">Nieuwe klant</button>
           </div>
         </header>
@@ -3348,6 +3349,7 @@
         const newCustomerMailSubject = document.getElementById("new-customer-mail-subject");
         const newCustomerMailBody = document.getElementById("new-customer-mail-body");
         const newSendWelcomeEmail = document.getElementById("new-send-welcome-email");
+        const convertActiveLeadTopbar = document.getElementById("convert-active-lead-topbar");
         const leadCustomerModal = document.getElementById("lead-customer-modal");
         const leadCustomerForm = document.getElementById("lead-customer-form");
         const leadCustomerSave = document.getElementById("lead-customer-save");
@@ -3370,6 +3372,7 @@
           notes: document.getElementById("lead-customer-notes"),
         };
         let leadCustomerWizardContext = null;
+        let newCustomerWizardContext = null;
         const requestList = document.getElementById("change-request-list");
         const requestStatusFilter = document.getElementById("filter-status");
         const requestPriorityFilter = document.getElementById("filter-priority");
@@ -11830,6 +11833,7 @@
               domain: document.getElementById("new-website").value,
               package: document.getElementById("new-package").value,
               projectName: document.getElementById("new-project-name").value,
+              leadId: newCustomerWizardContext?.leadId || "",
               sendWelcomeEmail: Boolean(newSendWelcomeEmail?.checked),
             };
 
@@ -11850,8 +11854,18 @@
 
             await loadCRMData(false);
             renderNewCustomerMailPreview(data.mailPreview);
-            state.selectedCustomerId = data.onboarding?.profile?.id || "";
+            state.selectedCustomerId = data.onboarding?.customer?.id || data.onboarding?.profile?.id || "";
             if (state.selectedCustomerId) selectCustomer(state.selectedCustomerId);
+            if (newCustomerWizardContext?.leadId) {
+              const customerId = data.onboarding?.customer?.id || "";
+              updateLeadReferenceToCustomer(newCustomerWizardContext.leadId, customerId);
+              const activeLead = selectedLead();
+              if (activeLead && String(activeLead.id || "") === String(newCustomerWizardContext.leadId)) {
+                activeLead.converted_customer_id = customerId;
+                activeLead.convertedCustomerId = customerId;
+              }
+              syncActiveLeadConversionAction({ entityType: "lead" });
+            }
             const emailStatus = data.email?.sent
               ? " Welkomstmail is via Resend verzonden."
               : " Welkomstmail is als concept voorbereid of kon nog niet worden verzonden.";
@@ -17454,6 +17468,9 @@
 
         function openNewCustomerModal(prefill = {}) {
           newCustomerForm.reset();
+          newCustomerWizardContext = {
+            leadId: String(prefill.leadId || "").trim(),
+          };
           const prefillValue = (id, value) => {
             const field = document.getElementById(id);
             if (field && value) field.value = value;
@@ -17471,6 +17488,54 @@
           setNewCustomerMessage(prefill.message || "", prefill.message ? "success" : "");
         }
         window.openNewCustomerModal = openNewCustomerModal;
+
+        function convertedCustomerIdForLead(lead = {}) {
+          return String(lead.converted_customer_id || lead.convertedCustomerId || "").trim();
+        }
+
+        function onboardingPackageForLead(lead = {}) {
+          const factoryPackage = packageTypeFromValue(lead.packageType || lead.package_type || lead.package || lead.packageName || lead.package_name);
+          if (factoryPackage === "premium") return "Premium";
+          if (factoryPackage === "business") return "Plus";
+          return "Basis";
+        }
+
+        function syncActiveLeadConversionAction(context = null) {
+          if (!convertActiveLeadTopbar) return;
+          const lead = context?.entityType === "lead" ? selectedLead() : null;
+          const canConvert = Boolean(lead?.id && !convertedCustomerIdForLead(lead));
+          convertActiveLeadTopbar.hidden = !canConvert;
+          convertActiveLeadTopbar.disabled = !canConvert;
+        }
+
+        function openActiveLeadCustomerOnboarding() {
+          const lead = selectedLead();
+          if (!lead?.id) {
+            setAdminAccessMessage("Selecteer eerst een lead om naar klant om te zetten.", "error");
+            return;
+          }
+          if (convertedCustomerIdForLead(lead)) {
+            setAdminAccessMessage("Deze lead is al aan een klant gekoppeld.", "error");
+            syncActiveLeadConversionAction({ entityType: "lead" });
+            return;
+          }
+          const company = lead.companyName || lead.company_name || lead.businessName || lead.business_name || lead.company || "";
+          const website = String(lead.websiteUrl || lead.website_url || lead.website || "")
+            .replace(/^https?:\/\//i, "")
+            .replace(/^www\./i, "")
+            .replace(/\/.*$/, "");
+          openNewCustomerModal({
+            leadId: lead.id,
+            name: lead.contactName || lead.contact_name || lead.contact || lead.name || company,
+            email: lead.email || "",
+            phone: lead.phone || lead.telephone || "",
+            company,
+            website,
+            package: onboardingPackageForLead(lead),
+            projectName: company ? `Website ${company}` : "Nieuwe website",
+            message: "De leadgegevens zijn automatisch ingevuld. Controleer ontbrekende velden; de welkomstmail wordt alleen verstuurd als je die optie bewust aanvinkt.",
+          });
+        }
 
         async function saveRequestStatus() {
           const request = state.requests.find((item) => item.id === state.selectedRequestId);
@@ -17739,6 +17804,7 @@
         }
 
         document.getElementById("open-new-customer")?.addEventListener("click", openNewCustomerModal);
+        convertActiveLeadTopbar?.addEventListener("click", openActiveLeadCustomerOnboarding);
         document.getElementById("open-new-customer-topbar").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-quick").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
@@ -23942,10 +24008,12 @@
         function renderActiveContextBanner(context = null) {
           if (!elements.activeContext) return;
           if (!context) {
+            syncActiveLeadConversionAction(null);
             elements.activeContext.hidden = true;
             elements.activeContext.innerHTML = "";
             return;
           }
+          syncActiveLeadConversionAction(context);
           const isCustomer = context.entityType === "customer";
           const website = String(context.website || "").trim();
           const websiteHref = website ? (website.startsWith("http") ? website : `https://${website}`) : "";

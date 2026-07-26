@@ -50,6 +50,16 @@ exports.handler = async (event) => {
     const emailStatus = input.sendWelcomeEmail ? "send_requested" : "draft_only";
     const ownerMetadata = buildOwnerMetadata(input);
     const sourceLead = input.leadId ? await readByLookup({ supabaseUrl, serviceRoleKey, table: "leads", lookup: `id=eq.${encodeURIComponent(input.leadId)}` }) : null;
+    if (input.leadId && !sourceLead?.id) {
+      const missingLeadError = new Error("De geselecteerde bronlead bestaat niet meer.");
+      missingLeadError.statusCode = 404;
+      throw missingLeadError;
+    }
+    if (cleanText(sourceLead?.converted_customer_id)) {
+      const convertedLeadError = new Error("Deze lead is al aan een klant gekoppeld.");
+      convertedLeadError.statusCode = 409;
+      throw convertedLeadError;
+    }
     const leadAttribution = buildLeadAttribution(sourceLead);
     const authUser = await ensureAuthUser(supabaseUrl, serviceRoleKey, input);
     const existingProfile = await readByLookup({ supabaseUrl, serviceRoleKey, table: "profiles", lookup: `auth_user_id=eq.${encodeURIComponent(authUser.id)}` });
@@ -192,7 +202,12 @@ exports.handler = async (event) => {
       ? await sendWelcomeEmailMessage(input, mailPreview, { customer, project, admin: adminCheck.admin })
       : { requested: false, sent: false, warning: accountAlreadyActive ? "Bestaand actief account hergebruikt; er is geen nieuwe account-aanmaakmail verstuurd." : "Welkomstmail is alleen als concept voorbereid." };
     if (input.leadId) {
-      await linkLeadToCustomer(supabaseUrl, serviceRoleKey, input.leadId, customer.id);
+      const linkedLead = await linkLeadToCustomer(supabaseUrl, serviceRoleKey, input.leadId, customer.id);
+      if (!linkedLead?.id || cleanText(linkedLead.converted_customer_id) !== cleanText(customer.id)) {
+        const linkError = new Error("De klant is aangemaakt, maar de bronlead kon niet canoniek worden gekoppeld.");
+        linkError.statusCode = 502;
+        throw linkError;
+      }
       await finalizeLeadDemoIdentity(supabaseUrl, serviceRoleKey, input.leadId, customer.id, authUser.id);
     }
 
@@ -309,28 +324,25 @@ function getPortalStatus(input = {}) {
 
 async function linkLeadToCustomer(supabaseUrl, serviceRoleKey, leadId, customerId) {
   if (!leadId || !customerId) return null;
-  try {
-    const rows = await supabaseFetch(
-      `${supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}`,
-      {
-        method: "PATCH",
-        headers: {
-          ...restHeaders(serviceRoleKey),
-          "Content-Type": "application/json",
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({
-          customer_id: customerId,
-          status: "converted",
-          updated_at: new Date().toISOString(),
-        }),
-      }
-    );
-    return Array.isArray(rows) ? rows[0] || null : rows;
-  } catch (error) {
-    console.error("Lead could not be linked to customer", { leadId, customerId, message: error.message });
-    return null;
-  }
+  const now = new Date().toISOString();
+  const rows = await supabaseFetch(
+    `${supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}&converted_customer_id=is.null`,
+    {
+      method: "PATCH",
+      headers: {
+        ...restHeaders(serviceRoleKey),
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        converted_customer_id: customerId,
+        converted_at: now,
+        status: "converted",
+        updated_at: now,
+      }),
+    }
+  );
+  return Array.isArray(rows) ? rows[0] || null : rows;
 }
 
 async function ensureAuthUser(supabaseUrl, serviceRoleKey, input) {
