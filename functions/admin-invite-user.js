@@ -1,9 +1,15 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const crypto = require("crypto");
+const {
+  CANONICAL_ROLES,
+  CANONICAL_PROFILE_STATUSES,
+  normalizeRole,
+  normalizeProfileStatus,
+} = require("./services/profileAccessPolicy");
 
-const allowedRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "developer", "designer", "support", "customer"]);
-const allowedStatuses = new Set(["invited", "active", "disabled", "archived"]);
+const allowedRoles = new Set(CANONICAL_ROLES.filter((role) => role !== "demo_user"));
+const allowedStatuses = new Set(CANONICAL_PROFILE_STATUSES);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const productionActivationUrl = "https://maxwebstudio.nl/account-activeren";
 
@@ -126,8 +132,8 @@ function validateInvitePayload(payload = {}) {
   const name = cleanText(payload.name || payload.naam);
   const email = cleanText(payload.email).toLowerCase();
   const phone = cleanText(payload.phone || payload.telephone || payload.telefoon);
-  const role = cleanText(payload.role || "sales_partner").toLowerCase();
-  const status = cleanText(payload.status || "invited").toLowerCase();
+  const role = normalizeRole(payload.role || "sales_partner");
+  const status = normalizeProfileStatus(payload.status || "invited");
 
   if (!name) return { success: false, error: "Vul een naam in." };
   if (!emailPattern.test(email)) return { success: false, error: "Vul een geldig e-mailadres in." };
