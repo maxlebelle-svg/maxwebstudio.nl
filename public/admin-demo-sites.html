@@ -23544,7 +23544,12 @@
           const savedDemo = savedDemoSiteMeta(record) || {};
           const invitation = invitationState(record);
           const inviteAction = window.DemoSitesCommercialActions.invitationAction(invitation);
-          const canPortalInvite = context.canInvite && invitation.status !== "unavailable";
+          const previewApproved = Boolean(
+            record.previewApprovedAt
+            || record.preview_approved_at
+            || ["preview_approved", "delivery_approved"].includes(String(record.approvalStatus || record.approval_status || "").toLowerCase()),
+          );
+          const canPortalInvite = context.canInvite && previewApproved && invitation.status !== "unavailable";
           const whatsappUrl = context.published ? window.DemoSitesCommercialActions.whatsappUrl({
             contactName: record.contactName || savedDemo.contactName,
             companyName: savedDemo.businessName || record.businessName,
@@ -23560,6 +23565,14 @@
           const portalButton = inviteAction.action === "open_portal"
             ? `<a class="button primary" href="lead-preview.html" target="_blank" rel="noopener">Klantportaal openen</a>`
             : `<button class="button primary" type="button" data-demo-portal-invite="${escapeHtml(record.id)}"${canPortalInvite ? "" : " disabled"}>${escapeHtml(context.published ? inviteAction.label : "Publiceer eerst een demo")}</button>`;
+          const approvalGate = previewApproved
+            ? `<div class="demo-commercial-approval-gate is-approved"><span aria-hidden="true">✓</span><div><strong>Demo definitief goedgekeurd</strong><small>Deze demo is vrijgegeven voor de klantportaaluitnodiging.</small></div></div>`
+            : `<div class="demo-commercial-approval-gate"><div><strong>Goedkeuring vereist</strong><small>Controleer de demo en keur hem goed voordat je de klant uitnodigt.</small></div><button class="button secondary" type="button" data-demo-approve-preview="${escapeHtml(record.id)}"${context.published ? "" : " disabled"}>Demo definitief goedkeuren</button></div>`;
+          const portalNote = inviteAction.action === "open_portal"
+            ? "De lead heeft het demo-account geactiveerd."
+            : !previewApproved
+              ? "Keur de demo eerst definitief goed. Daarna wordt uitnodigen direct beschikbaar."
+              : invitation.warning || context.blockedReason || "De bestaande uitnodiging wordt veilig hergebruikt.";
           return `
             <section class="demo-commercial-panel" aria-label="Demo delen en klantportaal">
               <div class="demo-commercial-share">
@@ -23574,12 +23587,35 @@
               </div>
               <div class="demo-commercial-portal">
                 <div class="demo-commercial-heading"><div><strong>Klantportaal</strong><span>Account, feedback en expliciete goedkeuring.</span></div><mark class="${["sent", "activated"].includes(invitation.status) ? "is-ready" : ""}">${escapeHtml(invitation.status === "activated" ? "Account actief" : invitation.status === "sent" ? "Uitgenodigd" : invitation.status === "planned" ? "In wachtrij" : "Niet uitgenodigd")}</mark></div>
+                ${approvalGate}
                 ${portalButton}
-                <p class="demo-commercial-note${canPortalInvite || inviteAction.action === "open_portal" ? "" : " is-warning"}">${escapeHtml(inviteAction.action === "open_portal" ? "De lead heeft het demo-account geactiveerd." : invitation.warning || context.blockedReason || "De bestaande uitnodiging wordt veilig hergebruikt.")}</p>
+                <p class="demo-commercial-note${canPortalInvite || inviteAction.action === "open_portal" ? "" : " is-warning"}">${escapeHtml(portalNote)}</p>
               </div>
             </section>
             ${clientJourneyHtml(record, context)}
           `;
+        }
+
+        async function approveDemoForPortal(record = {}) {
+          if (!record?.id) throw new Error("Deze demo kon niet eenduidig worden gevonden.");
+          if (record.previewApprovedAt || record.preview_approved_at) {
+            setMessage("Deze demo is al definitief goedgekeurd.", "success");
+            return;
+          }
+          const resolution = resolveActiveDemoPreview(record);
+          if (!commercialContext(record, resolution).published) throw new Error("Publiceer eerst exact deze geselecteerde demo.");
+          const label = resolution.selectedVersion?.version ? `V${resolution.selectedVersion.version}` : "deze demo";
+          if (!window.confirm(`${label} definitief goedkeuren voor de klantportaaluitnodiging?\n\nDit legt de Super Admin-goedkeuring vast. Er wordt nog geen uitnodiging of e-mail verstuurd.`)) return;
+          setMessage("Demo definitief goedkeuren...", "info");
+          const data = await postJson(endpoints.journey, {
+            action: "approve_preview",
+            demoJourneyId: record.id,
+          });
+          const updated = data.demoJourney || data.journey;
+          if (!updated?.id || !updated.previewApprovedAt) throw new Error("De goedkeuring kon niet veilig worden bevestigd.");
+          records = records.map((item) => String(item.id) === String(record.id) ? { ...item, ...updated } : item);
+          render();
+          setMessage("Demo definitief goedgekeurd. Je kunt de klant nu uitnodigen voor het klantportaal.", "success");
         }
 
         async function loadInvitationState(record = {}) {
@@ -24728,6 +24764,21 @@
               await sharePublicPreviewByEmail(record);
             } catch (error) {
               setMessage(error.message || "De demo kon niet per e-mail worden gedeeld.", "error");
+            }
+            return;
+          }
+          const approvePreview = event.target.closest("[data-demo-approve-preview]");
+          if (approvePreview) {
+            event.preventDefault();
+            if (approvePreview.disabled) return;
+            const record = getRecordById(approvePreview.dataset.demoApprovePreview);
+            if (!record) return;
+            approvePreview.disabled = true;
+            try {
+              await approveDemoForPortal(record);
+            } catch (error) {
+              setMessage(error.message || "De demo kon niet definitief worden goedgekeurd.", "error");
+              approvePreview.disabled = false;
             }
             return;
           }

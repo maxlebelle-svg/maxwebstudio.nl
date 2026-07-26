@@ -86,6 +86,16 @@ test("Demo Sites toont vier aparte publieke deelacties en een afzonderlijke port
   assert.match(html, /data-demo-portal-invite/);
 });
 
+test("klantportaal toont eerst de bestaande Super Admin-goedkeuring boven uitnodigen", () => {
+  assert.match(html, /data-demo-approve-preview/);
+  assert.match(html, />Demo definitief goedkeuren</);
+  assert.match(html, /const canPortalInvite = context\.canInvite && previewApproved/);
+  assert.match(html, /action: "approve_preview"/);
+  assert.match(html, /demoJourneyId: record\.id/);
+  assert.match(html, /Er wordt nog geen uitnodiging of e-mail verstuurd/);
+  assert.doesNotMatch(html.match(/async function approveDemoForPortal[\s\S]*?\n        }/)[0], /leadInvitation|share_public_preview_email|customer-onboarding/);
+});
+
 test("uitnodigingsdialoog toont lead, e-mail, bron, versie, publieke link en accountuitleg", () => {
   for (const id of ["demo-portal-invitation-lead", "demo-portal-invitation-email", "demo-portal-invitation-source", "demo-portal-invitation-version", "demo-portal-invitation-public-link"]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /kan daarna exact deze preview beoordelen/);
@@ -108,7 +118,11 @@ test("portaaluitnodigen verstuurt exact journey, lead en geselecteerde preview z
 });
 
 test("alleen publieke delen maakt geen account, customer, approval of betaling aan", () => {
-  const section = html.match(/function commercialPanelHtml[\s\S]*?\n        }/)[0];
+  const commercialPanel = html.match(/function commercialPanelHtml[\s\S]*?\n        }/)[0];
+  const section = commercialPanel.slice(
+    commercialPanel.indexOf('<div class="demo-commercial-share">'),
+    commercialPanel.indexOf('<div class="demo-commercial-portal">'),
+  );
   assert.doesNotMatch(section, /ensureCustomerForRecord|saveAccountFromModal|saveInvoiceFromModal|approve|payment/);
 });
 
