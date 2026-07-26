@@ -35,6 +35,17 @@
           <button id="complete" class="primary" type="button" disabled>Bevestigen en verder</button>
         </div>
       </article>
+      <section id="assessment" class="assessment" hidden>
+        <p class="eyebrow">Kennistoets</p><h2 id="assessmentTitle"></h2>
+        <p id="assessmentIntro" class="lead"></p>
+        <form id="assessmentForm"></form>
+      </section>
+      <section id="certificate" class="certificate" hidden>
+        <div class="certificate-mark">MW</div><p class="eyebrow">Interne kwalificatie</p>
+        <h2>Certificaat</h2><p class="certificate-name" id="certificateName"></p>
+        <p id="certificateType"></p><dl id="certificateDetails"></dl>
+        <p id="certificateDisclaimer" class="disclaimer"></p><button class="secondary" type="button" onclick="window.print()">Afdrukken / bewaren als PDF</button>
+      </section>
       <section id="controlledSteps" class="controlled" hidden>
         <p class="eyebrow">Vervolg</p>
         <h2>Gecontroleerde afronding</h2>

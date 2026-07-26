@@ -18,11 +18,13 @@ export const PERMISSIONS = Object.freeze({
   developerTools: ["view", "validate", "migrate", "seed"],
   customerPortal: ["view_own"],
   partnerOnboarding: ["view_own", "update_own"],
+  partners: ["view", "manage", "verify_certificate"],
 });
 
 export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.SUPER_ADMIN]: { "*": ["*"] },
   [ROLES.ADMIN]: {
+    partners: ["view", "manage", "verify_certificate"],
     dashboard: ["view"],
     leads: ["view", "create", "update", "convert"],
     customers: ["view", "create", "update", "archive"],
@@ -39,6 +41,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     developerTools: ["view", "validate"],
   },
   [ROLES.SALES_MANAGER]: {
+    partners: ["view", "verify_certificate"],
     dashboard: ["view"],
     leads: ["view", "create", "update", "convert"],
     customers: ["view", "create", "update"],
@@ -90,6 +93,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
 
 export const NAVIGATION_PERMISSIONS = Object.freeze([
   { id: "dashboard", label: "Overzicht", resource: "dashboard", action: "view" },
+  { id: "partners", label: "Partners", resource: "partners", action: "view" },
   { id: "sales-agenda", label: "Agenda", resource: "leads", action: "view" },
   { id: "lead-generator", label: "Lead Generator", resource: "leads", action: "view" },
   { id: "leadfinder", label: "Leads", resource: "leads", action: "view" },

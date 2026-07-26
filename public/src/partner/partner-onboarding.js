@@ -59,6 +59,7 @@ function render(data, preferredStep = "") {
     return button;
   }));
   renderControlled();
+  renderCertificate();
   const firstIncomplete = modules.find((module) => stepFor(module.stepKey)?.status !== "completed");
   showModule(preferredStep || firstIncomplete?.stepKey || modules[0]?.stepKey || "");
 }
@@ -111,8 +112,107 @@ function renderControlled() {
     const card = document.createElement("article");
     card.className = "controlled-card";
     card.innerHTML = `<h3>${title}</h3><p>${description}</p><span class="status ${step.status === "completed" ? "done" : ""}">${step.status === "completed" ? "Afgerond" : "Nog te doen"}</span>`;
+    if (step.stepKey === "knowledge_assessment" && step.status !== "completed" && state.data.certification?.assessment?.available) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Start kennistoets";
+      button.addEventListener("click", showAssessment);
+      card.append(button);
+    }
     return card;
   }));
+}
+
+function showAssessment() {
+  const assessment = state.data.certification?.assessment;
+  if (!assessment?.available) return;
+  element("module").hidden = true;
+  element("assessment").hidden = false;
+  element("assessmentTitle").textContent = assessment.title;
+  element("assessmentIntro").textContent = `Beantwoord alle ${assessment.questions.length} vragen. Je slaagt bij ${assessment.passScore}% of hoger. Maximaal ${assessment.maxAttempts} pogingen.`;
+  const form = element("assessmentForm");
+  form.replaceChildren(...assessment.questions.map((question, index) => {
+    const section = document.createElement("section");
+    section.className = "question";
+    const fieldset = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = `${index + 1}. ${question.prompt}`;
+    fieldset.append(legend, ...question.options.map((option) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = question.id;
+      input.value = option;
+      input.required = true;
+      const text = document.createElement("span");
+      text.textContent = option;
+      label.append(input, text);
+      return label;
+    }));
+    section.append(fieldset);
+    return section;
+  }));
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  submit.className = "primary";
+  submit.textContent = "Toets definitief indienen";
+  form.append(submit);
+  form.onsubmit = submitAssessment;
+  element("assessment").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function submitAssessment(event) {
+  event.preventDefault();
+  const assessment = state.data.certification.assessment;
+  const formData = new FormData(event.currentTarget);
+  const answers = Object.fromEntries(assessment.questions.map((question) => [question.id, formData.get(question.id)]));
+  const submit = event.currentTarget.querySelector("button[type=submit]");
+  submit.disabled = true;
+  submit.textContent = "Veilig beoordelen…";
+  try {
+    const data = await request({ action: "submit_assessment", assessmentVersionCode: assessment.versionCode, answers, idempotencyKey: crypto.randomUUID() });
+    const latest = data.certification.attempts[0];
+    render(data);
+    element("assessment").hidden = false;
+    const result = document.createElement("div");
+    result.className = "assessment-result";
+    result.textContent = latest?.passed
+      ? `Geslaagd met ${latest.score}%. Je resultaat is veilig opgeslagen.`
+      : `Je score is ${latest?.score ?? 0}%. Voor deze versie is ${assessment.passScore}% nodig.`;
+    element("assessmentForm").replaceChildren(result);
+  } catch (error) {
+    element("notice").className = "notice error";
+    element("notice").textContent = error.message;
+    submit.disabled = false;
+    submit.textContent = "Opnieuw indienen";
+  }
+}
+
+function renderCertificate() {
+  const certificate = state.data.certification?.certificate;
+  element("certificate").hidden = !certificate;
+  if (!certificate) return;
+  element("certificateName").textContent = certificate.partnerName;
+  element("certificateType").textContent = certificate.certificationType;
+  const details = [
+    ["Certificaat-ID", certificate.certificateId],
+    ["Status", certificate.status === "valid" ? "Geldig" : certificate.status === "revoked" ? "Ingetrokken" : "Verlopen"],
+    ["Uitgiftedatum", formatDate(certificate.issuedAt)],
+    ["Geldig tot", formatDate(certificate.expiresAt)],
+    ["Trainingsversie", certificate.trainingVersionCode],
+    ["Verificatie", "Controleerbaar in het Max Webstudio-adminportaal"],
+  ];
+  element("certificateDetails").replaceChildren(...details.flatMap(([term, value]) => {
+    const dt = document.createElement("dt"); dt.textContent = term;
+    const dd = document.createElement("dd"); dd.textContent = value;
+    return [dt, dd];
+  }));
+  element("certificateDisclaimer").textContent = certificate.disclaimer;
+}
+
+function formatDate(value) {
+  return value ? new Intl.DateTimeFormat("nl-NL", { dateStyle: "long" }).format(new Date(value)) : "–";
 }
 
 function escapeHtml(value) {
