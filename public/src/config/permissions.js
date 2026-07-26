@@ -17,6 +17,7 @@ export const PERMISSIONS = Object.freeze({
   demo: ["view", "run", "reset"],
   developerTools: ["view", "validate", "migrate", "seed"],
   customerPortal: ["view_own"],
+  partnerOnboarding: ["view_own", "update_own"],
 });
 
 export const ROLE_PERMISSIONS = Object.freeze({
@@ -46,6 +47,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     users: ["view"],
   },
   [ROLES.SALES_PARTNER]: {
+    partnerOnboarding: ["view_own", "update_own"],
     dashboard: ["view"],
     leads: ["view", "create", "update", "convert"],
     customers: ["view", "create", "update"],
