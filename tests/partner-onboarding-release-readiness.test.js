@@ -10,6 +10,7 @@ const migrations = [
   '20260726130000_partner_training_content_v1.sql',
   '20260726140000_partner_assessment_certification.sql',
   '20260726150000_partner_canonical_commission.sql',
+  '20260726160000_partner_certification_activation_control.sql',
 ];
 
 test('B1-B5 migration chain is ordered, forward-only and transaction bounded', () => {
