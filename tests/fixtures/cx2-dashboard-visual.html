@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CX2 Sprint 4 visual review</title>
+    <link rel="stylesheet" href="/public/styles.css" />
+    <link rel="stylesheet" href="/public/journey-progress.css" />
+    <link rel="stylesheet" href="/public/cx2-dashboard.css" />
+  </head>
+  <body class="portal-body" data-portal-view="dashboard" data-portal-sub-view="dashboard">
+    <main class="portal-app customer-portal-demo">
+      <aside class="portal-sidebar" aria-label="Klantportaal menu">
+        <a class="portal-sidebar-brand" href="#dashboard" aria-label="Max Webstudio Project Command Center">
+          <img src="/public/max-webstudio-logo-mark.svg" alt="" />
+          <strong>Project Command Center</strong>
+        </a>
+        <nav class="portal-nav" aria-label="Klantportaal navigatie">
+          <a href="#dashboard" aria-current="page">Dashboard</a>
+          <a href="#website">Mijn website</a>
+          <a href="#website-review">Feedback</a>
+          <a href="#berichten">Berichten</a>
+          <a href="#bestanden">Bestanden</a>
+          <a href="#facturen">Facturen</a>
+          <a href="#account">Account</a>
+        </nav>
+        <div class="portal-sidebar-note">
+          <span>Je account</span><strong>Veilig gekoppeld</strong>
+          <p>Alleen jouw klantgegevens worden hier getoond.</p>
+        </div>
+      </aside>
+      <div class="portal-main">
+        <section class="portal-command-center cx2-dashboard" id="command-center" aria-labelledby="command-center-title" aria-busy="false">
+          <header class="cx2-dashboard-hero">
+            <div>
+              <p class="section-kicker">Mijn dashboard</p>
+              <h2 id="command-center-title">Welkom terug, Ziva 👋</h2>
+              <p>DCA ZIP Studio — hier zie je waar je project staat en wat de volgende stap is.</p>
+            </div>
+            <div class="portal-command-sync">Laatst bijgewerkt: vandaag</div>
+          </header>
+          <div class="cx2-dashboard-focus-grid">
+            <article class="portal-command-card portal-progress-card cx2-progress-card">
+              <div class="portal-command-card-head">
+                <div><span>Voortgang van je project</span><h3>Professionele website</h3><p>Huidige fase: Ontwikkeling</p></div>
+                <strong>45%</strong>
+              </div>
+              <div class="portal-command-progressbar" role="progressbar" aria-label="Voortgang van Professionele website" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"><span style="width:45%"></span></div>
+              <div class="portal-command-steps" aria-label="Projectfasen">
+                <article class="portal-command-step is-done"><span>✓</span><strong>Demo gemaakt</strong><small>Afgerond</small></article>
+                <article class="portal-command-step is-done"><span>✓</span><strong>Feedback ontvangen</strong><small>Afgerond</small></article>
+                <article class="portal-command-step is-active"><span>→</span><strong>Ontwikkeling</strong><small>Nu bezig</small></article>
+                <article class="portal-command-step"><span>4</span><strong>Oplevering</strong><small>Hierna</small></article>
+              </div>
+            </article>
+            <section class="portal-next-step-card cx2-next-step" aria-label="Jouw volgende stap">
+              <span>Jouw volgende stap</span>
+              <strong>Bekijk de laatste projectupdate</strong>
+              <p>De ontwikkeling is gestart. Nieuwe voortgang verschijnt direct in je dashboard.</p>
+              <div class="portal-actions"><a class="button primary" href="#berichten">Open berichten</a></div>
+            </section>
+          </div>
+          <section class="cx2-dashboard-modules" aria-labelledby="modules-title">
+            <div class="cx2-dashboard-section-heading">
+              <div><p class="section-kicker">Jouw omgeving</p><h3 id="modules-title">Alles voor je project</h3></div>
+              <p>Beschikbare onderdelen zijn direct te openen. Wat later volgt, wordt eerlijk aangegeven.</p>
+            </div>
+            <div class="cx2-module-grid">
+              <article class="cx2-module-card is-active"><div class="cx2-module-card-header"><span class="cx2-module-icon">▣</span><span class="cx2-module-status">Beschikbaar</span></div><span class="cx2-module-label">Website</span><strong>Versie 1</strong><p>Je actuele ontwerp staat veilig voor je klaar.</p><a class="button secondary cx2-module-action" href="#website">Bekijk ontwerp</a></article>
+              <article class="cx2-module-card is-active"><div class="cx2-module-card-header"><span class="cx2-module-icon">◉</span><span class="cx2-module-status">Review beschikbaar</span></div><span class="cx2-module-label">Feedback</span><strong>3 punten</strong><p>Bekijk de reviewstatus van je huidige ontwerp.</p><a class="button secondary cx2-module-action" href="#website-review">Open feedback</a></article>
+              <article class="cx2-module-card is-attention"><div class="cx2-module-card-header"><span class="cx2-module-icon">✉</span><span class="cx2-module-status">Actie mogelijk</span></div><span class="cx2-module-label">Berichten</span><strong>1 nieuw</strong><p>Alle communicatie over je project op één plek.</p><a class="button secondary cx2-module-action" href="#berichten">Open berichten</a></article>
+              <article class="cx2-module-card is-active"><div class="cx2-module-card-header"><span class="cx2-module-icon">▤</span><span class="cx2-module-status">Beschikbaar</span></div><span class="cx2-module-label">Bestanden</span><strong>12 bestanden</strong><p>Je projectbestanden en aangeleverde assets.</p><a class="button secondary cx2-module-action" href="#bestanden">Open bestanden</a></article>
+              <article class="cx2-module-card is-success"><div class="cx2-module-card-header"><span class="cx2-module-icon">€</span><span class="cx2-module-status">Bijgewerkt</span></div><span class="cx2-module-label">Facturen</span><strong>Alles bijgewerkt</strong><p>Facturen verschijnen hier zodra ze beschikbaar zijn.</p><a class="button secondary cx2-module-action" href="#facturen">Open facturen</a></article>
+              <article class="cx2-module-card is-success"><div class="cx2-module-card-header"><span class="cx2-module-icon">◎</span><span class="cx2-module-status">Gekoppeld</span></div><span class="cx2-module-label">Domein</span><strong>dcazipstudio.nl</strong><p>Het webadres dat bij je website hoort.</p><a class="button secondary cx2-module-action" href="#website">Bekijk domein</a></article>
+              <article class="cx2-module-card is-pending"><div class="cx2-module-card-header"><span class="cx2-module-icon">@</span><span class="cx2-module-status">Volgt later</span></div><span class="cx2-module-label">Zakelijke e-mail</span><strong>Nog niet beschikbaar</strong><p>Zakelijke e-mail wordt in een latere fase beschikbaar.</p><span class="cx2-module-unavailable">Nog niet beschikbaar</span></article>
+            </div>
+          </section>
+          <section class="portal-command-card cx2-dashboard-activity">
+            <div class="portal-command-card-head"><div><span>Updates</span><h3>Recente activiteiten</h3></div><a href="#berichten">Open berichten</a></div>
+            <div class="portal-command-timeline-list">
+              <article class="portal-command-timeline-item is-done"><span></span><div><strong>Feedback ontvangen</strong><small>Vandaag, 10:24</small></div></article>
+              <article class="portal-command-timeline-item is-preview"><span></span><div><strong>Sitemap goedgekeurd</strong><small>Gisteren, 14:12</small></div></article>
+              <article class="portal-command-timeline-item is-project"><span></span><div><strong>Ontwikkeling gestart</strong><small>Gisteren, 09:48</small></div></article>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

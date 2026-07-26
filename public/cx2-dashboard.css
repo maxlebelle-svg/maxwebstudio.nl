@@ -1,0 +1,463 @@
+/* CX2 Sprint 4 — customer dashboard presentation only. */
+.portal-body[data-portal-view="dashboard"] .portal-header,
+.portal-body[data-portal-view="dashboard"] .portal-status-strip {
+  display: none;
+}
+
+.cx2-dashboard {
+  --cx2-card: rgba(7, 25, 45, 0.88);
+  --cx2-card-strong: rgba(9, 31, 55, 0.96);
+  --cx2-border: rgba(124, 173, 237, 0.15);
+  --cx2-border-active: rgba(67, 142, 255, 0.42);
+  --cx2-blue: #2f80ff;
+  --cx2-blue-soft: rgba(47, 128, 255, 0.14);
+  --cx2-green: #42d392;
+  --cx2-amber: #f6b94b;
+  gap: 24px;
+  min-width: 0;
+}
+
+.cx2-dashboard:focus {
+  outline: none;
+}
+
+.cx2-dashboard-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 190px;
+  padding: clamp(28px, 4vw, 52px);
+  overflow: hidden;
+  border: 1px solid var(--cx2-border);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 86% 16%, rgba(41, 132, 255, 0.2), transparent 34%),
+    radial-gradient(circle at 8% 110%, rgba(35, 201, 255, 0.11), transparent 34%),
+    linear-gradient(135deg, rgba(12, 40, 70, 0.98), rgba(3, 16, 31, 0.98));
+  box-shadow: 0 28px 80px rgba(0, 7, 18, 0.3);
+}
+
+.cx2-dashboard-hero::after {
+  position: absolute;
+  right: -90px;
+  bottom: -155px;
+  width: 360px;
+  height: 360px;
+  border: 1px solid rgba(83, 151, 255, 0.12);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 36px rgba(83, 151, 255, 0.035),
+    0 0 0 76px rgba(83, 151, 255, 0.022);
+  content: "";
+  pointer-events: none;
+}
+
+.cx2-dashboard-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cx2-dashboard-hero h2 {
+  margin: 8px 0 10px;
+  color: #fff;
+  font-size: clamp(36px, 4.5vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.cx2-dashboard-hero p:not(.section-kicker) {
+  max-width: 680px;
+  margin: 0;
+  color: rgba(229, 239, 251, 0.72);
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: 680;
+  line-height: 1.55;
+}
+
+.cx2-dashboard-hero .portal-command-sync {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: rgba(5, 20, 38, 0.58);
+  backdrop-filter: blur(14px);
+}
+
+.cx2-dashboard-focus-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.cx2-dashboard .cx2-progress-card,
+.cx2-dashboard .cx2-next-step {
+  min-height: 310px;
+  border-radius: 16px;
+}
+
+.cx2-dashboard .cx2-progress-card {
+  padding: clamp(22px, 2.5vw, 32px);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(47, 128, 255, 0.2), transparent 34%),
+    linear-gradient(145deg, rgba(12, 39, 66, 0.98), rgba(5, 21, 38, 0.96));
+}
+
+.cx2-dashboard .cx2-progress-card .portal-command-progressbar {
+  height: 10px;
+}
+
+.cx2-dashboard .cx2-progress-card .portal-command-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cx2-dashboard .cx2-progress-card .portal-command-step {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  min-height: 68px;
+  padding: 10px;
+  border: 1px solid rgba(142, 184, 237, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.cx2-dashboard .cx2-progress-card .portal-command-step small {
+  grid-column: 2;
+}
+
+.cx2-dashboard .journey-progress-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid rgba(142, 184, 237, 0.12);
+  border-radius: 12px;
+  color: rgba(226, 236, 248, 0.66);
+  background: rgba(255, 255, 255, 0.025);
+  font-weight: 700;
+}
+
+.cx2-dashboard .cx2-next-step {
+  grid-template-columns: 1fr;
+  align-content: end;
+  padding: clamp(24px, 3vw, 34px);
+  border-color: rgba(47, 128, 255, 0.34);
+  background:
+    radial-gradient(circle at 92% 10%, rgba(47, 128, 255, 0.28), transparent 34%),
+    linear-gradient(155deg, rgba(15, 45, 78, 0.98), rgba(5, 20, 38, 0.98));
+}
+
+.cx2-dashboard .cx2-next-step > strong {
+  font-size: clamp(25px, 2.5vw, 36px);
+}
+
+.cx2-dashboard .cx2-next-step .portal-actions {
+  grid-column: 1;
+  grid-row: auto;
+  justify-content: stretch;
+  margin-top: 8px;
+}
+
+.cx2-dashboard .cx2-next-step .button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.cx2-dashboard-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.cx2-dashboard-section-heading h3 {
+  margin: 5px 0 0;
+  color: #fff;
+  font-size: clamp(26px, 2.5vw, 36px);
+  letter-spacing: -0.025em;
+}
+
+.cx2-dashboard-section-heading > p {
+  max-width: 460px;
+  margin: 0;
+  color: rgba(226, 236, 248, 0.58);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.cx2-module-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cx2-module-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 224px;
+  padding: 20px;
+  border: 1px solid var(--cx2-border);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.016)),
+    var(--cx2-card);
+  box-shadow: 0 18px 48px rgba(0, 7, 18, 0.18);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.cx2-module-card:hover {
+  border-color: rgba(124, 173, 237, 0.28);
+  transform: translateY(-2px);
+}
+
+.cx2-module-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cx2-module-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(67, 142, 255, 0.26);
+  border-radius: 12px;
+  color: #8db9ff;
+  background: var(--cx2-blue-soft);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.cx2-module-status {
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: rgba(220, 232, 248, 0.62);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.cx2-module-label {
+  margin-top: 4px;
+  color: rgba(226, 236, 248, 0.58);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.cx2-module-card > strong {
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.cx2-module-card > p {
+  margin: 0;
+  color: rgba(226, 236, 248, 0.64);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.cx2-module-card .cx2-module-action,
+.cx2-module-unavailable {
+  align-self: end;
+  width: 100%;
+  margin-top: auto;
+}
+
+.cx2-module-card .cx2-module-action {
+  min-height: 38px;
+  border-color: rgba(124, 173, 237, 0.16);
+  color: rgba(239, 246, 255, 0.88);
+  background: rgba(255, 255, 255, 0.045);
+  justify-content: center;
+  font-size: 12px;
+}
+
+.cx2-module-card .cx2-module-action:hover,
+.cx2-module-card .cx2-module-action:focus-visible {
+  border-color: rgba(67, 142, 255, 0.44);
+  color: #fff;
+  background: rgba(47, 128, 255, 0.14);
+}
+
+.cx2-module-unavailable {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  color: rgba(226, 236, 248, 0.4);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cx2-module-card.is-success .cx2-module-icon {
+  border-color: rgba(66, 211, 146, 0.28);
+  color: #8eebba;
+  background: rgba(66, 211, 146, 0.11);
+}
+
+.cx2-module-card.is-success .cx2-module-status {
+  color: #9aebbd;
+  background: rgba(66, 211, 146, 0.1);
+}
+
+.cx2-module-card.is-attention .cx2-module-icon {
+  border-color: rgba(246, 185, 75, 0.3);
+  color: #ffd77f;
+  background: rgba(246, 185, 75, 0.11);
+}
+
+.cx2-module-card.is-attention .cx2-module-status {
+  color: #ffe1a0;
+  background: rgba(246, 185, 75, 0.1);
+}
+
+.cx2-module-card.is-pending {
+  background: rgba(6, 20, 35, 0.64);
+}
+
+.cx2-module-card.is-pending .cx2-module-icon,
+.cx2-module-card.is-pending > strong,
+.cx2-module-card.is-pending > p {
+  opacity: 0.68;
+}
+
+.cx2-dashboard-activity {
+  min-height: 0;
+  padding: clamp(22px, 2.5vw, 30px);
+  border-radius: 16px;
+}
+
+.cx2-dashboard-activity .portal-command-timeline-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+}
+
+.cx2-dashboard-activity .portal-command-timeline-item {
+  min-height: 64px;
+  padding: 10px;
+  border: 1px solid rgba(142, 184, 237, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.cx2-dashboard[aria-busy="true"] .cx2-module-grid {
+  min-height: 224px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02));
+  background-size: 220% 100%;
+  animation: cx2-dashboard-loading 1.4s ease-in-out infinite;
+}
+
+@keyframes cx2-dashboard-loading {
+  to { background-position: -120% 0; }
+}
+
+@media (max-width: 1240px) {
+  .cx2-dashboard-focus-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cx2-dashboard .cx2-next-step {
+    min-height: 230px;
+  }
+
+  .cx2-module-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .cx2-dashboard-hero {
+    min-height: 170px;
+  }
+
+  .cx2-module-grid,
+  .cx2-dashboard .cx2-progress-card .portal-command-steps,
+  .cx2-dashboard-activity .portal-command-timeline-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-body[data-portal-view="dashboard"] .portal-app {
+    padding: 10px;
+  }
+
+  .cx2-dashboard {
+    gap: 16px;
+  }
+
+  .cx2-dashboard-hero {
+    display: grid;
+    min-height: 220px;
+    padding: 24px 20px;
+    border-radius: 15px;
+  }
+
+  .cx2-dashboard-hero h2 {
+    font-size: clamp(36px, 12vw, 50px);
+  }
+
+  .cx2-dashboard-hero .portal-command-sync {
+    justify-self: start;
+    white-space: normal;
+  }
+
+  .cx2-dashboard-section-heading {
+    display: grid;
+  }
+
+  .cx2-dashboard-section-heading > p {
+    text-align: left;
+  }
+
+  .cx2-module-grid,
+  .cx2-dashboard .cx2-progress-card .portal-command-steps,
+  .cx2-dashboard-activity .portal-command-timeline-list {
+    grid-template-columns: 1fr;
+  }
+
+  .cx2-module-card {
+    min-height: 200px;
+  }
+
+  .cx2-dashboard .cx2-progress-card,
+  .cx2-dashboard .cx2-next-step,
+  .cx2-dashboard-activity {
+    border-radius: 15px;
+  }
+
+  .cx2-dashboard .portal-command-card-head {
+    display: grid;
+  }
+
+  .cx2-dashboard .portal-command-card-head > strong {
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx2-dashboard[aria-busy="true"] .cx2-module-grid {
+    animation: none;
+  }
+
+  .cx2-module-card:hover {
+    transform: none;
+  }
+}

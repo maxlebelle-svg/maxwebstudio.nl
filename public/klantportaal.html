@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260712-customer-assets-v2" />
     <link rel="stylesheet" href="journey-progress.css?v=20260713-phase4" />
+    <link rel="stylesheet" href="cx2-dashboard.css?v=20260726-sprint4" />
   </head>
   <body class="portal-body">
     <main class="portal-app customer-portal-demo">
@@ -78,87 +79,56 @@
           <a class="button secondary" href="index.html">Terug naar website</a>
         </section>
 
-        <section class="portal-command-center" id="command-center" aria-labelledby="command-center-title">
-          <div class="portal-command-intro">
-            <p class="section-kicker">Project Command Center</p>
-            <h2 id="command-center-title">Alles wat Max Webstudio voor je bedrijf doet.</h2>
-            <p id="command-center-subtitle">Je projectstatus, website, acties, berichten en facturen staan hier bij elkaar.</p>
-            <div class="portal-command-sync" id="command-sync-status" aria-live="polite">Klantdata veilig laden...</div>
+        <section class="portal-command-center cx2-dashboard" id="command-center" aria-labelledby="command-center-title" aria-busy="true">
+          <header class="cx2-dashboard-hero">
+            <div>
+              <p class="section-kicker">Mijn dashboard</p>
+              <h2 id="command-center-title">Welkom terug 👋</h2>
+              <p id="command-center-subtitle">Hier is de actuele stand van je project.</p>
+            </div>
+            <div class="portal-command-sync" id="command-sync-status" aria-live="polite">Klantdata veilig laden…</div>
+          </header>
+
+          <div class="cx2-dashboard-focus-grid">
+            <article class="portal-command-card portal-progress-card cx2-progress-card" id="portal-command-progress" aria-labelledby="command-progress-title" data-journey-progress-loading="true">
+              <div class="portal-command-card-head">
+                <div>
+                  <span>Voortgang van je project</span>
+                  <h3 id="command-progress-title">Projectvoortgang laden</h3>
+                  <p id="command-progress-subtitle">We halen je actuele projectstap veilig op.</p>
+                </div>
+                <strong id="command-progress-value">…</strong>
+              </div>
+              <div class="portal-command-progressbar" aria-hidden="true"><span id="command-progress-bar"></span></div>
+              <div class="portal-command-steps" id="command-progress-steps" aria-label="Projectfasen"></div>
+            </article>
+
+            <section class="portal-next-step-card cx2-next-step" id="portal-command-next-step" aria-label="Jouw volgende stap">
+              <span>Jouw volgende stap</span>
+              <strong id="command-next-title">Je projectoverzicht wordt voorbereid.</strong>
+              <p id="command-next-text">Zodra de actuele projectstatus bekend is, zie je hier precies wat er van jou nodig is.</p>
+              <div class="portal-actions" id="command-next-actions"></div>
+            </section>
           </div>
 
-          <section class="portal-command-overview" id="portal-command-overview" aria-label="Dashboard samenvatting"></section>
-
-          <section class="portal-next-step-card" id="portal-command-next-step" aria-label="Jouw volgende stap">
-            <span>Jouw volgende stap</span>
-            <strong id="command-next-title">Je projectoverzicht wordt voorbereid.</strong>
-            <p id="command-next-text">Na het inloggen tonen we hier de ene stap die nu het meeste verschil maakt.</p>
-            <div class="portal-actions" id="command-next-actions"></div>
+          <section class="cx2-dashboard-modules" aria-labelledby="cx2-dashboard-modules-title">
+            <div class="cx2-dashboard-section-heading">
+              <div>
+                <p class="section-kicker">Jouw omgeving</p>
+                <h3 id="cx2-dashboard-modules-title">Alles voor je project</h3>
+              </div>
+              <p>Beschikbare onderdelen zijn direct te openen. Wat later volgt, wordt eerlijk aangegeven.</p>
+            </div>
+            <div class="cx2-module-grid" id="cx2-dashboard-module-grid" aria-live="polite"></div>
           </section>
 
-          <div class="portal-command-shell">
-            <section class="portal-command-main" aria-label="Project en website">
-              <article class="portal-command-card portal-progress-card" id="portal-command-progress">
-                <div class="portal-command-card-head">
-                  <div>
-                    <span>Projectvoortgang</span>
-                    <h3 id="command-progress-title">Projectstatus wordt opgehaald</h3>
-                    <p id="command-progress-subtitle">Je actuele fase verschijnt zodra de klantkoppeling geladen is.</p>
-                  </div>
-                  <strong id="command-progress-value">...</strong>
-                </div>
-                <div class="portal-command-progressbar" aria-hidden="true"><span id="command-progress-bar"></span></div>
-                <div class="portal-command-steps" id="command-progress-steps"></div>
-              </article>
-
-              <article class="portal-command-card portal-command-website" id="portal-command-website">
-                <div class="portal-command-card-head">
-                  <div>
-                    <span>Website</span>
-                    <h3 id="command-website-title">Website-overzicht</h3>
-                    <p id="command-website-subtitle">Domein, status en preview verschijnen hier zodra ze beschikbaar zijn.</p>
-                  </div>
-                  <mark class="status-badge status-prepared" id="command-website-status">Voorbereid</mark>
-                </div>
-                <div id="command-website-preview"></div>
-                <div class="portal-command-meta" id="command-website-meta"></div>
-                <div class="portal-actions" id="command-website-actions"></div>
-              </article>
-
-              <section class="portal-command-lower" aria-label="Overzicht">
-                <article class="portal-command-card" id="portal-command-finance">
-                  <div class="portal-command-card-head"><div><span>Facturen</span><h3>Facturen</h3></div><a href="#facturen">Alles bekijken</a></div>
-                  <div class="portal-command-list" id="command-finance-list"></div>
-                </article>
-                <article class="portal-command-card" id="portal-command-feedback">
-                  <div class="portal-command-card-head"><div><span>Feedback</span><h3>Reviewstatus</h3></div><a href="#website-review">Naar review</a></div>
-                  <div class="portal-command-feedback" id="command-feedback-summary"></div>
-                </article>
-                <article class="portal-command-card" id="portal-command-timeline">
-                  <div class="portal-command-card-head"><div><span>Tijdlijn</span><h3>Recente activiteiten</h3></div><a href="#berichten">Open communicatie</a></div>
-                  <div class="portal-command-timeline-list" id="command-timeline-list"></div>
-                </article>
-              </section>
-            </section>
-
-            <aside class="portal-command-side" aria-label="Acties en communicatie">
-              <article class="portal-command-card">
-                <div class="portal-command-card-head"><div><span>Acties</span><h3>Taken voor jou</h3></div></div>
-                <div class="portal-command-task-list" id="command-task-list"></div>
-              </article>
-              <article class="portal-command-card">
-                <div class="portal-command-card-head"><div><span>Berichten</span><h3>Communicatie</h3></div><a href="#berichten">Nieuw bericht</a></div>
-                <div class="portal-command-list" id="command-message-list"></div>
-              </article>
-              <article class="portal-command-card">
-                <div class="portal-command-card-head"><div><span>Branding</span><h3>Branding assets</h3></div><a href="#branding">Naar branding</a></div>
-                <div class="portal-command-branding" id="command-branding-list"></div>
-              </article>
-              <article class="portal-command-card">
-                <div class="portal-command-card-head"><div><span>Wijzigingen</span><h3>Wijzigingsverzoeken</h3></div><a href="#wijzigingen">Nieuwe aanvraag</a></div>
-                <div class="portal-command-list" id="command-change-list"></div>
-              </article>
-            </aside>
-          </div>
+          <section class="portal-command-card cx2-dashboard-activity" id="portal-command-timeline" aria-labelledby="cx2-dashboard-activity-title">
+            <div class="portal-command-card-head">
+              <div><span>Updates</span><h3 id="cx2-dashboard-activity-title">Recente activiteiten</h3></div>
+              <a href="#berichten">Open berichten</a>
+            </div>
+            <div class="portal-command-timeline-list" id="command-timeline-list"></div>
+          </section>
         </section>
 
       <section class="portal-today" id="vandaag" aria-labelledby="portal-today-title">
@@ -803,6 +773,7 @@
         const { approveBranding, loadBrandingState, registerLogoConcepts, registerUploadedLogo, upsertBrandingProject } = await import("./src/brand-assets-adapter.js");
         const { signOut: signOutSupabase, getSession: getSupabaseSession } = await import("./src/services/supabaseAuthProvider.js");
         const { loadClientJourneyProgress } = await import("./src/ui/clientJourneyProgress.js");
+        const { buildCustomerDashboardViewModel } = await import("./src/cx2-dashboard-viewmodel.mjs");
         const params = new URLSearchParams(window.location.search);
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const companySettings = getCompanySettings();
@@ -948,7 +919,8 @@
         const commandCenterTitle = document.getElementById("command-center-title");
         const commandCenterSubtitle = document.getElementById("command-center-subtitle");
         const commandSyncStatus = document.getElementById("command-sync-status");
-        const commandOverview = document.getElementById("portal-command-overview");
+        const commandCenter = document.getElementById("command-center");
+        const commandModuleGrid = document.getElementById("cx2-dashboard-module-grid");
         const commandNextTitle = document.getElementById("command-next-title");
         const commandNextText = document.getElementById("command-next-text");
         const commandNextActions = document.getElementById("command-next-actions");
@@ -957,19 +929,7 @@
         const commandProgressValue = document.getElementById("command-progress-value");
         const commandProgressBar = document.getElementById("command-progress-bar");
         const commandProgressSteps = document.getElementById("command-progress-steps");
-        const commandWebsiteTitle = document.getElementById("command-website-title");
-        const commandWebsiteSubtitle = document.getElementById("command-website-subtitle");
-        const commandWebsiteStatus = document.getElementById("command-website-status");
-        const commandWebsitePreview = document.getElementById("command-website-preview");
-        const commandWebsiteMeta = document.getElementById("command-website-meta");
-        const commandWebsiteActions = document.getElementById("command-website-actions");
-        const commandTaskList = document.getElementById("command-task-list");
         const commandTimelineList = document.getElementById("command-timeline-list");
-        const commandFinanceList = document.getElementById("command-finance-list");
-        const commandFeedbackSummary = document.getElementById("command-feedback-summary");
-        const commandMessageList = document.getElementById("command-message-list");
-        const commandBrandingList = document.getElementById("command-branding-list");
-        const commandChangeList = document.getElementById("command-change-list");
         const metrics = {
           quotes: document.getElementById("metric-quotes"),
           invoices: document.getElementById("metric-invoices"),
@@ -2160,24 +2120,6 @@
           return item;
         }
 
-        function commandTask({ title = "", meta = "", href = "", tone = "normal" } = {}) {
-          const item = document.createElement("a");
-          item.className = `portal-command-task is-${tone}`;
-          item.href = href || "#berichten";
-          const icon = document.createElement("span");
-          const body = document.createElement("div");
-          const strong = document.createElement("strong");
-          const small = document.createElement("small");
-          const arrow = document.createElement("em");
-          icon.textContent = tone === "high" ? "!" : "✓";
-          strong.textContent = title || "Taak";
-          small.textContent = meta || "Prioriteit: normaal";
-          arrow.textContent = "→";
-          body.append(strong, small);
-          item.append(icon, body, arrow);
-          return item;
-        }
-
         function commandTimelineItem({ title = "", meta = "", type = "info" } = {}) {
           const item = document.createElement("article");
           item.className = `portal-command-timeline-item is-${type}`;
@@ -2192,19 +2134,56 @@
           return item;
         }
 
-        function commandOverviewTile(label, value, text, tone = "neutral") {
-          const tile = document.createElement("article");
-          tile.className = `portal-command-overview-tile is-${tone}`;
-          const marker = document.createElement("span");
-          marker.setAttribute("aria-hidden", "true");
-          const strong = document.createElement("strong");
-          const smallLabel = document.createElement("small");
-          const copy = document.createElement("p");
-          strong.textContent = value || "-";
-          smallLabel.textContent = label;
-          copy.textContent = text || "";
-          tile.append(marker, smallLabel, strong, copy);
-          return tile;
+        const cx2ModuleIcons = Object.freeze({
+          website: "▣",
+          feedback: "◉",
+          messages: "✉",
+          files: "▤",
+          invoices: "€",
+          domain: "◎",
+          business_email: "@",
+        });
+
+        function createCx2ModuleCard(module = {}) {
+          const card = document.createElement("article");
+          card.className = `cx2-module-card is-${module.tone || "neutral"}`;
+          card.dataset.module = module.key || "module";
+
+          const header = document.createElement("div");
+          header.className = "cx2-module-card-header";
+          const icon = document.createElement("span");
+          icon.className = "cx2-module-icon";
+          icon.setAttribute("aria-hidden", "true");
+          icon.textContent = cx2ModuleIcons[module.key] || "•";
+          const status = document.createElement("span");
+          status.className = "cx2-module-status";
+          status.textContent = module.status || "Beschikbaar";
+          header.append(icon, status);
+
+          const label = document.createElement("span");
+          label.className = "cx2-module-label";
+          label.textContent = module.label || "Onderdeel";
+          const value = document.createElement("strong");
+          value.textContent = module.value || "Nog niet beschikbaar";
+          const description = document.createElement("p");
+          description.textContent = module.description || "Dit onderdeel wordt bijgewerkt.";
+          card.append(header, label, value, description);
+
+          if (module.available && module.href) {
+            const action = createWebsiteAction(module.actionLabel || `Open ${module.label || "onderdeel"}`, module.href);
+            action.classList.add("cx2-module-action");
+            card.append(action);
+          } else {
+            const unavailable = document.createElement("span");
+            unavailable.className = "cx2-module-unavailable";
+            unavailable.textContent = "Nog niet beschikbaar";
+            card.append(unavailable);
+          }
+          return card;
+        }
+
+        function renderCx2ModuleGrid(viewModel) {
+          commandModuleGrid.replaceChildren(...viewModel.modules.map(createCx2ModuleCard));
         }
 
         function customerPreviewSummary(preview = null, fallback = "") {
@@ -2788,33 +2767,8 @@
           return project.id || project.projectId || project.name || project.projectName ? 12 : null;
         }
 
-        function projectStepState(index, progress) {
-          if (progress === null) return "waiting";
-          const thresholds = [12, 25, 38, 50, 64, 78, 90, 100];
-          if (progress >= thresholds[index]) return "done";
-          if (progress >= (thresholds[index - 1] || 0)) return "active";
-          return "waiting";
-        }
-
-        function quoteAccepted(quote = {}) {
-          return ["geaccepteerd", "accepted", "akkoord", "approved"].includes(normalize(quote.status));
-        }
-
         function onboardingSubmitted(onboarding = null) {
           return onboarding && ["submitted", "needs_review", "approved", "sent_to_website_factory"].includes(normalize(onboarding.status));
-        }
-
-        function buildCommandTasks({ invoices = [], projects = [], websites = [], messages = [], changeRequests = [], onboarding = null, previewVersions = [] } = {}) {
-          const tasks = [];
-          const latestPreview = previewVersions[0] || null;
-          const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
-          const latestUnreadMessage = messages.find((message) => !message.readAt && message.senderType !== "customer" && isOpenStatus(message.status));
-          if (latestPreview?.allowApproval && !latestPreview.approvedAt) tasks.push({ title: "Ontwerp goedkeuren", meta: `Versie ${latestPreview.version || 1} staat klaar`, href: "#website-review", tone: "high" });
-          if (latestPreview?.allowFeedback && !latestPreview.approvedAt && !latestPreview.feedbackCount) tasks.push({ title: "Feedback geven", meta: "Geef opmerkingen op de huidige versie", href: "#website-review", tone: "high" });
-          if (openInvoice) tasks.push({ title: "Factuur bekijken", meta: `${openInvoice.invoiceNumber || "Factuur"} staat open`, href: invoiceUrl(openInvoice) || "#facturen", tone: "high" });
-          if (!latestPreview?.approvedAt && !onboardingSubmitted(onboarding)) tasks.push({ title: "Teksten en foto's aanleveren", meta: "Nodig voor ontwerp en bouw", href: "#onboarding", tone: "high" });
-          if (latestUnreadMessage) tasks.push({ title: "Bericht beantwoorden", meta: latestUnreadMessage.subject || latestUnreadMessage.title || "Update van Max Webstudio", href: "#berichten", tone: "normal" });
-          return tasks.slice(0, 4);
         }
 
         function buildCommandTimeline({ projects = [], invoices = [], messages = [], changeRequests = [], notifications = [], previewVersions = [] } = {}) {
@@ -4930,185 +4884,70 @@
           }
         }
 
-        function renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding = null, previewVersions = [] }) {
+        function renderProjectCommandCenter({ customer, websites, projects, files, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding = null, previewVersions = [] }) {
           const project = projects[0] || {};
           const website = websites[0] || {};
-          const latestPreview = previewVersions[0] || null;
-          const baseProgress = projectProgressValue(project);
-          const progress = latestPreview?.approvedAt
-            ? Math.max(baseProgress || 0, 90)
-            : latestPreview
-              ? Math.max(baseProgress || 0, latestPreview.feedbackCount ? 82 : 78)
-              : baseProgress;
-          const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
           const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages, onboarding, previewVersions });
-          const latestMessage = messages[0] || null;
-          const feedbackSummary = feedbackSummaryFromPreview(latestPreview);
-          const currentPhase = currentProjectPhase(project, latestPreview, onboarding);
-          const openInvoices = invoices.filter((invoice) => !isPaidStatus(invoice.status));
-          const unreadMessages = messages.filter((message) => !message.readAt && message.senderType !== "customer" && isOpenStatus(message.status));
+          const viewModel = buildCustomerDashboardViewModel({
+            customer,
+            websites,
+            projects,
+            files,
+            invoices,
+            messages,
+            previewVersions,
+            nextStep,
+          });
           const latestUpdateLabel = latestDateLabel(
-            [latestPreview, project, website, ...changeRequests, ...messages, ...notifications],
+            [previewVersions[0], project, website, ...changeRequests, ...messages, ...notifications],
             ["approvedAt", "publishedAt", "updatedAt", "createdAt", "approved_at", "published_at", "updated_at", "created_at"]
           );
 
-          commandCenterTitle.textContent = "Welkom terug bij je project.";
-          commandCenterSubtitle.textContent = latestPreview?.approvedAt
-            ? `${customer.company || customer.name || "Je bedrijf"} is akkoord met het ontwerp. Wij bereiden nu de afronding voor.`
-            : `${customer.company || customer.name || "Je bedrijf"}: projectstatus, ontwerp, acties en communicatie bij elkaar.`;
+          commandCenterTitle.textContent = viewModel.greeting;
+          commandCenterSubtitle.textContent = `${viewModel.context} — hier zie je waar je project staat en wat de volgende stap is.`;
           commandSyncStatus.textContent = `Laatst bijgewerkt: ${latestUpdateLabel}`;
-          commandOverview.replaceChildren(
-            commandOverviewTile("Actief project", project.name || project.projectName || website.name || website.domain || "Websiteproject", currentPhase, project.id || latestPreview ? "active" : "neutral"),
-            commandOverviewTile("Ontwerpversie", latestPreview ? `Versie ${latestPreview.version || 1}` : "Nog geen preview", latestPreview ? statusLabel(latestPreview.status || "ready_for_review") : "Max Webstudio publiceert zodra er iets klaarstaat.", reviewTone(latestPreview)),
-            commandOverviewTile("Facturen", openInvoices.length ? `${openInvoices.length} open` : "Bijgewerkt", openInvoices.length ? `${money(openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0))} openstaand` : "Geen open facturen.", openInvoices.length ? "attention" : "done"),
-            commandOverviewTile("Communicatie", unreadMessages.length ? `${unreadMessages.length} nieuw` : "Rustig", unreadMessages.length ? "Er staat een bericht klaar." : "Geen ongelezen berichten.", unreadMessages.length ? "attention" : "done")
-          );
+          renderCx2ModuleGrid(viewModel);
+
           commandNextTitle.textContent = nextStep.title;
           commandNextText.textContent = nextStep.text;
-          commandNextActions.replaceChildren();
-          commandNextActions.append(createWebsiteAction(nextStep.label, nextStep.href, true));
+          commandNextActions.replaceChildren(createWebsiteAction(nextStep.label, nextStep.href, true));
 
-          commandProgressTitle.textContent = project.name || project.projectName || "Websiteproject";
-          commandProgressSubtitle.textContent = project.phase || project.status
-            ? `${currentPhase}: ${nextStep.title}`
-            : latestPreview ? `${currentPhase}: ${statusLabel(latestPreview.status)}` : "Nog geen projectfase beschikbaar.";
-          commandProgressValue.textContent = progress === null ? "Nog niet beschikbaar" : `${progress}%`;
-          commandProgressBar.style.width = progress === null ? "0%" : `${progress}%`;
-          commandProgressSteps.replaceChildren();
-          const projectSteps = [
-            "Intake",
-            "Strategie",
-            "Ontwerp",
-            "Ontwikkeling",
-            "Review",
-            "Afronding",
-          ];
-          projectSteps.forEach((label, index) => {
-            let state = projectStepState(index, progress);
-            if (label === "Strategie" && quotes.length) state = quotes.some(quoteAccepted) ? "done" : state;
-            if (label === "Ontwerp" && latestPreview) state = "done";
-            if (label === "Review" && latestPreview) state = latestPreview.approvedAt ? "done" : "active";
-            if (label === "Afronding" && latestPreview?.approvedAt) state = "active";
-            const step = document.createElement("article");
-            step.className = `portal-command-step is-${state}`;
-            const number = document.createElement("span");
-            const title = document.createElement("strong");
-            const status = document.createElement("small");
-            number.textContent = state === "done" ? "✓" : String(index + 1);
-            title.textContent = label;
-            status.textContent = progress === null ? "Nog niet beschikbaar" : state === "done" ? "Voltooid" : state === "active" ? "In behandeling" : "Wachtend";
-            step.append(number, title, status);
-            commandProgressSteps.append(step);
-          });
-
-          commandWebsiteTitle.textContent = latestPreview?.title || website.name || website.domain || "Mijn website";
-          commandWebsiteSubtitle.textContent = latestPreview ? customerPreviewSummary(latestPreview) : website.domain || websiteUrl || "Zodra je domein of preview klaarstaat, verschijnt die hier.";
-          commandWebsiteStatus.textContent = latestPreview ? statusLabel(latestPreview.status || "ready_for_review") : friendlyWebsiteStatus(website);
-          commandWebsiteStatus.className = `status-badge ${latestPreview?.approvedAt ? "status-active" : latestPreview ? "status-warning" : ["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
-          commandWebsitePreview.replaceChildren(createWebsitePreviewFrame(website, project, websiteUrl, latestPreview));
-          commandWebsiteMeta.replaceChildren(...(latestPreview ? [
-            createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Huidige ontwerpversie."),
-            createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Reviewstatus."),
-            createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Klantzichtbaar sinds."),
-            createWebsiteMetric("Wijzigingen", customerPreviewSummary(latestPreview), "Samenvatting."),
-          ] : [
-            createWebsiteMetric("Domein", website.domain || "Nog niet beschikbaar", "Webadres."),
-            createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Websitefase."),
-            createWebsiteMetric("Oplevering", project.deadline ? formatDate(project.deadline) : "Nog niet beschikbaar", "Alleen als datum bekend is."),
-            createWebsiteMetric("Laatste update", formatDate(website.updatedAt || project.updatedAt), "Meest recente wijziging."),
-          ]));
-          commandWebsiteActions.replaceChildren();
-          if (latestPreview?.safePreviewPath) {
-            commandWebsiteActions.append(createWebsiteAction("Ontwerp bekijken", latestPreview.safePreviewPath, true));
-            if (latestPreview.allowFeedback && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Feedback geven", "#website-review"));
-            if (latestPreview.allowApproval && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Ontwerp goedkeuren", "#website-review"));
-          } else if (websiteUrl) {
-            commandWebsiteActions.append(createWebsiteAction("Website bekijken", websiteUrl, true));
+          commandProgressTitle.textContent = viewModel.project.title;
+          commandProgressSubtitle.textContent = viewModel.project.phase === "Nog niet beschikbaar"
+            ? "De actuele projectfase is nog niet beschikbaar."
+            : `Huidige fase: ${labelForStatus(viewModel.project.phase)}`;
+          commandProgressValue.textContent = viewModel.project.progress.label;
+          commandProgressBar.style.width = viewModel.project.progress.available ? `${viewModel.project.progress.value}%` : "0%";
+          const progressbar = commandProgressBar.parentElement;
+          if (viewModel.project.progress.available) {
+            progressbar.setAttribute("role", "progressbar");
+            progressbar.setAttribute("aria-label", `Voortgang van ${viewModel.project.title}`);
+            progressbar.setAttribute("aria-valuemin", "0");
+            progressbar.setAttribute("aria-valuemax", "100");
+            progressbar.setAttribute("aria-valuenow", String(viewModel.project.progress.value));
+          } else {
+            progressbar.removeAttribute("role");
+            progressbar.removeAttribute("aria-valuemin");
+            progressbar.removeAttribute("aria-valuemax");
+            progressbar.removeAttribute("aria-valuenow");
           }
-          commandWebsiteActions.append(createWebsiteAction("Wijziging aanvragen", "#wijzigingen"));
-
-          commandTaskList.replaceChildren();
-          const tasks = buildCommandTasks({ invoices, projects, websites, messages, changeRequests, onboarding, previewVersions });
-          if (!tasks.length) {
-            commandTaskList.append(commandItem({
-              title: "Je bent helemaal bij",
-              meta: "Wij zijn aan zet. Je hoeft nu niets te doen.",
-              badge: "Rustig",
-              tone: "done",
-            }));
-          }
-          tasks.forEach((task) => commandTaskList.append(commandTask(task)));
+          commandProgressSteps.replaceChildren(
+            message("De projectfasen worden geladen uit de actuele projectplanning.", "neutral")
+          );
 
           commandTimelineList.replaceChildren();
           const timeline = buildCommandTimeline({ projects, invoices, messages, changeRequests, notifications, previewVersions });
-          if (!timeline.length) commandTimelineList.append(commandTimelineItem({ title: "Geen recente updates", meta: "Nieuwe projectupdates verschijnen hier." }));
-          timeline.forEach((item) => commandTimelineList.append(commandTimelineItem(item)));
-
-          commandFinanceList.replaceChildren();
-          const financeItems = [...invoices, ...quotes].slice(0, 3);
-          if (!financeItems.length) commandFinanceList.append(commandItem({ title: "Geen open facturen", meta: "Je financiële overzicht is bijgewerkt.", tone: "done" }));
-          financeItems.forEach((item) => commandFinanceList.append(commandItem({
-            title: item.invoiceNumber || item.quoteNumber || item.title || "Factuur",
-            meta: `${money(item.total || item.amount)} - ${formatDate(item.paidAt || item.invoiceDate || item.quoteDate || item.createdAt)}`,
-            badge: isPaidStatus(item.status) ? "Betaald" : labelForStatus(item.status || "Open"),
-            href: item.invoiceNumber ? invoiceUrl(item) || "#facturen" : quoteUrl(item) || "#facturen",
-            tone: isPaidStatus(item.status) ? "done" : "attention",
-          })));
-
-          commandFeedbackSummary.replaceChildren();
-          if (latestPreview) {
-            const meter = document.createElement("div");
-            meter.className = "portal-command-feedback-meter";
-            meter.innerHTML = `<strong>${escapeHtml(String(feedbackSummary.total))}</strong><span>feedbackpunten</span>`;
-            const details = document.createElement("div");
-            details.className = "portal-command-feedback-details";
-            details.append(
-              commandItem({ title: latestPreview.approvedAt ? "Ontwerp goedgekeurd" : statusLabel(latestPreview.status || "review"), meta: latestPreview.approvedAt ? `Goedgekeurd op ${formatDate(latestPreview.approvedAt)}` : "Status van de huidige versie", badge: latestPreview.approvedAt ? "Goedgekeurd" : "Review", tone: latestPreview.approvedAt ? "done" : "attention" }),
-              commandItem({ title: `${feedbackSummary.processed} verwerkt`, meta: `${feedbackSummary.active} open of in behandeling`, badge: `V${latestPreview.version || 1}`, href: "#website-review" })
-            );
-            commandFeedbackSummary.append(meter, details);
+          if (!timeline.length) {
+            commandTimelineList.append(commandTimelineItem({
+              title: "Nog geen activiteiten",
+              meta: "Nieuwe projectupdates verschijnen hier zodra ze beschikbaar zijn.",
+            }));
           } else {
-            commandFeedbackSummary.append(commandItem({ title: "Geen reviewronde", meta: "Feedback verschijnt zodra er een ontwerpversie is gepubliceerd.", href: "#website-review" }));
+            timeline.slice(0, 4).forEach((item) => commandTimelineList.append(commandTimelineItem(item)));
           }
 
-          commandMessageList.replaceChildren();
-          if (!messages.length) commandMessageList.append(commandItem({ title: "Geen berichten", meta: "Je hebt momenteel geen open communicatie.", href: "#berichten", tone: "done" }));
-          messages.slice(0, 3).forEach((message) => commandMessageList.append(commandItem({
-            title: message.subject || message.title || "Bericht",
-            meta: `${message.sender || "Max Webstudio"} - ${formatDate(message.createdAt)}`,
-            badge: message.senderType === "customer" ? "Van jou" : "Van ons",
-            href: "#berichten",
-          })));
-          if (latestMessage) portalSubtitle.textContent = `${customer.company || customer.email || "Jouw project"} - laatste bericht: ${latestMessage.subject || latestMessage.title || "update"}.`;
-
-          commandChangeList.replaceChildren();
-          if (!changeRequests.length) commandChangeList.append(commandItem({ title: "Geen wijzigingsverzoeken", meta: "Er staat geen losse wijziging open.", href: "#wijzigingen", tone: "done" }));
-          changeRequests.slice(0, 3).forEach((request) => commandChangeList.append(commandItem({
-            title: request.title || "Wijzigingsverzoek",
-            meta: `Aangemaakt ${formatDate(request.createdAt || request.created_at)}`,
-            badge: labelForStatus(request.status || "nieuw"),
-            href: "#wijzigingen",
-          })));
-
-          commandBrandingList.replaceChildren();
-          const brandingState = loadBrandingState();
-          const ids = [customer.id, customer.customerId, customer.company].filter(Boolean).map(String);
-          const brandingProject = brandingState.projects.find((item) => ids.includes(String(item.customerId || item.id || "")) || String(item.companyName || "").toLowerCase() === String(customer.company || "").toLowerCase());
-          const brandAssets = brandingProject
-            ? [
-                ...brandingState.logoAssets.filter((asset) => asset.projectId === brandingProject.id),
-                ...brandingState.downloadAssets.filter((asset) => asset.projectId === brandingProject.id),
-              ].slice(0, 4)
-            : [];
-          if (!brandAssets.length) commandBrandingList.append(commandItem({ title: "Geen brandingbestanden", meta: "Bestanden verschijnen zodra ze veilig beschikbaar zijn.", href: "#branding" }));
-          brandAssets.forEach((asset) => commandBrandingList.append(commandItem({
-            title: asset.assetName || asset.title || asset.label || "Branding asset",
-            meta: asset.format || asset.type || "Asset",
-            badge: labelForStatus(asset.status || "klaar"),
-            href: "#branding",
-          })));
+          commandCenter.setAttribute("aria-busy", "false");
         }
-
         function quoteUrl(quote) {
           const query = new URLSearchParams();
           if (quote.id) query.set("quoteId", quote.id);
@@ -5349,7 +5188,7 @@
 
         const onboardingState = await loadCustomerOnboarding(customer);
         publishedPreviewVersions = dedupePreviewVersions(await loadPublishedPreviewVersions().catch(() => []));
-        renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
+        renderProjectCommandCenter({ customer, websites, projects, files, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         await loadClientJourneyProgress().catch(() => null);
         renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });

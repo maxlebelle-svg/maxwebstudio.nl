@@ -1,0 +1,22 @@
+{
+  "fixture": "tests/fixtures/cx2-dashboard-visual.html",
+  "data_classification": "synthetic_test_data_only",
+  "captures": [
+    {
+      "file": "desktop-1440.png",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "tablet-1024.png",
+      "viewport": "1024x1024"
+    },
+    {
+      "file": "mobile-390.png",
+      "viewport": "390x844",
+      "horizontal_overflow": false
+    }
+  ],
+  "browser_console_errors": 0,
+  "browser_console_warnings": 0,
+  "notes": "Layout evidence rendered from the production CX2 dashboard CSS and markup with synthetic data; no customer or production data is present."
+}
