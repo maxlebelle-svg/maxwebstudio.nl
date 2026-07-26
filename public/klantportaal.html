@@ -4931,9 +4931,10 @@
             progressbar.removeAttribute("aria-valuemax");
             progressbar.removeAttribute("aria-valuenow");
           }
-          commandProgressSteps.replaceChildren(
-            message("De projectfasen worden geladen uit de actuele projectplanning.", "neutral")
-          );
+          const phaseStatusMessage = document.createElement("p");
+          phaseStatusMessage.className = "journey-progress-message is-neutral";
+          phaseStatusMessage.textContent = "De projectfasen worden geladen uit de actuele projectplanning.";
+          commandProgressSteps.replaceChildren(phaseStatusMessage);
 
           commandTimelineList.replaceChildren();
           const timeline = buildCommandTimeline({ projects, invoices, messages, changeRequests, notifications, previewVersions });

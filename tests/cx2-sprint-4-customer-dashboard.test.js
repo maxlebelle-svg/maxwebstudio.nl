@@ -81,3 +81,10 @@ test("Sprint 4 raakt geen auth-, ownership- of backendcontract aan", () => {
   assert.doesNotMatch(source, /service[_-]?role|access_token|refresh_token|leads\.customer_id/i);
   assert.doesNotMatch(source, /fetch\(|supabase|insert\(|update\(|delete\(/i);
 });
+
+test("dashboard gebruikt geen helper uit de private journey-modulescope", () => {
+  const renderer = html.match(/function renderProjectCommandCenter\([\s\S]*?\n        }\n        function quoteUrl/)?.[0] || "";
+  assert(renderer);
+  assert.doesNotMatch(renderer, /\bmessage\s*\(/);
+  assert.match(renderer, /document\.createElement\("p"\)/);
+});
