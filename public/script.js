@@ -952,15 +952,16 @@ function storeCookieConsent(analyticsAllowed) {
   hideCookieConsent();
 }
 
-if (cookieConsent) {
-  const savedCookieConsent = readCookieConsent();
+const savedCookieConsent = readCookieConsent();
 
-  if (!savedCookieConsent) {
-    disableGoogleAnalytics();
+if (savedCookieConsent) {
+  applyCookieConsent(savedCookieConsent);
+  setCookieConsentControls(savedCookieConsent);
+} else {
+  disableGoogleAnalytics();
+
+  if (cookieConsent) {
     showCookieConsent();
-  } else {
-    applyCookieConsent(savedCookieConsent);
-    setCookieConsentControls(savedCookieConsent);
   }
 }
 
