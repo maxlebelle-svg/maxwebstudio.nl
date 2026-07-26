@@ -260,7 +260,15 @@ async function getValidSession() {
   const session = readStoredSession({ allowExpired: true });
   if (session?.access_token) {
     const expiresAt = Number(session.expires_at || 0) * 1000;
-    if (!expiresAt || expiresAt > Date.now() + 60000) return session;
+    if (!expiresAt || expiresAt > Date.now() + 60000) {
+      if (session.user?.id) return session;
+      const config = await getRuntimeAuthConfig();
+      if (config.active) {
+        const hydrated = await hydrateSessionUser(config, session).catch(() => null);
+        if (hydrated?.user?.id) return storeSession(hydrated);
+      }
+      return null;
+    }
     const refreshedSession = await refreshStoredSession(session);
     if (refreshedSession?.access_token) return refreshedSession;
   }
@@ -293,6 +301,21 @@ function normalizeAuthSession(payload = {}) {
   if (payload?.session?.access_token) return payload.session;
   if (payload?.data?.session?.access_token) return payload.data.session;
   return null;
+}
+
+async function hydrateSessionUser(config, session = {}) {
+  if (!session?.access_token) return null;
+  if (session.user?.id) return session;
+  const response = await fetch(`${config.url}/auth/v1/user`, {
+    headers: {
+      apikey: config.anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    cache: "no-store",
+  });
+  const user = await response.json().catch(() => null);
+  if (!response.ok || !user?.id) return null;
+  return { ...session, user };
 }
 
 async function getOfficialAuthClient() {
@@ -479,13 +502,14 @@ export async function consumeMagicLinkSessionFromUrl() {
   const type = hash.get("type") || "magiclink";
   if (!accessToken || !["magiclink", "signup", "invite"].includes(type)) return { success: false, reason: "no_magic_link_session" };
   const expiresIn = Number(hash.get("expires_in") || 3600);
-  const session = {
+  const session = await hydrateSessionUser(config, {
     access_token: accessToken,
     refresh_token: refreshToken,
     token_type: hash.get("token_type") || "bearer",
     expires_in: expiresIn,
     expires_at: Number(hash.get("expires_at")) || Math.floor(Date.now() / 1000) + expiresIn,
-  };
+  });
+  if (!session?.user?.id) return { success: false, reason: "magic_link_session_unverified" };
   storeSession(session);
   const url = new URL(window.location.href);
   url.hash = "";

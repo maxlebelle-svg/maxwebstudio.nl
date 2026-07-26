@@ -6,10 +6,10 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const envPath = process.env.CX2_STAGING_ENV_FILE || path.join(root, ".env.local");
 const envText = await fs.readFile(envPath, "utf8");
-const env = Object.fromEntries(envText.split(/\r?\n/).filter((line) => /^[A-Za-z_][A-Za-z0-9_]*=/.test(line)).map((line) => {
+const env = { ...Object.fromEntries(envText.split(/\r?\n/).filter((line) => /^[A-Za-z_][A-Za-z0-9_]*=/.test(line)).map((line) => {
   const index = line.indexOf("=");
   return [line.slice(0, index), line.slice(index + 1).replace(/^['"]|['"]$/g, "")];
-}));
+})), ...process.env };
 if (env.SUPABASE_PROJECT_ID !== "xlxpuuycigeqhgxqtzni") throw new Error("CX2 Sprint 3 certification is staging-only.");
 if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Staging credentials are incomplete.");
 
@@ -182,7 +182,11 @@ try {
   const newCompleted = (await rpc("cx2_complete_magic_link", { input_state_hash: digest(newChallenge.state), input_auth_user_id: auth.new }))[0];
   createdCustomerIds.add(newCompleted.customer_id);
   evidence.assertions.newCustomerCreatedAfterVerification = newCompleted.customer_created === true;
-  await expectFailure("callbackReplayRejected", () => rpc("cx2_complete_magic_link", { input_state_hash: digest(newChallenge.state), input_auth_user_id: auth.new }));
+  const newRecovered = (await rpc("cx2_resolve_magic_link_completion", { input_state_hash: digest(newChallenge.state), input_auth_user_id: auth.new }))[0];
+  evidence.assertions.callbackReplayRecovered = newRecovered.customer_id === newCompleted.customer_id
+    && newRecovered.profile_id === newCompleted.profile_id
+    && newRecovered.preview_version_id === newCompleted.preview_version_id
+    && newRecovered.customer_created === false;
 
   const [newLead] = await select("leads", `id=eq.${ids.leadNew}&select=converted_customer_id`);
   const [newProfile] = await select("profiles", `id=eq.${ids.profileNew}&select=role,status,auth_user_id`);

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260726193000_cx2_callback_success_recovery.sql",
+      "bytes": 5539,
+      "sha256": "3389d1a5bac58796337999bfd58556acf043009ed98a77a4a54e91e47948290e"
+    }
+  ]
+}

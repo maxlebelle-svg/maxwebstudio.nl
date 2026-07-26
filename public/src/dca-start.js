@@ -3,13 +3,13 @@
   const contextEndpoint = "/.netlify/functions/client-activation-start";
   const exchangeEndpoint = "/.netlify/functions/client-activation-exchange";
   const magicLinkEndpoint = "/.netlify/functions/client-activation-magic-link";
+  const activationRuntime = import("./cx2-activation-runtime.mjs");
   const byId = (id) => document.getElementById(id);
   const CX2_STEPS = Object.freeze(["website_bekijken", "feedback_geven", "omgeving_activeren", "oplevering"]);
   let previewHtml = "";
   let previewVersion = 1;
   let previewTrigger = null;
   let resendTimer = 0;
-  let resendRemaining = 0;
 
   async function requestContext(action) {
     const response = await fetch(contextEndpoint, {
@@ -132,6 +132,12 @@
       byId("cx2-activation-email").textContent = masked;
       byId("cx2-activation-sent-email").textContent = masked;
       byId("cx2-activation-sent-email").setAttribute("aria-label", "Je gecontroleerde e-mailadres");
+      const cooldownEnd = Date.parse(String(data.activation?.cooldownEndsAt || ""));
+      if (Number.isFinite(cooldownEnd) && cooldownEnd > Date.now()) {
+        setActivationState("sent", "E-mail verstuurd. Controleer je inbox.");
+        startResendCountdown(cooldownEnd);
+        return;
+      }
       setActivationState("ready", "Je kunt de veilige magic link nu laten versturen.");
     } catch (error) {
       showActivationError(error.message);
@@ -152,25 +158,41 @@
       const error = new Error(data.error || "Accountactivatie kon niet worden voltooid.");
       error.code = data.code || "CX2_ACTIVATION_FAILED";
       error.retryAfter = Number(data.retryAfter || 0);
+      error.cooldownEndsAt = data.cooldownEndsAt || "";
       throw error;
     }
     return data;
   }
 
-  function startResendCountdown(seconds = 60) {
+  async function startResendCountdown(cooldownEndOrSeconds = 60) {
+    const { remainingCooldownSeconds } = await activationRuntime;
     window.clearInterval(resendTimer);
-    resendRemaining = Math.max(1, Number(seconds || 60));
+    const supplied = Number(cooldownEndOrSeconds || 0);
+    const cooldownEnd = supplied > 1_000_000_000_000 ? supplied : Date.now() + Math.max(1, supplied || 60) * 1000;
     const button = byId("cx2-activation-resend");
-    const count = byId("cx2-activation-countdown");
+    if (!button) return;
     button.disabled = true;
     const tick = () => {
-      count.textContent = String(resendRemaining);
-      button.innerHTML = resendRemaining > 0 ? `Opnieuw versturen over <span id="cx2-activation-countdown">${resendRemaining}</span>s` : "Magic link opnieuw versturen";
-      if (resendRemaining <= 0) { window.clearInterval(resendTimer); button.disabled = false; return; }
-      resendRemaining -= 1;
+      const remaining = remainingCooldownSeconds(cooldownEnd);
+      if (remaining <= 0) {
+        window.clearInterval(resendTimer);
+        resendTimer = 0;
+        button.disabled = false;
+        button.textContent = "Magic link opnieuw versturen";
+        return;
+      }
+      const count = document.createElement("span");
+      count.id = "cx2-activation-countdown";
+      count.textContent = String(remaining);
+      button.replaceChildren(document.createTextNode("Opnieuw versturen over "), count, document.createTextNode("s"));
     };
     tick();
     resendTimer = window.setInterval(tick, 1000);
+  }
+
+  function cooldownEndFromResponse(data = {}, fallbackSeconds = 60) {
+    const parsed = Date.parse(String(data.cooldownEndsAt || ""));
+    return Number.isFinite(parsed) ? parsed : Date.now() + Math.max(1, Number(data.retryAfter || fallbackSeconds || 60)) * 1000;
   }
 
   async function sendMagicLink(action = "send") {
@@ -179,11 +201,11 @@
       const data = await magicRequest(action);
       if (data.maskedEmail) byId("cx2-activation-sent-email").textContent = data.maskedEmail;
       setActivationState("sent", "E-mail verstuurd. Controleer je inbox.");
-      startResendCountdown(data.resendAfter || 60);
+      startResendCountdown(cooldownEndFromResponse(data, data.resendAfter));
     } catch (error) {
       if (error.code === "CX2_RESEND_COOLDOWN") {
         setActivationState("sent", "Wacht nog even voordat je opnieuw verstuurt.");
-        startResendCountdown(error.retryAfter || 60);
+        startResendCountdown(cooldownEndFromResponse(error, error.retryAfter));
         return;
       }
       showActivationError(error.message);
@@ -199,19 +221,24 @@
     setActivationState("callback", "Je veilige sessie wordt hersteld.");
     try {
       const provider = await import("./services/supabaseAuthProvider.js");
-      const consumed = await provider.consumeMagicLinkSessionFromUrl();
-      if (!consumed.success || !consumed.session?.access_token) throw new Error("De magische link is ongeldig of verlopen.");
-      const data = await magicRequest("complete", { state }, consumed.session.access_token);
+      const { completeCallbackFlow } = await activationRuntime;
+      const data = await completeCallbackFlow({
+        state,
+        provider,
+        completeRequest: (callbackStateValue, accessToken) => magicRequest("complete", { state: callbackStateValue }, accessToken),
+      });
       window.history.replaceState(null, "", "/start");
       byId("cx2-activation-first-name").textContent = data.firstName || "daar";
       byId("cx2-activation-dashboard").href = data.redirectTo;
       setActivationState("success", "Jouw persoonlijke omgeving is geactiveerd.");
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        window.setTimeout(() => window.location.assign(data.redirectTo), 2400);
+        window.setTimeout(() => window.location.replace(data.redirectTo), 2400);
       }
     } catch (error) {
-      window.history.replaceState(null, "", "/start");
-      showActivationError(error.message);
+      const { callbackError } = await activationRuntime;
+      const mapped = callbackError(error);
+      if (!mapped.retryable) window.history.replaceState(null, "", "/start");
+      showActivationError(mapped.message);
     }
   }
 
@@ -288,6 +315,14 @@
       byId("dca-start-loading").hidden = true;
       byId("dca-start-content").hidden = false;
       preloadPreview();
+      const activationContext = await requestContext("activation").catch(() => null);
+      const storedCooldownEnd = Date.parse(String(activationContext?.activation?.cooldownEndsAt || ""));
+      if (Number.isFinite(storedCooldownEnd) && storedCooldownEnd > Date.now()) {
+        const masked = activationContext.activation?.maskedEmail || "j***@***";
+        byId("cx2-activation-sent-email").textContent = masked;
+        setActivationState("sent", "E-mail verstuurd. Controleer je inbox.");
+        startResendCountdown(storedCooldownEnd);
+      }
     } catch (error) {
       token = "";
       showError(error.message);
@@ -321,6 +356,12 @@
   byId("cx2-activation-send")?.addEventListener("click", () => sendMagicLink("send"));
   byId("cx2-activation-resend")?.addEventListener("click", () => sendMagicLink("resend"));
   byId("cx2-activation-retry")?.addEventListener("click", openActivation);
+  byId("cx2-activation-dashboard")?.addEventListener("click", (event) => {
+    const route = event.currentTarget.getAttribute("href") || "";
+    if (!/^\/(?:klantportaal|client-dashboard)\.html(?:[?#]|$)/.test(route)) return;
+    event.preventDefault();
+    window.location.replace(route);
+  });
   document.querySelectorAll("[data-cx2-wrong-email]").forEach((button) => button.addEventListener("click", () => {
     showActivationError("Dit e-mailadres kan alleen door Max Webstudio veilig worden aangepast. Neem contact met ons op.");
   }));

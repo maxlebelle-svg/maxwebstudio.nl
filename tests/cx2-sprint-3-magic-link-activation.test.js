@@ -11,13 +11,14 @@ const styles = read("public/styles.css");
 const migration = read("supabase/migrations/20260726190000_cx2_magic_link_account_activation.sql");
 const endpoint = read("functions/client-activation-magic-link.js");
 const provider = read("public/src/services/supabaseAuthProvider.js");
+const callbackRuntime = read("public/src/cx2-activation-runtime.mjs");
 const { maskEmail, callbackUrl, config, safePortalPath } = require("../functions/client-activation-magic-link")._private;
 
 test("CX2 toont de vier goedgekeurde activeringsschermen en foutstaat", () => {
   for (const copy of [
     "Bijna klaar!", "Verstuur magic link", "Dit e-mailadres klopt niet",
     "E-mail verstuurd!", "Open je e-mail.", "Activatie verwerken…",
-    "Jouw persoonlijke omgeving is geactiveerd.", "Naar mijn dashboard",
+    "Jouw persoonlijke omgeving is veilig geactiveerd.", "Naar mijn dashboard",
   ]) assert.ok(html.includes(copy), `Ontbrekende CX2-copy: ${copy}`);
   for (const state of ["ready", "sending", "sent", "callback", "success", "error"]) assert.ok(html.includes(`id="cx2-activation-${state}"`));
 });
@@ -98,7 +99,7 @@ test("resend heeft cooldown en begrensd uurvenster", () => {
 
 test("callback herstelt sessie en server bepaalt de portalroute", () => {
   assert.match(provider, /consumeMagicLinkSessionFromUrl/);
-  assert.match(script, /provider\.consumeMagicLinkSessionFromUrl\(\)/);
+  assert.match(callbackRuntime, /provider\.consumeMagicLinkSessionFromUrl\(\)/);
   assert.match(script, /magicRequest\("complete"/);
   assert.match(migration, /'\/klantportaal\.html\?view=website'::text/);
   assert.doesNotMatch(script, /customerId|previewVersionId|projectId/);

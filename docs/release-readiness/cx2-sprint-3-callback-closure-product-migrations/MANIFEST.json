@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "release": "CX2 Sprint 3 callback success recovery product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260726193000_cx2_callback_success_recovery.sql"
+  ],
+  "authority": [
+    "tests/cx2-sprint-3-callback-success.test.js"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

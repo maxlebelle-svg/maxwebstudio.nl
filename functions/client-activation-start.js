@@ -31,11 +31,14 @@ exports.handler = async (event) => {
     if (action === "activation") {
       const link = await one(context, "client_activation_links", `select=id,intended_email,status,expires_at&id=eq.${encodeURIComponent(binding.activation_link_id)}&limit=1`);
       if (!link?.id || !["active", "opened"].includes(clean(link.status)) || new Date(link.expires_at).getTime() <= Date.now()) return invalidLink();
+      const challenge = await one(context, "cx2_magic_link_challenges", `select=created_at,status&invitation_id=eq.${encodeURIComponent(binding.invitation_id)}&status=in.(prepared,sent)&order=created_at.desc&limit=1`).catch(() => null);
+      const cooldownEnd = challenge?.created_at ? new Date(new Date(challenge.created_at).getTime() + 60_000) : null;
       return json(200, {
         success: true,
         activation: {
           maskedEmail: maskEmail(link.intended_email),
           canActivate: true,
+          cooldownEndsAt: cooldownEnd && cooldownEnd.getTime() > Date.now() ? cooldownEnd.toISOString() : null,
         },
       });
     }

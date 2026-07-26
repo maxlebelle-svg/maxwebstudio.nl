@@ -1,0 +1,37 @@
+{
+  "release": "CX2_SPRINT_3_CALLBACK_SUCCESS_CLOSURE",
+  "projectRef": "xlxpuuycigeqhgxqtzni",
+  "deployId": "6a662e93af3341e0e4d4d22a",
+  "providerMode": "SUPPRESSED",
+  "databaseCertification": {
+    "assertions": 19,
+    "passed": true,
+    "cleanup": true
+  },
+  "browserCertification": {
+    "callbackReachedCanonicalPortalRoute": true,
+    "invalidOrExpiredCopyAbsent": true,
+    "verifiedCustomerPortalLoaded": true,
+    "refreshPreservedSession": true,
+    "backForwardDidNotRestoreCallback": true,
+    "callbackReplayReachedCanonicalPortalRoute": true,
+    "customerBWasNotVisibleToCustomerA": true
+  },
+  "poststateCertification": {
+    "assertions": 8,
+    "exactlyOneCustomer": true,
+    "duplicateProjectCount": 0,
+    "passed": true
+  },
+  "fixtureCleanup": {
+    "remainingFixtureRows": 0,
+    "temporaryAuthUsersRemoved": true,
+    "completed": true
+  },
+  "privacy": {
+    "containsRawIds": false,
+    "containsEmailAddresses": false,
+    "containsTokens": false,
+    "containsSecrets": false
+  }
+}

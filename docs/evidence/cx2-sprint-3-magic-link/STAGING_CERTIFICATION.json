@@ -3,13 +3,13 @@
   "projectRef": "xlxpuuycigeqhgxqtzni",
   "providerMode": "SUPPRESSED",
   "providerCalls": 0,
-  "runIdHash": "3387804eaa6451cc04d3a6bb06b84d7d4edd4373559c9526185775579aa498f3",
-  "startedAt": "2026-07-26T13:17:01.170Z",
+  "runIdHash": "209e219e6826c4f3dfdc2e48ae0ff3e28b31f31438730b3b62c8940c8c0855f1",
+  "startedAt": "2026-07-26T15:50:49.265Z",
   "assertions": {
     "resendCooldownEnforced": true,
     "wrongVerifiedUserRejected": true,
     "newCustomerCreatedAfterVerification": true,
-    "callbackReplayRejected": true,
+    "callbackReplayRecovered": true,
     "convertedCustomerIdAtomic": true,
     "provisionalProfilePromoted": true,
     "previewOwnershipTransferred": true,
@@ -30,5 +30,5 @@
     "completed": true
   },
   "status": "PASS",
-  "completedAt": "2026-07-26T13:17:04.804Z"
+  "completedAt": "2026-07-26T15:50:55.818Z"
 }

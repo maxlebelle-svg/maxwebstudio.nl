@@ -1,33 +1,37 @@
 const crypto = require("crypto");
-const { clean } = require("./_dca-invitation");
+const { clean, correlationId } = require("./_dca-invitation");
 const { bodyWithinLimit, isJsonRequest, readSessionCookie, sameOrigin, sha256 } = require("./_dca-exchange");
 
 const STATE = /^[0-9a-f]{64}$/i;
 const GENERIC_SENT = "Als dit e-mailadres bij deze uitnodiging hoort, is de magische link verstuurd.";
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") return json(405, { success: false, error: "Methode niet toegestaan." });
-  if (!sameOrigin(event) || !isJsonRequest(event) || !bodyWithinLimit(event)) return genericError(400);
+  const correlation = correlationId();
+  if (event.httpMethod !== "POST") return json(405, { success: false, code: "CX2_METHOD_NOT_ALLOWED", error: "Methode niet toegestaan.", correlationId: correlation });
+  if (!sameOrigin(event) || !isJsonRequest(event) || !bodyWithinLimit(event)) return genericError(400, "CX2_ACTIVATION_INVALID", correlation);
   const context = config(process.env);
-  if (!context.available) return genericError(503);
+  if (!context.available) return genericError(503, "CX2_CALLBACK_TEMPORARY_FAILURE", correlation);
   try {
     const input = JSON.parse(event.body || "{}");
     const action = clean(input.action).toLowerCase();
-    if (action === "send" || action === "resend") return sendMagicLink(event, context);
-    if (action === "complete") return completeMagicLink(event, context, input);
-    return genericError(400);
+    if (action === "send" || action === "resend") return sendMagicLink(event, context, correlation);
+    if (action === "complete") return completeMagicLink(event, context, input, correlation);
+    return genericError(400, "CX2_ACTIVATION_INVALID", correlation);
   } catch (error) {
     // Deliberately never log tokens, state, request bodies, e-mail addresses or upstream payloads.
-    const code = clean(error.code || "CX2_ACTIVATION_FAILED");
-    console.error("CX2 activation stopped", { code, status: Number(error.status || 500) });
-    if (code === "CX2_RESEND_COOLDOWN") return json(429, { success: false, code, error: "Wacht nog even voordat je een nieuwe link aanvraagt.", retryAfter: 60 });
-    return genericError(error.status && error.status < 500 ? error.status : 400);
+    const code = publicErrorCode(error);
+    console.error("CX2 activation stopped", { correlationId: correlation, code, status: Number(error.status || 500) });
+    if (code === "CX2_RESEND_COOLDOWN") {
+      const cooldown = cooldownWindow(60);
+      return json(429, { success: false, code, error: "Wacht nog even voordat je een nieuwe link aanvraagt.", ...cooldown, correlationId: correlation }, { "Retry-After": String(cooldown.retryAfter) });
+    }
+    return genericError(safeStatus(error, code), code, correlation);
   }
 };
 
-async function sendMagicLink(event, context) {
+async function sendMagicLink(event, context, correlation) {
   const sessionSecret = readSessionCookie(event.headers?.cookie || event.headers?.Cookie, context.environment);
-  if (!sessionSecret) return genericError(401);
+  if (!sessionSecret) return genericError(401, "CX2_SESSION_MISSING", correlation);
   const rawState = crypto.randomBytes(32).toString("hex");
   const prepared = first(await rpc(context, "cx2_prepare_magic_link", {
     input_session_hash: sha256(sessionSecret),
@@ -37,7 +41,7 @@ async function sendMagicLink(event, context) {
     if (/cooldown/i.test(clean(error.message))) error.code = "CX2_RESEND_COOLDOWN";
     throw error;
   }));
-  if (!prepared?.challenge_id || !prepared.intended_email) return genericError(400);
+  if (!prepared?.challenge_id || !prepared.intended_email) return genericError(400, "CX2_ACTIVATION_INVALID", correlation);
 
   const redirectTo = callbackUrl(event, context, rawState);
   if (!redirectTo) throw fault("CX2_REDIRECT_REJECTED", 400);
@@ -50,34 +54,49 @@ async function sendMagicLink(event, context) {
     if (!response.ok) throw fault("CX2_AUTH_PROVIDER_REJECTED", response.status >= 500 ? 502 : 400);
   }
   await rpc(context, "cx2_mark_magic_link_sent", { input_challenge_id: prepared.challenge_id });
+  const cooldown = cooldownWindow(Number(prepared.resend_after_seconds || 60));
   return json(202, {
     success: true,
     message: GENERIC_SENT,
     maskedEmail: maskEmail(prepared.intended_email),
-    resendAfter: Number(prepared.resend_after_seconds || 60),
+    resendAfter: cooldown.retryAfter,
+    cooldownEndsAt: cooldown.cooldownEndsAt,
     deliverySuppressed: context.suppressEmail,
+    correlationId: correlation,
   });
 }
 
-async function completeMagicLink(event, context, input) {
+async function completeMagicLink(event, context, input, correlation) {
   const rawState = clean(input.state).toLowerCase();
-  if (!STATE.test(rawState)) return genericError(400);
+  if (!STATE.test(rawState)) return genericError(400, "CX2_ACTIVATION_INVALID", correlation);
   const accessToken = bearer(event.headers?.authorization || event.headers?.Authorization);
-  if (!accessToken) return genericError(401);
+  if (!accessToken) return genericError(401, "CX2_SESSION_MISSING", correlation);
   const userResponse = await context.fetchImpl(`${context.supabaseUrl}/auth/v1/user`, {
     headers: { apikey: context.anonKey, Authorization: `Bearer ${accessToken}` },
   });
   const user = await userResponse.json().catch(() => ({}));
-  if (!userResponse.ok || !user?.id || !user?.email_confirmed_at) return genericError(401);
-  const completed = first(await rpc(context, "cx2_complete_magic_link", {
-    input_state_hash: sha256(rawState),
-    input_auth_user_id: user.id,
-  }));
-  if (!completed?.customer_id || !safePortalPath(completed.portal_path)) return genericError(400);
+  if (!userResponse.ok || !user?.id || !user?.email_confirmed_at) return genericError(401, "CX2_SESSION_MISSING", correlation);
+  const inputBody = { input_state_hash: sha256(rawState), input_auth_user_id: user.id };
+  let completed;
+  let recovered = false;
+  try {
+    completed = first(await rpc(context, "cx2_complete_magic_link", inputBody));
+  } catch (_initialError) {
+    recovered = true;
+    completed = first(await rpc(context, "cx2_resolve_magic_link_completion", inputBody));
+  }
+  if (!completed?.customer_id || !safePortalPath(completed.portal_path)) return genericError(400, "CX2_OWNERSHIP_AMBIGUOUS", correlation);
   return json(200, {
     success: true,
+    status: "activated",
+    activationSucceeded: true,
+    identityVerified: true,
+    customerBindingSucceeded: true,
+    invitationActivated: true,
+    replayRecovered: recovered,
     firstName: firstName(user.user_metadata?.name || user.user_metadata?.full_name || "daar"),
     redirectTo: completed.portal_path,
+    correlationId: correlation,
   });
 }
 
@@ -124,7 +143,39 @@ function safePortalPath(value = "") { try { const url = new URL(clean(value), "h
 function first(value) { return Array.isArray(value) ? value[0] || null : value || null; }
 function firstName(value = "") { return clean(value).split(/\s+/)[0] || "daar"; }
 function fault(code, status) { return Object.assign(new Error(code), { code, status }); }
-function genericError(statusCode = 400) { return json(statusCode, { success: false, error: "Accountactivatie kon niet worden voltooid. Vraag zo nodig een nieuwe link aan." }); }
-function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store, max-age=0", "Referrer-Policy": "no-referrer" }, body: JSON.stringify(body) }; }
+function cooldownWindow(seconds = 60, now = Date.now()) {
+  const retryAfter = Math.max(1, Math.min(3600, Number(seconds) || 60));
+  return { retryAfter, cooldownEndsAt: new Date(now + retryAfter * 1000).toISOString() };
+}
+function publicErrorCode(error = {}) {
+  const explicit = clean(error.code);
+  if (explicit === "CX2_RESEND_COOLDOWN") return explicit;
+  const message = clean(error.message).toLowerCase();
+  if (/expired/.test(message)) return "CX2_ACTIVATION_EXPIRED";
+  if (/revoked/.test(message)) return "CX2_ACTIVATION_REVOKED";
+  if (/identity|verified identity/.test(message)) return "CX2_IDENTITY_MISMATCH";
+  if (/ambiguous|ownership/.test(message)) return "CX2_OWNERSHIP_AMBIGUOUS";
+  if (/invalid|not completed|no longer active/.test(message)) return "CX2_ACTIVATION_INVALID";
+  return "CX2_CALLBACK_TEMPORARY_FAILURE";
+}
+function safeStatus(error, code) {
+  if (code === "CX2_SESSION_MISSING") return 401;
+  if (["CX2_IDENTITY_MISMATCH", "CX2_OWNERSHIP_AMBIGUOUS"].includes(code)) return 403;
+  if (code === "CX2_CALLBACK_TEMPORARY_FAILURE") return Number(error?.status || 0) >= 500 ? 503 : 409;
+  return 400;
+}
+function genericError(statusCode = 400, code = "CX2_CALLBACK_TEMPORARY_FAILURE", correlation = correlationId()) {
+  const messages = {
+    CX2_ACTIVATION_INVALID: "Deze activatielink is ongeldig. Vraag Max Webstudio om een nieuwe link.",
+    CX2_ACTIVATION_EXPIRED: "Deze activatielink is verlopen. Vraag Max Webstudio om een nieuwe link.",
+    CX2_ACTIVATION_REVOKED: "Deze activatielink is ingetrokken. Vraag Max Webstudio om een nieuwe link.",
+    CX2_IDENTITY_MISMATCH: "Deze link hoort niet bij het ingelogde account.",
+    CX2_OWNERSHIP_AMBIGUOUS: "Deze klantomgeving kon niet veilig worden gekoppeld.",
+    CX2_SESSION_MISSING: "Je veilige sessie ontbreekt of is verlopen.",
+    CX2_CALLBACK_TEMPORARY_FAILURE: "Accountactivatie is tijdelijk niet bereikbaar. Probeer het opnieuw.",
+  };
+  return json(statusCode, { success: false, code, error: messages[code] || messages.CX2_CALLBACK_TEMPORARY_FAILURE, correlationId: correlation });
+}
+function json(statusCode, body, extraHeaders = {}) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store, max-age=0", "Referrer-Policy": "no-referrer", ...extraHeaders }, body: JSON.stringify(body) }; }
 
-exports._private = { bearer, callbackUrl, config, maskEmail, normalizeOrigin, requestOrigin, safePortalPath };
+exports._private = { bearer, callbackUrl, config, cooldownWindow, maskEmail, normalizeOrigin, publicErrorCode, requestOrigin, safePortalPath };
