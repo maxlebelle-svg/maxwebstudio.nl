@@ -51,6 +51,20 @@ exports.handler = async (event) => {
           input_auth_user_id: user.id,
           input_idempotency_key: idempotencyKey,
         });
+      } else if (action === 'accept_commission_plan') {
+        await rpc(context, 'partner_accept_commission_plan', {
+          input_auth_user_id: user.id,
+          input_version_code: text(input.versionCode),
+          input_idempotency_key: idempotencyKey,
+        });
+      } else if (action === 'accept_required_documents') {
+        const versionCodes = Array.isArray(input.versionCodes) ? input.versionCodes.map(text).filter(Boolean) : [];
+        await rpc(context, 'partner_accept_required_documents', {
+          input_auth_user_id: user.id,
+          input_version_codes: versionCodes,
+          input_declaration_version: 'onboarding_documents_consent_nl_v1',
+          input_idempotency_key: idempotencyKey,
+        });
       } else {
         return json(400, { success: false, code: "INVALID_ACTION", error: "Onbekende onboardingactie." });
       }
@@ -67,6 +81,9 @@ exports.handler = async (event) => {
     const certification = gate.onboarding
       ? await fetchCertification(context, gate.onboarding, gate.steps || [])
       : { assessment: null, attempts: [], certificate: null };
+    const commercial = gate.partnerProfile && gate.onboarding
+      ? await fetchCommercial(context, gate.partnerProfile.id, gate.onboarding.id)
+      : { assignment: null, plan: null, documents: [], acceptedDocumentVersionCodes: [], ledger: [] };
     return json(200, {
       success: true,
       access: { allowed: gate.allowed, reason: gate.reason, redirectTo: gate.redirectTo || "" },
@@ -75,6 +92,7 @@ exports.handler = async (event) => {
       steps: (gate.steps || []).map(safeStep),
       training,
       certification,
+      commercial,
     });
   } catch (error) {
     console.error("Partner onboarding request failed", { code: error.code || "", status: error.status || 500 });
@@ -171,6 +189,56 @@ async function fetchCertification(context, onboarding, steps) {
   };
 }
 
+async function fetchCommercial(context, partnerProfileId, onboardingId) {
+  const assignments = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_commission_assignments?select=id,plan_version_id,status,assigned_at,accepted_at&partner_profile_id=eq.${encodeURIComponent(partnerProfileId)}&status=in.(assigned,accepted)&limit=1`);
+  const assignment = assignments?.[0] || null;
+  const plans = assignment ? await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_commission_plan_versions?select=id,version_code,calculation_method,currency,locale,basis,tiers,include_one_time_projects,include_subscriptions,effective_from&status=eq.published&id=eq.${encodeURIComponent(assignment.plan_version_id)}&limit=1`) : [];
+  const documents = await rest(context.supabaseUrl, context.serviceRoleKey,
+    'partner_document_versions?select=id,version_code,document_type,title,content,content_hash,review_status,effective_from&status=eq.published&order=document_type.asc');
+  const acceptances = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_document_acceptances?select=document_version_id,accepted_at&onboarding_id=eq.${encodeURIComponent(onboardingId)}`);
+  const acceptedIds = new Set((acceptances || []).map((row) => row.document_version_id));
+  const ledger = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_commission_ledger_entries?select=id,entry_type,basis_ex_vat_cents,commission_cents,currency,earning_month,status,created_at&partner_profile_id=eq.${encodeURIComponent(partnerProfileId)}&order=created_at.desc&limit=100`);
+  return {
+    assignment: assignment ? { id: assignment.id, status: assignment.status, assignedAt: assignment.assigned_at, acceptedAt: assignment.accepted_at } : null,
+    plan: plans?.[0] ? {
+      versionCode: plans[0].version_code,
+      calculationMethod: plans[0].calculation_method,
+      currency: plans[0].currency,
+      locale: plans[0].locale,
+      basis: plans[0].basis,
+      tiers: plans[0].tiers,
+      includeOneTimeProjects: plans[0].include_one_time_projects,
+      includeSubscriptions: plans[0].include_subscriptions,
+      effectiveFrom: plans[0].effective_from,
+    } : null,
+    documents: (documents || []).map((document) => ({
+      versionCode: document.version_code,
+      documentType: document.document_type,
+      title: document.title,
+      content: document.content,
+      contentHash: document.content_hash,
+      reviewStatus: document.review_status,
+      effectiveFrom: document.effective_from,
+      accepted: acceptedIds.has(document.id),
+    })),
+    acceptedDocumentVersionCodes: (documents || []).filter((document) => acceptedIds.has(document.id)).map((document) => document.version_code),
+    ledger: (ledger || []).map((entry) => ({
+      id: entry.id,
+      entryType: entry.entry_type,
+      basisExVatCents: Number(entry.basis_ex_vat_cents),
+      commissionCents: Number(entry.commission_cents),
+      currency: entry.currency,
+      earningMonth: entry.earning_month,
+      status: entry.status,
+      createdAt: entry.created_at,
+    })),
+  };
+}
+
 function config() {
   const supabaseUrl = text(process.env.SUPABASE_URL).replace(/\/$/, "");
   const anonKey = text(process.env.SUPABASE_ANON_KEY);
@@ -188,4 +256,4 @@ function text(value = "") { return String(value || "").trim(); }
 function coded(code, status, message) { return Object.assign(new Error(message), { code, status }); }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }, body: JSON.stringify(body) }; }
 
-exports._private = { safePartnerProfile, safeOnboarding, safeStep, fetchTraining, fetchCertification };
+exports._private = { safePartnerProfile, safeOnboarding, safeStep, fetchTraining, fetchCertification, fetchCommercial };
