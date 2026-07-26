@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260726190000_cx2_magic_link_account_activation.sql",
+      "bytes": 17682,
+      "sha256": "9f555b15244b87c3f364f6a789104daa36fa0608cfc0087869f8058e29c046e4"
+    }
+  ]
+}

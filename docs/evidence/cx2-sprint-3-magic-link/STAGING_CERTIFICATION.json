@@ -1,0 +1,34 @@
+{
+  "release": "CX2_SPRINT_3_MAGIC_LINK_AND_ACCOUNT_ACTIVATION",
+  "projectRef": "xlxpuuycigeqhgxqtzni",
+  "providerMode": "SUPPRESSED",
+  "providerCalls": 0,
+  "runIdHash": "3387804eaa6451cc04d3a6bb06b84d7d4edd4373559c9526185775579aa498f3",
+  "startedAt": "2026-07-26T13:17:01.170Z",
+  "assertions": {
+    "resendCooldownEnforced": true,
+    "wrongVerifiedUserRejected": true,
+    "newCustomerCreatedAfterVerification": true,
+    "callbackReplayRejected": true,
+    "convertedCustomerIdAtomic": true,
+    "provisionalProfilePromoted": true,
+    "previewOwnershipTransferred": true,
+    "publicationOwnershipTransferred": true,
+    "existingCustomerReused": true,
+    "noDuplicateProject": true,
+    "noDuplicateCustomer": true,
+    "noDuplicateProfile": true,
+    "ambiguousOwnershipRejected": true,
+    "customerIsolationPreserved": true,
+    "allChallengesConsumed": true,
+    "allInvitationsActivated": true,
+    "rawStateAndDcaTokenAbsent": true,
+    "noProviderCall": true,
+    "portalRouteServerDerived": true
+  },
+  "cleanup": {
+    "completed": true
+  },
+  "status": "PASS",
+  "completedAt": "2026-07-26T13:17:04.804Z"
+}

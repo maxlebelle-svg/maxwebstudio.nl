@@ -1,0 +1,66 @@
+{
+  "release": "CX2_SPRINT_3_MAGIC_LINK_AND_ACCOUNT_ACTIVATION",
+  "status": "PASS",
+  "branch": "codex/cx2-sprint3-magic-link-staging",
+  "productionTouched": false,
+  "staging": {
+    "supabaseProjectRef": "xlxpuuycigeqhgxqtzni",
+    "migration": "supabase/migrations/20260726190000_cx2_magic_link_account_activation.sql",
+    "migrationExecution": "linked query, staging only",
+    "migrationIdempotencyRuns": 2,
+    "migrationPostcheck": {
+      "challengeTablePresent": true,
+      "prepareFunctionPresent": true,
+      "completeFunctionPresent": true,
+      "rlsEnabled": true,
+      "forceRlsEnabled": true
+    },
+    "remoteMigrationHistoryRepaired": false,
+    "remoteMigrationHistoryNote": "The pre-existing remote/local history drift was left unchanged; no repair command was executed.",
+    "netlifySiteId": "7a725d48-8118-4d48-bc6e-6587c752def2",
+    "netlifySiteName": "mws-gold-review-2026-1-7q4k",
+    "deployId": "6a660ddd6e10d1f1ce1bb8c9",
+    "draftUrl": "https://cx2-sprint3--mws-gold-review-2026-1-7q4k.netlify.app",
+    "deployContext": "deploy-preview",
+    "authConfigSmoke": {
+      "httpStatus": 200,
+      "projectRef": "xlxpuuycigeqhgxqtzni",
+      "appEnv": "staging",
+      "appEnvironment": "staging",
+      "clientPortalAuthLive": true,
+      "anonKeyPresent": true,
+      "secretValueCaptured": false
+    },
+    "magicLinkMethodGuardStatus": 405
+  },
+  "provider": {
+    "mode": "SUPPRESSED",
+    "realEmailsSent": 0,
+    "providerCalls": 0
+  },
+  "fixtureCertification": {
+    "assertions": 19,
+    "passed": 19,
+    "cleanupCompleted": true,
+    "evidence": "docs/evidence/cx2-sprint-3-magic-link/STAGING_CERTIFICATION.json"
+  },
+  "tests": {
+    "targetedPassed": 86,
+    "targetedFailed": 0,
+    "fullSuitePassed": 1380,
+    "fullSuiteFailed": 0
+  },
+  "visualReview": {
+    "states": ["ready", "sent", "callback", "success", "error"],
+    "viewports": ["1440x1000", "834x1112", "390x844"],
+    "screenshots": 15,
+    "horizontalOverflowFailures": 0,
+    "artifactsDirectory": "artifacts",
+    "localOnlyVisualStateHarness": true
+  },
+  "knownLimitations": [
+    "Provider delivery and a real inbox click were intentionally not exercised because staging ran in suppress mode.",
+    "The existing Supabase browser session storage contract is reused; Sprint 3 does not introduce a parallel Auth system.",
+    "A pre-existing duplicate customerId build warning in _website-factory-core.js remains outside this sprint's scope."
+  ]
+}
