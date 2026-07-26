@@ -106,7 +106,7 @@ async function waitFor(predicate, message) {
   assert.fail(message);
 }
 
-function makeHarness({ storageResponse, finalizeResponse, listResponse } = {}) {
+function makeHarness({ storageResponse, finalizeResponse, listResponse, contextReady = true } = {}) {
   const ids = [
     "relationship-asset-upload",
     "relationship-asset-files",
@@ -246,6 +246,7 @@ function makeHarness({ storageResponse, finalizeResponse, listResponse } = {}) {
   const window = new EventTarget();
   window.location = { origin: "https://portal.example", hostname: "portal.example" };
   window.setTimeout = setTimeout;
+  window.__MWS_RELATIONSHIP_ASSET_CONTEXT_READY__ = contextReady;
   window.addEventListener("relationship-assets:updated", () => {
     calls.published += 1;
   });
@@ -255,7 +256,8 @@ function makeHarness({ storageResponse, finalizeResponse, listResponse } = {}) {
       return null;
     },
   };
-  const quietConsole = { error() {}, info() {}, warn() {}, log() {} };
+  const consoleCalls = { error: [], info: [], warn: [], log: [] };
+  const quietConsole = Object.fromEntries(Object.keys(consoleCalls).map((level) => [level, (...values) => consoleCalls[level].push(values)]));
   vm.runInNewContext(source, {
     console: quietConsole,
     CustomEvent,
@@ -273,8 +275,19 @@ function makeHarness({ storageResponse, finalizeResponse, listResponse } = {}) {
     window,
   });
 
-  return { calls, elements, form, input, submit, status, statusTitle, statusMessage };
+  return { calls, consoleCalls, elements, form, input, submit, status, statusTitle, statusMessage, window };
 }
+
+test("assetlijst wacht op een bewezen customercontext en houdt de console schoon", async () => {
+  const harness = makeHarness({
+    contextReady: false,
+    listResponse: async () => new Response(JSON.stringify({ success: false, code: "AUTH_REQUIRED" }), { status: 401 }),
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(harness.calls.list, 0);
+  assert.equal(harness.consoleCalls.error.length, 0);
+  assert.equal(harness.consoleCalls.warn.length, 0);
+});
 
 test("double submit creates one upload and stays disabled until finalize", async () => {
   const storage = deferred();

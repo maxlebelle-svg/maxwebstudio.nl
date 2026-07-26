@@ -70,6 +70,19 @@ test("CX2-dashboard is semantisch, responsief en reduced-motion veilig", () => {
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(css, /grid-template-columns: 1fr/);
+  const touchTargetRule = css.match(/\.portal-body :where\([\s\S]*?\) \{\s*min-width: 44px;\s*min-height: 44px;\s*\}/)?.[0] || "";
+  assert.match(touchTargetRule, /\.button/);
+  assert.match(touchTargetRule, /button/);
+  assert.match(touchTargetRule, /\.portal-nav a/);
+  assert.match(touchTargetRule, /\[role="tab"\]/);
+  assert.match(css, /\.cx2-module-card \.cx2-module-action \{[\s\S]*?min-height: 44px;/);
+});
+
+test("assetmodule start pas na bewezen customercontext en behoudt veilige laadvolgorde", () => {
+  const assetSource = fs.readFileSync(path.join(root, "public/admin/ui/client-asset-upload.js"), "utf8");
+  assert.match(html, /window\.__MWS_RELATIONSHIP_ASSET_CONTEXT_READY__ = true;\s*window\.dispatchEvent\(new CustomEvent\("relationship-assets:refresh-requested"\)\)/);
+  assert.match(assetSource, /if \(window\.__MWS_RELATIONSHIP_ASSET_CONTEXT_READY__ === true\) \{\s*loadAssets\(\{ source: "verified-context" \}\);/);
+  assert.doesNotMatch(assetSource, /loadAssets\(\{ source: "initial" \}\)/);
 });
 
 test("Sprint 4 raakt geen auth-, ownership- of backendcontract aan", () => {

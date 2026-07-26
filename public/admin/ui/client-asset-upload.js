@@ -793,5 +793,7 @@
 
   updateDescriptionCount();
   renderSelectedFiles();
-  loadAssets({ source: "initial" });
+  if (window.__MWS_RELATIONSHIP_ASSET_CONTEXT_READY__ === true) {
+    loadAssets({ source: "verified-context" });
+  }
 })();

@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260712-customer-assets-v2" />
     <link rel="stylesheet" href="journey-progress.css?v=20260713-phase4" />
-    <link rel="stylesheet" href="cx2-dashboard.css?v=20260726-sprint4" />
+    <link rel="stylesheet" href="cx2-dashboard.css?v=20260726-sprint4-closure" />
   </head>
   <body class="portal-body">
     <main class="portal-app customer-portal-demo">
@@ -5193,6 +5193,7 @@
         renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         await loadClientJourneyProgress().catch(() => null);
         renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
+        window.__MWS_RELATIONSHIP_ASSET_CONTEXT_READY__ = true;
         window.dispatchEvent(new CustomEvent("relationship-assets:refresh-requested"));
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
         onboardingForm.addEventListener("input", () => updateOnboardingWorkflow(currentOnboardingState || {}));
@@ -5216,6 +5217,7 @@
             approveBranding(projectId);
             brandingMessage.textContent = "Je branding is goedgekeurd. We verwerken dit in je website.";
             brandingMessage.className = "form-helper success";
+            window.__MWS_RELATIONSHIP_ASSET_CONTEXT_READY__ = true;
             window.dispatchEvent(new CustomEvent("relationship-assets:refresh-requested"));
           } catch (error) {
             brandingMessage.textContent = error.message || "Goedkeuring kon niet worden opgeslagen.";
@@ -5512,6 +5514,6 @@
         activatePortalView({ focus: false, scroll: false });
       })();
     </script>
-    <script src="admin/ui/client-asset-upload.js?v=20260712-customer-assets-v2" defer></script>
+    <script src="admin/ui/client-asset-upload.js?v=20260726-cx2-sprint4-closure" defer></script>
   </body>
 </html>

@@ -17,6 +17,31 @@
   min-width: 0;
 }
 
+/* CX2 production closure: every portal action has a 44px touch target. */
+.portal-body :where(
+  .button,
+  button,
+  select,
+  summary,
+  [role="button"],
+  [role="tab"],
+  .portal-nav a,
+  a.portal-command-item,
+  a.project-workspace-action,
+  a.project-version-card,
+  a.project-workspace-summary-card,
+  .portal-actions a,
+  .project-filter-tabs button,
+  #portal-review-feedback-filters button,
+  #portal-version-filters button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="file"]
+) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .cx2-dashboard:focus {
   outline: none;
 }
@@ -281,7 +306,7 @@
 }
 
 .cx2-module-card .cx2-module-action {
-  min-height: 38px;
+  min-height: 44px;
   border-color: rgba(124, 173, 237, 0.16);
   color: rgba(239, 246, 255, 0.88);
   background: rgba(255, 255, 255, 0.045);
