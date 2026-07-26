@@ -47,3 +47,17 @@ test('wizard supports saved progress, explicit acknowledgement, and controlled f
   assert.match(script, /knowledge_assessment/);
   assert.match(script, /document_acceptance/);
 });
+
+test('owner preview exposes branded training and assessment without server writes or answer keys', () => {
+  const html = fs.readFileSync(path.join(root, 'public/partner-onboarding.html'), 'utf8');
+  const script = fs.readFileSync(path.join(root, 'public/src/partner/partner-onboarding.js'), 'utf8');
+  const preview = fs.readFileSync(path.join(root, 'public/src/partner/partner-onboarding-preview.js'), 'utf8');
+  assert.match(html, /max-webstudio-logo-mark\.svg/);
+  assert.match(html, /id="previewBadge"/);
+  assert.match(script, /get\("preview"\) === "1"/);
+  assert.match(script, /De previewstand voert geen serveracties uit/);
+  assert.match(preview, /Welkom bij Max Webstudio/);
+  assert.match(preview, /Kennistoets Partnertraining V1/);
+  assert.match(preview, /Wanneer opent de Sales Workspace\?/);
+  assert.doesNotMatch(preview, /\bcorrect\s*:/);
+});

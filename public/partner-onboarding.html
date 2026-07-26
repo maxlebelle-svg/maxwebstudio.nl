@@ -11,18 +11,21 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="Max Webstudio home"><span>MAX</span> WEBSTUDIO</a>
-    <span id="version" class="version">Veilige partneromgeving</span>
+    <a class="brand" href="/" aria-label="Max Webstudio home">
+      <img src="/max-webstudio-logo-mark.svg" alt="" width="44" height="44">
+      <span class="brand-copy"><strong>Max Webstudio</strong><small>Build better online</small></span>
+    </a>
+    <div class="topbar-meta"><span id="previewBadge" class="preview-badge" hidden>Interactieve preview</span><span id="version" class="version">Veilige partneromgeving</span></div>
   </header>
   <main class="layout">
     <aside class="sidebar" aria-label="Onboardingvoortgang">
       <p class="eyebrow">Partnerprogramma</p>
       <h1>Goed voorbereid aan de slag.</h1>
-      <p class="muted">Je voortgang wordt na iedere bevestiging opgeslagen.</p>
+      <p id="sidebarIntro" class="muted">Je voortgang wordt na iedere bevestiging opgeslagen.</p>
       <div class="progress-label"><span>Voortgang</span><strong id="percentage">0%</strong></div>
       <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress"></span></div>
       <nav id="stepNav" class="step-nav" aria-label="Trainingshoofdstukken"></nav>
-      <div class="security-note"><strong>Veilig afgesloten</strong><span>De Sales Workspace opent pas na alle vereiste stappen.</span></div>
+      <div class="security-note"><span class="security-icon" aria-hidden="true">✓</span><div><strong id="securityTitle">Veilig afgesloten</strong><span id="securityText">De Sales Workspace opent pas na alle vereiste stappen.</span></div></div>
     </aside>
     <section class="workspace">
       <div id="notice" class="notice">Je onboarding wordt geladen…</div>

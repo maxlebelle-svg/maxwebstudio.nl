@@ -1,10 +1,17 @@
+import { partnerPreviewData } from "./partner-onboarding-preview.js";
+
 const endpoint = "/.netlify/functions/partner-onboarding";
 const controlledLabels = {
   commission_system: ["Commissievoorwaarden", "Accepteer de exacte, actuele planversie."],
   knowledge_assessment: ["Kennistoets", "Behaal de vastgestelde voldoende-score."],
   document_acceptance: ["Documenten", "Controleer en accepteer de vereiste afspraken."],
 };
-const state = { token: "", data: null, activeStepKey: "" };
+const state = {
+  token: "",
+  data: null,
+  activeStepKey: "",
+  preview: new URLSearchParams(location.search).get("preview") === "1",
+};
 const element = (id) => document.getElementById(id);
 
 function sessionToken() {
@@ -20,6 +27,7 @@ function sessionToken() {
 }
 
 async function request(body) {
+  if (state.preview) throw new Error("De previewstand voert geen serveracties uit.");
   const response = await fetch(endpoint, {
     method: body ? "POST" : "GET",
     headers: { Authorization: `Bearer ${state.token}`, "Content-Type": "application/json" },
@@ -41,9 +49,12 @@ function render(data, preferredStep = "") {
   element("progress").style.width = `${percentage}%`;
   element("progress").parentElement.setAttribute("aria-valuenow", String(percentage));
   element("percentage").textContent = `${percentage}%`;
-  element("version").textContent = data.training.version ? `${data.training.version.title} · ${data.training.version.code}` : "Trainingsinhoud niet beschikbaar";
+  element("version").textContent = state.preview ? "Partnertraining · voorbeeldweergave" : data.training.version ? `${data.training.version.title} · ${data.training.version.code}` : "Trainingsinhoud niet beschikbaar";
+  element("previewBadge").hidden = !state.preview;
   element("notice").className = `notice ${data.access.allowed ? "success" : ""}`;
-  element("notice").textContent = data.access.allowed
+  element("notice").textContent = state.preview
+    ? "Preview voor Max Webstudio: bekijk alle hoofdstukken, de commissie-uitleg, documenten en de volledige kennistoets. Er wordt niets opgeslagen."
+    : data.access.allowed
     ? "Je onboarding is volledig afgerond en je verkoopomgeving is vrijgegeven."
     : data.onboarding?.status === "certified"
       ? "Je certificaat is toegekend. Een bevoegde admin moet je account nog expliciet activeren."
@@ -63,10 +74,10 @@ function render(data, preferredStep = "") {
   renderControlled();
   renderCertificate();
   const firstIncomplete = modules.find((module) => stepFor(module.stepKey)?.status !== "completed");
-  showModule(preferredStep || firstIncomplete?.stepKey || modules[0]?.stepKey || "");
+  showModule(preferredStep || firstIncomplete?.stepKey || modules[0]?.stepKey || "", false);
 }
 
-function showModule(stepKey) {
+function showModule(stepKey, shouldScroll = true) {
   const module = moduleFor(stepKey);
   if (!module) { element("module").hidden = true; return; }
   state.activeStepKey = stepKey;
@@ -84,7 +95,7 @@ function showModule(stepKey) {
   element("complete").disabled = true;
   const sections = Array.isArray(module.content?.sections) ? module.content.sections : [];
   element("moduleContent").replaceChildren(...sections.map(renderSection));
-  element("module").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (shouldScroll) element("module").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderSection(section) {
@@ -117,15 +128,15 @@ function renderControlled() {
     if (step.stepKey === "knowledge_assessment" && step.status !== "completed" && state.data.certification?.assessment?.available) {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = "Start kennistoets";
+      button.textContent = state.preview ? "Bekijk de tien toetsvragen" : "Start kennistoets";
       button.addEventListener("click", showAssessment);
       card.append(button);
     }
     if (step.stepKey === "commission_system" && step.status !== "completed" && state.data.commercial?.plan) {
-      const button = document.createElement("button"); button.type = "button"; button.textContent = "Plan bekijken en accepteren"; button.addEventListener("click", showCommissionPlan); card.append(button);
+      const button = document.createElement("button"); button.type = "button"; button.textContent = state.preview ? "Bekijk het voorbeeldplan" : "Plan bekijken en accepteren"; button.addEventListener("click", showCommissionPlan); card.append(button);
     }
     if (step.stepKey === "document_acceptance" && step.status !== "completed" && state.data.commercial?.documents?.length) {
-      const button = document.createElement("button"); button.type = "button"; button.textContent = "Documenten controleren"; button.addEventListener("click", showDocuments); card.append(button);
+      const button = document.createElement("button"); button.type = "button"; button.textContent = state.preview ? "Bekijk de vier documenten" : "Documenten controleren"; button.addEventListener("click", showDocuments); card.append(button);
     }
     return card;
   }).concat(allStepsComplete() && !state.data.certification?.certificate ? [finalizationCard()] : []));
@@ -150,13 +161,25 @@ function showCommissionPlan() {
   const button=document.createElement("button"); button.className="primary"; button.type="button"; button.textContent=`Accepteer ${plan.versionCode}`; button.addEventListener("click",acceptCommissionPlan);
   element("agreementsContent").append(list,note,button); element("agreements").scrollIntoView({behavior:"smooth",block:"start"});
 }
-async function acceptCommissionPlan(event) { event.currentTarget.disabled=true; try{ render(await request({action:"accept_commission_plan",versionCode:state.data.commercial.plan.versionCode,idempotencyKey:crypto.randomUUID()})); element("agreements").hidden=true; }catch(error){showError(error);event.currentTarget.disabled=false;} }
+async function acceptCommissionPlan(event) {
+  if (state.preview) { completePreviewStep("commission_system"); element("agreements").hidden = true; return; }
+  event.currentTarget.disabled=true;
+  try{ render(await request({action:"accept_commission_plan",versionCode:state.data.commercial.plan.versionCode,idempotencyKey:crypto.randomUUID()})); element("agreements").hidden=true; }
+  catch(error){showError(error);event.currentTarget.disabled=false;}
+}
 function showDocuments() {
   prepareAgreement("Verplichte documenten", "Lees iedere gepubliceerde versie. Deze bevestiging is uitdrukkelijk geen vervanging voor een volledig ondertekende opdrachtovereenkomst.");
   for(const document of state.data.commercial.documents){ const article=document.createElement("article"); article.className="document-card"; const title=document.createElement("h3"); title.textContent=document.title; const body=document.createElement("p"); body.textContent=document.content; const meta=document.createElement("small"); meta.textContent=`Versie ${document.versionCode} · ${document.reviewStatus === "legal_review_required" ? "juridische review vereist" : "intern goedgekeurd"}`; const label=document.createElement("label"); label.className="option"; const input=document.createElement("input"); input.type="checkbox"; input.name="document"; input.value=document.versionCode; input.checked=document.accepted; input.disabled=document.accepted; const text=document.createElement("span"); text.textContent="Ik heb deze exacte versie gelezen en begrepen."; label.append(input,text); article.append(title,body,meta,label); element("agreementsContent").append(article); }
   const button=document.createElement("button"); button.className="primary"; button.type="button"; button.textContent="Alle documentversies bevestigen"; button.addEventListener("click",acceptDocuments); element("agreementsContent").append(button); element("agreements").scrollIntoView({behavior:"smooth",block:"start"});
 }
-async function acceptDocuments(event) { const checked=[...element("agreementsContent").querySelectorAll('input[name="document"]')].filter((input)=>input.checked||input.disabled).map((input)=>input.value); if(checked.length!==state.data.commercial.documents.length){showError(new Error("Bevestig eerst iedere documentversie."));return;} event.currentTarget.disabled=true; try{render(await request({action:"accept_required_documents",versionCodes:checked,idempotencyKey:crypto.randomUUID()}));element("agreements").hidden=true;}catch(error){showError(error);event.currentTarget.disabled=false;} }
+async function acceptDocuments(event) {
+  const checked=[...element("agreementsContent").querySelectorAll('input[name="document"]')].filter((input)=>input.checked||input.disabled).map((input)=>input.value);
+  if(checked.length!==state.data.commercial.documents.length){showError(new Error("Bevestig eerst iedere documentversie."));return;}
+  if (state.preview) { completePreviewStep("document_acceptance"); element("agreements").hidden = true; return; }
+  event.currentTarget.disabled=true;
+  try{render(await request({action:"accept_required_documents",versionCodes:checked,idempotencyKey:crypto.randomUUID()}));element("agreements").hidden=true;}
+  catch(error){showError(error);event.currentTarget.disabled=false;}
+}
 async function finalizeCertification(event){event.currentTarget.disabled=true;try{const data=await request({action:"finalize_certification",idempotencyKey:crypto.randomUUID()});render(data);element("certificate").scrollIntoView({behavior:"smooth",block:"start"});}catch(error){showError(error);event.currentTarget.disabled=false;}}
 function showError(error){element("notice").className="notice error";element("notice").textContent=error.message;}
 function money(cents){return new Intl.NumberFormat("nl-NL",{style:"currency",currency:"EUR"}).format(Number(cents)/100);}
@@ -194,7 +217,7 @@ function showAssessment() {
   const submit = document.createElement("button");
   submit.type = "submit";
   submit.className = "primary";
-  submit.textContent = "Toets definitief indienen";
+  submit.textContent = state.preview ? "Voorbeeldtoets afronden" : "Toets definitief indienen";
   form.append(submit);
   form.onsubmit = submitAssessment;
   element("assessment").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -206,6 +229,16 @@ async function submitAssessment(event) {
   const formData = new FormData(event.currentTarget);
   const answers = Object.fromEntries(assessment.questions.map((question) => [question.id, formData.get(question.id)]));
   const submit = event.currentTarget.querySelector("button[type=submit]");
+  if (state.preview) {
+    const answered = Object.values(answers).filter(Boolean).length;
+    if (answered !== assessment.questions.length) return;
+    completePreviewStep("knowledge_assessment", false);
+    const result = document.createElement("div");
+    result.className = "assessment-result";
+    result.textContent = "Voorbeeldtoets afgerond. In de echte onboarding beoordeelt de server de antwoorden en is minimaal 80% nodig. Deze preview heeft niets opgeslagen.";
+    event.currentTarget.replaceChildren(result);
+    return;
+  }
   submit.disabled = true;
   submit.textContent = "Veilig beoordelen…";
   try {
@@ -271,6 +304,10 @@ element("complete").addEventListener("click", async () => {
   const button = element("complete");
   button.disabled = true;
   button.textContent = "Opslaan…";
+  if (state.preview) {
+    completePreviewStep(state.activeStepKey);
+    return;
+  }
   try {
     const data = await request({ action: "complete_step", stepKey: state.activeStepKey, idempotencyKey: crypto.randomUUID() });
     const modules = data.training.modules || [];
@@ -286,6 +323,14 @@ element("complete").addEventListener("click", async () => {
 
 async function initialize() {
   try {
+    if (state.preview) {
+      document.body.classList.add("is-preview");
+      element("sidebarIntro").textContent = "Bekijk de volledige leerroute zoals een nieuwe medewerker die straks doorloopt.";
+      element("securityTitle").textContent = "Veilige voorbeeldstand";
+      element("securityText").textContent = "Je kunt alles bekijken en aanklikken; er wordt niets opgeslagen of beoordeeld.";
+      render(structuredClone(partnerPreviewData));
+      return;
+    }
     state.token = sessionToken();
     if (!state.token) throw new Error("Log opnieuw in om verder te gaan.");
     render(await request());
@@ -293,6 +338,15 @@ async function initialize() {
     element("notice").className = "notice error";
     element("notice").textContent = error.message;
   }
+}
+
+function completePreviewStep(stepKey, rerender = true) {
+  const step = state.data.steps.find((item) => item.stepKey === stepKey);
+  if (step) step.status = "completed";
+  if (!rerender) return;
+  const modules = state.data.training.modules || [];
+  const next = modules.find((module) => state.data.steps.find((item) => item.stepKey === module.stepKey)?.status !== "completed");
+  render(state.data, next?.stepKey || state.activeStepKey);
 }
 
 initialize();
