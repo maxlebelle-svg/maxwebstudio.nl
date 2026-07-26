@@ -68,4 +68,9 @@ test("migration is transactional, preflighted and preserves profile rows", () =>
   assert.doesNotMatch(migration, /delete\s+from\s+public\.profiles/i);
   assert.doesNotMatch(migration, /truncate/i);
   assert.doesNotMatch(migration, /drop\s+table/i);
+  const dropLegacyRoleConstraint = migration.indexOf("drop constraint if exists profiles_role_check");
+  const normalizeLegacySalesRole = migration.indexOf("set role = 'sales_partner'");
+  const addCanonicalRoleConstraint = migration.indexOf("add constraint profiles_role_check");
+  assert.ok(dropLegacyRoleConstraint < normalizeLegacySalesRole);
+  assert.ok(normalizeLegacySalesRole < addCanonicalRoleConstraint);
 });

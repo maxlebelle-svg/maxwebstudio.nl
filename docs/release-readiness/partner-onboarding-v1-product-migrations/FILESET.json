@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql",
-      "bytes": 7923,
-      "sha256": "39f8794f3b0827ee3951061ea0ffe577190dad523c1f542b34b9ce7fa253832d"
+      "bytes": 7924,
+      "sha256": "049f511b70b440733e0f5f00bb0b7fb5b2c184e9eb0fd8ff8fd637dc84d1fbb3"
     },
     {
       "path": "supabase/migrations/20260726201000_partner_onboarding_gate_foundation.sql",

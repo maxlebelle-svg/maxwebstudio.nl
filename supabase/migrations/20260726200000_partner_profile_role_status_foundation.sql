@@ -48,11 +48,12 @@ $preflight$;
 alter table public.profiles
   add column if not exists created_by uuid references auth.users(id) on delete set null;
 
+alter table public.profiles drop constraint if exists profiles_role_check;
+
 update public.profiles
 set role = 'sales_partner', updated_at = pg_catalog.clock_timestamp()
 where lower(btrim(role)) = 'sales';
 
-alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check check (
   role in (
     'super_admin','admin','sales_manager','sales_partner','designer',
