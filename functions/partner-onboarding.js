@@ -45,12 +45,16 @@ exports.handler = async (event) => {
       serviceRoleKey: context.serviceRoleKey,
       profile,
     });
+    const training = gate.onboarding
+      ? await fetchTraining(context, gate.onboarding.training_program_version)
+      : { version: null, modules: [] };
     return json(200, {
       success: true,
       access: { allowed: gate.allowed, reason: gate.reason, redirectTo: gate.redirectTo || "" },
       partnerProfile: safePartnerProfile(gate.partnerProfile),
       onboarding: safeOnboarding(gate.onboarding),
       steps: (gate.steps || []).map(safeStep),
+      training,
     });
   } catch (error) {
     console.error("Partner onboarding request failed", { code: error.code || "", status: error.status || 500 });
@@ -74,6 +78,35 @@ async function rpc(context, name, body) {
   return rest(context.supabaseUrl, context.serviceRoleKey, `rpc/${name}`, { method: "POST", body: JSON.stringify(body) });
 }
 
+async function fetchTraining(context, versionCode) {
+  const versions = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_training_versions?select=id,version_code,locale,title,introduction,legal_review_status,effective_from&version_code=eq.${encodeURIComponent(versionCode)}&status=eq.published&limit=1`);
+  const version = versions?.[0] || null;
+  if (!version) return { version: null, modules: [] };
+  const modules = await rest(context.supabaseUrl, context.serviceRoleKey,
+    `partner_training_modules?select=id,step_key,display_order,title,summary,content,acknowledgement_text,estimated_minutes&training_version_id=eq.${encodeURIComponent(version.id)}&order=display_order.asc`);
+  return {
+    version: {
+      code: version.version_code,
+      locale: version.locale,
+      title: version.title,
+      introduction: version.introduction,
+      legalReviewStatus: version.legal_review_status,
+      effectiveFrom: version.effective_from,
+    },
+    modules: (modules || []).map((module) => ({
+      id: module.id,
+      stepKey: module.step_key,
+      order: Number(module.display_order),
+      title: module.title,
+      summary: module.summary,
+      content: module.content,
+      acknowledgementText: module.acknowledgement_text,
+      estimatedMinutes: Number(module.estimated_minutes),
+    })),
+  };
+}
+
 function config() {
   const supabaseUrl = text(process.env.SUPABASE_URL).replace(/\/$/, "");
   const anonKey = text(process.env.SUPABASE_ANON_KEY);
@@ -91,4 +124,4 @@ function text(value = "") { return String(value || "").trim(); }
 function coded(code, status, message) { return Object.assign(new Error(message), { code, status }); }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }, body: JSON.stringify(body) }; }
 
-exports._private = { safePartnerProfile, safeOnboarding, safeStep };
+exports._private = { safePartnerProfile, safeOnboarding, safeStep, fetchTraining };
