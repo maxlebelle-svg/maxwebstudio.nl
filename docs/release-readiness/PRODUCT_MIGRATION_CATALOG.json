@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "status": "approved",
+  "category": "existing-only/product",
+  "policy": "Every post-cutover migration that is not common must be named by exactly one approved release manifest and an exact checksummed fileset.",
+  "releases": [
+    {
+      "manifest": "docs/release-readiness/p0-production-reconciliation/MANIFEST.json",
+      "fileset": "docs/release-readiness/p0-production-reconciliation/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/p0-combined-poststate-policy-correction/MANIFEST.json",
+      "fileset": "docs/release-readiness/p0-combined-poststate-policy-correction/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/p0-complete-production-database-recovery/MANIFEST.json",
+      "fileset": "docs/release-readiness/p0-complete-production-database-recovery/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/p0-email-logs-additive-compatibility/MANIFEST.json",
+      "fileset": "docs/release-readiness/p0-email-logs-additive-compatibility/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/cp-a-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/cp-a-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/dca-0-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/dca-0-product-migrations/FILESET.json"
+    }
+  ]
+}

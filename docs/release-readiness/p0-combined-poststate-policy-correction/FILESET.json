@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "release": "P0 Combined Production Poststate and Policy Correction Release",
+  "migrationVersions": [
+    "20260722125000",
+    "20260722126000"
+  ],
+  "executionOrder": [
+    "supabase/migrations/20260722125000_p0_correct_production_poststate.sql",
+    "supabase/migrations/20260722126000_p0_correct_production_leads_policies.sql"
+  ],
+  "files": [
+    {
+      "path": "supabase/migrations/20260722125000_p0_correct_production_poststate.sql",
+      "bytes": 15470,
+      "sha256": "d53ec05f68c00880f0ae4361ad6ce204a85fdea2272d6538f014073c2f6e2b7c"
+    },
+    {
+      "path": "supabase/migrations/20260722126000_p0_correct_production_leads_policies.sql",
+      "bytes": 4871,
+      "sha256": "6b3fe51dfe37cd68acc97b3bf9e134cc7b4d25f272a573db40d3d5704929e3cf"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/PRECONDITIONS.sql",
+      "bytes": 4500,
+      "sha256": "12693bb6f99d69daec802819e13a3a7dc6a82a9bcf501eb6060cc7d946c86b11"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/POSTCONDITIONS_20260722125000.sql",
+      "bytes": 1328,
+      "sha256": "d2768709d604a79560d2f428cf4c46b1006364a003c0259ad1ebb0c64b4f1713"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/POSTCONDITIONS_20260722126000.sql",
+      "bytes": 2230,
+      "sha256": "77704030dc5fa463cc97a573e5fbbb0c57a459a89f48d5a15e84364561cdb784"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/POSTCONDITIONS.sql",
+      "bytes": 1591,
+      "sha256": "a8bcc3071bd07089a1a1dd8c34731b47f05154e832a6f78c52ef30b5d6a40ae6"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/CATALOG_FINGERPRINT.sql",
+      "bytes": 11475,
+      "sha256": "be4c8b2215c3d59d51c3a429a2d091c487d38542b00b36b3547d9aaac0b15b0c"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/SOURCE_SEMANTICS_DECISION.json",
+      "bytes": 566,
+      "sha256": "21fb7b85cbd938113245580698d11465b32461481200676e2c126fbe88c58011"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/POLICY_DECISION.json",
+      "bytes": 1530,
+      "sha256": "7726b6ebb5481d5fabe25a223f81c0fec070ee6e248b542552d28a9c0a4b7ab5"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/DEPENDENCY_MATRIX.json",
+      "bytes": 1619,
+      "sha256": "4952ff82ff2aeed4dd879dc4006195b8402da47e748dbb74c6107b3af0b3956a"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/LOCAL_VALIDATION.json",
+      "bytes": 1704,
+      "sha256": "e21df6b9bb99557515a2507addb43368583ae7e601a16cb93e0c148370ca2af1"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/ROLLBACK_RECOVERY.md",
+      "bytes": 1104,
+      "sha256": "cb0ab8d2b72083646aece4cdd280fa55d5964682e86e74a9dd22b3731a1c1e4a"
+    },
+    {
+      "path": "docs/release-readiness/p0-combined-poststate-policy-correction/RELEASE_REPORT.md",
+      "bytes": 2158,
+      "sha256": "c68855c6e61f0feaf96be8de2d2b87c5fea873f6a3b60628d3f0752437a35224"
+    },
+    {
+      "path": "scripts/p0-combined-poststate-policy-correction-local-validation.zsh",
+      "bytes": 11683,
+      "sha256": "d2c383d66457b8bc6a57a6feede0fa68c1eb6ae003d7baf7f337a987a0935502"
+    },
+    {
+      "path": "scripts/p0-build-combined-poststate-policy-correction-release.mjs",
+      "bytes": 4140,
+      "sha256": "2ad138da638d2f812780b430225b8066ea3121647bde67aa3f2c843bd93cd26e"
+    },
+    {
+      "path": "tests/fixtures/p0-production-poststate-correction-baseline.sql",
+      "bytes": 1422,
+      "sha256": "a0c6317df62827a79bd56b751907685c44cdcfa27f5f152a0d3391fd4d3bd4a6"
+    },
+    {
+      "path": "tests/fixtures/p0-production-poststate-staging-nonce.sql",
+      "bytes": 4574,
+      "sha256": "dce1b48c4b2f1684cf70597c6013906f9b776c38bf62eb64aae50e246c975953"
+    },
+    {
+      "path": "tests/fixtures/p0-production-poststate-correction-functional.sql",
+      "bytes": 4139,
+      "sha256": "bf9a1ba80dbaaa898256313dc52db46cb9d5ef210262e185194ca79abc4ab37a"
+    },
+    {
+      "path": "tests/fixtures/p0-combined-poststate-policy-current-policies.sql",
+      "bytes": 1687,
+      "sha256": "cbf2488ce98f8d5fc77e97828f96ac46567d1689470c956422e2466009c3d0bb"
+    },
+    {
+      "path": "tests/fixtures/p0-combined-poststate-policy-functional.sql",
+      "bytes": 4010,
+      "sha256": "bbb2b3e9925225dd8c95145c9747aed4d9c021a0913c48ec84835175fcf72e91"
+    },
+    {
+      "path": "tests/p0-combined-poststate-policy-correction-release.test.js",
+      "bytes": 5793,
+      "sha256": "f1e24ed7ffb12929d177a54c09007848a8146b909c8f8f12b466fc04051c6d2b"
+    }
+  ],
+  "filesetChecksum": "4e063a6656a92b5c70711d91e889d7e7ba91d81e1cee61f6d2a8ff86b790c486"
+}

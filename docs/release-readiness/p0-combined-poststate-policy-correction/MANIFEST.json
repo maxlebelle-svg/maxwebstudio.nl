@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "release": "P0 Combined Production Poststate and Policy Correction Release",
+  "status": "PACKAGED_AND_LOCALLY_REVALIDATED_AFTER_GATE_B",
+  "productionTarget": {
+    "project": "maxwebstudio",
+    "projectRef": "yxxahurphdbblkuxoeje",
+    "baselineLatestMigration": "20260721050000",
+    "postGateBLatestMigration": "20260722126000"
+  },
+  "migrationVersions": [
+    "20260722125000",
+    "20260722126000"
+  ],
+  "executionOrder": [
+    "supabase/migrations/20260722125000_p0_correct_production_poststate.sql",
+    "supabase/migrations/20260722126000_p0_correct_production_leads_policies.sql"
+  ],
+  "policyPrestate": {
+    "count": 3,
+    "setDigest": "7b92c1fd863906fa5ca06a82e15e9d79"
+  },
+  "policyPoststate": {
+    "count": 5,
+    "setDigest": "4f24a7f8f4e181acb8a32b8f01644079",
+    "salesManagerCommands": [
+      "SELECT",
+      "UPDATE"
+    ]
+  },
+  "sourceSemantics": {
+    "independent": true,
+    "synchronized": false
+  },
+  "preservesMigrationHistory": [
+    "20260721050000"
+  ],
+  "removes": [
+    "public.p0_staging_smoke_nonces",
+    "public.mws_consume_p0_staging_smoke_nonce_v1(text,text,text,text)"
+  ],
+  "releaseFiles": [
+    "supabase/migrations/20260722125000_p0_correct_production_poststate.sql",
+    "supabase/migrations/20260722126000_p0_correct_production_leads_policies.sql",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/PRECONDITIONS.sql",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/POSTCONDITIONS_20260722125000.sql",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/POSTCONDITIONS_20260722126000.sql",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/POSTCONDITIONS.sql",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/CATALOG_FINGERPRINT.sql",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/SOURCE_SEMANTICS_DECISION.json",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/POLICY_DECISION.json",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/DEPENDENCY_MATRIX.json",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/LOCAL_VALIDATION.json",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/ROLLBACK_RECOVERY.md",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/RELEASE_REPORT.md",
+    "scripts/p0-combined-poststate-policy-correction-local-validation.zsh",
+    "scripts/p0-build-combined-poststate-policy-correction-release.mjs",
+    "tests/fixtures/p0-production-poststate-correction-baseline.sql",
+    "tests/fixtures/p0-production-poststate-staging-nonce.sql",
+    "tests/fixtures/p0-production-poststate-correction-functional.sql",
+    "tests/fixtures/p0-combined-poststate-policy-current-policies.sql",
+    "tests/fixtures/p0-combined-poststate-policy-functional.sql",
+    "tests/p0-combined-poststate-policy-correction-release.test.js",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/FILESET.json",
+    "docs/release-readiness/p0-combined-poststate-policy-correction/MANIFEST.json"
+  ],
+  "hashedFileCount": 21,
+  "releaseFileCount": 23,
+  "filesetChecksum": "4e063a6656a92b5c70711d91e889d7e7ba91d81e1cee61f6d2a8ff86b790c486",
+  "filesetSha256": "341a4aadf757a3821d6f140dbf43728a31e19163635bb0cfcfce3ab8cf66b62e",
+  "localCatalogFingerprintSha256": "70db753066899c723915c12bdbb4fcf99c1a4ff3a3e131c803b002b4cb0f008e",
+  "catalogFingerprintScope": "P0_CONTRACT_ONLY",
+  "catalogFingerprintProofs": {
+    "nonP0CatalogVariationSameFingerprint": true,
+    "functionalP0DriftChangesFingerprint": true,
+    "securityP0DriftChangesFingerprint": true
+  },
+  "gateState": {
+    "gateBDatabaseExecution": "COMPLETED",
+    "gateBRerunAuthorized": false,
+    "gateCAuthorized": false,
+    "gateDAuthorized": false
+  },
+  "selfHashAlgorithm": "SHA-256 over canonical compact JSON with selfHash=null",
+  "selfHash": "755eb976a3cefdd2773fb621aeeadb0dba6138ce084a0742cdbcbe43cce7d36c",
+  "productionContacted": false,
+  "productionExecutionAuthorized": false
+}

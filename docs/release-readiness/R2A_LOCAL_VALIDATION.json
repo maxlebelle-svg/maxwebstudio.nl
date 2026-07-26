@@ -1,0 +1,1045 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "generatedAt": "2026-07-21T05:04:25.898Z",
+  "localOnly": true,
+  "remoteActions": 0,
+  "migration": {
+    "version": "20260721010000",
+    "size": 3578,
+    "sha256": "fd787e93077783963d87879d6f9fba32395949fe572ef94609101293c91af966"
+  },
+  "policyCallerValidation": {
+    "remoteEvidenceReferencesStaticallyValidated": 70,
+    "materializedBaselineReferencesLocallyValidated": 64,
+    "explanation": "Six runtime-only policy references are outside the frozen target baseline and remain in the separate R2 policy reconciliation boundary."
+  },
+  "scenarios": {
+    "existing": {
+      "beforeFunctions": [
+        {
+          "function_name": "current_app_role",
+          "identity_arguments": "",
+          "result_type": "text",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+          "definition_sha256": "45a9ddcb1c72838ce7a1a582e5c5e7538d6bc88916d16b6ab0b0eff966c41a88"
+        },
+        {
+          "function_name": "current_profile_id",
+          "identity_arguments": "",
+          "result_type": "uuid",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+          "definition_sha256": "1f66124cf1e38d9ff83d5ecb4eca20812dfa5a07ccad9225473fabad92b2a942"
+        },
+        {
+          "function_name": "has_app_role",
+          "identity_arguments": "allowed_roles text[]",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+          "definition_sha256": "9681bdc521823365e81a6eeacf679f65d680ce5b8ad4997bcb3372bc5b51ef45"
+        },
+        {
+          "function_name": "is_admin_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+          "definition_sha256": "6049eeb8295fa3428ee0b6fd49a8e261e8f40424c245196c5646a50eb5551b8f"
+        },
+        {
+          "function_name": "is_demo_context",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+          "definition_sha256": "d1a54739e29fcf1098b726275d4d3f9110f6b56a903e679d53bf01de0f1ad889"
+        },
+        {
+          "function_name": "is_demo_record",
+          "identity_arguments": "record_is_demo boolean, record_environment text",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+          "definition_sha256": "db3295e6a7b193a2d81d902ac4e21898fc92c816dc3057e1a73346f0e20d1423"
+        },
+        {
+          "function_name": "is_staff_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+          "definition_sha256": "ebadcac34a80d4bd364ef8346ff514f441013a38a371b970acd4ee2c67f71c8e"
+        },
+        {
+          "function_name": "owns_customer",
+          "identity_arguments": "target_customer_id uuid",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=public"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+          "definition_sha256": "8890959bd97579f37ebb31e45ac72c4620952d10e1874cc9e52a21990eda4925"
+        }
+      ],
+      "afterFunctions": [
+        {
+          "function_name": "current_app_role",
+          "identity_arguments": "",
+          "result_type": "text",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+          "definition_sha256": "d57a9ae179171cbf809014ef0d49f15d76f0c3c78e40f8fe3787761900e8e4d9"
+        },
+        {
+          "function_name": "current_profile_id",
+          "identity_arguments": "",
+          "result_type": "uuid",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+          "definition_sha256": "b716f68dff2768d08ee96dc21d44ed2560f62420a5f59b15940087e4d677db86"
+        },
+        {
+          "function_name": "has_app_role",
+          "identity_arguments": "allowed_roles text[]",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+          "definition_sha256": "f35362d13a9694d94e36df122902365931926a81880ba26d1617cdc5c1c6b6c4"
+        },
+        {
+          "function_name": "is_admin_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+          "definition_sha256": "ecf0c23025ec8b6c4f3e8f554036ba264ec4b2bdfd78045ccbde798eadc3f90f"
+        },
+        {
+          "function_name": "is_demo_context",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+          "definition_sha256": "14bbc13ed0ab6085297ae958dbb5492ac9a1d229d4a6812cd67a6d13613dc6c1"
+        },
+        {
+          "function_name": "is_demo_record",
+          "identity_arguments": "record_is_demo boolean, record_environment text",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+          "definition_sha256": "b9cbfd45c1c4556c1b8d1ed6d56e6b94c8ae2a716df8db15d2c7c82631bac85b"
+        },
+        {
+          "function_name": "is_staff_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+          "definition_sha256": "b35617ad5d4480869fd8b84512016bc3a6b661af6502bf422a00100501af8b59"
+        },
+        {
+          "function_name": "owns_customer",
+          "identity_arguments": "target_customer_id uuid",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+          "definition_sha256": "932d0fe184007aa547a16a4f7c4c28cee34b2cd9ab15312b21498282bb2b2635"
+        }
+      ],
+      "afterSecondFunctions": [
+        {
+          "function_name": "current_app_role",
+          "identity_arguments": "",
+          "result_type": "text",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+          "definition_sha256": "d57a9ae179171cbf809014ef0d49f15d76f0c3c78e40f8fe3787761900e8e4d9"
+        },
+        {
+          "function_name": "current_profile_id",
+          "identity_arguments": "",
+          "result_type": "uuid",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+          "definition_sha256": "b716f68dff2768d08ee96dc21d44ed2560f62420a5f59b15940087e4d677db86"
+        },
+        {
+          "function_name": "has_app_role",
+          "identity_arguments": "allowed_roles text[]",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+          "definition_sha256": "f35362d13a9694d94e36df122902365931926a81880ba26d1617cdc5c1c6b6c4"
+        },
+        {
+          "function_name": "is_admin_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+          "definition_sha256": "ecf0c23025ec8b6c4f3e8f554036ba264ec4b2bdfd78045ccbde798eadc3f90f"
+        },
+        {
+          "function_name": "is_demo_context",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+          "definition_sha256": "14bbc13ed0ab6085297ae958dbb5492ac9a1d229d4a6812cd67a6d13613dc6c1"
+        },
+        {
+          "function_name": "is_demo_record",
+          "identity_arguments": "record_is_demo boolean, record_environment text",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+          "definition_sha256": "b9cbfd45c1c4556c1b8d1ed6d56e6b94c8ae2a716df8db15d2c7c82631bac85b"
+        },
+        {
+          "function_name": "is_staff_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+          "definition_sha256": "b35617ad5d4480869fd8b84512016bc3a6b661af6502bf422a00100501af8b59"
+        },
+        {
+          "function_name": "owns_customer",
+          "identity_arguments": "target_customer_id uuid",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+          "body_sha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+          "definition_sha256": "932d0fe184007aa547a16a4f7c4c28cee34b2cd9ab15312b21498282bb2b2635"
+        }
+      ],
+      "securityBefore": {
+        "non_target_definers_sha256": "41cba5fef718f04a2b82e32238344d1ef17256436423fd964e3b7e6caf7a4ae6",
+        "policies_sha256": "49f018ce79acf7b316a8ab637e77f17ea9b43a06c75b5277d2267eef92cdad82",
+        "policy_count": 73,
+        "target_policy_reference_count": 64,
+        "rls_sha256": "7a28503c411db8376561489f9084109be92d7482fcc4345d30f1f607d3ab8b87",
+        "table_acl_sha256": "d591ea7627e824a548f323d7eac5767e3f456009cd1b21e6614935156dc477a3",
+        "buckets_sha256": "a498cc242eb697419660b43a02791ae5bb0496a14101e66def0c006c46339740",
+        "storage_object_count": 0,
+        "auth_user_count": 0
+      },
+      "securityAfter": {
+        "non_target_definers_sha256": "41cba5fef718f04a2b82e32238344d1ef17256436423fd964e3b7e6caf7a4ae6",
+        "policies_sha256": "49f018ce79acf7b316a8ab637e77f17ea9b43a06c75b5277d2267eef92cdad82",
+        "policy_count": 73,
+        "target_policy_reference_count": 64,
+        "rls_sha256": "7a28503c411db8376561489f9084109be92d7482fcc4345d30f1f607d3ab8b87",
+        "table_acl_sha256": "d591ea7627e824a548f323d7eac5767e3f456009cd1b21e6614935156dc477a3",
+        "buckets_sha256": "a498cc242eb697419660b43a02791ae5bb0496a14101e66def0c006c46339740",
+        "storage_object_count": 0,
+        "auth_user_count": 0
+      },
+      "functionalBefore": {
+        "fixture_auth_users_remaining": 0,
+        "fixture_profiles_remaining": 0,
+        "fixture_customers_remaining": 0,
+        "transactional_rollback": true,
+        "functional_assertions": "passed"
+      },
+      "functionalAfter": {
+        "fixture_auth_users_remaining": 0,
+        "fixture_profiles_remaining": 0,
+        "fixture_customers_remaining": 0,
+        "transactional_rollback": true,
+        "functional_assertions": "passed"
+      },
+      "historyBeforeCommon": [
+        {
+          "version": "20260710160200",
+          "name": "central_lead_lifecycle_deduplication",
+          "statement_count": 21
+        }
+      ],
+      "historyAfterCommon": [
+        {
+          "version": "20260710160200",
+          "name": "central_lead_lifecycle_deduplication",
+          "statement_count": 21
+        },
+        {
+          "version": "20260721010000",
+          "name": "harden_role_helper_search_paths",
+          "statement_count": 8
+        }
+      ],
+      "historyAfterSecond": [
+        {
+          "version": "20260710160200",
+          "name": "central_lead_lifecycle_deduplication",
+          "statement_count": 21
+        },
+        {
+          "version": "20260721010000",
+          "name": "harden_role_helper_search_paths",
+          "statement_count": 8
+        }
+      ],
+      "secondRunOutput": "Using workdir /private/tmp/r2a-local-validation.EkxKE4Pg/existing-project\nConnecting to remote database...\nLocal database is up to date.\nA new version of Supabase CLI is available: v2.109.1 (currently installed v2.108.0)\nWe recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli",
+      "serverAddress": "127.0.0.1/32"
+    },
+    "bootstrap": {
+      "beforeFunctions": [
+        {
+          "function_name": "current_app_role",
+          "identity_arguments": "",
+          "result_type": "text",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "328a4f483cab038f18ba6bd0672add9c6b5630b9be8915d64c7f7d973d0f4883",
+          "definition_sha256": "a07ae4814ce26c392b4d70a52250da6d220f89b1cf337aaf84f75947c5b11070"
+        },
+        {
+          "function_name": "current_profile_id",
+          "identity_arguments": "",
+          "result_type": "uuid",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "419a8aa77dfaaddc65b3a3eecb21e1314c825f2f5937f223976433bd314436c7",
+          "definition_sha256": "58b46da077e1813c931db25bbe7770193c8dbf797072f66f05f40c11904fa719"
+        },
+        {
+          "function_name": "has_app_role",
+          "identity_arguments": "allowed_roles text[]",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "c4b168fc131d0c9c0fbae5f793923b0b429a23515064fac1ca926726fff24def",
+          "definition_sha256": "49ace4a47a22783a17cdd789d1ba244e384b5bb66a18dea7583f6d0c8b38dfe7"
+        },
+        {
+          "function_name": "is_admin_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "b5db3c16c334fc2ac972c9b2b757bab73570fc6a67c07c761e3d0b2897873eda",
+          "definition_sha256": "775deb99d678cc3440f372abdc9702caeb3f23ce2d52339b593b4973e583f6f9"
+        },
+        {
+          "function_name": "is_demo_context",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "8cfd233b5c74f33239a5a81948a8e8ff975f3f3d02d2ce3bd3180963481ea1f5",
+          "definition_sha256": "51125e2a02345b93a0437216a0bd26e8169901b2cde94c6e5eb2a8608a6dd8c0"
+        },
+        {
+          "function_name": "is_demo_record",
+          "identity_arguments": "record_is_demo boolean, record_environment text",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "f8cc851bda5020db4906daed6c0457d09f2f4fac8462edf5ee5d4c422067388b",
+          "definition_sha256": "2d4745c8e0dad43d296746ee9b73340bf71c09805c3d42c434ee6cfd78cd1ca8"
+        },
+        {
+          "function_name": "is_staff_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "19e5217cef3ca99f9954ae7f5d97f9434f29b6e3dcc6c8c4f5539362bc998065",
+          "definition_sha256": "de1ab5b8821187329b3236a8b7dc61f398e6f83aeabd5d93a174263dea925692"
+        },
+        {
+          "function_name": "owns_customer",
+          "identity_arguments": "target_customer_id uuid",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "d4628e96cca21fe1e13d62c081a4e04526eebc5c3b6b822f59589284ae392fd1",
+          "definition_sha256": "0e2cde17d8f78fa3a6685aaa65bec0887fb59be476af9992f44eef13ac83a084"
+        }
+      ],
+      "afterFunctions": [
+        {
+          "function_name": "current_app_role",
+          "identity_arguments": "",
+          "result_type": "text",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+          "definition_sha256": "d57a9ae179171cbf809014ef0d49f15d76f0c3c78e40f8fe3787761900e8e4d9"
+        },
+        {
+          "function_name": "current_profile_id",
+          "identity_arguments": "",
+          "result_type": "uuid",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+          "definition_sha256": "b716f68dff2768d08ee96dc21d44ed2560f62420a5f59b15940087e4d677db86"
+        },
+        {
+          "function_name": "has_app_role",
+          "identity_arguments": "allowed_roles text[]",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+          "definition_sha256": "f35362d13a9694d94e36df122902365931926a81880ba26d1617cdc5c1c6b6c4"
+        },
+        {
+          "function_name": "is_admin_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+          "definition_sha256": "ecf0c23025ec8b6c4f3e8f554036ba264ec4b2bdfd78045ccbde798eadc3f90f"
+        },
+        {
+          "function_name": "is_demo_context",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+          "definition_sha256": "14bbc13ed0ab6085297ae958dbb5492ac9a1d229d4a6812cd67a6d13613dc6c1"
+        },
+        {
+          "function_name": "is_demo_record",
+          "identity_arguments": "record_is_demo boolean, record_environment text",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+          "definition_sha256": "b9cbfd45c1c4556c1b8d1ed6d56e6b94c8ae2a716df8db15d2c7c82631bac85b"
+        },
+        {
+          "function_name": "is_staff_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+          "definition_sha256": "b35617ad5d4480869fd8b84512016bc3a6b661af6502bf422a00100501af8b59"
+        },
+        {
+          "function_name": "owns_customer",
+          "identity_arguments": "target_customer_id uuid",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+          "definition_sha256": "932d0fe184007aa547a16a4f7c4c28cee34b2cd9ab15312b21498282bb2b2635"
+        }
+      ],
+      "afterSecondFunctions": [
+        {
+          "function_name": "current_app_role",
+          "identity_arguments": "",
+          "result_type": "text",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+          "definition_sha256": "d57a9ae179171cbf809014ef0d49f15d76f0c3c78e40f8fe3787761900e8e4d9"
+        },
+        {
+          "function_name": "current_profile_id",
+          "identity_arguments": "",
+          "result_type": "uuid",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+          "definition_sha256": "b716f68dff2768d08ee96dc21d44ed2560f62420a5f59b15940087e4d677db86"
+        },
+        {
+          "function_name": "has_app_role",
+          "identity_arguments": "allowed_roles text[]",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+          "definition_sha256": "f35362d13a9694d94e36df122902365931926a81880ba26d1617cdc5c1c6b6c4"
+        },
+        {
+          "function_name": "is_admin_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+          "definition_sha256": "ecf0c23025ec8b6c4f3e8f554036ba264ec4b2bdfd78045ccbde798eadc3f90f"
+        },
+        {
+          "function_name": "is_demo_context",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+          "definition_sha256": "14bbc13ed0ab6085297ae958dbb5492ac9a1d229d4a6812cd67a6d13613dc6c1"
+        },
+        {
+          "function_name": "is_demo_record",
+          "identity_arguments": "record_is_demo boolean, record_environment text",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+          "definition_sha256": "b9cbfd45c1c4556c1b8d1ed6d56e6b94c8ae2a716df8db15d2c7c82631bac85b"
+        },
+        {
+          "function_name": "is_staff_role",
+          "identity_arguments": "",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+          "definition_sha256": "b35617ad5d4480869fd8b84512016bc3a6b661af6502bf422a00100501af8b59"
+        },
+        {
+          "function_name": "owns_customer",
+          "identity_arguments": "target_customer_id uuid",
+          "result_type": "boolean",
+          "language": "sql",
+          "provolatile": "s",
+          "proisstrict": false,
+          "proparallel": "u",
+          "proleakproof": false,
+          "prosecdef": true,
+          "owner": "bootstrapadmin",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "acl": "{bootstrapadmin=X/bootstrapadmin,service_role=X/bootstrapadmin,authenticated=X/bootstrapadmin}",
+          "body_sha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+          "definition_sha256": "932d0fe184007aa547a16a4f7c4c28cee34b2cd9ab15312b21498282bb2b2635"
+        }
+      ],
+      "securityBefore": {
+        "non_target_definers_sha256": "41cba5fef718f04a2b82e32238344d1ef17256436423fd964e3b7e6caf7a4ae6",
+        "policies_sha256": "49f018ce79acf7b316a8ab637e77f17ea9b43a06c75b5277d2267eef92cdad82",
+        "policy_count": 73,
+        "target_policy_reference_count": 64,
+        "rls_sha256": "7a28503c411db8376561489f9084109be92d7482fcc4345d30f1f607d3ab8b87",
+        "table_acl_sha256": "d591ea7627e824a548f323d7eac5767e3f456009cd1b21e6614935156dc477a3",
+        "buckets_sha256": "a498cc242eb697419660b43a02791ae5bb0496a14101e66def0c006c46339740",
+        "storage_object_count": 0,
+        "auth_user_count": 0
+      },
+      "securityAfter": {
+        "non_target_definers_sha256": "41cba5fef718f04a2b82e32238344d1ef17256436423fd964e3b7e6caf7a4ae6",
+        "policies_sha256": "49f018ce79acf7b316a8ab637e77f17ea9b43a06c75b5277d2267eef92cdad82",
+        "policy_count": 73,
+        "target_policy_reference_count": 64,
+        "rls_sha256": "7a28503c411db8376561489f9084109be92d7482fcc4345d30f1f607d3ab8b87",
+        "table_acl_sha256": "d591ea7627e824a548f323d7eac5767e3f456009cd1b21e6614935156dc477a3",
+        "buckets_sha256": "a498cc242eb697419660b43a02791ae5bb0496a14101e66def0c006c46339740",
+        "storage_object_count": 0,
+        "auth_user_count": 0
+      },
+      "functionalBefore": {
+        "fixture_auth_users_remaining": 0,
+        "fixture_profiles_remaining": 0,
+        "fixture_customers_remaining": 0,
+        "transactional_rollback": true,
+        "functional_assertions": "passed"
+      },
+      "functionalAfter": {
+        "fixture_auth_users_remaining": 0,
+        "fixture_profiles_remaining": 0,
+        "fixture_customers_remaining": 0,
+        "transactional_rollback": true,
+        "functional_assertions": "passed"
+      },
+      "historyBeforeCommon": [
+        {
+          "version": "00000000000000",
+          "name": "authoritative_baseline",
+          "statement_count": 612
+        }
+      ],
+      "historyAfterCommon": [
+        {
+          "version": "00000000000000",
+          "name": "authoritative_baseline",
+          "statement_count": 612
+        },
+        {
+          "version": "20260721010000",
+          "name": "harden_role_helper_search_paths",
+          "statement_count": 8
+        }
+      ],
+      "historyAfterSecond": [
+        {
+          "version": "00000000000000",
+          "name": "authoritative_baseline",
+          "statement_count": 612
+        },
+        {
+          "version": "20260721010000",
+          "name": "harden_role_helper_search_paths",
+          "statement_count": 8
+        }
+      ],
+      "secondRunOutput": "Using workdir /private/tmp/r2a-local-validation.EkxKE4Pg/bootstrap-project\nConnecting to remote database...\nLocal database is up to date.\nA new version of Supabase CLI is available: v2.109.1 (currently installed v2.108.0)\nWe recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli",
+      "serverAddress": "127.0.0.1/32"
+    }
+  },
+  "validatorManifest": [
+    {
+      "version": "20260721010000",
+      "size": 3578,
+      "sha256": "fd787e93077783963d87879d6f9fba32395949fe572ef94609101293c91af966"
+    }
+  ],
+  "cleanupRegistered": true
+}

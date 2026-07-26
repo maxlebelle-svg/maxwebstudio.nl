@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "baseline_corrected_and_byte_identical",
+  "baselineVersion": "00000000000000",
+  "cutoverCandidate": "20260721000000",
+  "authoritative": {
+    "path": "supabase/migrations/00000000000000_authoritative_baseline.sql",
+    "oldSha256": "6c8b9a8137850edadb6fe976938d44e16a5eecadc740481a65423bf72251ff11",
+    "newSha256": "1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315",
+    "oldBytes": 217030,
+    "newBytes": 216966,
+    "byteDelta": -64,
+    "oldStatementCount": 612,
+    "newStatementCount": 612,
+    "statementCountDelta": 0
+  },
+  "bootstrapMaterialization": {
+    "path": "supabase-bootstrap/supabase/migrations/00000000000000_authoritative_baseline.sql",
+    "sha256": "1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315",
+    "byteIdenticalToAuthoritative": true,
+    "materializationMethod": "one-way copy from authoritative baseline; output not independently edited"
+  },
+  "changedLines": [
+    {"line": 4072, "object": "public.lead_intake_idempotency.merged_fields", "change": "jsonb/default empty object -> text[]/default empty text array"},
+    {"line": 4074, "object": "public.lead_intake_idempotency.created_at", "change": "clock_timestamp() -> now()"},
+    {"line": 4075, "object": "public.lead_intake_idempotency.updated_at", "change": "clock_timestamp() -> now()"},
+    {"line": 4076, "object": "public.lead_intake_idempotency.expires_at", "change": "clock_timestamp() + 30 days -> now() + 30 days"}
+  ],
+  "recoveredEvidence": [
+    {"version": "20260720160000", "sha256": "d0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba", "unchanged": true},
+    {"version": "20260720200000", "sha256": "40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370", "unchanged": true}
+  ],
+  "historicalMigrationBytesChanged": false,
+  "remoteActionPerformed": false
+}

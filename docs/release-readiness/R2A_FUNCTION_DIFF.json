@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "functions": [
+    {
+      "function": "public.current_app_role()",
+      "before": {
+        "function_name": "current_app_role",
+        "identity_arguments": "",
+        "result_type": "text",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+        "definition_sha256": "45a9ddcb1c72838ce7a1a582e5c5e7538d6bc88916d16b6ab0b0eff966c41a88"
+      },
+      "after": {
+        "function_name": "current_app_role",
+        "identity_arguments": "",
+        "result_type": "text",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+        "definition_sha256": "d57a9ae179171cbf809014ef0d49f15d76f0c3c78e40f8fe3787761900e8e4d9"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    },
+    {
+      "function": "public.current_profile_id()",
+      "before": {
+        "function_name": "current_profile_id",
+        "identity_arguments": "",
+        "result_type": "uuid",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+        "definition_sha256": "1f66124cf1e38d9ff83d5ecb4eca20812dfa5a07ccad9225473fabad92b2a942"
+      },
+      "after": {
+        "function_name": "current_profile_id",
+        "identity_arguments": "",
+        "result_type": "uuid",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+        "definition_sha256": "b716f68dff2768d08ee96dc21d44ed2560f62420a5f59b15940087e4d677db86"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    },
+    {
+      "function": "public.has_app_role(allowed_roles text[])",
+      "before": {
+        "function_name": "has_app_role",
+        "identity_arguments": "allowed_roles text[]",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+        "definition_sha256": "9681bdc521823365e81a6eeacf679f65d680ce5b8ad4997bcb3372bc5b51ef45"
+      },
+      "after": {
+        "function_name": "has_app_role",
+        "identity_arguments": "allowed_roles text[]",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+        "definition_sha256": "f35362d13a9694d94e36df122902365931926a81880ba26d1617cdc5c1c6b6c4"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    },
+    {
+      "function": "public.is_admin_role()",
+      "before": {
+        "function_name": "is_admin_role",
+        "identity_arguments": "",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+        "definition_sha256": "6049eeb8295fa3428ee0b6fd49a8e261e8f40424c245196c5646a50eb5551b8f"
+      },
+      "after": {
+        "function_name": "is_admin_role",
+        "identity_arguments": "",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+        "definition_sha256": "ecf0c23025ec8b6c4f3e8f554036ba264ec4b2bdfd78045ccbde798eadc3f90f"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    },
+    {
+      "function": "public.is_demo_context()",
+      "before": {
+        "function_name": "is_demo_context",
+        "identity_arguments": "",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+        "definition_sha256": "d1a54739e29fcf1098b726275d4d3f9110f6b56a903e679d53bf01de0f1ad889"
+      },
+      "after": {
+        "function_name": "is_demo_context",
+        "identity_arguments": "",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+        "definition_sha256": "14bbc13ed0ab6085297ae958dbb5492ac9a1d229d4a6812cd67a6d13613dc6c1"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    },
+    {
+      "function": "public.is_demo_record(record_is_demo boolean, record_environment text)",
+      "before": {
+        "function_name": "is_demo_record",
+        "identity_arguments": "record_is_demo boolean, record_environment text",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+        "definition_sha256": "db3295e6a7b193a2d81d902ac4e21898fc92c816dc3057e1a73346f0e20d1423"
+      },
+      "after": {
+        "function_name": "is_demo_record",
+        "identity_arguments": "record_is_demo boolean, record_environment text",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+        "definition_sha256": "b9cbfd45c1c4556c1b8d1ed6d56e6b94c8ae2a716df8db15d2c7c82631bac85b"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    },
+    {
+      "function": "public.is_staff_role()",
+      "before": {
+        "function_name": "is_staff_role",
+        "identity_arguments": "",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+        "definition_sha256": "ebadcac34a80d4bd364ef8346ff514f441013a38a371b970acd4ee2c67f71c8e"
+      },
+      "after": {
+        "function_name": "is_staff_role",
+        "identity_arguments": "",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+        "definition_sha256": "b35617ad5d4480869fd8b84512016bc3a6b661af6502bf422a00100501af8b59"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    },
+    {
+      "function": "public.owns_customer(target_customer_id uuid)",
+      "before": {
+        "function_name": "owns_customer",
+        "identity_arguments": "target_customer_id uuid",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+        "definition_sha256": "8890959bd97579f37ebb31e45ac72c4620952d10e1874cc9e52a21990eda4925"
+      },
+      "after": {
+        "function_name": "owns_customer",
+        "identity_arguments": "target_customer_id uuid",
+        "result_type": "boolean",
+        "language": "sql",
+        "provolatile": "s",
+        "proisstrict": false,
+        "proparallel": "u",
+        "proleakproof": false,
+        "prosecdef": true,
+        "owner": "postgres",
+        "proconfig": [
+          "search_path=pg_catalog"
+        ],
+        "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "body_sha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+        "definition_sha256": "932d0fe184007aa547a16a4f7c4c28cee34b2cd9ab15312b21498282bb2b2635"
+      },
+      "unchanged": {
+        "function_name": true,
+        "identity_arguments": true,
+        "result_type": true,
+        "language": true,
+        "provolatile": true,
+        "proisstrict": true,
+        "proparallel": true,
+        "proleakproof": true,
+        "prosecdef": true,
+        "owner": true,
+        "acl": true,
+        "body_sha256": true
+      },
+      "changedFields": [
+        "proconfig",
+        "definition_sha256"
+      ],
+      "semanticChange": "search_path_only",
+      "dependenciesUnchanged": true,
+      "allowed": true
+    }
+  ],
+  "outsideAllowlistChanges": 0
+}

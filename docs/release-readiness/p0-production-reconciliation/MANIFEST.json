@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "release": "P0 Production Reconciliation Release",
+  "status": "PACKAGED_AND_LOCALLY_VALIDATED",
+  "productionBaseline": {
+    "project": "maxwebstudio",
+    "projectRef": "yxxahurphdbblkuxoeje",
+    "latestMigration": "20260718190000_public_preview_publications"
+  },
+  "migrationVersions": [
+    "20260722120000",
+    "20260722121000",
+    "20260722122000",
+    "20260722123000",
+    "20260722124000"
+  ],
+  "executionOrder": [
+    "supabase/migrations/20260722120000_p0_reconcile_business_events.sql",
+    "supabase/migrations/20260722121000_p0_reconcile_transactional_lead_intake.sql",
+    "supabase/migrations/20260722122000_p0_reconcile_security_hardening.sql",
+    "supabase/migrations/20260722123000_p0_reconcile_lead_intake_abuse_control.sql",
+    "supabase/migrations/20260722124000_p0_harden_sales_manager_lead_policy.sql"
+  ],
+  "sourceInventory": [
+    {
+      "purpose": "business",
+      "path": "supabase/migrations/20260718120000_business_event_foundation.sql",
+      "bytes": 41003,
+      "sha256": "04ebd6bbf9ef5637ec590861d85c47f6a3d8cd08f5ac54e3bdf6935f54ffc6d8"
+    },
+    {
+      "purpose": "social",
+      "path": "supabase/migrations/20260718222000_social_event_contracts.sql",
+      "bytes": 33231,
+      "sha256": "d21fa1d94a11c90b9a803f9cf10e431c914fd5cd8c5a5ca05d254c39e9cbc5e9"
+    },
+    {
+      "purpose": "leadEvent",
+      "path": "docs/foundation-f0/evidence/recovered-migrations/20260720160000_lead_event_foundation.sql",
+      "bytes": 17178,
+      "sha256": "d0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba"
+    },
+    {
+      "purpose": "intake",
+      "path": "docs/foundation-f0/evidence/recovered-migrations/20260720200000_transactional_lead_intake_rpc.sql",
+      "bytes": 34050,
+      "sha256": "40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370"
+    },
+    {
+      "purpose": "normalizers",
+      "path": "supabase/migrations/20260710160200_central_lead_lifecycle_deduplication.sql",
+      "bytes": 9989,
+      "sha256": "e3fc8186847eb74ca8d25b6cb5b9604292e85b473184e7bc4f52f43f45a21639"
+    },
+    {
+      "purpose": "abuse",
+      "path": "supabase/migrations/20260721040000_lead_intake_abuse_control.sql",
+      "bytes": 12199,
+      "sha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a"
+    }
+  ],
+  "releaseFiles": [
+    "supabase/migrations/20260722120000_p0_reconcile_business_events.sql",
+    "supabase/migrations/20260722121000_p0_reconcile_transactional_lead_intake.sql",
+    "supabase/migrations/20260722122000_p0_reconcile_security_hardening.sql",
+    "supabase/migrations/20260722123000_p0_reconcile_lead_intake_abuse_control.sql",
+    "supabase/migrations/20260722124000_p0_harden_sales_manager_lead_policy.sql",
+    "docs/release-readiness/p0-production-reconciliation/PRECONDITIONS.sql",
+    "docs/release-readiness/p0-production-reconciliation/POSTCONDITIONS.sql",
+    "docs/release-readiness/p0-production-reconciliation/DEPENDENCY_MATRIX.json",
+    "docs/release-readiness/p0-production-reconciliation/RUNTIME_CONFIGURATION.json",
+    "docs/release-readiness/p0-production-reconciliation/ROLLBACK_RECOVERY.md",
+    "docs/release-readiness/p0-production-reconciliation/LOCAL_VALIDATION.json",
+    "docs/release-readiness/p0-production-reconciliation/RELEASE_REPORT.md",
+    "scripts/p0-build-production-reconciliation-release.mjs",
+    "scripts/p0-production-reconciliation-local-validation.zsh",
+    "tests/fixtures/p0-production-reconciliation-baseline.sql",
+    "tests/fixtures/p0-production-reconciliation-functional.sql",
+    "tests/p0-production-reconciliation-release.test.js",
+    "docs/release-readiness/p0-production-reconciliation/FILESET.json"
+  ],
+  "filesetSha256": "74dddc0bb247a1007ea9a46fa496bc4e1f7400ed6464a39e0bc04456bc12caad",
+  "excludedMigration": "20260721050000_p0_staging_smoke_nonce_replay_protection",
+  "selfHashAlgorithm": "SHA-256 over canonical compact JSON with selfHash=null",
+  "selfHash": "551eb3836a31075963c977313d10a50a5545e57c4c8c0c4a1021867ab31fac1e"
+}

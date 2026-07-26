@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "status": "pre_change_allowlist_locked",
+  "authoritativeSql": "supabase/migrations/00000000000000_authoritative_baseline.sql",
+  "allowedSqlObjects": [
+    {
+      "schema": "public",
+      "objectType": "table_column",
+      "table": "lead_intake_idempotency",
+      "column": "merged_fields",
+      "allowedProperties": ["postgres_type", "formatted_type", "array_dimensions", "collation", "default_expression"]
+    },
+    {
+      "schema": "public",
+      "objectType": "table_column",
+      "table": "lead_intake_idempotency",
+      "column": "created_at",
+      "allowedProperties": ["default_expression"]
+    },
+    {
+      "schema": "public",
+      "objectType": "table_column",
+      "table": "lead_intake_idempotency",
+      "column": "updated_at",
+      "allowedProperties": ["default_expression"]
+    },
+    {
+      "schema": "public",
+      "objectType": "table_column",
+      "table": "lead_intake_idempotency",
+      "column": "expires_at",
+      "allowedProperties": ["default_expression"]
+    }
+  ],
+  "allowedExistingFiles": [
+    "supabase/migrations/00000000000000_authoritative_baseline.sql",
+    "supabase-bootstrap/supabase/migrations/00000000000000_authoritative_baseline.sql",
+    "supabase-bootstrap/supabase/migrations/BASELINE_MATERIALIZATION.json",
+    "supabase-bootstrap/scripts/guardrails.mjs",
+    "supabase-bootstrap/README.md",
+    "docs/foundation-f0/F0B_BASELINE_OBJECT_MANIFEST.json",
+    "docs/foundation-f0/F0C_MIGRATION_SET_INVENTORY.json",
+    "docs/foundation-f0/F0D_DECISION_MATRIX.json",
+    "docs/PROJECT_STATE.md",
+    "tests/foundation-f0d-bootstrap-design.test.js",
+    "tests/foundation-f0e-bootstrap-poc.test.js",
+    "tests/foundation-f0f-dual-root-poc.test.js",
+    "tests/foundation-f0g-evidence-closure.test.js"
+  ],
+  "allowedNewFilePatterns": [
+    "docs/foundation-f0/F0H_*",
+    "scripts/f0h-*",
+    "tests/foundation-f0h-*"
+  ],
+  "forbiddenObjects": [
+    "all other tables and columns",
+    "all functions",
+    "all grants and policies",
+    "leads_unique_normalized_domain_idx",
+    "Storage and Auth objects",
+    "cutover version 20260721000000"
+  ],
+  "forbiddenFileClasses": [
+    "historical migrations",
+    "original_verified recovered migration evidence",
+    "reconciliation migrations",
+    "asset migrations",
+    "product/common migration materializations"
+  ],
+  "remoteActionsAllowed": false,
+  "commitPushDeployAllowed": false
+}

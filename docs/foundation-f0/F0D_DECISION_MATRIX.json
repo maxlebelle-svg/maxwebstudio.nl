@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "status": "DESIGN_COMPLETE_IMPLEMENTATION_NOT_AUTHORIZED",
+  "recommendedBootstrapModel": "C",
+  "recommendedModelCount": 1,
+  "cutoverCandidate": "20260721000000",
+  "cutoverStatus": "blocked",
+  "baselineSha256": "1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315",
+  "reconciliationSqlCreated": false,
+  "migrationHistoryRepairPerformed": false,
+  "decisions": [
+    {
+      "subject": "bootstrapmodel",
+      "recommendedDecision": "Model C: aparte bootstrapprojectroot/directory plus common cutovermigraties",
+      "alternative": "Model A/B",
+      "risk": "middel: configuratiefout",
+      "evidence": "F0-c duplicate constraint; modelvergelijking",
+      "openGate": "CLI multi-root proof",
+      "requiredApproval": "implementation approval"
+    },
+    {
+      "subject": "cutoverpoint",
+      "recommendedDecision": "Kandidaat 20260721000000; status blocked",
+      "alternative": "later timestamp na bewijsherstel",
+      "risk": "hoog bij voortijdige keuze",
+      "evidence": "remote history eindigt 20260720200000",
+      "openGate": "missing bytes + column gate",
+      "requiredApproval": "architecture approval"
+    },
+    {
+      "subject": "history strategy",
+      "recommendedDecision": "één echte bootstraprecord; geen synthesized historical markers",
+      "alternative": "historical markers",
+      "risk": "hoog: valse lineage",
+      "evidence": "F0-c history/conflicts",
+      "openGate": "CLI/history proof",
+      "requiredApproval": "governance + implementation"
+    },
+    {
+      "subject": "reconciliation",
+      "recommendedDecision": "kleine gescheiden append-only categorieën",
+      "alternative": "mega-migration",
+      "risk": "hoog",
+      "evidence": "F0-b securitydiff",
+      "openGate": "per-category preflight",
+      "requiredApproval": "separate migration approvals"
+    },
+    {
+      "subject": "asset migrations",
+      "recommendedDecision": "quarantaine; later nieuwe common versies",
+      "alternative": "huidige 191200/191500 alsnog toepassen",
+      "risk": "hoog: version ordering/platform roles",
+      "evidence": "F0-c SQLSTATE 42704",
+      "openGate": "compatibility rerun + release gate",
+      "requiredApproval": "asset release approval"
+    },
+    {
+      "subject": "missing lineage",
+      "recommendedDecision": "originele bytes via gecontroleerde bronnen herstellen",
+      "alternative": "runtime reconstructie",
+      "risk": "kritiek",
+      "evidence": "twee remote-only identities",
+      "openGate": "originele SHA-256-provenance",
+      "requiredApproval": "lineage governance"
+    },
+    {
+      "subject": "security",
+      "recommendedDecision": "F0-b posture via aparte reconciliation behouden",
+      "alternative": "runtimeschuld kopiëren",
+      "risk": "hoog",
+      "evidence": "0 regressies in F0-c",
+      "openGate": "runtime/staging compatibility",
+      "requiredApproval": "security approval"
+    },
+    {
+      "subject": "storage",
+      "recommendedDecision": "private relationship-assets 8 MiB/MIME-set; geen objectpolicies",
+      "alternative": "browserpolicy toevoegen",
+      "risk": "hoog",
+      "evidence": "opgeslagen bucketcatalogus",
+      "openGate": "staging server-flow test",
+      "requiredApproval": "Storage approval"
+    },
+    {
+      "subject": "local Supabase profile",
+      "recommendedDecision": "disposable profiel met postgres/auth roles/schema stubs",
+      "alternative": "kale Postgres.app",
+      "risk": "middel",
+      "evidence": "future owner-to-postgres failure",
+      "openGate": "setup implementation + dual-line run",
+      "requiredApproval": "local tooling approval"
+    },
+    {
+      "subject": "staging route",
+      "recommendedDecision": "alleen bestaande-history lane; nooit bootstrap-reset",
+      "alternative": "bootstrap staging reset",
+      "risk": "kritiek",
+      "evidence": "architectuurgrens",
+      "openGate": "reconciliation + snapshot/rollback",
+      "requiredApproval": "manual staging approval"
+    },
+    {
+      "subject": "production route",
+      "recommendedDecision": "append-only na stagingfingerprint",
+      "alternative": "direct bootstrap/deploy",
+      "risk": "kritiek",
+      "evidence": "geen productie-evidence",
+      "openGate": "staging sign-off + backup",
+      "requiredApproval": "explicit production approval"
+    }
+  ]
+}

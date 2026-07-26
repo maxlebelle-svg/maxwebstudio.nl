@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "executionOrder": [
+    "supabase/migrations/20260722120000_p0_reconcile_business_events.sql",
+    "supabase/migrations/20260722121000_p0_reconcile_transactional_lead_intake.sql",
+    "supabase/migrations/20260722122000_p0_reconcile_security_hardening.sql",
+    "supabase/migrations/20260722123000_p0_reconcile_lead_intake_abuse_control.sql",
+    "supabase/migrations/20260722124000_p0_harden_sales_manager_lead_policy.sql"
+  ],
+  "files": [
+    {
+      "path": "supabase/migrations/20260722120000_p0_reconcile_business_events.sql",
+      "bytes": 93800,
+      "sha256": "88403fbcd3c2e7d2011ce2259c34f9ac3288fe53f522ee08e78a8cb1e32d653f"
+    },
+    {
+      "path": "supabase/migrations/20260722121000_p0_reconcile_transactional_lead_intake.sql",
+      "bytes": 39263,
+      "sha256": "4959120704bca3a0d8df556b48fc4f7ee20948ee32189ee2b4cfcb5ae155544c"
+    },
+    {
+      "path": "supabase/migrations/20260722122000_p0_reconcile_security_hardening.sql",
+      "bytes": 5829,
+      "sha256": "c738673ee35af53a2c9dd48699a6a92d8dd06853967baf65a23fc062129acdd3"
+    },
+    {
+      "path": "supabase/migrations/20260722123000_p0_reconcile_lead_intake_abuse_control.sql",
+      "bytes": 13244,
+      "sha256": "81098266c6bec2d111960ab4144e8b818632bd406438f63b4086da4748348c8f"
+    },
+    {
+      "path": "supabase/migrations/20260722124000_p0_harden_sales_manager_lead_policy.sql",
+      "bytes": 5269,
+      "sha256": "9a5ec54e8dac9666fea5b3b349385b141cb7c9e88660049adb90eb8560ba4a25"
+    },
+    {
+      "path": "docs/release-readiness/p0-production-reconciliation/PRECONDITIONS.sql",
+      "bytes": 3197,
+      "sha256": "b4d4b3841aca9650047ee14e3591e1168c0b70972bf629b83e2d59c3557cbada"
+    },
+    {
+      "path": "docs/release-readiness/p0-production-reconciliation/POSTCONDITIONS.sql",
+      "bytes": 8301,
+      "sha256": "b57b5d6413a659c5e69d5efa178c6be8ff3c40c94ba7927dbd30d18cdb4483f4"
+    },
+    {
+      "path": "docs/release-readiness/p0-production-reconciliation/DEPENDENCY_MATRIX.json",
+      "bytes": 2043,
+      "sha256": "198e80bfb208e37acfc930a3dd71f41af65a451fc2a38fca74dd01c28dec1c39"
+    },
+    {
+      "path": "docs/release-readiness/p0-production-reconciliation/RUNTIME_CONFIGURATION.json",
+      "bytes": 828,
+      "sha256": "74739c6f15cc35973e96b307bbfdff4772e0e5e7e1ba70d74afcf5b63eb07274"
+    },
+    {
+      "path": "docs/release-readiness/p0-production-reconciliation/ROLLBACK_RECOVERY.md",
+      "bytes": 1850,
+      "sha256": "710eca72a67cb6a7c0836f52698906a1ab1498849c0a10736e49de3668612062"
+    },
+    {
+      "path": "docs/release-readiness/p0-production-reconciliation/LOCAL_VALIDATION.json",
+      "bytes": 2622,
+      "sha256": "215b98a5f7481e2974a9c1f6f1b928c0b6a7096e7ffbbefb1bbb29df555cd2e6"
+    },
+    {
+      "path": "docs/release-readiness/p0-production-reconciliation/RELEASE_REPORT.md",
+      "bytes": 4247,
+      "sha256": "27fed32206c5ae86716b9dc0aa063a97464c0951949e42e6f41cad93a3401724"
+    },
+    {
+      "path": "scripts/p0-build-production-reconciliation-release.mjs",
+      "bytes": 45575,
+      "sha256": "1ea7eb361fc00ccd2599f6b99ce167d488266ebdf4f018c00c38044944db43e2"
+    },
+    {
+      "path": "scripts/p0-production-reconciliation-local-validation.zsh",
+      "bytes": 10067,
+      "sha256": "2c392e9a61a36e5fff8fc2b31d83eeb9c926bdd49d3c80b2694298554b1b0b46"
+    },
+    {
+      "path": "tests/fixtures/p0-production-reconciliation-baseline.sql",
+      "bytes": 10510,
+      "sha256": "18310b7ef5eafc4d703e5c70fba0e657c82afbfa64e59d306b0472bf4ffacbdd"
+    },
+    {
+      "path": "tests/fixtures/p0-production-reconciliation-functional.sql",
+      "bytes": 7335,
+      "sha256": "a726738b807e02623c6c916d1b92ade985a0e8f249d53f71dacf1434432a9165"
+    },
+    {
+      "path": "tests/p0-production-reconciliation-release.test.js",
+      "bytes": 5702,
+      "sha256": "02135b961f863d15d01586037e7a382642b26940b7d7e8635523383c20e3cfe9"
+    }
+  ],
+  "excluded": [
+    {
+      "path": "supabase/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "reason": "staging-only and absent from this repository release root"
+    }
+  ]
+}

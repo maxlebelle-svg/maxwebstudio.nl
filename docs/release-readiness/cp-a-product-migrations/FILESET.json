@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql",
+      "bytes": 22389,
+      "sha256": "757d304cd9200baf438e0968f00508cfbecb56648aeefcd5486516734c007a84"
+    },
+    {
+      "path": "supabase/migrations/20260724130000_repair_preview_quality_report_schema_drift.sql",
+      "bytes": 2172,
+      "sha256": "8acaf3f1f3678f71411155b61d9111d4a559cf8ffc6ab36b19b2e47860bfab71"
+    }
+  ]
+}

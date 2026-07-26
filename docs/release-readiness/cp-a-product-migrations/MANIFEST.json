@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "release": "CP-A customer portal trust-chain product migrations",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql",
+    "supabase/migrations/20260724130000_repair_preview_quality_report_schema_drift.sql"
+  ],
+  "authority": [
+    "docs/CP_A_P0_CUSTOMER_PORTAL_TRUST_CHAIN_REMEDIATION.md",
+    "docs/CP_A_STAGING_SCHEMA_DRIFT_REPAIR.md"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

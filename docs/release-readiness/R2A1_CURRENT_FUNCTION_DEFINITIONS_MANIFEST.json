@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "status": "complete",
+  "environment": "maxwebstudio-test",
+  "projectRef": "xlxpuuycigeqhgxqtzni",
+  "capturedAt": "2026-07-21T04:50:30.565Z",
+  "entries": [
+    {
+      "function": "public.current_app_role()",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/current_app_role.function.sql",
+      "definitionBytes": 318,
+      "definitionSha256": "45a9ddcb1c72838ce7a1a582e5c5e7538d6bc88916d16b6ab0b0eff966c41a88",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/current_app_role.body.sql",
+      "bodyBytes": 159,
+      "bodySha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec"
+    },
+    {
+      "function": "public.current_profile_id()",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/current_profile_id.function.sql",
+      "definitionBytes": 295,
+      "definitionSha256": "1f66124cf1e38d9ff83d5ecb4eca20812dfa5a07ccad9225473fabad92b2a942",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/current_profile_id.body.sql",
+      "bodyBytes": 134,
+      "bodySha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93"
+    },
+    {
+      "function": "public.has_app_role(allowed_roles text[])",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/has_app_role.function.sql",
+      "definitionBytes": 258,
+      "definitionSha256": "9681bdc521823365e81a6eeacf679f65d680ce5b8ad4997bcb3372bc5b51ef45",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/has_app_role.body.sql",
+      "bodyBytes": 80,
+      "bodySha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f"
+    },
+    {
+      "function": "public.is_admin_role()",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/is_admin_role.function.sql",
+      "definitionBytes": 220,
+      "definitionSha256": "6049eeb8295fa3428ee0b6fd49a8e261e8f40424c245196c5646a50eb5551b8f",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/is_admin_role.body.sql",
+      "bodyBytes": 61,
+      "bodySha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37"
+    },
+    {
+      "function": "public.is_demo_context()",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/is_demo_context.function.sql",
+      "definitionBytes": 408,
+      "definitionSha256": "d1a54739e29fcf1098b726275d4d3f9110f6b56a903e679d53bf01de0f1ad889",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/is_demo_context.body.sql",
+      "bodyBytes": 247,
+      "bodySha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960"
+    },
+    {
+      "function": "public.is_demo_record(record_is_demo boolean, record_environment text)",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/is_demo_record.function.sql",
+      "definitionBytes": 336,
+      "definitionSha256": "db3295e6a7b193a2d81d902ac4e21898fc92c816dc3057e1a73346f0e20d1423",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/is_demo_record.body.sql",
+      "bodyBytes": 129,
+      "bodySha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92"
+    },
+    {
+      "function": "public.is_staff_role()",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/is_staff_role.function.sql",
+      "definitionBytes": 253,
+      "definitionSha256": "ebadcac34a80d4bd364ef8346ff514f441013a38a371b970acd4ee2c67f71c8e",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/is_staff_role.body.sql",
+      "bodyBytes": 94,
+      "bodySha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd"
+    },
+    {
+      "function": "public.owns_customer(target_customer_id uuid)",
+      "definitionPath": "docs/release-readiness/evidence/r2a-current-functions/owns_customer.function.sql",
+      "definitionBytes": 368,
+      "definitionSha256": "8890959bd97579f37ebb31e45ac72c4620952d10e1874cc9e52a21990eda4925",
+      "bodyPath": "docs/release-readiness/evidence/r2a-current-functions/owns_customer.body.sql",
+      "bodyBytes": 186,
+      "bodySha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16"
+    }
+  ]
+}

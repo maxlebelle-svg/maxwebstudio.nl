@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "remoteRuntimeReferences": 70,
+  "remoteReferencesStaticallyValidated": 70,
+  "materializedTargetBaselineReferences": 64,
+  "materializedReferencesLocallyValidatedBeforeAndAfter": 64,
+  "boundaryExplanation": "Six runtime-only references are not part of the frozen target baseline and remain in the separate policy-reconciliation group; R2-A neither removes nor rewrites them.",
+  "policyDefinitionSha256BeforeAfterEqual": true,
+  "policyRoleArraysBeforeAfterEqual": true,
+  "rlsStateBeforeAfterEqual": true,
+  "representativePolicyEvaluationBeforeAfter": "passed",
+  "functions": [
+    {
+      "function": "public.current_app_role()",
+      "remoteRuntimePolicyReferences": 0,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    },
+    {
+      "function": "public.current_profile_id()",
+      "remoteRuntimePolicyReferences": 1,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    },
+    {
+      "function": "public.has_app_role(allowed_roles text[])",
+      "remoteRuntimePolicyReferences": 33,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    },
+    {
+      "function": "public.is_admin_role()",
+      "remoteRuntimePolicyReferences": 13,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    },
+    {
+      "function": "public.is_demo_context()",
+      "remoteRuntimePolicyReferences": 0,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    },
+    {
+      "function": "public.is_demo_record(record_is_demo boolean, record_environment text)",
+      "remoteRuntimePolicyReferences": 9,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    },
+    {
+      "function": "public.is_staff_role()",
+      "remoteRuntimePolicyReferences": 0,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    },
+    {
+      "function": "public.owns_customer(target_customer_id uuid)",
+      "remoteRuntimePolicyReferences": 16,
+      "signatureUnchanged": true,
+      "resultTypeUnchanged": true,
+      "policiesChanged": false,
+      "policyRolesChanged": false,
+      "localFunctionalFixture": "passed"
+    }
+  ]
+}

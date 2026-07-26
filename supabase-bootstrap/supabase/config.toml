@@ -1,0 +1,12 @@
+project_id = "maxwebstudio-f0e-local-bootstrap-poc"
+
+[db]
+port = 55441
+shadow_port = 55442
+major_version = 17
+
+[studio]
+enabled = false
+
+[analytics]
+enabled = false

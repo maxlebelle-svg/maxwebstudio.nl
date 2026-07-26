@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260726100000_dca_0_token_safe_invitation_foundation.sql",
+      "bytes": 33237,
+      "sha256": "26f5a6147f8cbf81c0bed69cce5d75d9a8ebfc7a6d36e8007328b2235d286fdf"
+    }
+  ]
+}

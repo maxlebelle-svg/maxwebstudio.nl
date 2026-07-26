@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "migrationVersion": "20260721010000",
+  "migrationPath": "supabase-common/migrations/20260721010000_harden_role_helper_search_paths.sql",
+  "migrationSha256": "fd787e93077783963d87879d6f9fba32395949fe572ef94609101293c91af966",
+  "migrationBytes": 3578,
+  "extraction": "Exact UTF-8 bytes between AS $function$ and $function$ for each allowlisted CREATE OR REPLACE FUNCTION; leading and trailing newlines retained.",
+  "functions": [
+    {
+      "function": "public.current_app_role()",
+      "migrationBodySha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+      "authoritativeRuntimeBodySha256": "a69623e13ab16ce5ba417f06c9ebb3d10388394e525aaf2e623185ec4dd175ec",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "d57a9ae179171cbf809014ef0d49f15d76f0c3c78e40f8fe3787761900e8e4d9",
+      "signature": "public.current_app_role()",
+      "resultType": "text",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "function": "public.current_profile_id()",
+      "migrationBodySha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+      "authoritativeRuntimeBodySha256": "8c06dfcc2d1b272cd24b0f9910d3e5e5583f3faefbe6be79f829b3e1c2fa2d93",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "b716f68dff2768d08ee96dc21d44ed2560f62420a5f59b15940087e4d677db86",
+      "signature": "public.current_profile_id()",
+      "resultType": "uuid",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "function": "public.has_app_role(allowed_roles text[])",
+      "migrationBodySha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+      "authoritativeRuntimeBodySha256": "8f3ee27c8a43947a3f3a506afd5e3873bfa3e123b83acb56258f7541b18b0a2f",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "f35362d13a9694d94e36df122902365931926a81880ba26d1617cdc5c1c6b6c4",
+      "signature": "public.has_app_role(allowed_roles text[])",
+      "resultType": "boolean",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "function": "public.is_admin_role()",
+      "migrationBodySha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+      "authoritativeRuntimeBodySha256": "8c6b37db773c3fe2dbdfe1bafd3d90662207c51e798403e59cb83a131f087b37",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "ecf0c23025ec8b6c4f3e8f554036ba264ec4b2bdfd78045ccbde798eadc3f90f",
+      "signature": "public.is_admin_role()",
+      "resultType": "boolean",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "function": "public.is_demo_context()",
+      "migrationBodySha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+      "authoritativeRuntimeBodySha256": "eae49855559f0c332dd9cd64e59ea4f07043085ad59940319f44fc09db56f960",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "14bbc13ed0ab6085297ae958dbb5492ac9a1d229d4a6812cd67a6d13613dc6c1",
+      "signature": "public.is_demo_context()",
+      "resultType": "boolean",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "function": "public.is_demo_record(record_is_demo boolean, record_environment text)",
+      "migrationBodySha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+      "authoritativeRuntimeBodySha256": "fc66eb47b335f51c6c81a5402c66e858c8137dc62fae80cf85162fdeab75ae92",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "b9cbfd45c1c4556c1b8d1ed6d56e6b94c8ae2a716df8db15d2c7c82631bac85b",
+      "signature": "public.is_demo_record(record_is_demo boolean, record_environment text)",
+      "resultType": "boolean",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "function": "public.is_staff_role()",
+      "migrationBodySha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+      "authoritativeRuntimeBodySha256": "678ea6785f0b472170a427a6aef054c53eb661065f3746f344ef5afd833cd1bd",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "b35617ad5d4480869fd8b84512016bc3a6b661af6502bf422a00100501af8b59",
+      "signature": "public.is_staff_role()",
+      "resultType": "boolean",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "function": "public.owns_customer(target_customer_id uuid)",
+      "migrationBodySha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+      "authoritativeRuntimeBodySha256": "2e28a9cb7a172bd73ca91eb0736c8d93d41692dcf23e2b47a7353a11b7207a16",
+      "exactBodyMatch": true,
+      "resultingDefinitionSha256": "932d0fe184007aa547a16a4f7c4c28cee34b2cd9ab15312b21498282bb2b2635",
+      "signature": "public.owns_customer(target_customer_id uuid)",
+      "resultType": "boolean",
+      "language": "sql",
+      "volatility": "s",
+      "strict": false,
+      "parallelSafety": "u",
+      "leakproof": false,
+      "securityDefiner": true,
+      "searchPath": [
+        "search_path=pg_catalog"
+      ],
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    }
+  ]
+}

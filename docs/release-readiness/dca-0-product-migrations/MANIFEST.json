@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "release": "DCA-0 token-safe invitation foundation product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260726100000_dca_0_token_safe_invitation_foundation.sql"
+  ],
+  "authority": [
+    "docs/DCA_0_SECURITY_AND_STAGING_CLOSURE.md",
+    "docs/evidence/dca-0-security-and-staging-closure/STAGING_CERTIFICATION.json"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

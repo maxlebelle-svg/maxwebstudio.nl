@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-20T19:54:07.261Z",
+  "recovered": [
+    {
+      "version": "20260720160000",
+      "filename": "20260720160000_lead_event_foundation.sql",
+      "evidencePath": "docs/foundation-f0/evidence/recovered-migrations/20260720160000_lead_event_foundation.sql",
+      "size": 17178,
+      "sha256": "d0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba",
+      "provenanceStatus": "original_verified",
+      "copiedWithoutModification": true
+    },
+    {
+      "version": "20260720200000",
+      "filename": "20260720200000_transactional_lead_intake_rpc.sql",
+      "evidencePath": "docs/foundation-f0/evidence/recovered-migrations/20260720200000_transactional_lead_intake_rpc.sql",
+      "size": 34050,
+      "sha256": "40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370",
+      "provenanceStatus": "original_verified",
+      "copiedWithoutModification": true
+    }
+  ],
+  "officialMigrationDirectoryModified": false
+}

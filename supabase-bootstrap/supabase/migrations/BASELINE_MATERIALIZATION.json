@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "status": "controlled_byte_identical_materialization",
+  "source": "supabase/migrations/00000000000000_authoritative_baseline.sql",
+  "output": "supabase-bootstrap/supabase/migrations/00000000000000_authoritative_baseline.sql",
+  "sha256": "1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315",
+  "mutable": false
+}
