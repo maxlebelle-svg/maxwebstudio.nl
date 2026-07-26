@@ -1,0 +1,31 @@
+.plan-tiers {
+  display: grid;
+  gap: 8px;
+  margin: 28px 0;
+}
+
+.plan-tiers > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.document-note,
+.document-card {
+  color: #b9c8d9;
+  line-height: 1.6;
+}
+
+.document-card {
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+}
+
+.document-card h3 { color: #fff; }
+.document-card small {
+  display: block;
+  color: #e1bd70;
+  margin: 12px 0;
+}

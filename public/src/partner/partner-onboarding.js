@@ -119,9 +119,45 @@ function renderControlled() {
       button.addEventListener("click", showAssessment);
       card.append(button);
     }
+    if (step.stepKey === "commission_system" && step.status !== "completed" && state.data.commercial?.plan) {
+      const button = document.createElement("button"); button.type = "button"; button.textContent = "Plan bekijken en accepteren"; button.addEventListener("click", showCommissionPlan); card.append(button);
+    }
+    if (step.stepKey === "document_acceptance" && step.status !== "completed" && state.data.commercial?.documents?.length) {
+      const button = document.createElement("button"); button.type = "button"; button.textContent = "Documenten controleren"; button.addEventListener("click", showDocuments); card.append(button);
+    }
     return card;
-  }));
+  }).concat(allStepsComplete() && !state.data.certification?.certificate ? [finalizationCard()] : []));
 }
+
+function allStepsComplete() { return state.data.steps.length > 0 && state.data.steps.every((step) => step.status === "completed"); }
+function finalizationCard() {
+  const card = document.createElement("article"); card.className = "controlled-card";
+  card.innerHTML = "<h3>Certificering afronden</h3><p>Alle vereiste onderdelen zijn voltooid. Laat de server de volledige bewijsset controleren.</p>";
+  const button = document.createElement("button"); button.type="button"; button.textContent="Certificaat uitgeven en toegang activeren"; button.addEventListener("click", finalizeCertification); card.append(button); return card;
+}
+
+function prepareAgreement(title, intro) {
+  element("module").hidden = true; element("assessment").hidden = true; element("agreements").hidden = false;
+  element("agreementsTitle").textContent = title; element("agreementsIntro").textContent = intro; element("agreementsContent").replaceChildren();
+}
+function showCommissionPlan() {
+  const plan = state.data.commercial.plan; prepareAgreement("Commissieplan", "De gekoppelde versie blijft onderdeel van je auditbare onboardinghistorie.");
+  const list=document.createElement("div"); list.className="plan-tiers";
+  let previous=0; for(const tier of plan.tiers||[]){ const row=document.createElement("div"); const upper=tier.upToCents==null?"en hoger":`tot ${money(tier.upToCents)}`; const range=document.createElement("span"); range.textContent=`${previous?`boven ${money(previous)} `:""}${upper}`; const rate=document.createElement("strong"); rate.textContent=`${Number(tier.rateBps)/100}%`; row.append(range,rate); list.append(row); if(tier.upToCents!=null)previous=tier.upToCents; }
+  const note=document.createElement("p"); note.className="document-note"; note.textContent=`Methode: ${plan.calculationMethod === "progressive" ? "progressief per schijf" : "hoogste schijf over het geheel"}. Grondslag: daadwerkelijk ontvangen omzet exclusief btw. Abonnementen: ${plan.includeSubscriptions ? "inbegrepen" : "niet standaard inbegrepen"}.`;
+  const button=document.createElement("button"); button.className="primary"; button.type="button"; button.textContent=`Accepteer ${plan.versionCode}`; button.addEventListener("click",acceptCommissionPlan);
+  element("agreementsContent").append(list,note,button); element("agreements").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function acceptCommissionPlan(event) { event.currentTarget.disabled=true; try{ render(await request({action:"accept_commission_plan",versionCode:state.data.commercial.plan.versionCode,idempotencyKey:crypto.randomUUID()})); element("agreements").hidden=true; }catch(error){showError(error);event.currentTarget.disabled=false;} }
+function showDocuments() {
+  prepareAgreement("Verplichte documenten", "Lees iedere gepubliceerde versie. Deze bevestiging is uitdrukkelijk geen vervanging voor een volledig ondertekende opdrachtovereenkomst.");
+  for(const document of state.data.commercial.documents){ const article=document.createElement("article"); article.className="document-card"; const title=document.createElement("h3"); title.textContent=document.title; const body=document.createElement("p"); body.textContent=document.content; const meta=document.createElement("small"); meta.textContent=`Versie ${document.versionCode} · ${document.reviewStatus === "legal_review_required" ? "juridische review vereist" : "intern goedgekeurd"}`; const label=document.createElement("label"); label.className="option"; const input=document.createElement("input"); input.type="checkbox"; input.name="document"; input.value=document.versionCode; input.checked=document.accepted; input.disabled=document.accepted; const text=document.createElement("span"); text.textContent="Ik heb deze exacte versie gelezen en begrepen."; label.append(input,text); article.append(title,body,meta,label); element("agreementsContent").append(article); }
+  const button=document.createElement("button"); button.className="primary"; button.type="button"; button.textContent="Alle documentversies bevestigen"; button.addEventListener("click",acceptDocuments); element("agreementsContent").append(button); element("agreements").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function acceptDocuments(event) { const checked=[...element("agreementsContent").querySelectorAll('input[name="document"]')].filter((input)=>input.checked||input.disabled).map((input)=>input.value); if(checked.length!==state.data.commercial.documents.length){showError(new Error("Bevestig eerst iedere documentversie."));return;} event.currentTarget.disabled=true; try{render(await request({action:"accept_required_documents",versionCodes:checked,idempotencyKey:crypto.randomUUID()}));element("agreements").hidden=true;}catch(error){showError(error);event.currentTarget.disabled=false;} }
+async function finalizeCertification(event){event.currentTarget.disabled=true;try{const data=await request({action:"finalize_certification",idempotencyKey:crypto.randomUUID()});render(data);element("certificate").scrollIntoView({behavior:"smooth",block:"start"});}catch(error){showError(error);event.currentTarget.disabled=false;}}
+function showError(error){element("notice").className="notice error";element("notice").textContent=error.message;}
+function money(cents){return new Intl.NumberFormat("nl-NL",{style:"currency",currency:"EUR"}).format(Number(cents)/100);}
 
 function showAssessment() {
   const assessment = state.data.certification?.assessment;
