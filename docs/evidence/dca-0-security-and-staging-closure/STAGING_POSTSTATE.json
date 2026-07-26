@@ -1,0 +1,29 @@
+{
+  "capturedAt": "2026-07-26T08:10:00Z",
+  "projectRef": "xlxpuuycigeqhgxqtzni",
+  "transactionReadOnly": "on",
+  "tables": [
+    { "name": "client_activation_links", "exists": true, "rls": true, "forceRls": true },
+    { "name": "lead_demo_invitations", "exists": true, "rls": true, "forceRls": false },
+    { "name": "public_preview_publications", "exists": true, "rls": true, "forceRls": true }
+  ],
+  "servicePolicies": 2,
+  "browserTableGrants": 0,
+  "serviceFunctionGrants": 5,
+  "browserFunctionGrants": 0,
+  "legacyPlannerServiceExecute": 0,
+  "forbiddenLeadCustomerId": 0,
+  "convertedCustomerId": 1,
+  "remainingFixtureRows": {
+    "profiles": 0,
+    "customers": 0,
+    "leads": 0,
+    "projects": 0,
+    "journeys": 0,
+    "buildJobs": 0,
+    "previews": 0,
+    "publications": 0,
+    "invitations": 0,
+    "activationLinks": 0
+  }
+}
