@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Jouw website | Max Webstudio</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="dca-start-page">
+    <main class="dca-start-shell" aria-live="polite">
+      <header class="dca-start-brand"><img src="/assets/maxwebstudio-logo-mark.png" alt="" /><span>Max Webstudio<small>Build better online</small></span></header>
+      <section class="dca-start-card" id="dca-start-loading">
+        <span class="dca-start-kicker">Persoonlijke website</span>
+        <h1>Even jouw omgeving openen…</h1>
+        <p>We controleren de beveiligde koppeling.</p>
+      </section>
+      <section class="dca-start-card" id="dca-start-content" hidden>
+        <span class="dca-start-kicker">Speciaal voor jou gemaakt</span>
+        <h1>Welkom <span id="dca-start-name"></span> 👋</h1>
+        <p class="dca-start-intro">Deze website is speciaal gemaakt voor <strong id="dca-start-company"></strong>.</p>
+        <dl class="dca-start-facts">
+          <div><dt>Status</dt><dd><span class="dca-start-dot"></span><span id="dca-start-status"></span></dd></div>
+          <div><dt>Verwachte oplevering</dt><dd id="dca-start-delivery"></dd></div>
+        </dl>
+        <div class="dca-start-actions">
+          <button class="button primary" id="dca-start-preview" type="button">Bekijk mijn website</button>
+          <button class="button secondary" id="dca-start-activate" type="button">Activeer mijn omgeving</button>
+        </div>
+        <p class="dca-start-note" id="dca-start-note" role="status"></p>
+      </section>
+      <section class="dca-start-card dca-start-error" id="dca-start-error" hidden>
+        <span class="dca-start-kicker">Link niet beschikbaar</span>
+        <h1>Deze persoonlijke link werkt niet meer.</h1>
+        <p id="dca-start-error-message">Vraag Max Webstudio om een nieuwe link.</p>
+      </section>
+      <section class="dca-preview-dialog" id="dca-preview-dialog" hidden>
+        <header><strong>Jouw website-preview</strong><button class="button secondary" id="dca-preview-close" type="button">Sluiten</button></header>
+        <iframe id="dca-preview-frame" title="Jouw website-preview" sandbox="allow-scripts allow-forms allow-modals" referrerpolicy="no-referrer"></iframe>
+      </section>
+    </main>
+    <script src="/src/dca-start.js" defer></script>
+  </body>
+</html>

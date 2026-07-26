@@ -1,0 +1,55 @@
+{
+  "release": "DCA_1_ADMIN_INVITATION_AND_PERSONAL_START_LINK",
+  "projectRef": "xlxpuuycigeqhgxqtzni",
+  "runIdHash": "4626db6a14c8d15c98495697600103007606934bf99e3eb829edef7c24ebee03",
+  "startedAt": "2026-07-26T09:20:17.515Z",
+  "providerMode": "SUPPRESSED",
+  "providerCalls": 0,
+  "netlifyRequests": 0,
+  "fixtures": {
+    "newLeadWithoutCustomer": 1,
+    "convertedCustomerLeads": 2,
+    "zipPreviews": 1,
+    "factoryPreviews": 2,
+    "activePublications": 3,
+    "demoUsers": 1,
+    "customerAccounts": 2,
+    "invitationRows": 2,
+    "activationStates": {
+      "activated": 1,
+      "expired": 1,
+      "opened": 1,
+      "revoked": 1,
+      "rotated": 1
+    }
+  },
+  "assertions": {
+    "rotationRevokesPrevious": true,
+    "revokeBlocks": true,
+    "revokedTokenRejected": true,
+    "whatsAppRouteOnly": true,
+    "personalStartResolvesExactZipBinding": true,
+    "personalStartOpenedAtIsIdempotent": true,
+    "repeatedInviteIsIdempotent": true,
+    "expiryBlocks": true,
+    "personalStartExpiryBlocks": true,
+    "personalStartConvertedOwnership": true,
+    "wrongEmailRejected": true,
+    "crossCustomerPublicationRejected": true,
+    "tokenAloneCreatesNoSession": true,
+    "safeExistingAccountActivation": true,
+    "exactOneInvitationPerCanonicalKey": true,
+    "atMostOneActiveToken": true,
+    "rawTokenAbsentFromStoredRows": true,
+    "zipPreviewBinding": true,
+    "factoryPreviewBinding": true,
+    "convertedCustomerIdUsed": true,
+    "noDuplicateCustomerProjectAuth": true,
+    "noProviderOrNetlifyLogSurface": true
+  },
+  "cleanup": {
+    "completed": true
+  },
+  "status": "PASS",
+  "completedAt": "2026-07-26T09:20:23.343Z"
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260726130000_dca_1_personal_start_resolver.sql",
+      "bytes": 3926,
+      "sha256": "055de2769d263c2e2db67aa46b3cf7462323afcdfafe12600d61c4ecf8b99492"
+    }
+  ]
+}

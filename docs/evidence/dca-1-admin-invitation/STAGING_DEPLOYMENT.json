@@ -1,0 +1,27 @@
+{
+  "release": "DCA_1_ADMIN_INVITATION_AND_PERSONAL_START_LINK",
+  "projectRef": "xlxpuuycigeqhgxqtzni",
+  "databaseMigration": {
+    "version": "20260726130000",
+    "execution": "authenticated_staging_sql_editor",
+    "result": "success",
+    "automaticPushUsed": false,
+    "reason": "remote_migration_history_drift"
+  },
+  "draftDeployment": {
+    "provider": "netlify",
+    "production": false,
+    "site": "mws-gold-review-2026-1-7q4k",
+    "deployId": "6a65d066af33410287d4d152",
+    "mobileViewport": "390x844",
+    "invalidTokenFailureIsGeneric": true,
+    "validTokenEndToEndProven": false,
+    "stagingRuntimeConfigured": false
+  },
+  "productionTouched": false,
+  "certification": "STOPPED",
+  "blockers": [
+    "VALID_START_LINK_NOT_PROVEN_ON_CONFIGURED_STAGING_HOST",
+    "TOKEN_PATH_ACCESS_LOG_REDACTION_NOT_PROVEN"
+  ]
+}

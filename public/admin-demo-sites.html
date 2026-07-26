@@ -2216,6 +2216,48 @@
       </section>
     </div>
 
+    <div class="admin-modal" id="demo-invitation-modal" role="dialog" aria-modal="true" aria-labelledby="demo-invitation-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel demo-invitation-panel">
+        <div class="admin-modal-header">
+          <div><p class="section-kicker">Persoonlijke startlink</p><h2 id="demo-invitation-title">Klant uitnodigen</h2></div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <div class="demo-invitation-status" id="demo-invitation-status"><span></span><strong>Controleren…</strong></div>
+        <form id="demo-invitation-form">
+          <input id="demo-invitation-journey" type="hidden" />
+          <div class="demo-invitation-grid">
+            <label class="demo-invitation-edit" for="demo-invitation-email"><span>E-mailadres</span><input id="demo-invitation-email" type="email" autocomplete="off" required /></label>
+            <div><span>Contact</span><strong id="demo-invitation-contact">—</strong></div>
+            <div><span>Bedrijf</span><strong id="demo-invitation-company">—</strong></div>
+            <div><span>Telefoon</span><strong id="demo-invitation-phone">—</strong></div>
+            <div><span>Lead</span><strong id="demo-invitation-lead">—</strong></div>
+            <div><span>Demo journey</span><strong id="demo-invitation-journey-label">—</strong></div>
+            <div><span>Previewpublicatie</span><strong id="demo-invitation-publication">—</strong></div>
+            <div><span>Previewversie</span><strong id="demo-invitation-version">—</strong></div>
+            <div><span>Previewbron</span><strong id="demo-invitation-source">—</strong></div>
+            <div><span>Customer</span><strong id="demo-invitation-customer">—</strong></div>
+            <div><span>Project</span><strong id="demo-invitation-project">—</strong></div>
+            <div><span>Verwachte oplevering</span><strong id="demo-invitation-delivery">—</strong></div>
+            <div><span>Offerte</span><strong id="demo-invitation-quote">—</strong></div>
+          </div>
+          <div class="demo-invitation-link" id="demo-invitation-link" hidden>
+            <span>Deze link wordt maar één keer getoond</span>
+            <output id="demo-invitation-link-value"></output>
+          </div>
+          <p class="admin-form-message" id="demo-invitation-message" role="status"></p>
+          <div class="demo-invitation-actions">
+            <button class="button primary" id="demo-invitation-create" type="submit">Veilige link maken</button>
+            <button class="button secondary" id="demo-invitation-copy" type="button" disabled>Link kopiëren</button>
+            <a class="button secondary" id="demo-invitation-whatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">Delen via WhatsApp</a>
+            <button class="button secondary" id="demo-invitation-refresh" type="button">Status vernieuwen</button>
+            <button class="button secondary" id="demo-invitation-rotate" type="button" hidden>Nieuwe link genereren</button>
+            <button class="button secondary danger" id="demo-invitation-revoke" type="button" hidden>Uitnodiging intrekken</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <div class="admin-modal" id="demo-action-simple-modal" role="dialog" aria-modal="true" aria-labelledby="demo-action-simple-title" hidden>
       <div class="admin-modal-backdrop" data-modal-close></div>
       <section class="admin-card admin-modal-panel admin-modal-panel-compact">
@@ -23254,6 +23296,7 @@
           billing: "/.netlify/functions/admin-billing",
           invoiceEmail: "/.netlify/functions/admin-invoice-email",
           welcomeEmail: "/.netlify/functions/admin-customer-welcome-email",
+          invitation: "/.netlify/functions/admin-demo-invitation",
         };
 
         function escapeHtml(value) {
@@ -23599,7 +23642,8 @@
             ];
           }
           return [
-            { action: "preview", label: "Klantpreview openen", primary: true },
+            { action: "invite", label: "Klant uitnodigen", primary: true },
+            { action: "preview", label: "Klantpreview openen" },
             { action: "quote", label: "Offerte maken" },
             { action: "followup", label: "Opvolging plannen" },
           ];
@@ -24265,6 +24309,86 @@
           setMessage(data.email?.sent ? "Inloggegevens/activatielink verzonden." : data.email?.warning || "Welkomstmail is voorbereid.", data.email?.sent ? "success" : "warning");
         }
 
+        function setInvitationMessage(text = "", type = "") {
+          const element = document.getElementById("demo-invitation-message");
+          if (!element) return;
+          element.textContent = text;
+          element.className = `admin-form-message ${type}`;
+        }
+
+        function renderInvitationState(data = {}) {
+          const details = data.details || {};
+          const invitation = data.invitation || {};
+          const fields = {
+            contact: details.contactName,
+            company: details.companyName,
+            phone: details.phone || "Niet ingevuld",
+            lead: details.lead,
+            "journey-label": details.demoJourney,
+            publication: details.previewPublication,
+            version: details.previewVersion,
+            source: details.previewSource,
+            customer: details.customer,
+            project: details.project,
+            delivery: details.deliveryExpectation,
+            quote: details.quote,
+          };
+          Object.entries(fields).forEach(([id, value]) => {
+            const element = document.getElementById(`demo-invitation-${id}`);
+            if (element) element.textContent = value || "—";
+          });
+          const email = document.getElementById("demo-invitation-email");
+          if (email && document.activeElement !== email) email.value = details.email || "";
+          const labels = { niet_uitgenodigd: "Niet uitgenodigd", gereed: "Gereed", geopend: "Geopend", geactiveerd: "Geactiveerd", verlopen: "Verlopen", ingetrokken: "Ingetrokken" };
+          const statusEl = document.getElementById("demo-invitation-status");
+          statusEl.dataset.status = invitation.status || "niet_uitgenodigd";
+          statusEl.querySelector("strong").textContent = labels[invitation.status] || "Niet uitgenodigd";
+          document.getElementById("demo-invitation-revoke").hidden = !invitation.canRevoke;
+          document.getElementById("demo-invitation-rotate").hidden = !invitation.canRotate;
+          document.getElementById("demo-invitation-create").hidden = Boolean(invitation.canRotate);
+          if (data.oneTimeLink) {
+            document.getElementById("demo-invitation-link").hidden = false;
+            document.getElementById("demo-invitation-link-value").textContent = data.oneTimeLink;
+            document.getElementById("demo-invitation-copy").disabled = false;
+            const whatsapp = document.getElementById("demo-invitation-whatsapp");
+            whatsapp.href = data.whatsappUrl || "#";
+            whatsapp.setAttribute("aria-disabled", data.whatsappUrl ? "false" : "true");
+          }
+        }
+
+        async function invitationRequest(action = "status") {
+          if (!activeActionRecord?.id) throw new Error("Selecteer eerst een demo.");
+          const token = getBearer();
+          if (!token) throw new Error("Log opnieuw in om een uitnodiging te beheren.");
+          const email = document.getElementById("demo-invitation-email")?.value || activeActionRecord.email || "";
+          const response = await fetch(endpoints.invitation, {
+            method: "POST",
+            headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ action, demoJourneyId: activeActionRecord.id, email }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "Uitnodiging kon niet veilig worden verwerkt.");
+          renderInvitationState(data);
+          return data;
+        }
+
+        async function openInvitationModal(record = {}) {
+          activeActionRecord = record;
+          document.getElementById("demo-invitation-journey").value = record.id || "";
+          document.getElementById("demo-invitation-email").value = record.email || savedDemoSiteMeta(record)?.email || "";
+          document.getElementById("demo-invitation-link").hidden = true;
+          document.getElementById("demo-invitation-copy").disabled = true;
+          document.getElementById("demo-invitation-whatsapp").setAttribute("aria-disabled", "true");
+          setInvitationMessage("Eligibility en ownership controleren…", "info");
+          openModal(document.getElementById("demo-invitation-modal"));
+          try {
+            await invitationRequest("status");
+            setInvitationMessage("Alle koppelingen zijn veilig gecontroleerd.", "success");
+          } catch (error) {
+            setInvitationMessage(error.message, "error");
+          }
+        }
+
         function openUpsellModal(record = {}) {
           activeActionRecord = record;
           const savedDemo = savedDemoSiteMeta(record) || {};
@@ -24453,8 +24577,7 @@
           if (action === "invoice") return populateInvoiceModal(record);
           if (action === "account") return populateAccountModal(record);
           if (action === "invite") {
-            setMessage("Uitnodiging voorbereiden...", "info");
-            return sendInviteForRecord(record);
+            return openInvitationModal(record);
           }
           if (action === "followup") return openSimpleModal(record, "followup");
           if (action === "upsell") return openUpsellModal(record);
@@ -24675,6 +24798,38 @@
           } catch (error) {
             setModalMessage(document.getElementById("demo-portal-invitation-message"), error.message || "De klantportaaluitnodiging kon niet worden verwerkt.", "error");
           }
+        });
+        document.getElementById("demo-invitation-form")?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          setInvitationMessage("Veilige persoonlijke link maken…", "info");
+          try { await invitationRequest("create"); setInvitationMessage("Link gereed. Kopieer of deel hem nu; hij wordt niet opgeslagen in de browser.", "success"); }
+          catch (error) { setInvitationMessage(error.message, "error"); }
+        });
+        document.getElementById("demo-invitation-refresh")?.addEventListener("click", async () => {
+          setInvitationMessage("Status vernieuwen…", "info");
+          try { await invitationRequest("status"); setInvitationMessage("Status is bijgewerkt.", "success"); }
+          catch (error) { setInvitationMessage(error.message, "error"); }
+        });
+        document.getElementById("demo-invitation-rotate")?.addEventListener("click", async () => {
+          if (!window.confirm("De bestaande link wordt direct ongeldig. Nieuwe link genereren?")) return;
+          setInvitationMessage("Bestaande link intrekken en nieuwe link maken…", "info");
+          try { await invitationRequest("rotate"); setInvitationMessage("Nieuwe link gereed. De oude link is ingetrokken.", "success"); }
+          catch (error) { setInvitationMessage(error.message, "error"); }
+        });
+        document.getElementById("demo-invitation-revoke")?.addEventListener("click", async () => {
+          if (!window.confirm("Deze persoonlijke link direct intrekken?")) return;
+          setInvitationMessage("Uitnodiging intrekken…", "info");
+          try { await invitationRequest("revoke"); setInvitationMessage("Uitnodiging is ingetrokken.", "success"); }
+          catch (error) { setInvitationMessage(error.message, "error"); }
+        });
+        document.getElementById("demo-invitation-copy")?.addEventListener("click", async () => {
+          const value = document.getElementById("demo-invitation-link-value")?.textContent || "";
+          if (!value) return;
+          try { await navigator.clipboard.writeText(value); setInvitationMessage("Link gekopieerd.", "success"); }
+          catch { setInvitationMessage("Kopiëren lukte niet automatisch. Selecteer de link handmatig.", "warning"); }
+        });
+        document.getElementById("demo-invitation-whatsapp")?.addEventListener("click", (event) => {
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") { event.preventDefault(); setInvitationMessage("Maak eerst een nieuwe link en controleer het telefoonnummer.", "warning"); }
         });
         document.getElementById("demo-action-simple-form")?.addEventListener("submit", async (event) => {
           event.preventDefault();

@@ -33,6 +33,11 @@
   status = 200
 
 [[redirects]]
+  from = "/start/:token"
+  to = "/start.html"
+  status = 200
+
+[[redirects]]
   from = "/admin-login"
   to = "/admin-login.html"
   status = 200
@@ -186,6 +191,13 @@
   for = "/account-activeren.html"
   [headers.values]
     Cache-Control = "no-store, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/start/*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0, must-revalidate"
+    Referrer-Policy = "no-referrer"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
 
 [[headers]]
   for = "/src/*"

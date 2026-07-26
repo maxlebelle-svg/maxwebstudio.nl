@@ -457,4 +457,5 @@ exports._private = {
   normalizePackage,
   recoverVersionFromRequest,
   renderPackageHtml,
+  resolvePreviewPackage,
 };

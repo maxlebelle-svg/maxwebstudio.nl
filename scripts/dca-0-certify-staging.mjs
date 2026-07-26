@@ -4,7 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const envText = await fs.readFile(path.join(root, ".env.local"), "utf8");
+const dca1Mode = process.env.DCA_CERTIFICATION_PHASE === "DCA_1";
+const envPath = process.env.DCA_STAGING_ENV_FILE || path.join(root, ".env.local");
+const envText = await fs.readFile(envPath, "utf8");
 const env = Object.fromEntries(envText.split(/\r?\n/).filter((line) => /^[A-Za-z_][A-Za-z0-9_]*=/.test(line)).map((line) => {
   const index = line.indexOf("=");
   return [line.slice(0, index), line.slice(index + 1).replace(/^['"]|['"]$/g, "")];
@@ -37,7 +39,7 @@ const authUsers = {};
 const createdTables = [];
 const tokens = [];
 const evidence = {
-  release: "DCA_0_SECURITY_AND_STAGING_CLOSURE",
+  release: dca1Mode ? "DCA_1_ADMIN_INVITATION_AND_PERSONAL_START_LINK" : "DCA_0_SECURITY_AND_STAGING_CLOSURE",
   projectRef: env.SUPABASE_PROJECT_ID,
   runIdHash: checksum("run"),
   startedAt: new Date().toISOString(),
@@ -196,6 +198,15 @@ try {
 
   const zipValid = (await call("zip"))[0]; tokens.push(zipValid.activation_token);
   evidence.assertions.whatsAppRouteOnly = `https://maxwebstudio.nl${zipValid.activation_path}` === `https://maxwebstudio.nl/start/${zipValid.activation_token}`;
+  if (dca1Mode) {
+    const firstStartOpen = (await rpc("dca_1_open_personal_start", { input_activation_token: zipValid.activation_token }))[0];
+    const repeatedStartOpen = (await rpc("dca_1_open_personal_start", { input_activation_token: zipValid.activation_token }))[0];
+    evidence.assertions.personalStartResolvesExactZipBinding = firstStartOpen.preview_version_id === ids.previews.zip
+      && firstStartOpen.preview_publication_id === ids.publications.zip
+      && firstStartOpen.lead_id === ids.leads.zip;
+    evidence.assertions.personalStartOpenedAtIsIdempotent = firstStartOpen.activation_link_id === repeatedStartOpen.activation_link_id
+      && firstStartOpen.invitation_id === repeatedStartOpen.invitation_id;
+  }
 
   const factoryShort = (await call("factory", { expiresAt: new Date(Date.now() + 2500).toISOString() }))[0]; tokens.push(factoryShort.activation_token);
   const factoryRepeat = (await call("factory"))[0];
@@ -205,8 +216,17 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 3000));
   const expiredOpen = await rpc("dca_0_open_activation_link", { input_activation_token: factoryShort.activation_token, input_recipient_email: emails.customerA });
   evidence.assertions.expiryBlocks = Array.isArray(expiredOpen) && expiredOpen.length === 0;
+  if (dca1Mode) {
+    await expectFailure("personalStartExpiryBlocks", () => rpc("dca_1_open_personal_start", { input_activation_token: factoryShort.activation_token }));
+  }
 
   const factoryValid = (await call("factory"))[0]; tokens.push(factoryValid.activation_token);
+  if (dca1Mode) {
+    const factoryStart = (await rpc("dca_1_open_personal_start", { input_activation_token: factoryValid.activation_token }))[0];
+    evidence.assertions.personalStartConvertedOwnership = factoryStart.customer_id === ids.customers.customerA
+      && factoryStart.project_id === ids.projects.customerA
+      && factoryStart.preview_version_id === ids.previews.factory;
+  }
   await expectFailure("wrongEmailRejected", () => rpc("dca_0_open_activation_link", { input_activation_token: factoryValid.activation_token, input_recipient_email: emails.customerB }));
   await expectFailure("crossCustomerPublicationRejected", () => rpc("dca_0_create_activation_link", {
     input_lead_id: ids.leads.factory,
@@ -261,7 +281,7 @@ try {
   for (let index = 0; index < tokens.length; index += 1) tokens[index] = "[REDACTED]";
   await cleanup();
   evidence.completedAt = new Date().toISOString();
-  const outDir = path.join(root, "docs", "evidence", "dca-0-security-and-staging-closure");
+  const outDir = path.join(root, "docs", "evidence", dca1Mode ? "dca-1-admin-invitation" : "dca-0-security-and-staging-closure");
   await fs.mkdir(outDir, { recursive: true });
   await fs.writeFile(path.join(outDir, "STAGING_CERTIFICATION.json"), `${JSON.stringify(evidence, null, 2)}\n`);
 }

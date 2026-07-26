@@ -27,6 +27,10 @@
     {
       "manifest": "docs/release-readiness/dca-0-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/dca-0-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/dca-1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/dca-1-product-migrations/FILESET.json"
     }
   ]
 }

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "release": "DCA-1 personal start resolver product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260726130000_dca_1_personal_start_resolver.sql"
+  ],
+  "authority": [
+    "docs/DCA_1_ADMIN_INVITATION_AND_PERSONAL_START_LINK.md"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}
