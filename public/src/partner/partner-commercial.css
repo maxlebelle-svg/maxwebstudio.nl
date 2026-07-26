@@ -44,6 +44,7 @@
 .zzp-form>p { grid-column:1/-1; margin:0; }
 .zzp-upload,.zzp-chat { display:grid; gap:18px; padding:24px; border:1px solid var(--line); border-radius:10px; background:rgba(10,30,49,.62); }
 .zzp-upload-form { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.zzp-upload-form [hidden] { display:none!important; }
 .zzp-upload-form>label:nth-child(3),.zzp-declaration,.zzp-upload-form>button,.zzp-upload-form>p { grid-column:1/-1; }
 .zzp-declaration { display:flex!important; grid-template-columns:none!important; align-items:flex-start; gap:10px!important; text-transform:none!important; letter-spacing:0!important; line-height:1.5; }
 .zzp-declaration input { width:20px; min-height:20px; flex:0 0 20px; accent-color:var(--blue); }
