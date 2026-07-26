@@ -1,22 +1,25 @@
-const { corsHeaders } = require("./_cors");
-const { TOKEN_PATTERN, clean, firstName } = require("./_dca-invitation");
+const { clean, firstName } = require("./_dca-invitation");
+const { bodyWithinLimit, clearSessionCookie, isJsonRequest, readSessionCookie, sameOrigin, sha256 } = require("./_dca-exchange");
 const previewRenderer = require("./client-preview-render")._private;
 
 exports.handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") return json(204, {});
   if (event.httpMethod !== "POST") return json(405, { success: false, error: "Methode niet toegestaan." });
+  if (!sameOrigin(event) || !isJsonRequest(event) || !bodyWithinLimit(event)) return invalidSession(config().environment);
   const context = config();
-  if (!context.available) return json(503, { success: false, error: "Deze persoonlijke pagina is tijdelijk niet beschikbaar." });
+  if (!context.available) return invalidSession(context.environment, 503);
   try {
     const body = JSON.parse(event.body || "{}");
-    const token = clean(body.token).toLowerCase();
     const action = clean(body.action || "open").toLowerCase();
-    if (!TOKEN_PATTERN.test(token) || !["open", "preview"].includes(action)) return invalidLink();
+    if (!["open", "preview"].includes(action)) return invalidSession(context.environment);
+    const secret = readSessionCookie(event.headers?.cookie || event.headers?.Cookie, context.environment);
+    if (!secret) return invalidSession(context.environment, 401);
 
-    const binding = first(await rpc(context, "dca_1_open_personal_start", { input_activation_token: token }));
-    if (!binding?.invitation_id) return json(410, { success: false, error: "Deze persoonlijke link is verlopen of niet meer actief." });
+    const binding = first(await rpc(context, "dca_1_resolve_exchange_session", { input_session_hash: sha256(secret) }));
+    if (!binding?.invitation_id) return invalidSession(context.environment, 401);
     const journey = await one(context, "demo_journeys", `select=id,lead_id,business_name,contact_name,preview_package&id=eq.${encodeURIComponent(await journeyId(context, binding.invitation_id))}&limit=1`);
     if (!journey?.id || clean(journey.lead_id) !== clean(binding.lead_id)) return invalidLink();
+    const lead = await one(context, "leads", `select=id,name,company&id=eq.${encodeURIComponent(binding.lead_id)}&limit=1`);
+    if (!lead?.id) return invalidLink();
     const version = await one(context, "website_preview_versions", `select=id,demo_journey_id,version,title,generated_package,metadata&id=eq.${encodeURIComponent(binding.preview_version_id)}&limit=1`);
     if (!version?.id || clean(version.demo_journey_id) !== clean(journey.id)) return invalidLink();
     const publication = await one(context, "public_preview_publications", `select=id,relationship_type,relationship_id,preview_version_id,enabled,revoked_at&id=eq.${encodeURIComponent(binding.preview_publication_id)}&limit=1`);
@@ -36,8 +39,8 @@ exports.handler = async (event) => {
     return json(200, {
       success: true,
       presentation: {
-        firstName: firstName(journey.contact_name),
-        companyName: clean(journey.business_name) || "jouw bedrijf",
+        firstName: firstName(journey.contact_name || lead.name),
+        companyName: clean(journey.business_name || lead.company) || "jouw bedrijf",
         status: "Wacht op jouw beoordeling",
         deliveryExpectation: clean(workflow.deliveryExpectation || workflow.delivery_expectation || "In overleg"),
         canActivate: false,
@@ -45,7 +48,7 @@ exports.handler = async (event) => {
     });
   } catch {
     // Deliberately omit token, URL, request body and upstream details from logs and responses.
-    return invalidLink();
+    return invalidSession(context.environment);
   }
 };
 
@@ -67,9 +70,10 @@ async function rpc(context, name, body) {
   return data;
 }
 function restHeaders(key) { return { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json", "Accept-Profile": "public", "Content-Profile": "public" }; }
-function config() { const supabaseUrl = clean(process.env.SUPABASE_URL).replace(/\/$/, ""); const serviceRoleKey = clean(process.env.SUPABASE_SERVICE_ROLE_KEY); return { supabaseUrl, serviceRoleKey, available: Boolean(supabaseUrl && serviceRoleKey) }; }
+function config() { const supabaseUrl = clean(process.env.SUPABASE_URL).replace(/\/$/, ""); const serviceRoleKey = clean(process.env.SUPABASE_SERVICE_ROLE_KEY); const environment = clean(process.env.APP_ENV || process.env.APP_ENVIRONMENT || "staging"); return { supabaseUrl, serviceRoleKey, environment, available: Boolean(supabaseUrl && serviceRoleKey) }; }
 function first(value) { return Array.isArray(value) ? value[0] || null : value || null; }
 function invalidLink() { return json(404, { success: false, error: "Deze persoonlijke link is ongeldig of niet meer actief." }); }
-function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store, max-age=0", "Referrer-Policy": "no-referrer", ...corsHeaders({ methods: "POST, OPTIONS" }) }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
+function invalidSession(environment, statusCode = 404) { return json(statusCode, { success: false, error: "Deze persoonlijke link is ongeldig of niet meer actief." }, clearSessionCookie(environment)); }
+function json(statusCode, body, cookie = "") { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store, max-age=0", "Referrer-Policy": "no-referrer" }, multiValueHeaders: cookie ? { "Set-Cookie": [cookie] } : undefined, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { config, invalidLink, journeyId };
+exports._private = { config, invalidLink, invalidSession, journeyId };

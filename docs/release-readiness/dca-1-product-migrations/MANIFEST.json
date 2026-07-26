@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
-  "release": "DCA-1 personal start resolver product migration",
+  "release": "DCA-1 personal start and fragment exchange product migrations",
   "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
   "category": "existing-only/product",
   "executionOrder": [
-    "supabase/migrations/20260726130000_dca_1_personal_start_resolver.sql"
+    "supabase/migrations/20260726130000_dca_1_personal_start_resolver.sql",
+    "supabase/migrations/20260726150000_dca_1_fragment_token_exchange_v1.sql"
   ],
   "authority": [
     "docs/DCA_1_ADMIN_INVITATION_AND_PERSONAL_START_LINK.md"

@@ -38,6 +38,8 @@ const emails = {
 const authUsers = {};
 const createdTables = [];
 const tokens = [];
+const sessionSecrets = [];
+const activationLinkIds = new Set();
 const evidence = {
   release: dca1Mode ? "DCA_1_ADMIN_INVITATION_AND_PERSONAL_START_LINK" : "DCA_0_SECURITY_AND_STAGING_CLOSURE",
   projectRef: env.SUPABASE_PROJECT_ID,
@@ -104,6 +106,7 @@ async function createAuthUser(label, email, role) {
 async function cleanup() {
   const fixtureIds = (values) => `id=in.(${values.join(",")})`;
   const operations = [
+    ...(activationLinkIds.size ? [["client_activation_exchange_sessions", `activation_link_id=in.(${[...activationLinkIds].join(",")})`]] : []),
     ["client_activation_links", `lead_id=in.(${Object.values(ids.leads).join(",")})`],
     ["lead_demo_invitations", `lead_id=in.(${Object.values(ids.leads).join(",")})`],
     ["public_preview_publications", fixtureIds(Object.values(ids.publications))],
@@ -116,7 +119,7 @@ async function cleanup() {
     ["profiles", fixtureIds(Object.values(ids.profiles))],
   ];
   for (const [table, query] of operations) {
-    if (!["client_activation_links", "lead_demo_invitations"].includes(table) && !createdTables.includes(table)) continue;
+    if (!["client_activation_exchange_sessions", "client_activation_links", "lead_demo_invitations"].includes(table) && !createdTables.includes(table)) continue;
     try { await remove(table, query); } catch { evidence.cleanup[table] = "FAILED"; }
   }
   for (const id of Object.values(authUsers)) {
@@ -189,18 +192,34 @@ try {
     input_expires_at: options.expiresAt || new Date(Date.now() + 72 * 3600_000).toISOString(),
     input_rotate: Boolean(options.rotate),
   });
+  const exchange = async (token) => {
+    const secret = crypto.randomBytes(32).toString("hex");
+    sessionSecrets.push(secret);
+    const accepted = await rpc("dca_1_exchange_activation_token", {
+      input_activation_token: token,
+      input_session_hash: crypto.createHash("sha256").update(secret).digest("hex"),
+      input_correlation_id: uuid(),
+      input_expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+    });
+    return { secret, accepted };
+  };
+  const resolveSession = (secret) => rpc("dca_1_resolve_exchange_session", {
+    input_session_hash: crypto.createHash("sha256").update(secret).digest("hex"),
+  });
 
-  const zipFirst = (await call("zip"))[0]; tokens.push(zipFirst.activation_token);
-  const zipRotated = (await call("zip", { rotate: true }))[0]; tokens.push(zipRotated.activation_token);
+  const zipFirst = (await call("zip"))[0]; tokens.push(zipFirst.activation_token); activationLinkIds.add(zipFirst.activation_link_id);
+  const zipRotated = (await call("zip", { rotate: true }))[0]; tokens.push(zipRotated.activation_token); activationLinkIds.add(zipRotated.activation_link_id);
   evidence.assertions.rotationRevokesPrevious = zipRotated.previous_token_rotated === true;
   evidence.assertions.revokeBlocks = (await rpc("dca_0_revoke_activation_link", { input_activation_link_id: zipRotated.activation_link_id, input_reason: "DCA_0_CERT_REVOKE" })) === true;
   await expectFailure("revokedTokenRejected", () => rpc("dca_0_open_activation_link", { input_activation_token: zipRotated.activation_token, input_recipient_email: emails.demo }));
 
-  const zipValid = (await call("zip"))[0]; tokens.push(zipValid.activation_token);
-  evidence.assertions.whatsAppRouteOnly = `https://maxwebstudio.nl${zipValid.activation_path}` === `https://maxwebstudio.nl/start/${zipValid.activation_token}`;
+  const zipValid = (await call("zip"))[0]; tokens.push(zipValid.activation_token); activationLinkIds.add(zipValid.activation_link_id);
+  evidence.assertions.whatsAppRouteOnly = `https://maxwebstudio.nl/start#${zipValid.activation_token}`.split("#")[0] === "https://maxwebstudio.nl/start";
   if (dca1Mode) {
-    const firstStartOpen = (await rpc("dca_1_open_personal_start", { input_activation_token: zipValid.activation_token }))[0];
-    const repeatedStartOpen = (await rpc("dca_1_open_personal_start", { input_activation_token: zipValid.activation_token }))[0];
+    const firstExchange = await exchange(zipValid.activation_token);
+    const firstStartOpen = (await resolveSession(firstExchange.secret))[0];
+    const repeatedStartOpen = (await resolveSession(firstExchange.secret))[0];
+    evidence.assertions.fragmentExchangeAccepted = firstExchange.accepted === true;
     evidence.assertions.personalStartResolvesExactZipBinding = firstStartOpen.preview_version_id === ids.previews.zip
       && firstStartOpen.preview_publication_id === ids.publications.zip
       && firstStartOpen.lead_id === ids.leads.zip;
@@ -208,7 +227,7 @@ try {
       && firstStartOpen.invitation_id === repeatedStartOpen.invitation_id;
   }
 
-  const factoryShort = (await call("factory", { expiresAt: new Date(Date.now() + 2500).toISOString() }))[0]; tokens.push(factoryShort.activation_token);
+  const factoryShort = (await call("factory", { expiresAt: new Date(Date.now() + 2500).toISOString() }))[0]; tokens.push(factoryShort.activation_token); activationLinkIds.add(factoryShort.activation_link_id);
   const factoryRepeat = (await call("factory"))[0];
   evidence.assertions.repeatedInviteIsIdempotent = factoryRepeat.invitation_id === factoryShort.invitation_id
     && factoryRepeat.activation_link_id === factoryShort.activation_link_id
@@ -217,12 +236,14 @@ try {
   const expiredOpen = await rpc("dca_0_open_activation_link", { input_activation_token: factoryShort.activation_token, input_recipient_email: emails.customerA });
   evidence.assertions.expiryBlocks = Array.isArray(expiredOpen) && expiredOpen.length === 0;
   if (dca1Mode) {
-    await expectFailure("personalStartExpiryBlocks", () => rpc("dca_1_open_personal_start", { input_activation_token: factoryShort.activation_token }));
+    const expiredExchange = await exchange(factoryShort.activation_token);
+    evidence.assertions.personalStartExpiryBlocks = expiredExchange.accepted === false;
   }
 
-  const factoryValid = (await call("factory"))[0]; tokens.push(factoryValid.activation_token);
+  const factoryValid = (await call("factory"))[0]; tokens.push(factoryValid.activation_token); activationLinkIds.add(factoryValid.activation_link_id);
   if (dca1Mode) {
-    const factoryStart = (await rpc("dca_1_open_personal_start", { input_activation_token: factoryValid.activation_token }))[0];
+    const factoryExchange = await exchange(factoryValid.activation_token);
+    const factoryStart = (await resolveSession(factoryExchange.secret))[0];
     evidence.assertions.personalStartConvertedOwnership = factoryStart.customer_id === ids.customers.customerA
       && factoryStart.project_id === ids.projects.customerA
       && factoryStart.preview_version_id === ids.previews.factory;
@@ -279,6 +300,7 @@ try {
   evidence.failure = String(error.message || error).replace(/[0-9a-f]{64}/gi, "[REDACTED]");
 } finally {
   for (let index = 0; index < tokens.length; index += 1) tokens[index] = "[REDACTED]";
+  for (let index = 0; index < sessionSecrets.length; index += 1) sessionSecrets[index] = "[REDACTED]";
   await cleanup();
   evidence.completedAt = new Date().toISOString();
   const outDir = path.join(root, "docs", "evidence", dca1Mode ? "dca-1-admin-invitation" : "dca-0-security-and-staging-closure");

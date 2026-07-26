@@ -5,6 +5,11 @@
       "path": "supabase/migrations/20260726130000_dca_1_personal_start_resolver.sql",
       "bytes": 3926,
       "sha256": "055de2769d263c2e2db67aa46b3cf7462323afcdfafe12600d61c4ecf8b99492"
+    },
+    {
+      "path": "supabase/migrations/20260726150000_dca_1_fragment_token_exchange_v1.sql",
+      "bytes": 13476,
+      "sha256": "b52d5f7cfe091cb7ba954a9320d2ca0a8be0c05db623f9ac4a8354b311d9ce02"
     }
   ]
 }

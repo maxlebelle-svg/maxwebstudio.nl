@@ -1,14 +1,15 @@
 (() => {
   "use strict";
-  const endpoint = "/.netlify/functions/client-activation-start";
-  let token = "";
+  const contextEndpoint = "/.netlify/functions/client-activation-start";
+  const exchangeEndpoint = "/.netlify/functions/client-activation-exchange";
   const byId = (id) => document.getElementById(id);
 
-  async function request(action) {
-    const response = await fetch(endpoint, {
+  async function requestContext(action) {
+    const response = await fetch(contextEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ action, token }),
+      body: JSON.stringify({ action }),
+      credentials: "same-origin",
       cache: "no-store",
       referrerPolicy: "no-referrer",
     });
@@ -17,9 +18,23 @@
     return data;
   }
 
-  function readToken() {
-    const match = window.location.pathname.match(/^\/start\/([0-9a-f]{64})\/?$/i);
-    return match ? match[1].toLowerCase() : "";
+  function takeFragmentToken() {
+    const fragment = String(window.location.hash || "");
+    window.history.replaceState(null, "", "/start");
+    if (fragment.length !== 65 || !/^#[0-9a-f]{64}$/i.test(fragment)) return "";
+    return fragment.slice(1).toLowerCase();
+  }
+
+  async function exchange(token) {
+    const response = await fetch(exchangeEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ token }),
+      credentials: "same-origin",
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
+    });
+    if (!response.ok) throw new Error("Deze persoonlijke link is niet beschikbaar.");
   }
 
   function showError(message) {
@@ -30,10 +45,13 @@
   }
 
   async function load() {
-    token = readToken();
-    if (!token) return showError("De link is onvolledig. Vraag Max Webstudio om een nieuwe link.");
+    const legacyPath = !/^\/start\/?$/.test(window.location.pathname);
+    let token = takeFragmentToken();
+    if (legacyPath) return showError("Vraag Max Webstudio om een nieuwe veilige link.");
     try {
-      const data = await request("open");
+      if (token) await exchange(token);
+      token = "";
+      const data = await requestContext("open");
       const view = data.presentation || {};
       byId("dca-start-name").textContent = view.firstName || "daar";
       byId("dca-start-company").textContent = view.companyName || "jouw bedrijf";
@@ -42,6 +60,7 @@
       byId("dca-start-loading").hidden = true;
       byId("dca-start-content").hidden = false;
     } catch (error) {
+      token = "";
       showError(error.message);
     }
   }
@@ -51,7 +70,7 @@
     button.disabled = true;
     byId("dca-start-note").textContent = "Website-preview laden…";
     try {
-      const data = await request("preview");
+      const data = await requestContext("preview");
       byId("dca-preview-frame").srcdoc = data.preview?.html || "";
       byId("dca-preview-dialog").hidden = false;
       byId("dca-start-note").textContent = "";

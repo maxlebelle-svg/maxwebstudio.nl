@@ -60,10 +60,11 @@ function assertEligibility({ journey, lead, preview, publication, customer, proj
   return { normalizedEmail, source, customerId: convertedCustomerId, projectId: clean(preview.project_id || project?.id) };
 }
 
-function activationUrl(origin, path) {
+function activationUrl(origin, token) {
   const safeOrigin = clean(origin).replace(/\/$/, "");
-  if (!safeOrigin || !/^https?:\/\//i.test(safeOrigin) || !/^\/start\/[0-9a-f]{64}$/.test(clean(path))) return "";
-  return `${safeOrigin}${path}`;
+  const safeToken = clean(token).toLowerCase();
+  if (!safeOrigin || !/^https?:\/\//i.test(safeOrigin) || !TOKEN_PATTERN.test(safeToken)) return "";
+  return `${safeOrigin}/start#${safeToken}`;
 }
 
 function whatsappMessage({ contactName, companyName, activationUrl: url }) {

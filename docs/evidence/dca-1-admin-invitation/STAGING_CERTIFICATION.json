@@ -1,8 +1,8 @@
 {
   "release": "DCA_1_ADMIN_INVITATION_AND_PERSONAL_START_LINK",
   "projectRef": "xlxpuuycigeqhgxqtzni",
-  "runIdHash": "4626db6a14c8d15c98495697600103007606934bf99e3eb829edef7c24ebee03",
-  "startedAt": "2026-07-26T09:20:17.515Z",
+  "runIdHash": "17b563b97103132b1292e0fb658af14c41d0283267c7b2b8a15220a83ee652d4",
+  "startedAt": "2026-07-26T10:49:12.242Z",
   "providerMode": "SUPPRESSED",
   "providerCalls": 0,
   "netlifyRequests": 0,
@@ -28,6 +28,7 @@
     "revokeBlocks": true,
     "revokedTokenRejected": true,
     "whatsAppRouteOnly": true,
+    "fragmentExchangeAccepted": true,
     "personalStartResolvesExactZipBinding": true,
     "personalStartOpenedAtIsIdempotent": true,
     "repeatedInviteIsIdempotent": true,
@@ -51,5 +52,5 @@
     "completed": true
   },
   "status": "PASS",
-  "completedAt": "2026-07-26T09:20:23.343Z"
+  "completedAt": "2026-07-26T10:49:18.226Z"
 }

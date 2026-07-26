@@ -64,8 +64,7 @@ exports.handler = async (event) => {
       input_expires_at: expiresAt,
       input_rotate: action === "rotate",
     }));
-    const path = clean(created?.activation_path);
-    const url = activationUrl(resolveOrigin(event), path);
+    const url = activationUrl(resolveOrigin(event), created?.activation_token);
     const message = url ? whatsappMessage({
       contactName: state.journey.contact_name || state.lead.name,
       companyName: state.journey.business_name || state.lead.company,
@@ -85,7 +84,12 @@ exports.handler = async (event) => {
   } catch (error) {
     // Never log request bodies, URLs, e-mail addresses or activation tokens.
     console.error("DCA-1 admin invitation failed", { requestId, code: clean(error.code), status: error.status || 500 });
-    return json(error.status || 500, { success: false, requestId, error: safeMessage(error) });
+    return json(error.status || 500, {
+      success: false,
+      requestId,
+      reasonCode: clean(error.code || "DCA_INVITATION_FAILED"),
+      error: safeMessage(error),
+    });
   }
 };
 
@@ -100,14 +104,15 @@ async function loadEligibility(context, journeyId, overrideEmail = "") {
   if (publications.length !== 1) throw fault("PUBLICATION_COUNT_MISMATCH", "Deze demo heeft niet exact één actieve previewpublicatie.", 409);
   const publication = publications[0];
   const customerId = clean(lead?.converted_customer_id);
-  const customer = customerId ? await one(context, "customers", `select=id,auth_user_id,profile_id,name,company_name,email&id=eq.${encodeURIComponent(customerId)}&limit=1`) : null;
+  const customer = customerId ? await one(context, "customers", `select=id,auth_user_id,profile_id,name,company,email&id=eq.${encodeURIComponent(customerId)}&limit=1`) : null;
   const projectId = uuid(preview?.project_id || saved.projectId || saved.project_id);
-  const project = projectId ? await one(context, "projects", `select=id,customer_id,name,status,deadline&id=eq.${encodeURIComponent(projectId)}&limit=1`) : null;
+  const project = projectId ? await one(context, "projects", `select=id,customer_id,name,status&id=eq.${encodeURIComponent(projectId)}&limit=1`) : null;
   const email = normalizeEmail(overrideEmail || journey.email || lead?.email);
   const profile = email ? await resolveProfileByEmail(context, email) : null;
   const eligibility = assertEligibility({ journey, lead, preview, publication, customer, project, profile, email });
   const invitation = await one(context, "lead_demo_invitations", `select=id,status,opened_at,activated_at,updated_at&lead_id=eq.${encodeURIComponent(lead.id)}&demo_journey_id=eq.${encodeURIComponent(journey.id)}&preview_version_id=eq.${encodeURIComponent(preview.id)}&normalized_email=eq.${encodeURIComponent(email)}&limit=1`);
-  const link = invitation?.id ? await one(context, "client_activation_links", `select=id,status,expires_at,opened_at,activated_at,revoked_at,created_at,updated_at&lead_demo_invitation_id=eq.${encodeURIComponent(invitation.id)}&order=created_at.desc&limit=1`) : null;
+  const links = invitation?.id ? await many(context, "client_activation_links", `select=id,status,expires_at,opened_at,activated_at,revoked_at,created_at,updated_at&lead_demo_invitation_id=eq.${encodeURIComponent(invitation.id)}&order=created_at.desc&limit=10`) : [];
+  const link = links.find((candidate) => ["active", "opened"].includes(candidate.status)) || links[0] || null;
   return { journey, lead, preview, publication, customer, project, profile, eligibility, invitation, link };
 }
 
@@ -147,9 +152,9 @@ function adminPayload(state) {
       previewPublication: "Actief",
       previewVersion: clean(state.preview.title || `Versie ${state.preview.version || ""}`),
       previewSource: state.eligibility.source === "manual_zip" ? "ZIP" : "Factory",
-      customer: state.customer?.id ? clean(state.customer.company_name || state.customer.name || "Bestaande klant") : "Nieuwe lead — nog geen customer",
+      customer: state.customer?.id ? clean(state.customer.company || state.customer.name || "Bestaande klant") : "Nieuwe lead — nog geen customer",
       project: state.project?.id ? clean(state.project.name || "Gekoppeld project") : "Nog niet gekoppeld",
-      deliveryExpectation: clean(workflow.deliveryExpectation || workflow.delivery_expectation || state.project?.deadline || "In overleg"),
+      deliveryExpectation: clean(workflow.deliveryExpectation || workflow.delivery_expectation || "In overleg"),
       quote: "Niet gekoppeld",
     },
   };
@@ -174,7 +179,7 @@ async function resolveProfileByEmail(context, email) {
 }
 function headers(key) { return { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json", "Accept-Profile": "public", "Content-Profile": "public" }; }
 function getContext() { const url = clean(process.env.SUPABASE_URL).replace(/\/$/, ""); const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY); return { url, key, available: Boolean(url && key) }; }
-function resolveOrigin(event) { const configured = clean(process.env.URL || process.env.DEPLOY_PRIME_URL || process.env.SITE_URL); if (configured) return configured; const host = clean(event.headers?.host || event.headers?.Host); return host ? `https://${host}` : ""; }
+function resolveOrigin(event) { const host = clean(event.headers?.["x-forwarded-host"] || event.headers?.["X-Forwarded-Host"] || event.headers?.host || event.headers?.Host).split(",")[0]; if (host) return `https://${host}`; return clean(process.env.DEPLOY_PRIME_URL || process.env.URL || process.env.SITE_URL); }
 function parse(body) { try { return JSON.parse(body || "{}"); } catch { throw fault("INVALID_JSON", "Ongeldige invoer.", 400); } }
 function uuid(value) { const text = clean(value); return UUID.test(text) ? text : ""; }
 function first(value) { return Array.isArray(value) ? value[0] || null : value || null; }
