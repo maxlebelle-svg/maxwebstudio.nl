@@ -10,6 +10,7 @@ const api = relationshipAssets._test;
 const portal = fs.readFileSync(path.join(root, "public/klantportaal.html"), "utf8");
 const client = fs.readFileSync(path.join(root, "public/admin/ui/client-asset-upload.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
+const baseline = fs.readFileSync(path.join(root, "supabase/migrations/00000000000000_authoritative_baseline.sql"), "utf8");
 const migration = fs.readFileSync(path.join(root, "supabase/migrations/20260712123000_relationship_asset_library.sql"), "utf8");
 const hardeningMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260712170000_relationship_asset_policy_hardening.sql"), "utf8");
 const adminApi = require("../functions/admin-relationship-assets")._test;
@@ -652,8 +653,8 @@ test("ambiguous insert failures preserve storage when reconciliation is unavaila
 });
 
 test("migration enforces one relationship, checksum dedupe, customer read isolation and a private bucket", () => {
-  assert.match(migration, /create table if not exists public\.files/);
-  assert.match(migration, /is_client_visible boolean not null default true/);
+  assert.match(baseline, /create table if not exists public\.files/);
+  assert.match(baseline, /is_client_visible boolean not null default false/);
   assert.match(migration, /files_one_relationship_check/);
   assert.match(migration, /files_customer_checksum_unique/);
   assert.match(migration, /relationship-assets','relationship-assets',false/);

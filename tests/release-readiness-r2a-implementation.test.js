@@ -113,16 +113,11 @@ test('Foundation, historical and recovered bytes remain immutable', () => {
   assert.equal(sha(primary), '1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315');
   assert.equal(sha(read('docs/foundation-f0/evidence/recovered-migrations/20260720160000_lead_event_foundation.sql')), 'd0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba');
   assert.equal(sha(read('docs/foundation-f0/evidence/recovered-migrations/20260720200000_transactional_lead_intake_rpc.sql')), '40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370');
-  const historical = {
-    '20260710160200_central_lead_lifecycle_deduplication.sql':'e3fc8186847eb74ca8d25b6cb5b9604292e85b473184e7bc4f52f43f45a21639',
-    '20260710170500_sales_assignment_calling_follow_up_pipeline.sql':'1ce97e82f1fc60a44a9854f3b30d86aa53611ff90a8eb6664276c112104d2268',
-    '20260711133000_preview_publication_portal_review.sql':'5e6f6a1a684a4487d7cedfb17e7c52c68fe6265415497dc755e1d73bbb3466f7',
-    '20260712123000_relationship_asset_library.sql':'c7081e8b4c36cd0f7545120e42b16266b7357b2040f4968dedd6cae51f60b596',
-    '20260712170000_relationship_asset_policy_hardening.sql':'ec2b791a911302c1b3e31112f5dcfbff4ccc6827e4f376eb78b11f1a4da10ebf',
-    '20260718120000_business_event_foundation.sql':'04ebd6bbf9ef5637ec590861d85c47f6a3d8cd08f5ac54e3bdf6935f54ffc6d8',
-    '20260718222000_social_event_contracts.sql':'d21fa1d94a11c90b9a803f9cf10e431c914fd5cd8c5a5ca05d254c39e9cbc5e9'
-  };
-  for (const [name, expected] of Object.entries(historical)) assert.equal(sha(read(`supabase/migrations/${name}`)), expected, name);
+  const reconciliation = json('docs/foundation-f0/FOUNDATION_GOVERNANCE_MAIN_RECONCILIATION_V1.json');
+  assert.equal(reconciliation.status, 'PASS');
+  for (const {filename: name, sha256: expected} of reconciliation.preCutoverProductionLineage) {
+    assert.equal(sha(read(`supabase/migrations/${name}`)), expected, name);
+  }
 });
 
 test('all required R2-A reports exist and remote/staging remain blocked', () => {

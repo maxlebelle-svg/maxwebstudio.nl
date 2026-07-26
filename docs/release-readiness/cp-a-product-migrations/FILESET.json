@@ -2,9 +2,19 @@
   "schemaVersion": 1,
   "files": [
     {
+      "path": "supabase/migrations/20260724105000_cp_a_production_canonical_prerequisites.sql",
+      "bytes": 15091,
+      "sha256": "692369142ece78741d1b1e2b109b4db8e1add98c431ef0216e3ca6b2f7387a3d"
+    },
+    {
+      "path": "supabase/migrations/20260724110000_bridge_preview_publication_portal_review.sql",
+      "bytes": 17707,
+      "sha256": "22628ef185d4f78a8dd96eefd9aee68022e2010f9f5143c7d13df0be4ea6fa50"
+    },
+    {
       "path": "supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql",
-      "bytes": 22389,
-      "sha256": "757d304cd9200baf438e0968f00508cfbecb56648aeefcd5486516734c007a84"
+      "bytes": 22393,
+      "sha256": "a418a8b05b03879f572c0ebd5862acd2ce36d3eae8e35db6aefbd5fa7c7586c2"
     },
     {
       "path": "supabase/migrations/20260724130000_repair_preview_quality_report_schema_drift.sql",

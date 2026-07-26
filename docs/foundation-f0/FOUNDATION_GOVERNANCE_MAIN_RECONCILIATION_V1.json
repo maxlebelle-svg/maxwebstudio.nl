@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "originMain": "73edb9885d5a5b2c1768f6030dad0ac40b964af1",
+  "cutoverVersion": "20260721000000",
+  "preCutoverProductionLineage": [
+    {"filename":"00000000000000_authoritative_baseline.sql","sha256":"1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315"},
+    {"filename":"20260710160200_central_lead_lifecycle_deduplication.sql","sha256":"e3fc8186847eb74ca8d25b6cb5b9604292e85b473184e7bc4f52f43f45a21639"},
+    {"filename":"20260710170500_sales_assignment_calling_follow_up_pipeline.sql","sha256":"1ce97e82f1fc60a44a9854f3b30d86aa53611ff90a8eb6664276c112104d2268"},
+    {"filename":"20260711133000_preview_publication_portal_review.sql","sha256":"5e6f6a1a684a4487d7cedfb17e7c52c68fe6265415497dc755e1d73bbb3466f7"},
+    {"filename":"20260712123000_relationship_asset_library.sql","sha256":"c7081e8b4c36cd0f7545120e42b16266b7357b2040f4968dedd6cae51f60b596"},
+    {"filename":"20260712170000_relationship_asset_policy_hardening.sql","sha256":"ec2b791a911302c1b3e31112f5dcfbff4ccc6827e4f376eb78b11f1a4da10ebf"},
+    {"filename":"20260713173000_customer_journey_automation_foundations.sql","sha256":"7419deb2c4627aa25573a7f2830d4ea1c2715cd941169942d39d8193b00d9675"},
+    {"filename":"20260713190000_enable_feedback_received_test_outbox.sql","sha256":"00a79f90c8b2327433dcc9bc285c423e8144bd3bf5d0ae92d841b71b7a41187e"},
+    {"filename":"20260713200000_enable_preview_approved_test_outbox.sql","sha256":"e6773d72987f25595b5597c1ed9dce265540a27cbb1b6275ce3085bdc84f0118"},
+    {"filename":"20260713200100_enable_preview_approved_test_outbox_idempotency_verification.sql","sha256":"e6773d72987f25595b5597c1ed9dce265540a27cbb1b6275ce3085bdc84f0118"},
+    {"filename":"20260713210000_enable_payment_paid_test_outbox.sql","sha256":"03a679d015365ddc4172c58eff819e67997ca5fe8e097c89ecf9413046665a83"},
+    {"filename":"20260713220000_enable_website_live_test_outbox.sql","sha256":"6e6a23fd52217f2ae366a989dbf24ebf3c217b7d79d6af7c3b699e99441fcfc5"},
+    {"filename":"20260714120000_reconcile_production_lead_lifecycle.sql","sha256":"c507e70212b943690a8fbdcb417dc61945795506c0cd7d4bbeacf1bf075dcd75"},
+    {"filename":"20260714173000_lead_demo_account_invitations.sql","sha256":"5cf2d634201dac34a6d3e77613be9ccac6d3dac1440eb3f9cd6c21729ca7a07c"},
+    {"filename":"20260714190000_lead_source_sales_attribution.sql","sha256":"2c607c43cb83047474d8ccede4897f98054b4beb76155d334ceb47a4df72cd9a"},
+    {"filename":"20260717143000_allow_retryable_website_build_jobs.sql","sha256":"573a663e957aea80fc10dfbca5ce19d4a056a396afe8e4ce2308f21876b111ed"},
+    {"filename":"20260718110000_public_preview_slugs.sql","sha256":"be61c84782cc422c63d5074bb9f61a73d8306e1414e4134b771af6ebd5aefb71"},
+    {"filename":"20260718190000_public_preview_publications.sql","sha256":"895a2e9df562d22d46e07a30aa9d8c1be1ad378c41e80c29353d5334bd390006"}
+  ],
+  "retiredStagingOnlyInventoryEntries": [
+    "20260718120000_business_event_foundation.sql",
+    "20260718222000_social_event_contracts.sql",
+    "20260719120000_media_asset_foundation.sql",
+    "20260719150000_asset_ingest_operation_foundation.sql"
+  ],
+  "decisions": [
+    {"conflict":"20260712123000_relationship_asset_library.sql","choice":"RESTORE_CANONICAL_HISTORICAL_BYTES","sha256":"c7081e8b4c36cd0f7545120e42b16266b7357b2040f4968dedd6cae51f60b596"},
+    {"conflict":"20260721050000_p0_staging_smoke_nonce_replay_protection.sql outputs","choice":"FIX_BOOTSTRAP_COPY_TO_CANONICAL_BYTES","sha256":"a733d0eefb976524bc69b06487f440310641f19d101cb21b3f9fb2ff58e2819a"},
+    {"conflict":"pre-cutover directory equality and relationship-assets creation assertions against superseded historical file placement","choice":"UPDATE_TEST_TO_CORRECT_SCOPED_CONTRACT"},
+    {"conflict":"CP-A existing-only product migration fileset","choice":"UPDATE_MANIFEST_TO_PROVEN_PRODUCT_RELEASE"}
+  ]
+}

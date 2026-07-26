@@ -4,10 +4,13 @@
   "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
   "category": "existing-only/product",
   "executionOrder": [
+    "supabase/migrations/20260724105000_cp_a_production_canonical_prerequisites.sql",
+    "supabase/migrations/20260724110000_bridge_preview_publication_portal_review.sql",
     "supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql",
     "supabase/migrations/20260724130000_repair_preview_quality_report_schema_drift.sql"
   ],
   "authority": [
+    "docs/releases/CP_A_PRODUCTION_RECONSTRUCTION_MANIFEST.md",
     "docs/CP_A_P0_CUSTOMER_PORTAL_TRUST_CHAIN_REMEDIATION.md",
     "docs/CP_A_STAGING_SCHEMA_DRIFT_REPAIR.md"
   ],

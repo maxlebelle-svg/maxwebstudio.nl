@@ -139,4 +139,3 @@ grant execute on function public.mws_consume_p0_staging_smoke_nonce_v1(text,text
 
 comment on function public.mws_consume_p0_staging_smoke_nonce_v1(text,text,text,text) is
   'Service-role-only atomic one-time P0 staging-smoke nonce consumption with fixed one-hour retention and bounded cleanup.';
-

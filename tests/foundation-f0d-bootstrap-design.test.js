@@ -3,13 +3,13 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const docs = path.join(root, 'docs/foundation-f0');
 const read = (name) => fs.readFileSync(path.join(docs, name), 'utf8');
 const decision = JSON.parse(read('F0D_DECISION_MATRIX.json'));
 const inventory = JSON.parse(read('F0C_MIGRATION_SET_INVENTORY.json'));
+const reconciliation = JSON.parse(read('FOUNDATION_GOVERNANCE_MAIN_RECONCILIATION_V1.json'));
 const digest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
 const requiredDocs = [
@@ -66,8 +66,11 @@ test('missing remote migrations were not reconstructed or marked applied', () =>
 test('F0-d created no reconciliation identity; every later migration remains separately attributable', async () => {
   assert.equal(decision.reconciliationSqlCreated, false);
   const actual = fs.readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort();
-  const expected = inventory.migrations.filter((x) => x.localPresence === 'working_tree').map((x) => x.filename).sort();
-  assert.deepEqual(actual.filter((name) => name < '20260721000000'), expected.filter((name) => name < '20260721000000'));
+  const expected = reconciliation.preCutoverProductionLineage.map((x) => x.filename).sort();
+  assert.deepEqual(actual.filter((name) => name < reconciliation.cutoverVersion), expected);
+  for (const entry of reconciliation.preCutoverProductionLineage) {
+    assert.equal(digest(fs.readFileSync(path.join(root, 'supabase/migrations', entry.filename))), entry.sha256, entry.filename);
+  }
   assert.equal(actual.some((name) => /f0d|bootstrap/i.test(name) && !name.startsWith('000000')), false);
   const {validateDualRoot} = await import(path.join(root, 'supabase-bootstrap/scripts/dual-root-validator.mjs'));
   assert.doesNotThrow(() => validateDualRoot({
@@ -123,13 +126,16 @@ test('baseline and all available migration checksums remain unchanged', () => {
   const baseline = fs.readFileSync(path.join(root, 'supabase/migrations/00000000000000_authoritative_baseline.sql'));
   assert.equal(digest(baseline), decision.baselineSha256);
   assert.equal(decision.baselineSha256, '1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315');
-  for (const migration of inventory.migrations.filter((x) => x.localPresence !== 'absent')) {
+  const retired = new Set(reconciliation.retiredStagingOnlyInventoryEntries);
+  for (const migration of inventory.migrations.filter((x) => x.localPresence === 'working_tree')) {
     const localPath = path.join(root, 'supabase/migrations', migration.filename);
-    const bytes = fs.existsSync(localPath)
-      ? fs.readFileSync(localPath)
-      : execFileSync('git', ['show', `codex/rc1-clean-migration-lineage:supabase/migrations/${migration.filename}`], { cwd: root });
-    assert.equal(digest(bytes), migration.sha256, migration.filename);
+    if (!fs.existsSync(localPath)) {
+      assert.equal(retired.has(migration.filename), true, `unclassified absent migration: ${migration.filename}`);
+      continue;
+    }
+    assert.equal(digest(fs.readFileSync(localPath)), migration.sha256, migration.filename);
   }
+  assert.deepEqual([...retired].sort(), inventory.migrations.filter((x) => x.localPresence === 'working_tree' && !fs.existsSync(path.join(root, 'supabase/migrations', x.filename))).map((x) => x.filename).sort());
 });
 
 test('ADR and design report preserve the no-write/no-deploy boundary', () => {
