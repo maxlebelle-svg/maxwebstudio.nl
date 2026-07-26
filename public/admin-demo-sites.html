@@ -2182,40 +2182,6 @@
       </section>
     </div>
 
-    <div class="admin-modal" id="demo-portal-invitation-modal" role="dialog" aria-modal="true" aria-labelledby="demo-portal-invitation-title" hidden>
-      <div class="admin-modal-backdrop" data-modal-close></div>
-      <section class="admin-card admin-modal-panel demo-action-modal-panel demo-portal-invitation-modal-panel">
-        <div class="admin-modal-header">
-          <div>
-            <p class="section-kicker">Klantportaal</p>
-            <h2 id="demo-portal-invitation-title">Uitnodigen voor klantportaal</h2>
-          </div>
-          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
-        </div>
-        <form class="admin-profile-form" id="demo-portal-invitation-form">
-          <input id="demo-portal-invitation-journey" type="hidden" />
-          <input id="demo-portal-invitation-preview-version" type="hidden" />
-          <input id="demo-portal-invitation-action" type="hidden" />
-          <div class="demo-portal-confirmation-grid">
-            <div><span>Lead</span><strong id="demo-portal-invitation-lead">-</strong></div>
-            <div><span>E-mailadres</span><strong id="demo-portal-invitation-email">-</strong></div>
-            <div><span>Previewbron</span><strong id="demo-portal-invitation-source">-</strong></div>
-            <div><span>Versie</span><strong id="demo-portal-invitation-version">-</strong></div>
-            <div class="demo-portal-confirmation-wide"><span>Publieke preview</span><a id="demo-portal-invitation-public-link" href="#" target="_blank" rel="noopener">-</a></div>
-          </div>
-          <div class="demo-portal-explanation">
-            <strong>Wat ontvangt de lead?</strong>
-            <p>De ontvanger krijgt de bestaande Nederlandse accountaanmaakmail en kan daarna exact deze preview beoordelen, feedback geven en expliciet goedkeuren. Dit maakt geen klant aan en verandert geen verkoop- of betaalstatus.</p>
-          </div>
-          <div class="admin-profile-actions">
-            <button class="button primary" id="demo-portal-invitation-submit" type="submit">Uitnodiging versturen</button>
-            <button class="button secondary" type="button" data-modal-close>Annuleren</button>
-            <p class="admin-form-message" id="demo-portal-invitation-message" role="status"></p>
-          </div>
-        </form>
-      </section>
-    </div>
-
     <div class="admin-modal" id="demo-invitation-modal" role="dialog" aria-modal="true" aria-labelledby="demo-invitation-title" hidden>
       <div class="admin-modal-backdrop" data-modal-close></div>
       <section class="admin-card admin-modal-panel demo-invitation-panel">
@@ -23291,7 +23257,6 @@
         const endpoints = {
           journey: "/.netlify/functions/demo-journey",
           publication: "/.netlify/functions/admin-preview-publication",
-          leadInvitation: "/.netlify/functions/admin-lead-demo-invitation",
           onboarding: "/.netlify/functions/admin-customer-onboarding",
           billing: "/.netlify/functions/admin-billing",
           invoiceEmail: "/.netlify/functions/admin-invoice-email",
@@ -23620,15 +23585,23 @@
 
         async function loadInvitationState(record = {}) {
           const leadId = recordLeadId(record);
-          const token = getBearer();
-          if (!leadId || !token) return;
+          if (!leadId || !record.id) return;
           try {
-            const response = await fetch(`${endpoints.leadInvitation}?leadId=${encodeURIComponent(leadId)}`, {
-              headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+            const data = await postJson(endpoints.invitation, {
+              action: "status",
+              demoJourneyId: record.id,
+              email: record.email || savedDemoSiteMeta(record)?.email || "",
             });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || data.success === false) throw new Error(data.error || "Uitnodigingsstatus niet beschikbaar.");
-            invitationStates.set(leadId, { status: data.status || "not_invited", invitation: data.invitation || null, sender: data.sender || null });
+            const statusMap = {
+              niet_uitgenodigd: "not_invited",
+              gereed: "sent",
+              geopend: "sent",
+              geactiveerd: "activated",
+              verlopen: "link_expired",
+              ingetrokken: "link_expired",
+            };
+            const secureStatus = data.invitation?.status || "niet_uitgenodigd";
+            invitationStates.set(leadId, { status: statusMap[secureStatus] || "not_invited", invitation: data.invitation || null });
           } catch (error) {
             invitationStates.set(leadId, { status: "unavailable", invitation: null, warning: error.message || "Uitnodigingsstatus niet beschikbaar." });
           }
@@ -24046,31 +24019,6 @@
           });
         }
 
-        function openPortalInvitationModal(record = {}) {
-          const resolution = resolveActiveDemoPreview(record);
-          const context = commercialContext(record, resolution);
-          if (!context.canInvite) throw new Error(context.blockedReason || "Deze demo kan nog niet voor het klantportaal worden uitgenodigd.");
-          const savedDemo = savedDemoSiteMeta(record) || {};
-          const invitation = invitationState(record);
-          const inviteAction = window.DemoSitesCommercialActions.invitationAction(invitation);
-          activeActionRecord = record;
-          document.getElementById("demo-portal-invitation-journey").value = record.id || "";
-          document.getElementById("demo-portal-invitation-preview-version").value = context.previewVersionId;
-          document.getElementById("demo-portal-invitation-action").value = inviteAction.action;
-          document.getElementById("demo-portal-invitation-lead").textContent = record.contactName || savedDemo.contactName || savedDemo.businessName || record.businessName || "-";
-          document.getElementById("demo-portal-invitation-email").textContent = context.email;
-          document.getElementById("demo-portal-invitation-source").textContent = window.DemoSitesCommercialActions.sourceLabel(context.previewSource);
-          document.getElementById("demo-portal-invitation-version").textContent = `V${context.previewVersion}`;
-          const publicLink = document.getElementById("demo-portal-invitation-public-link");
-          publicLink.textContent = context.publicPreviewUrl;
-          publicLink.href = context.publicPreviewUrl;
-          const submit = document.getElementById("demo-portal-invitation-submit");
-          submit.textContent = inviteAction.action === "invite" ? "Uitnodiging versturen" : inviteAction.label;
-          submit.disabled = false;
-          setModalMessage(document.getElementById("demo-portal-invitation-message"), "");
-          openModal(document.getElementById("demo-portal-invitation-modal"));
-        }
-
         async function sharePublicPreviewByEmail(record = {}) {
           const context = commercialContext(record);
           if (!context.published) throw new Error("Publiceer eerst exact deze demo.");
@@ -24084,46 +24032,6 @@
             actionKey: uniqueActionKey(),
           });
           setMessage(data.email?.sent ? `Demo verzonden naar ${data.email.to || context.email}.` : "De demo-e-mail is verwerkt.", data.email?.sent ? "success" : "warning");
-        }
-
-        async function submitPortalInvitation() {
-          if (!activeActionRecord) return;
-          const resolution = resolveActiveDemoPreview(activeActionRecord);
-          const context = commercialContext(activeActionRecord, resolution);
-          const messageEl = document.getElementById("demo-portal-invitation-message");
-          const submit = document.getElementById("demo-portal-invitation-submit");
-          const action = document.getElementById("demo-portal-invitation-action")?.value || "invite";
-          const formPreviewVersionId = document.getElementById("demo-portal-invitation-preview-version")?.value || "";
-          if (!context.canInvite || formPreviewVersionId !== context.previewVersionId) {
-            throw new Error("De geselecteerde preview is gewijzigd. Sluit dit venster en controleer de demo opnieuw.");
-          }
-          submit.disabled = true;
-          setModalMessage(messageEl, action === "invite" ? "Uitnodiging veilig voorbereiden..." : "Bestaande uitnodiging opnieuw versturen...", "info");
-          try {
-            const data = await postJson(endpoints.leadInvitation, {
-              action,
-              actionKey: uniqueActionKey(),
-              leadId: context.relationshipId,
-              demoJourneyId: activeActionRecord.id,
-              previewVersionId: context.previewVersionId,
-            });
-            invitationStates.set(context.relationshipId, {
-              status: data.status || data.invitation?.status || "planned",
-              invitation: data.invitation || {
-                id: data.invitationId,
-                status: data.status,
-                previewVersionId: data.previewVersionId,
-                previewSource: data.previewSource,
-              },
-              sender: data.sender || null,
-            });
-            render();
-            setModalMessage(messageEl, data.message || "Uitnodiging verwerkt.", data.emailSent ? "success" : "warning");
-            setMessage(data.message || "Klantportaaluitnodiging verwerkt.", data.emailSent ? "success" : "warning");
-            window.setTimeout(() => closeModal(document.getElementById("demo-portal-invitation-modal")), 650);
-          } finally {
-            submit.disabled = false;
-          }
         }
 
         function populateInvoiceModal(record = {}) {
@@ -24789,7 +24697,7 @@
             const record = getRecordById(portalInvite.dataset.demoPortalInvite);
             if (!record) return;
             try {
-              openPortalInvitationModal(record);
+              await openInvitationModal(record);
             } catch (error) {
               setMessage(error.message || "De klantportaaluitnodiging kan nog niet worden gestart.", "error");
             }
@@ -24840,14 +24748,6 @@
             await saveAccountFromModal();
           } catch (error) {
             setModalMessage(document.getElementById("demo-action-account-message"), error.message || "Klantaccount kon niet worden aangemaakt.", "error");
-          }
-        });
-        document.getElementById("demo-portal-invitation-form")?.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          try {
-            await submitPortalInvitation();
-          } catch (error) {
-            setModalMessage(document.getElementById("demo-portal-invitation-message"), error.message || "De klantportaaluitnodiging kon niet worden verwerkt.", "error");
           }
         });
         document.getElementById("demo-invitation-form")?.addEventListener("submit", async (event) => {

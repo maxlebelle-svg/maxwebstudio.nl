@@ -18,9 +18,9 @@
 - `dca_1_exchange_activation_token`: atomically validates token ownership, revokes the previous short session and stores a new session hash.
 - `dca_1_resolve_exchange_session`: validates the short session and every underlying binding on each use.
 
-## Explicit limitation
+## Provisional identity boundary
 
-A lead without a customer must already have exactly one isolated active `demo_user` profile for the intended e-mail address, as required by the approved DCA-0 contract. DCA-1 does not create a customer, project or auth identity. Account activation remains deliberately inactive pending DCA-2.
+For a lead without a customer, the staff-only create action may prepare exactly one isolated active `demo_user` profile and its Supabase Auth identity before invoking the canonical DCA-0 invitation RPC. It does not create a customer or project, never adopts an existing unbound Auth identity, and compensates a newly prepared identity if the canonical invitation write fails. Status checks, rotation and revoke never provision identities. CX2 account activation remains the only path that can convert the lead through `converted_customer_id`.
 
 ## Privacy and operations
 

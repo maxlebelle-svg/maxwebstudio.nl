@@ -29,6 +29,7 @@ exports.handler = async (event) => {
   const context = getContext();
   if (!context.available) return json(500, { success: false, error: "Uitnodigingsservice is nog niet geconfigureerd." });
   const requestId = correlationId();
+  let provisionalIdentity = null;
   try {
     const payload = parse(event.body);
     const journeyId = uuid(payload.demoJourneyId || payload.demo_journey_id || payload.id);
@@ -50,7 +51,11 @@ exports.handler = async (event) => {
     }
     if (!["create", "rotate"].includes(action)) return json(400, { success: false, requestId, error: "Onbekende uitnodigingsactie." });
 
-    const identity = await resolveInvitationIdentity(context, state, payload.email);
+    const identity = await resolveInvitationIdentity(context, state, payload.email, {
+      allowProvision: action === "create",
+      createdBy: clean(auth.admin?.profileId || auth.admin?.id),
+    });
+    provisionalIdentity = identity.provisional || null;
     const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
     const created = first(await rpc(context, "dca_0_create_activation_link", {
       input_lead_id: state.lead.id,
@@ -64,6 +69,8 @@ exports.handler = async (event) => {
       input_expires_at: expiresAt,
       input_rotate: action === "rotate",
     }));
+    // From this point the identity is durably referenced by the canonical invitation.
+    provisionalIdentity = null;
     const url = activationUrl(resolveOrigin(event), created?.activation_token);
     const message = url ? whatsappMessage({
       contactName: state.journey.contact_name || state.lead.name,
@@ -82,6 +89,7 @@ exports.handler = async (event) => {
       previousTokenRotated: Boolean(created?.previous_token_rotated),
     });
   } catch (error) {
+    if (provisionalIdentity) await compensateProvisionalIdentity(context, provisionalIdentity);
     // Never log request bodies, URLs, e-mail addresses or activation tokens.
     console.error("DCA-1 admin invitation failed", { requestId, code: clean(error.code), status: error.status || 500 });
     return json(error.status || 500, {
@@ -116,10 +124,14 @@ async function loadEligibility(context, journeyId, overrideEmail = "") {
   return { journey, lead, preview, publication, customer, project, profile, eligibility, invitation, link };
 }
 
-async function resolveInvitationIdentity(context, state, emailOverride) {
+async function resolveInvitationIdentity(context, state, emailOverride, options = {}) {
   const email = normalizeEmail(emailOverride || state.eligibility.normalizedEmail);
   const profiles = await many(context, "profiles", `select=id,auth_user_id,email,role,status&email=eq.${encodeURIComponent(email)}&limit=2`);
-  if (profiles.length !== 1) throw fault("IDENTITY_COUNT_MISMATCH", "Voor dit e-mailadres bestaat niet exact één veilig profiel.", 409);
+  if (profiles.length > 1) throw fault("IDENTITY_COUNT_MISMATCH", "Voor dit e-mailadres bestaat niet exact één veilig profiel.", 409);
+  if (profiles.length === 0) {
+    if (!options.allowProvision || state.customer?.id) throw fault("IDENTITY_COUNT_MISMATCH", "Voor dit e-mailadres bestaat nog geen veilig profiel.", 409);
+    return provisionLeadIdentity(context, state, email, options.createdBy);
+  }
   const profile = profiles[0];
   if (!profile.auth_user_id || clean(profile.status) !== "active") throw fault("IDENTITY_INACTIVE", "Het gekoppelde demo-profiel is niet actief.", 409);
   if (state.customer?.id) {
@@ -128,6 +140,70 @@ async function resolveInvitationIdentity(context, state, emailOverride) {
     throw fault("DEMO_IDENTITY_REQUIRED", "Een nieuwe lead vereist eerst een geïsoleerd demo-profiel.", 409);
   }
   return profile;
+}
+
+async function provisionLeadIdentity(context, state, email, createdBy = "") {
+  const authUsers = await findAuthUsersByEmail(context, email);
+  if (authUsers.length) throw fault("UNBOUND_AUTH_IDENTITY", "Voor dit e-mailadres bestaat al een account zonder eenduidige leadkoppeling.", 409);
+  let authUserId = "";
+  let profileId = "";
+  try {
+    const generated = await authRequest(context, "admin/generate_link", {
+      method: "POST",
+      body: {
+        type: "invite",
+        email,
+        data: { portalMode: "lead_preview", leadId: state.lead.id },
+      },
+    });
+    const user = generated?.user || generated?.properties?.user || null;
+    authUserId = clean(user?.id);
+    if (!authUserId) throw fault("AUTH_IDENTITY_NOT_CREATED", "Het beveiligde demo-account kon niet worden voorbereid.", 502);
+    const now = new Date().toISOString();
+    const profile = first(await restRequest(context, "profiles?on_conflict=auth_user_id", {
+      method: "POST",
+      prefer: "resolution=merge-duplicates,return=representation",
+      body: {
+        auth_user_id: authUserId,
+        name: clean(state.journey.contact_name || state.lead.name || email),
+        email,
+        role: "demo_user",
+        status: "active",
+        environment: "production",
+        metadata: { leadPortal: { leadId: state.lead.id, mode: "lead_preview", preparedAt: now } },
+        ...(createdBy ? { created_by: createdBy } : {}),
+        updated_at: now,
+      },
+    }));
+    profileId = clean(profile?.id);
+    if (!profileId || clean(profile.auth_user_id) !== authUserId || clean(profile.role) !== "demo_user") {
+      throw fault("PROFILE_IDENTITY_NOT_CREATED", "Het geïsoleerde demo-profiel kon niet worden voorbereid.", 502);
+    }
+    return { ...profile, provisional: { authUserId, profileId } };
+  } catch (error) {
+    await compensateProvisionalIdentity(context, { authUserId, profileId });
+    throw error;
+  }
+}
+
+async function findAuthUsersByEmail(context, email) {
+  const matches = [];
+  for (let page = 1; page <= 5; page += 1) {
+    const data = await authRequest(context, `admin/users?per_page=200&page=${page}`, { method: "GET" });
+    const users = Array.isArray(data?.users) ? data.users : [];
+    matches.push(...users.filter((user) => normalizeEmail(user?.email) === email));
+    if (users.length < 200 || matches.length > 1) break;
+  }
+  return matches;
+}
+
+async function compensateProvisionalIdentity(context, identity = {}) {
+  try {
+    if (identity.profileId) await restRequest(context, `profiles?id=eq.${encodeURIComponent(identity.profileId)}`, { method: "DELETE" });
+  } catch {}
+  try {
+    if (identity.authUserId) await authRequest(context, `admin/users/${encodeURIComponent(identity.authUserId)}`, { method: "DELETE" });
+  } catch {}
 }
 
 function adminPayload(state) {
@@ -173,6 +249,35 @@ async function rpc(context, name, body) {
   if (!response.ok) throw fault(data?.code || "RPC_FAILED", data?.message || "Uitnodigingsactie is veilig gestopt.", response.status);
   return Array.isArray(data) ? data : data;
 }
+async function restRequest(context, path, options = {}) {
+  const response = await fetch(`${context.url}/rest/v1/${path}`, {
+    method: options.method || "GET",
+    headers: {
+      ...headers(context.key),
+      ...(options.prefer ? { Prefer: options.prefer } : {}),
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw fault(data?.code || "SUPABASE_WRITE_FAILED", "De uitnodigingsidentiteit kon niet veilig worden voorbereid.", response.status);
+  return data;
+}
+async function authRequest(context, path, options = {}) {
+  const response = await fetch(`${context.url}/auth/v1/${path}`, {
+    method: options.method || "GET",
+    headers: {
+      apikey: context.key,
+      Authorization: `Bearer ${context.key}`,
+      Accept: "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw fault(data?.code || data?.error_code || "AUTH_IDENTITY_FAILED", "Het beveiligde demo-account kon niet veilig worden voorbereid.", response.status);
+  return data;
+}
 async function resolveProfileByEmail(context, email) {
   const rows = await many(context, "profiles", `select=id,auth_user_id,email,role,status&email=eq.${encodeURIComponent(email)}&limit=2`);
   return rows.length === 1 ? rows[0] : null;
@@ -187,4 +292,4 @@ function fault(code, message, status = 400) { const error = new Error(message); 
 function safeMessage(error) { return error.status && error.status < 500 ? error.message : "Uitnodigingsactie is veilig gestopt. Probeer opnieuw of controleer de koppelingen."; }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...corsHeaders({ methods: "POST, OPTIONS" }) }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { adminPayload, loadEligibility, resolveInvitationIdentity, resolveOrigin };
+exports._private = { adminPayload, compensateProvisionalIdentity, findAuthUsersByEmail, loadEligibility, provisionLeadIdentity, resolveInvitationIdentity, resolveOrigin };

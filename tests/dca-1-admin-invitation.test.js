@@ -29,6 +29,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const migration = read("supabase/migrations/20260726130000_dca_1_personal_start_resolver.sql");
 const exchangeMigration = read("supabase/migrations/20260726150000_dca_1_fragment_token_exchange_v1.sql");
 const adminFunction = read("functions/admin-demo-invitation.js");
+const adminInvitation = require("../functions/admin-demo-invitation")._private;
 const publicFunction = read("functions/client-activation-start.js");
 const exchangeFunction = read("functions/client-activation-exchange.js");
 const adminHtml = read("public/admin-demo-sites.html");
@@ -96,6 +97,63 @@ test("afwijkend e-mailadres stopt fail-closed", () => assert.throws(() => assert
 test("orphaned project stopt fail-closed", () => { const input = base(); input.preview.project_id = input.ids.project; assert.throws(() => assertEligibility(input), /previewproject bestaat niet/); });
 test("e-mail wordt canoniek genormaliseerd", () => assert.equal(normalizeEmail("  MAX@Example.NL "), "max@example.nl"));
 test("DCA-0 create-RPC bewaakt idempotency", () => assert.match(adminFunction, /dca_0_create_activation_link/));
+test("nieuwe lead krijgt vóór de canonieke DCA-link exact één geïsoleerde demo-identiteit", async () => {
+  const input = base({ profile: null });
+  const authUserId = "20000000-0000-4000-8000-000000000001";
+  const profileId = "20000000-0000-4000-8000-000000000002";
+  const requests = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    requests.push({ url: String(url), options, body: options.body ? JSON.parse(options.body) : null });
+    if (String(url).includes("/rest/v1/profiles?") && (options.method || "GET") === "GET") return Response.json([]);
+    if (String(url).includes("/auth/v1/admin/users?")) return Response.json({ users: [] });
+    if (String(url).endsWith("/auth/v1/admin/generate_link")) return Response.json({ user: { id: authUserId, email: input.email } });
+    if (String(url).includes("/rest/v1/profiles?on_conflict=auth_user_id")) {
+      return Response.json([{ id: profileId, auth_user_id: authUserId, email: input.email, role: "demo_user", status: "active" }]);
+    }
+    throw new Error(`Onverwachte testrequest: ${url}`);
+  };
+  try {
+    const identity = await adminInvitation.resolveInvitationIdentity(
+      { url: "https://project.supabase.co", key: "service-role" },
+      input,
+      input.email,
+      { allowProvision: true },
+    );
+    assert.equal(identity.id, profileId);
+    assert.deepEqual(identity.provisional, { authUserId, profileId });
+    const profileWrite = requests.find((request) => request.url.includes("profiles?on_conflict"));
+    assert.equal(profileWrite.body.role, "demo_user");
+    assert.equal(profileWrite.body.status, "active");
+    assert.equal(profileWrite.body.metadata.leadPortal.leadId, input.lead.id);
+    assert.equal(requests.some((request) => /password/i.test(JSON.stringify(request.body || {}))), false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("bestaande auth-identiteit zonder profiel wordt niet stilzwijgend aan een lead gekoppeld", async () => {
+  const input = base({ profile: null });
+  const originalFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    if (String(url).includes("/rest/v1/profiles?") && (options.method || "GET") === "GET") return Response.json([]);
+    if (String(url).includes("/auth/v1/admin/users?")) return Response.json({ users: [{ id: input.ids.customer, email: input.email }] });
+    throw new Error(`Onverwachte testrequest: ${url}`);
+  };
+  try {
+    await assert.rejects(
+      adminInvitation.resolveInvitationIdentity(
+        { url: "https://project.supabase.co", key: "service-role" },
+        input,
+        input.email,
+        { allowProvision: true },
+      ),
+      /account zonder eenduidige leadkoppeling/,
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
 test("token is exact 256-bit hex transport", () => assert.equal(TOKEN_PATTERN.test("a".repeat(64)), true));
 test("raw token wordt niet als browserstorage opgeslagen", () => { assert.doesNotMatch(startJs, /localStorage|sessionStorage/); assert.doesNotMatch(startJs, /console\./); });
 test("expiry wordt atomair gemarkeerd", () => { assert.match(migration, /set status = 'expired'/); assert.match(migration, /dca_phase = 'expired'/); });

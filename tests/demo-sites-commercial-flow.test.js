@@ -96,10 +96,12 @@ test("klantportaal toont eerst de bestaande Super Admin-goedkeuring boven uitnod
   assert.doesNotMatch(html.match(/async function approveDemoForPortal[\s\S]*?\n        }/)[0], /leadInvitation|share_public_preview_email|customer-onboarding/);
 });
 
-test("uitnodigingsdialoog toont lead, e-mail, bron, versie, publieke link en accountuitleg", () => {
-  for (const id of ["demo-portal-invitation-lead", "demo-portal-invitation-email", "demo-portal-invitation-source", "demo-portal-invitation-version", "demo-portal-invitation-public-link"]) assert.match(html, new RegExp(`id="${id}"`));
-  assert.match(html, /kan daarna exact deze preview beoordelen/);
-  assert.match(html, /Dit maakt geen klant aan/);
+test("portaalactie opent uitsluitend de canonieke veilige DCA-uitnodigingsdialoog", () => {
+  for (const id of ["demo-invitation-lead", "demo-invitation-email", "demo-invitation-source", "demo-invitation-version", "demo-invitation-publication"]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(html, /Persoonlijke startlink/);
+  assert.match(html, /Veilige link maken/);
+  assert.doesNotMatch(html, /id="demo-portal-invitation-modal"/);
+  assert.doesNotMatch(html, /admin-lead-demo-invitation/);
 });
 
 test("publiek e-mailen gebruikt de bestaande publicatie-endpoint met exacte previewVersionId", () => {
@@ -109,12 +111,13 @@ test("publiek e-mailen gebruikt de bestaande publicatie-endpoint met exacte prev
   assert.doesNotMatch(section, /ensureCustomer|customer-onboarding|demoStatus|approvalStatus|paymentStatus/);
 });
 
-test("portaaluitnodigen verstuurt exact journey, lead en geselecteerde preview zonder customerconversie", () => {
-  const section = html.match(/async function submitPortalInvitation[\s\S]*?\n        }/)[0];
-  assert.match(section, /leadId: context\.relationshipId/);
-  assert.match(section, /demoJourneyId: activeActionRecord\.id/);
-  assert.match(section, /previewVersionId: context\.previewVersionId/);
-  assert.doesNotMatch(section, /ensureCustomer|customers|onboarding|handlingStatus|approvalStatus/);
+test("portaaluitnodigen gebruikt de DCA-route die preview en publicatie server-side bindt", () => {
+  const handler = html.match(/const portalInvite = event\.target\.closest[\s\S]*?\n          }/)[0];
+  const request = html.match(/async function invitationRequest[\s\S]*?\n        }/)[0];
+  assert.match(handler, /await openInvitationModal\(record\)/);
+  assert.match(request, /endpoints\.invitation/);
+  assert.match(request, /demoJourneyId: activeActionRecord\.id/);
+  assert.doesNotMatch(request, /ensureCustomer|onboarding|handlingStatus|approvalStatus/);
 });
 
 test("alleen publieke delen maakt geen account, customer, approval of betaling aan", () => {
@@ -126,9 +129,10 @@ test("alleen publieke delen maakt geen account, customer, approval of betaling a
   assert.doesNotMatch(section, /ensureCustomerForRecord|saveAccountFromModal|saveInvoiceFromModal|approve|payment/);
 });
 
-test("Demo Sites hydrateert invitationstatus opnieuw vanuit de beveiligde statusroute", () => {
+test("Demo Sites hydrateert invitationstatus opnieuw vanuit de canonieke DCA-statusroute", () => {
   assert.match(html, /async function loadInvitationState/);
-  assert.match(html, /leadInvitation}\?leadId=/);
+  assert.match(html, /postJson\(endpoints\.invitation/);
+  assert.match(html, /action: "status"/);
   assert.match(html, /await Promise\.all\(records\.map\(\(record\) => loadInvitationState\(record\)\)\)/);
 });
 
