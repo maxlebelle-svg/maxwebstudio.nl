@@ -5,36 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow,noarchive" />
     <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#041426" />
     <title>Jouw website | Max Webstudio</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body class="dca-start-page">
-    <main class="dca-start-shell" aria-live="polite">
-      <header class="dca-start-brand"><img src="/assets/maxwebstudio-logo-mark.png" alt="" /><span>Max Webstudio<small>Build better online</small></span></header>
-      <section class="dca-start-card" id="dca-start-loading">
-        <span class="dca-start-kicker">Persoonlijke website</span>
-        <h1>Even jouw omgeving openen…</h1>
-        <p>We controleren de beveiligde koppeling.</p>
+  <body class="dca-start-page cx2-welcome-page">
+    <main class="dca-start-shell cx2-welcome-shell" aria-live="polite">
+      <header class="dca-start-brand cx2-welcome-brand" aria-label="Max Webstudio">
+        <img src="/assets/maxwebstudio-logo-mark.png" alt="" />
+        <span>Max Webstudio<small>Build better online</small></span>
+      </header>
+
+      <section class="dca-start-card cx2-welcome-card cx2-welcome-loading" id="dca-start-loading">
+        <span class="cx2-welcome-skeleton cx2-welcome-skeleton-kicker"></span>
+        <span class="cx2-welcome-skeleton cx2-welcome-skeleton-title"></span>
+        <span class="cx2-welcome-skeleton cx2-welcome-skeleton-copy"></span>
+        <span class="cx2-welcome-skeleton cx2-welcome-skeleton-preview"></span>
+        <p class="cx2-welcome-loading-copy">We openen jouw persoonlijke website…</p>
       </section>
-      <section class="dca-start-card" id="dca-start-content" hidden>
-        <span class="dca-start-kicker">Speciaal voor jou gemaakt</span>
-        <h1>Welkom <span id="dca-start-name"></span> 👋</h1>
-        <p class="dca-start-intro">Deze website is speciaal gemaakt voor <strong id="dca-start-company"></strong>.</p>
-        <dl class="dca-start-facts">
-          <div><dt>Status</dt><dd><span class="dca-start-dot"></span><span id="dca-start-status"></span></dd></div>
-          <div><dt>Verwachte oplevering</dt><dd id="dca-start-delivery"></dd></div>
-        </dl>
-        <div class="dca-start-actions">
-          <button class="button primary" id="dca-start-preview" type="button">Bekijk mijn website</button>
-          <button class="button secondary" id="dca-start-activate" type="button">Activeer mijn omgeving</button>
+
+      <section class="dca-start-card cx2-welcome-card" id="dca-start-content" hidden>
+        <div class="cx2-welcome-heading">
+          <span class="dca-start-kicker cx2-welcome-kicker">Speciaal voor jou gemaakt</span>
+          <h1>Welkom <span id="dca-start-name"></span> <span aria-hidden="true">👋</span></h1>
+          <p class="dca-start-intro cx2-welcome-intro">
+            Voor <strong id="dca-start-company"></strong> hebben we alvast een professionele website gemaakt.
+          </p>
         </div>
-        <p class="dca-start-note" id="dca-start-note" role="status"></p>
+
+        <div class="cx2-welcome-preview" id="cx2-welcome-preview" aria-label="Voorbeeld van jouw website">
+          <div class="cx2-welcome-browserbar" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <div>Jouw website</div>
+          </div>
+          <div class="cx2-welcome-preview-stage">
+            <div class="cx2-welcome-preview-loading" id="cx2-welcome-preview-loading">
+              <span></span>
+              <p>Jouw website wordt klaargezet…</p>
+            </div>
+            <iframe
+              id="cx2-welcome-preview-frame"
+              title="Voorbeeld van jouw website"
+              sandbox="allow-scripts allow-forms allow-modals"
+              referrerpolicy="no-referrer"
+              tabindex="-1"
+            ></iframe>
+          </div>
+          <div class="cx2-welcome-preview-shield" aria-hidden="true">Veilige preview</div>
+        </div>
+
+        <div class="cx2-welcome-progress-card">
+          <div class="cx2-welcome-status-row">
+            <span class="cx2-welcome-status"><i aria-hidden="true"></i><span id="dca-start-status">Demo gereed</span></span>
+            <span class="cx2-welcome-progress-label">Jouw website is klaar om te bekijken</span>
+          </div>
+          <div class="cx2-welcome-progress-track" role="progressbar" aria-label="Voortgang richting oplevering" aria-valuemin="0" aria-valuemax="100" aria-valuenow="46">
+            <span></span>
+          </div>
+          <p>Nog 3 stappen tot oplevering</p>
+        </div>
+
+        <div class="dca-start-actions cx2-welcome-actions">
+          <button class="button primary cx2-welcome-primary" id="dca-start-preview" type="button">
+            <span>Bekijk mijn website</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+        </div>
+        <p class="dca-start-note cx2-welcome-note" id="dca-start-note" role="status"></p>
+        <p class="cx2-welcome-trust"><span aria-hidden="true">♢</span> 100% veilig — alleen jij hebt toegang tot deze preview.</p>
       </section>
-      <section class="dca-start-card dca-start-error" id="dca-start-error" hidden>
-        <span class="dca-start-kicker">Link niet beschikbaar</span>
+
+      <section class="dca-start-card dca-start-error cx2-welcome-card cx2-welcome-error" id="dca-start-error" hidden>
+        <span class="dca-start-kicker cx2-welcome-kicker">Link niet beschikbaar</span>
         <h1>Deze persoonlijke link werkt niet meer.</h1>
         <p id="dca-start-error-message">Vraag Max Webstudio om een nieuwe link.</p>
       </section>
+
       <section class="dca-preview-dialog" id="dca-preview-dialog" hidden>
         <header><strong>Jouw website-preview</strong><button class="button secondary" id="dca-preview-close" type="button">Sluiten</button></header>
         <iframe id="dca-preview-frame" title="Jouw website-preview" sandbox="allow-scripts allow-forms allow-modals" referrerpolicy="no-referrer"></iframe>
