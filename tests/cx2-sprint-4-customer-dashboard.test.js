@@ -73,6 +73,7 @@ test("CX2-dashboard is semantisch, responsief en reduced-motion veilig", () => {
   const touchTargetRule = css.match(/\.portal-body :where\([\s\S]*?\) \{\s*min-width: 44px;\s*min-height: 44px;\s*\}/)?.[0] || "";
   assert.match(touchTargetRule, /\.button/);
   assert.match(touchTargetRule, /button/);
+  assert.match(touchTargetRule, /\.cx2-dashboard a/);
   assert.match(touchTargetRule, /\.portal-nav a/);
   assert.match(touchTargetRule, /\[role="tab"\]/);
   assert.match(css, /\.cx2-module-card \.cx2-module-action \{[\s\S]*?min-height: 44px;/);
