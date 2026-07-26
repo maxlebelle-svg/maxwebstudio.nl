@@ -30,10 +30,11 @@ test('partner runtime contains no outbound mail, payment provider call, or produ
   assert.doesNotMatch(source, /customer_invoices/);
 });
 
-test('B6 evidence remains explicit NO-GO until real staging and legal signing are certified', () => {
+test('B6 evidence certifies staging while production and legal release remain gated', () => {
   const report = fs.readFileSync(path.join(root, 'docs/PARTNER_ONBOARDING_V1_B6_STAGING_READINESS.md'), 'utf8');
-  assert.match(report, /NO-GO \/ STAGING CERTIFICATION NOT COMPLETED/);
-  assert.match(report, /468\/475 geslaagd; 7 mislukt/);
-  assert.match(report, /g[eé]én digitaal ondertekende opdrachtovereenkomst/i);
+  assert.match(report, /STAGING READY \/ PRODUCTION NO-GO/);
+  assert.match(report, /1\.437\/1\.437 geslaagd/);
+  assert.match(report, /legal_review_required/);
+  assert.match(report, /transactionele E2E/i);
   assert.match(report, /Niet mergen naar main en niet deployen naar productie/);
 });

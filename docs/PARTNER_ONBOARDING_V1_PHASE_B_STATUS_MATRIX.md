@@ -43,3 +43,16 @@ Certification and activation are separate server-side transitions. Suspending or
 - `certified -> active`: explicit admin activation only.
 - `active -> paused -> active`: reasoned, audited admin suspension/reactivation.
 - `valid -> revoked|expired`: irreversible certificate transition; reissue creates new evidence.
+
+## Staging verification
+
+Verified on 2026-07-26 against Supabase project `xlxpuuycigeqhgxqtzni` and Netlify deploy `6a66762af9e9fa28c0452ed3` (`915d6cef`):
+
+- certification remained `certified` until the separate admin activation call;
+- activation before certification was rejected;
+- activation produced the three required `active` states and suspension produced `disabled` / `paused` / `paused`;
+- a newly published required document made the prior acceptance set insufficient;
+- insufficient and sufficient assessment paths scored 0 and 100 respectively;
+- the transactional fixture produced 16 audit events, no payment or ledger event, and was completely rolled back.
+
+See [Phase B staging evidence](./PARTNER_ONBOARDING_V1_PHASE_B_STAGING_EVIDENCE.md) for checksums, deployment identity and rollback proof. Production remains separately approval-gated.

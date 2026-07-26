@@ -2,99 +2,92 @@
 
 ## Terminal status
 
-`STOPPED_PARTNER_ONBOARDING_V1_PHASE_B_STAGING_ACCESS_AND_DEPLOY_UNAVAILABLE`
+`PASS_PARTNER_ONBOARDING_V1_PHASE_B_STAGING_READY`
 
 Vastgelegd op 2026-07-26 (Europe/Amsterdam). Productie is niet gewijzigd.
 
-## Kandidaat
+## Kandidaat en deploy
 
-- Branch: `codex/partner-onboarding-v1`
-- Remote: `origin/codex/partner-onboarding-v1`
-- Implementatie-anker: `531b6a5de57493668d66eb0c0f049c328084f15f`
-- Basis vóór Partner Onboarding V1: `3160b2df`
-- Omvang kandidaat: 41 bestanden, 3.770 toevoegingen en 14 verwijderingen
+- Integratiebasis: stagingcommit `c4b69f05c92f91a61123de660a484621dd5ae511`.
+- Stagingbranch: `codex/partner-onboarding-v1-staging-ready`.
+- Gedeployde commit: `915d6cef39aab8ee7ae1dc249eb8b77eec307009`.
+- Netlify-project: `maxwebstudio-staging`.
+- Deploy-ID: `6a66762af9e9fa28c0452ed3`.
+- Staging-URL: `https://maxwebstudio-staging.netlify.app`.
+- Supabase-project: `maxwebstudio-test`, ref `xlxpuuycigeqhgxqtzni`.
+- De eerdere HTTP 401 op de lokale Supabasepreflight kwam door verouderde lokale sleutels. De bestaande geauthenticeerde CLI-sessie en het dashboard bevestigden daarna dezelfde stagingprojectref.
 
-Commits in uitvoeringsvolgorde:
-
-1. `472c7988` — canonieke partnerrol en statusfundering
-2. `2136d195` — server-side onboardinggate
-3. `1ab44c4c` — versieerbare training en wizard
-4. `ff15ea96` — assessment en certificering
-5. `d6e2fbe1` — canoniek commissiemodel
-6. `9fd2f3d1` — oorspronkelijke staging NO-GO
-7. `531b6a5d` — certificering losgekoppeld van activering, beheercontrole en PDF
-
-## Opgeleverde functionele scope
-
-- Eén canonieke rol `partner` en afzonderlijke onboarding-/toegangsstatussen.
-- Server-side gate die actuele documentacceptatie, geldig certificaat en actieve partnerstatus vereist.
-- Versiebeheerde Nederlandstalige training, onboardingwizard en assessment met fail/pass-paden.
-- Certificering die uitsluitend `certified` oplevert; alleen een bevoegde beheerder kan daarna activeren of schorsen.
-- Persoonlijk PDF-certificaat met uniek ID, versies, ondertekenaar, verificatiepad en disclaimer.
-- Versiebeheerde opdrachtovereenkomst; iedere nieuw gepubliceerde verplichte versie vereist exacte heracceptatie.
-- Canonieke commissiebron met auditbare statussen; geen payout- of providerkoppeling geactiveerd.
-- Beheerinterface voor status, recente auditgebeurtenis, activeren en schorsen.
-
-Zie de [rol- en statusmatrix](./PARTNER_ONBOARDING_V1_PHASE_B_STATUS_MATRIX.md) en het [canonieke financiële model](./PARTNER_FINANCE_CANONICAL_MODEL.md).
+De stagingbranch is opgebouwd door de acht bestaande Partner Onboarding-commits op de actuele stagingbasis te integreren. Er is geen nieuwe parallelle implementatie gebouwd en er is niet naar `main` gemerged.
 
 ## Migratiechecksums
 
-| Migratie | SHA-256 |
-|---|---|
-| `20260726110000_partner_profile_role_status_foundation.sql` | `f403a6cf141ac7a9c236987adf7f9107b39600b10c69264a9f23c747279250aa` |
-| `20260726120000_partner_onboarding_gate_foundation.sql` | `c89539f3c55a8590731e719f87dc60f6652d6ffcb1e9c3362333b478d6311eaf` |
-| `20260726130000_partner_training_content_v1.sql` | `e55f4a383b857f4105ec818c60ae9b9dc4e0f1598add55a8160798a0f8a577e0` |
-| `20260726140000_partner_assessment_certification.sql` | `cdd1bd61a28cf03473a5e1709e67744f5cfe130011222633aea168344f860e4f` |
-| `20260726150000_partner_canonical_commission.sql` | `957f7e21d50aaec44f6c5f6d5f47b4b3ca4ed2d54fe711476363884ea88283ac` |
-| `20260726160000_partner_certification_activation_control.sql` | `23c20e5a76ed2b05990c9c125c638535e2d03e9b5918355fc2357bec201a1fdf` |
+| Migratie | Bytes | SHA-256 |
+|---|---:|---|
+| `20260726200000_partner_profile_role_status_foundation.sql` | 7.924 | `049f511b70b440733e0f5f00bb0b7fb5b2c184e9eb0fd8ff8fd637dc84d1fbb3` |
+| `20260726201000_partner_onboarding_gate_foundation.sql` | 24.684 | `9d40311b0b524f4a5d7a991f7ca1797aecefcfbcc1210fabf1ff724d5a760142` |
+| `20260726202000_partner_training_content_v1.sql` | 15.440 | `93cd4659e12125b888236f35b3aba2fe3536e39a1ca8bc23c1c16184aeffaf35` |
+| `20260726203000_partner_assessment_certification.sql` | 23.997 | `bbc41f47e566027bdcc5260c5e3b0e79433fca857437901f7383bf24f7f14af6` |
+| `20260726204000_partner_canonical_commission.sql` | 32.605 | `875ca6e6e4d7610a8d6d11f5d00b764019c3b20c5dec815c5459633299ceb79b` |
+| `20260726205000_partner_certification_activation_control.sql` | 15.881 | `173a28ec8c4049184bf55467fb718e7f7afcb6f94800f56794e8003b65a25caf` |
 
-## Lokale verificatie
+Alle versies zijn uniek ten opzichte van de actuele staginglijn, staan in het productmigratiemanifest en zijn remote als toegepast geregistreerd.
+
+## Before/after-databasebewijs
+
+Preflight vóór writes:
+
+- 33 profielen; 0 onbekende rollen en 0 onbekende statussen.
+- Vereiste tabellen `profiles`, `leads`, `quotes`, `invoices` en `invoice_lines` aanwezig.
+- `leads.assigned_user_id` aanwezig.
+- 5 legacy `sales`-rollen; 4 leads en 0 invoices.
+- Geen bestaande `partner_*`-tabellen.
+
+Poststate:
+
+- 17 partnertabellen, geen enkele zonder RLS.
+- 20 partnerpolicies en 25 partnerfuncties.
+- Gepubliceerd: 1 training, 1 assessment, 1 commissieplanversie en 4 documentversies.
+- 0 legacy `sales`; 5 canonieke `sales_partner`.
+- 0 partnerprofielen/onboardings en dus geen impliciete activering.
+- 0 payment-events en 0 ledgerregels.
+
+De eerste B1-poging faalde binnen de transactiewrapper op de oude rolconstraint en werd volledig teruggerold. De constraintvervanging is daarna correct geordend, regressiegetest, opnieuw gechecksummed en succesvol toegepast.
+
+## Validatiebewijs
 
 | Controle | Uitkomst |
 |---|---|
-| Gerichte partner-, gate-, assessment-, commissie-, PDF- en releasecontroles | PASS — 48/48 |
-| Volledige repositorysuite | 477/484 PASS; 7 bestaande exact-match governancecontroles falen op historisch bevroren migratielijsten/statuswaarden |
-| Nieuwe partnercontroles binnen volledige suite | PASS |
-| Diffcontrole | PASS — geen whitespacefouten in de kandidaat |
-| PDF-structuur | PASS — PDF 1.4, één A4-landscapepagina, geen JavaScript |
-| PDF-rendercontrole | PASS — lokaal gerenderd en visueel gecontroleerd zonder overlap of afkapping |
-| PDF-tekstcontrole | PASS — persoonsgegevens met Nederlandse tekens, ID, versies, ondertekenaar, verificatie-URL en disclaimer uitleesbaar |
+| Volledige repositorysuite | PASS — 1.437/1.437 |
+| Gerichte migratie-/governancetests na live fix | PASS — 8/8 |
+| Diffcontrole | PASS — geen whitespacefouten |
+| Stagingdeploy | PASS — 114 functies, 539 bestanden, 18 redirects en 18 headers zonder deployfout |
+| Publieke partnerpagina's | PASS — drie relevante routes HTTP 200 |
+| Anonieme functietoegang | PASS — drie beveiligde functies HTTP 401 |
+| Database/RLS-poststate | PASS — alle partnertabellen met RLS |
+| Transactionele E2E | PASS — fail/pass, certificering, beheeractivering, schorsing en heracceptatiegate |
+| E2E-rollback | PASS — alle tijdelijke fixturedata weer 0 |
+| PDF-structuur/render/tekst | PASS — PDF 1.4, één A4-landscapepagina, geen overlap of afkapping |
+| Visuele stagingcontrole | PASS — onboarding en fail-closed beheerlogin leesbaar zonder layoutproblemen |
 
-De zeven volledige-suitefouten zijn geen door deze partnerflow veroorzaakte runtimefouten. Ze verwachten onder andere dat geen latere migraties bestaan en vergelijken daardoor bewust met oudere, exacte migratielijsten. Zij moeten in een afzonderlijk governancebesluit worden geactualiseerd; deze fase overschrijft ze niet stilzwijgend.
+E2E-resultaat: score 0 faalde, score 100 slaagde, activering vóór certificering werd geblokkeerd, certificaat werd gemaakt, beheeractivering en schorsing werkten, een verouderde documentacceptatieset werd geblokkeerd en 16 audit-events ontstonden. De proef draaide zonder echte e-mail, betaling, payout, webhook of externe provider en eindigde met rollback.
 
-## Stagingbewijs en blokkade
+## Governancebesluiten
 
-- De kandidaatbranch is succesvol naar GitHub gepusht.
-- De ingestelde stagingbasis is `https://maxwebstudio-staging.netlify.app`.
-- De nieuwe certificaatfunctie antwoordde daar na de push met HTTP 404.
-- De waarschijnlijke Netlify-branchdeploy-URL antwoordde eveneens met HTTP 404.
-- De partner-onboardingpagina antwoordde op de ingestelde stagingbasis met HTTP 404.
-- In de lokale stagingconfiguratie ontbreken `NETLIFY_SITE_ID` en `NETLIFY_AUTH_TOKEN`; de Netlify CLI is niet beschikbaar.
-- Een read-only verzoek naar de geconfigureerde Supabase PostgREST/OpenAPI-interface antwoordde met HTTP 401.
-- Er is geen bruikbare lokale PostgreSQL- of containerdatabase aangetroffen.
+- Operationele partnergate blijft fail-closed via de server-side accountprofiel-/partnergate en de centrale admin-authbridge.
+- Certificering en activering zijn afzonderlijke servertransities; alleen een actieve admin/super-admin kan activeren of schorsen.
+- Iedere nieuwe gepubliceerde verplichte documentversie maakt de eerdere acceptatieset onvoldoende.
+- Canonieke commissie gebruikt uitsluitend de nieuwe immutable payment-/ledgerbron; deze stagingfase activeert geen payment producer of payout.
+- De zes migraties zijn als één checksummed productrelease gecatalogiseerd.
+- `admin-partners.html` is bewust als standalone beheerpagina geclassificeerd.
 
-Daarom zijn migratie-apply, RLS-bevestiging, audit-integriteit, authenticated end-to-end-validatie en rollbackproef niet uitgevoerd. De gate blijft fail-closed en er zijn geen echte mails, betalingen of externe provideracties uitgevoerd.
+## Rollback en beperkingen
 
-## Verplichte hervattingsstappen
+- Deployrollback: publiceer in het stagingproject opnieuw de vorige bewezen deploy `6a665e74582ba1000890900a` op commit `c4b69f0`.
+- Databaserollback is niet destructief geautomatiseerd. Bij een stagingterugzetting eerst impact/snapshot beoordelen en daarna een afzonderlijke compensatiemigratie gebruiken; migratiehistorie niet los van schema repareren.
+- De bestaande remote/lokale migratiehistorie bevat oudere drift buiten Partner Onboarding. Daarom zijn uitsluitend de zes afgebakende Partner Onboarding-transacties uitgevoerd en geregistreerd; overige migraties zijn niet toegepast of gerepareerd.
+- De overeenkomst blijft `legal_review_required`; definitieve digitale wederzijdse ondertekening is een afzonderlijk juridisch/releaseonderdeel.
+- Geen productie-deploy, productiemigratie, echte e-mail, betaling of provideractie is uitgevoerd.
 
-1. Herstel of verstrek geldige, uitsluitend voor staging bedoelde Supabase-toegang en bevestig de projectidentiteit read-only.
-2. Koppel de featurebranch aantoonbaar aan een Netlify branchdeploy, of verstrek de staging-site-ID en een begrensde deploymogelijkheid.
-3. Maak vóór iedere write een schema-, historie-, RLS-, functie- en grant-snapshot.
-4. Controleer alle zes checksums en voer uitsluitend de unapplied migraties `1100` t/m `1600` in volgorde op staging uit.
-5. Verifieer tabellen, constraints, RPC-grants, RLS en audit-events tegen de statusmatrix.
-6. Voer authenticated E2E uit met aparte partner- en beheeraccounts: uitnodiging, actuele acceptatie, training, fail/pass-assessment, certificaat-PDF, beheeractivering, servergate, schorsing en heracceptatie na een nieuwe documentversie.
-7. Controleer de commissiebron read-only en bewijs dat geen payout of providercall plaatsvindt.
-8. Voer een gecontroleerde rollbackproef op staging uit en leg before/after-bewijs vast.
-9. Pas daarna mag de terminale status naar `PASS_PARTNER_ONBOARDING_V1_PHASE_B_STAGING_READY` wijzigen. Productie blijft apart goedkeuringsplichtig.
+## Productieplan
 
-## Rollback
-
-Op dit moment is er niets op staging toegepast; rollback betekent daarom uitsluitend de kandidaatbranch niet promoveren en een eventuele branchdeploy verwijderen of terugzetten naar de vorige stagingbuild. Als de database later wel wordt gewijzigd, is automatische destructieve rollback niet toegestaan: eerst snapshot en impactcontrole, vervolgens een afzonderlijk beoordeelde compensatiemigratie. Tot die validatie blijft toegang standaard geblokkeerd.
-
-## Bekende beperkingen
-
-- SQL-syntaxis en gedrag zijn statisch getest maar nog niet tegen de echte stagingdatabase uitgevoerd.
-- Authenticated UI- en RLS-paden zijn nog niet met echte stagingidentiteiten bewezen.
-- De overeenkomst is technisch versieerbaar en als concept gemarkeerd; juridische eindredactie blijft vereist.
-- Het certificaat is lokaal visueel bewezen, maar nog niet via de gedeployde authenticated functie opgehaald.
-- Geen productie-deploy, productiemigratie, echte e-mail, betaling of externe provideractie is onderdeel van deze kandidaat.
+Productie blijft NO-GO. Vereist zijn afzonderlijke expliciete goedkeuring, productieprojectidentiteit, before-snapshot, unieke migratiepreflight, juridische goedkeuring van de overeenkomst, gecontroleerde deploy, authenticated smoke en een beoordeeld compensatieplan. Tot die tijd niet mergen naar `main` en niet naar productie deployen.
