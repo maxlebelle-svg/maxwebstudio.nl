@@ -62,7 +62,7 @@ exports.handler = async (event) => {
         await rpc(context, 'partner_accept_required_documents', {
           input_auth_user_id: user.id,
           input_version_codes: versionCodes,
-          input_declaration_version: 'onboarding_documents_consent_nl_v1',
+          input_declaration_version: 'partner_phase_b_documents_and_agreement_nl_v2',
           input_idempotency_key: idempotencyKey,
         });
       } else {
@@ -152,7 +152,7 @@ async function fetchCertification(context, onboarding, steps) {
   const attempts = await rest(context.supabaseUrl, context.serviceRoleKey,
     `partner_assessment_attempts?select=id,attempt_number,score,passed,submitted_at&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=attempt_number.desc`);
   const certificates = await rest(context.supabaseUrl, context.serviceRoleKey,
-    `partner_certificates?select=certificate_id,partner_name,certification_type,training_version_code,status,issued_at,expires_at,revoked_at,disclaimer&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=issued_at.desc&limit=1`);
+    `partner_certificates?select=certificate_id,partner_name,certification_type,training_version_code,certificate_version,authorized_signer_name,authorized_signer_title,verification_path,status,issued_at,expires_at,revoked_at,disclaimer&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=issued_at.desc&limit=1`);
   const trainingReady = (steps || []).filter((step) => step.step_type === 'training' || Number(step.step_order) <= 7)
     .every((step) => step.status === 'completed');
   return {
@@ -180,6 +180,10 @@ async function fetchCertification(context, onboarding, steps) {
       partnerName: certificates[0].partner_name,
       certificationType: certificates[0].certification_type,
       trainingVersionCode: certificates[0].training_version_code,
+      certificateVersion: certificates[0].certificate_version,
+      authorizedSignerName: certificates[0].authorized_signer_name,
+      authorizedSignerTitle: certificates[0].authorized_signer_title,
+      verificationPath: certificates[0].verification_path,
       status: certificates[0].status,
       issuedAt: certificates[0].issued_at,
       expiresAt: certificates[0].expires_at,

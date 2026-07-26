@@ -1,0 +1,20 @@
+.cell .access,
+.cell .danger {
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: .74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cell .access {
+  background: #2f806f;
+  color: #effffb;
+}
+
+.badge.paused,
+.badge.revoked {
+  background: #632f3a;
+}

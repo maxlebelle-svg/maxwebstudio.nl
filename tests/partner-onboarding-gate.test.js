@@ -39,6 +39,19 @@ test('partner gate reports missing required steps and opens only after every ste
   assert.equal(evaluatePartnerGate({ ...input, steps: completedSteps() }).allowed, true);
 });
 
+test('active partner is re-blocked for expired certification or a newly published agreement', () => {
+  const active = {
+    profile: { role:'sales_partner', status:'active' },
+    partnerProfile: { status:'active' },
+    onboarding: { status:'active' },
+    steps: completedSteps(),
+  };
+  assert.equal(evaluatePartnerGate({ ...active, certificateCurrent:false }).reason, 'certificate_not_valid');
+  const changedAgreement = evaluatePartnerGate({ ...active, documentAcceptanceCurrent:false });
+  assert.equal(changedAgreement.allowed, false);
+  assert.deepEqual(changedAgreement.incompleteSteps, ['document_acceptance']);
+});
+
 test('only content-training steps can be self-completed', () => {
   assert.equal(SELF_COMPLETABLE_STEPS.length, 7);
   assert.equal(SELF_COMPLETABLE_STEPS.includes('commission_system'), false);

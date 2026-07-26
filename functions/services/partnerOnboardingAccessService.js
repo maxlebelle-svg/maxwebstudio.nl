@@ -23,7 +23,7 @@ const SELF_COMPLETABLE_STEPS = Object.freeze([
   "sales_process_call_script",
 ]);
 
-function evaluatePartnerGate({ profile = {}, partnerProfile = null, onboarding = null, steps = [] } = {}) {
+function evaluatePartnerGate({ profile = {}, partnerProfile = null, onboarding = null, steps = [], documentAcceptanceCurrent = true, certificateCurrent = true } = {}) {
   const role = normalizeRole(profile.role);
   const profileStatus = normalizeProfileStatus(profile.status);
   if (role !== "sales_partner") {
@@ -41,8 +41,12 @@ function evaluatePartnerGate({ profile = {}, partnerProfile = null, onboarding =
   if (onboarding.status !== "active") {
     return { required: true, allowed: false, reason: "onboarding_not_active", redirectTo: "/partner-onboarding.html" };
   }
+  if (!certificateCurrent) {
+    return { required: true, allowed: false, reason: "certificate_not_valid", redirectTo: "/partner-onboarding.html" };
+  }
   const statuses = new Map((Array.isArray(steps) ? steps : []).map((step) => [step.step_key || step.stepKey, step.status]));
   const incompleteSteps = REQUIRED_ONBOARDING_STEPS.filter((key) => statuses.get(key) !== "completed");
+  if (!documentAcceptanceCurrent && !incompleteSteps.includes('document_acceptance')) incompleteSteps.push('document_acceptance');
   if (incompleteSteps.length) {
     return { required: true, allowed: false, reason: "required_steps_incomplete", incompleteSteps, redirectTo: "/partner-onboarding.html" };
   }
@@ -67,12 +71,28 @@ async function fetchPartnerGate({ supabaseUrl, serviceRoleKey, profile }) {
     ? await rest(supabaseUrl, serviceRoleKey,
       `partner_onboarding_steps?select=id,onboarding_id,step_key,step_order,step_type,status,content_version,completed_at&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&order=step_order.asc`)
     : [];
+  const requiredDocuments = onboarding
+    ? await rest(supabaseUrl, serviceRoleKey, 'partner_document_versions?select=id,version_code&status=eq.published')
+    : [];
+  const acceptances = onboarding
+    ? await rest(supabaseUrl, serviceRoleKey, `partner_document_acceptances?select=document_version_id&onboarding_id=eq.${encodeURIComponent(onboarding.id)}`)
+    : [];
+  const acceptedDocumentIds = new Set((acceptances || []).map((row) => row.document_version_id));
+  const documentAcceptanceCurrent = Array.isArray(requiredDocuments) && requiredDocuments.length > 0
+    && requiredDocuments.every((document) => acceptedDocumentIds.has(document.id));
+  const validCertificates = onboarding
+    ? await rest(supabaseUrl, serviceRoleKey, `partner_certificates?select=id,certificate_id,status,expires_at&onboarding_id=eq.${encodeURIComponent(onboarding.id)}&status=eq.valid&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`)
+    : [];
+  const certificateCurrent = Array.isArray(validCertificates) && validCertificates.length === 1;
 
   return {
-    ...evaluatePartnerGate({ profile, partnerProfile, onboarding, steps }),
+    ...evaluatePartnerGate({ profile, partnerProfile, onboarding, steps, documentAcceptanceCurrent, certificateCurrent }),
     partnerProfile,
     onboarding,
     steps: Array.isArray(steps) ? steps : [],
+    documentAcceptanceCurrent,
+    requiredDocumentVersions: (requiredDocuments || []).map((document) => document.version_code),
+    certificateCurrent,
   };
 }
 

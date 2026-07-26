@@ -45,7 +45,9 @@ function render(data, preferredStep = "") {
   element("notice").className = `notice ${data.access.allowed ? "success" : ""}`;
   element("notice").textContent = data.access.allowed
     ? "Je onboarding is volledig afgerond en je verkoopomgeving is vrijgegeven."
-    : `${completed} van ${total} verplichte stappen afgerond. Je kunt veilig verdergaan waar je gebleven bent.`;
+    : data.onboarding?.status === "certified"
+      ? "Je certificaat is toegekend. Een bevoegde admin moet je account nog expliciet activeren."
+      : `${completed} van ${total} verplichte stappen afgerond. Je kunt veilig verdergaan waar je gebleven bent.`;
 
   const modules = data.training.modules || [];
   element("stepNav").replaceChildren(...modules.map((module) => {
@@ -133,7 +135,7 @@ function allStepsComplete() { return state.data.steps.length > 0 && state.data.s
 function finalizationCard() {
   const card = document.createElement("article"); card.className = "controlled-card";
   card.innerHTML = "<h3>Certificering afronden</h3><p>Alle vereiste onderdelen zijn voltooid. Laat de server de volledige bewijsset controleren.</p>";
-  const button = document.createElement("button"); button.type="button"; button.textContent="Certificaat uitgeven en toegang activeren"; button.addEventListener("click", finalizeCertification); card.append(button); return card;
+  const button = document.createElement("button"); button.type="button"; button.textContent="Certificaat uitgeven voor admincontrole"; button.addEventListener("click", finalizeCertification); card.append(button); return card;
 }
 
 function prepareAgreement(title, intro) {
@@ -237,7 +239,9 @@ function renderCertificate() {
     ["Uitgiftedatum", formatDate(certificate.issuedAt)],
     ["Geldig tot", formatDate(certificate.expiresAt)],
     ["Trainingsversie", certificate.trainingVersionCode],
-    ["Verificatie", "Controleerbaar in het Max Webstudio-adminportaal"],
+    ["Certificaatversie", certificate.certificateVersion],
+    ["Ondertekenaar", `${certificate.authorizedSignerName} - ${certificate.authorizedSignerTitle}`],
+    ["Verificatie", certificate.verificationPath],
   ];
   element("certificateDetails").replaceChildren(...details.flatMap(([term, value]) => {
     const dt = document.createElement("dt"); dt.textContent = term;
@@ -245,6 +249,11 @@ function renderCertificate() {
     return [dt, dd];
   }));
   element("certificateDisclaimer").textContent = certificate.disclaimer;
+  element("certificateDownload").onclick = async () => {
+    const response = await fetch(`/.netlify/functions/partner-certificate-pdf?certificateId=${encodeURIComponent(certificate.certificateId)}`, { headers:{ Authorization:`Bearer ${state.token}` } });
+    if (!response.ok) { const data=await response.json().catch(()=>({})); showError(new Error(data.error||"PDF kon niet worden gedownload.")); return; }
+    const url=URL.createObjectURL(await response.blob()); const link=document.createElement("a"); link.href=url; link.download=`${certificate.certificateId}.pdf`; link.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
 }
 
 function formatDate(value) {
