@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260726210000_staff_zzp_dossier_foundation.sql",
+      "bytes": 9223,
+      "sha256": "753d3a2b2c0579b4f93eaa33001ce94a7ec076ce73586dba5a240b86ad8881f6"
+    }
+  ]
+}

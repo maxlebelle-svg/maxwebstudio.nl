@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "release": "Staff ZZP Dossier V1 product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260726210000_staff_zzp_dossier_foundation.sql"
+  ],
+  "authority": [
+    "docs/release-readiness/staff-zzp-dossier-v1-product-migrations/MANIFEST.json"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

@@ -56,6 +56,12 @@ test('owner preview exposes branded training and assessment without server write
   assert.match(html, /id="previewBadge"/);
   assert.match(script, /get\("preview"\) === "1"/);
   assert.match(script, /De previewstand voert geen serveracties uit/);
+  assert.match(script, /mwsPartnerOnboardingPreviewV2/);
+  assert.match(script, /localStorage\.setItem\(previewStorageKey/);
+  assert.match(script, /ZZP-dossier en documenten/);
+  assert.match(script, /signed_assignment_agreement/);
+  assert.match(script, /bank_account_proof/);
+  assert.doesNotMatch(script, /Deze preview heeft niets opgeslagen/);
   assert.match(preview, /Welkom bij Max Webstudio/);
   assert.match(preview, /Kennistoets Partnertraining V1/);
   assert.match(preview, /Wanneer opent de Sales Workspace\?/);

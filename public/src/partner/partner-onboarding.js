@@ -1,6 +1,8 @@
 import { partnerPreviewData } from "./partner-onboarding-preview.js";
 
 const endpoint = "/.netlify/functions/partner-onboarding";
+const staffEndpoint = "/.netlify/functions/staff-self-service";
+const previewStorageKey = "mwsPartnerOnboardingPreviewV2";
 const controlledLabels = {
   commission_system: ["Commissievoorwaarden", "Accepteer de exacte, actuele planversie."],
   knowledge_assessment: ["Kennistoets", "Behaal de vastgestelde voldoende-score."],
@@ -11,6 +13,7 @@ const state = {
   data: null,
   activeStepKey: "",
   preview: new URLSearchParams(location.search).get("preview") === "1",
+  staff: null,
 };
 const element = (id) => document.getElementById(id);
 
@@ -38,6 +41,19 @@ async function request(body) {
   return data;
 }
 
+async function staffRequest(body) {
+  if (state.preview) return previewStaffAction(body || {});
+  const response = await fetch(staffEndpoint, {
+    method: body ? "POST" : "GET",
+    headers: { Authorization: `Bearer ${state.token}`, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Het ZZP-dossier kon niet worden geladen.");
+  state.staff = data;
+  return data;
+}
+
 function stepFor(key) { return state.data.steps.find((step) => step.stepKey === key); }
 function moduleFor(key) { return state.data.training.modules.find((module) => module.stepKey === key); }
 
@@ -53,7 +69,7 @@ function render(data, preferredStep = "") {
   element("previewBadge").hidden = !state.preview;
   element("notice").className = `notice ${data.access.allowed ? "success" : ""}`;
   element("notice").textContent = state.preview
-    ? "Preview voor Max Webstudio: bekijk alle hoofdstukken, de commissie-uitleg, documenten en de volledige kennistoets. Er wordt niets opgeslagen."
+    ? "Preview voor Max Webstudio: bekijk alle hoofdstukken, het ZZP-dossier, documenten en de volledige kennistoets. Je voortgang blijft alleen in deze browser bewaard."
     : data.access.allowed
     ? "Je onboarding is volledig afgerond en je verkoopomgeving is vrijgegeven."
     : data.onboarding?.status === "certified"
@@ -168,10 +184,95 @@ async function acceptCommissionPlan(event) {
   catch(error){showError(error);event.currentTarget.disabled=false;}
 }
 function showDocuments() {
-  prepareAgreement("Verplichte documenten", "Lees iedere gepubliceerde versie. Deze bevestiging is uitdrukkelijk geen vervanging voor een volledig ondertekende opdrachtovereenkomst.");
-  for(const document of state.data.commercial.documents){ const article=document.createElement("article"); article.className="document-card"; const title=document.createElement("h3"); title.textContent=document.title; const body=document.createElement("p"); body.textContent=document.content; const meta=document.createElement("small"); meta.textContent=`Versie ${document.versionCode} · ${document.reviewStatus === "legal_review_required" ? "juridische review vereist" : "intern goedgekeurd"}`; const label=document.createElement("label"); label.className="option"; const input=document.createElement("input"); input.type="checkbox"; input.name="document"; input.value=document.versionCode; input.checked=document.accepted; input.disabled=document.accepted; const text=document.createElement("span"); text.textContent="Ik heb deze exacte versie gelezen en begrepen."; label.append(input,text); article.append(title,body,meta,label); element("agreementsContent").append(article); }
+  prepareAgreement("ZZP-dossier en documenten", "Vul je zakelijke en betaalgegevens in, lever de benodigde bewijsstukken veilig aan en bevestig daarna de actuele afspraken. Deze bevestiging is geen vervanging voor een volledig ondertekende opdrachtovereenkomst.");
+  renderZzpDossierPanel(element("agreementsContent"));
+  for(const agreement of state.data.commercial.documents){ const article=document.createElement("article"); article.className="document-card"; const title=document.createElement("h3"); title.textContent=agreement.title; const body=document.createElement("p"); body.textContent=agreement.content; const meta=document.createElement("small"); meta.textContent=`Versie ${agreement.versionCode} · ${agreement.reviewStatus === "legal_review_required" ? "juridische review vereist" : "intern goedgekeurd"}`; const label=document.createElement("label"); label.className="option"; const input=document.createElement("input"); input.type="checkbox"; input.name="document"; input.value=agreement.versionCode; input.checked=agreement.accepted; input.disabled=agreement.accepted; const text=document.createElement("span"); text.textContent="Ik heb deze exacte versie gelezen en begrepen."; label.append(input,text); article.append(title,body,meta,label); element("agreementsContent").append(article); }
   const button=document.createElement("button"); button.className="primary"; button.type="button"; button.textContent="Alle documentversies bevestigen"; button.addEventListener("click",acceptDocuments); element("agreementsContent").append(button); element("agreements").scrollIntoView({behavior:"smooth",block:"start"});
 }
+
+function renderZzpDossierPanel(container) {
+  const staff = state.staff || { dossier:null, documents:[], messages:[], completeness:{ percent:0 } };
+  const panel = document.createElement("section");
+  panel.className = "zzp-dossier";
+  panel.innerHTML = `
+    <header class="zzp-dossier-head"><div><p class="eyebrow">Privé ZZP-dossier</p><h3>Persoons-, bedrijfs- en betaalgegevens</h3><p>Alleen jij en de super admin kunnen deze gegevens via de beveiligde dossierfunctie bekijken.</p></div><strong class="zzp-score">${Number(staff.completeness?.percent || 0)}%</strong></header>
+    <form id="zzpDossierForm" class="zzp-form">
+      <label>Volledige wettelijke naam<input name="legalName" required autocomplete="name"></label>
+      <label>Handelsnaam<input name="tradeName" autocomplete="organization"></label>
+      <label>Telefoonnummer<input name="phone" required autocomplete="tel"></label>
+      <label>Straat<input name="street" required autocomplete="address-line1"></label>
+      <label>Huisnummer<input name="houseNumber" required></label>
+      <label>Postcode<input name="postalCode" required autocomplete="postal-code"></label>
+      <label>Plaats<input name="city" required autocomplete="address-level2"></label>
+      <label>Land<select name="countryCode"><option value="NL">Nederland</option><option value="BE">België</option><option value="DE">Duitsland</option></select></label>
+      <label>KvK-nummer<input name="kvkNumber" required inputmode="numeric" maxlength="8" placeholder="12345678"></label>
+      <label>Btw-nummer<input name="vatNumber" required placeholder="NL123456789B01"></label>
+      <label>IBAN<input name="iban" required autocomplete="off" placeholder="NL00 BANK 0000 0000 00"></label>
+      <label>Naam rekeninghouder<input name="ibanAccountName" required autocomplete="off"></label>
+      <div class="zzp-form-actions"><button class="secondary" type="submit">Dossier opslaan</button><button id="submitZzpDossier" class="primary" type="button">Dossier ter controle indienen</button></div>
+      <p id="zzpDossierStatus" class="document-note" role="status"></p>
+    </form>
+    <section class="zzp-upload"><div><p class="eyebrow">Privédocumenten</p><h3>Veilig aanleveren</h3><p>Geen bankpas uploaden. Gebruik een afgeschermd rekeningbewijs. Een identiteitskopie is voor ZZP optioneel: gebruik KopieID, een watermerk en scherm het BSN af als dit niet nodig is.</p></div>
+      <form id="zzpUploadForm" class="zzp-upload-form">
+        <label>Documenttype<select name="documentType"><option value="signed_assignment_agreement">Ondertekende opdrachtovereenkomst</option><option value="bank_account_proof">Afgeschermd rekeningbewijs</option><option value="kvk_extract">KvK-uittreksel</option><option value="identity_verification_copy">Optionele identiteitsverificatie</option></select></label>
+        <label id="identityTypeLabel" hidden>Identiteitsdocument<select name="identityDocumentType"><option value="passport">Paspoort</option><option value="identity_card">Identiteitskaart</option><option value="driving_licence">Rijbewijs</option></select></label>
+        <label>Bestand<input name="document" type="file" accept="application/pdf,image/jpeg,image/png" required></label>
+        <label class="zzp-declaration"><input name="declaration" type="checkbox" required><span>Ik mag dit document aanleveren en heb onnodige gegevens afgeschermd.</span></label>
+        <button class="secondary" type="submit">Document veilig uploaden</button><p id="zzpUploadStatus" class="document-note" role="status"></p>
+      </form>
+      <div id="zzpDocumentList" class="zzp-document-list"></div>
+    </section>
+    <section class="zzp-chat"><div><p class="eyebrow">Direct contact</p><h3>Chat met Max</h3><p>Berichten blijven gekoppeld aan je dossier.</p></div><div id="zzpMessages" class="zzp-messages"></div><form id="zzpMessageForm"><textarea name="body" rows="3" maxlength="4000" placeholder="Schrijf een bericht…" required></textarea><button class="secondary" type="submit">Bericht sturen</button></form></section>`;
+  container.append(panel);
+  fillDossierForm(panel.querySelector("#zzpDossierForm"), staff.dossier);
+  renderStaffDocuments(panel.querySelector("#zzpDocumentList"), staff.documents || []);
+  renderStaffMessages(panel.querySelector("#zzpMessages"), staff.messages || []);
+  const uploadForm = panel.querySelector("#zzpUploadForm");
+  const identityLabel = panel.querySelector("#identityTypeLabel");
+  uploadForm.elements.documentType.addEventListener("change", () => { identityLabel.hidden = uploadForm.elements.documentType.value !== "identity_verification_copy"; });
+  panel.querySelector("#zzpDossierForm").addEventListener("submit", saveZzpDossier);
+  panel.querySelector("#submitZzpDossier").addEventListener("click", submitZzpDossier);
+  uploadForm.addEventListener("submit", uploadZzpDocument);
+  panel.querySelector("#zzpMessageForm").addEventListener("submit", sendStaffMessage);
+}
+
+function fillDossierForm(form, dossier = {}) {
+  for (const [name, value] of Object.entries(dossier || {})) if (form.elements[name]) form.elements[name].value = value || "";
+}
+function dossierPayload(form) { return Object.fromEntries(new FormData(form).entries()); }
+async function saveZzpDossier(event) {
+  event.preventDefault(); const form=event.currentTarget; const status=form.querySelector("#zzpDossierStatus");
+  try { await staffRequest({ action:"save_dossier", ...dossierPayload(form) }); status.textContent="Dossier veilig opgeslagen."; showDocuments(); }
+  catch(error){status.textContent=error.message;}
+}
+async function submitZzpDossier(event) {
+  const form=event.currentTarget.closest(".zzp-dossier").querySelector("#zzpDossierForm"); const status=form.querySelector("#zzpDossierStatus");
+  try { await staffRequest({ action:"submit_dossier", ...dossierPayload(form) }); status.textContent="Dossier ingediend voor controle door Max."; showDocuments(); }
+  catch(error){status.textContent=error.message;}
+}
+async function uploadZzpDocument(event) {
+  event.preventDefault(); const form=event.currentTarget; const status=form.querySelector("#zzpUploadStatus"); const file=form.elements.document.files[0];
+  if(!file)return;
+  try {
+    const input={ action:"prepare_document", documentType:form.elements.documentType.value, identityDocumentType:form.elements.documentType.value === "identity_verification_copy" ? form.elements.identityDocumentType.value : "", filename:file.name, mimeType:file.type, sizeBytes:file.size, declaration:"staff_zzp_document_upload_nl_v1" };
+    if(state.preview){ await staffRequest({ ...input, previewFilename:file.name }); status.textContent="Voorbeelddocument toegevoegd; er zijn geen bestandsbytes opgeslagen."; showDocuments(); return; }
+    status.textContent="Veilige upload voorbereiden…"; const prepared=await staffRequest(input);
+    const upload=await fetch(prepared.uploadUrl,{method:prepared.uploadMethod||"PUT",headers:prepared.uploadHeaders||{},body:file});
+    if(!upload.ok)throw new Error("Het bestand kon niet naar de private opslag worden verzonden.");
+    await staffRequest({action:"finalize_document",uploadId:prepared.uploadId}); status.textContent="Document veilig opgeslagen."; showDocuments();
+  } catch(error){status.textContent=error.message;}
+}
+async function sendStaffMessage(event) {
+  event.preventDefault(); const form=event.currentTarget; const body=form.elements.body.value.trim(); if(!body)return;
+  try{await staffRequest({action:"send_message",body,idempotencyKey:crypto.randomUUID()});form.reset();showDocuments();}catch(error){showError(error);}
+}
+function renderStaffDocuments(container, documents) {
+  container.replaceChildren(...(documents.length ? documents.map((doc)=>{const item=document.createElement("article");item.className="zzp-document-item";item.innerHTML=`<strong>${escapeHtml(documentTypeLabel(doc.document_type||doc.documentType))}</strong><span>${escapeHtml(doc.original_filename||doc.originalFilename||"Document")} · ${escapeHtml(doc.status||"beschikbaar")}</span>`;return item;}) : [Object.assign(document.createElement("p"),{className:"document-note",textContent:"Nog geen documenten aangeleverd."})]));
+}
+function renderStaffMessages(container, messages) {
+  container.replaceChildren(...(messages.length ? messages.map((message)=>{const item=document.createElement("article");item.className=`zzp-message ${message.mine ? "mine" : "admin"}`;const body=document.createElement("p");body.textContent=message.body;const meta=document.createElement("small");meta.textContent=`${message.mine ? "Jij" : "Max"} · ${formatDate(message.created_at||message.createdAt)}`;item.append(body,meta);return item;}) : [Object.assign(document.createElement("p"),{className:"document-note",textContent:"Nog geen berichten."})]));
+}
+function documentTypeLabel(value){return ({signed_assignment_agreement:"Ondertekende opdrachtovereenkomst",bank_account_proof:"Rekeningbewijs",kvk_extract:"KvK-uittreksel",identity_verification_copy:"Identiteitsverificatie",other:"Overig"})[value]||value||"Document";}
 async function acceptDocuments(event) {
   const checked=[...element("agreementsContent").querySelectorAll('input[name="document"]')].filter((input)=>input.checked||input.disabled).map((input)=>input.value);
   if(checked.length!==state.data.commercial.documents.length){showError(new Error("Bevestig eerst iedere documentversie."));return;}
@@ -235,7 +336,7 @@ async function submitAssessment(event) {
     completePreviewStep("knowledge_assessment", false);
     const result = document.createElement("div");
     result.className = "assessment-result";
-    result.textContent = "Voorbeeldtoets afgerond. In de echte onboarding beoordeelt de server de antwoorden en is minimaal 80% nodig. Deze preview heeft niets opgeslagen.";
+    result.textContent = "Voorbeeldtoets afgerond. Je resultaat blijft in deze browser bewaard. In de echte onboarding beoordeelt de server de antwoorden en is minimaal 80% nodig.";
     event.currentTarget.replaceChildren(result);
     return;
   }
@@ -327,13 +428,18 @@ async function initialize() {
       document.body.classList.add("is-preview");
       element("sidebarIntro").textContent = "Bekijk de volledige leerroute zoals een nieuwe medewerker die straks doorloopt.";
       element("securityTitle").textContent = "Veilige voorbeeldstand";
-      element("securityText").textContent = "Je kunt alles bekijken en aanklikken; er wordt niets opgeslagen of beoordeeld.";
-      render(structuredClone(partnerPreviewData));
+      element("securityText").textContent = "Je voortgang blijft alleen in deze browser bewaard; er worden geen echte persoonsgegevens of bestanden verstuurd.";
+      const preview = loadPreviewState();
+      state.staff = preview.staff;
+      const data = structuredClone(partnerPreviewData);
+      for (const step of data.steps) if (preview.completedStepKeys.includes(step.stepKey)) step.status = "completed";
+      render(data);
       return;
     }
     state.token = sessionToken();
     if (!state.token) throw new Error("Log opnieuw in om verder te gaan.");
-    render(await request());
+    const [onboarding] = await Promise.all([request(), staffRequest()]);
+    render(onboarding);
   } catch (error) {
     element("notice").className = "notice error";
     element("notice").textContent = error.message;
@@ -343,10 +449,39 @@ async function initialize() {
 function completePreviewStep(stepKey, rerender = true) {
   const step = state.data.steps.find((item) => item.stepKey === stepKey);
   if (step) step.status = "completed";
+  persistPreviewState();
   if (!rerender) return;
   const modules = state.data.training.modules || [];
   const next = modules.find((module) => state.data.steps.find((item) => item.stepKey === module.stepKey)?.status !== "completed");
   render(state.data, next?.stepKey || state.activeStepKey);
+}
+
+function emptyPreviewStaff() {
+  return { profile:{name:"Voorbeeldpartner",email:"preview@maxwebstudio.nl",role:"sales_partner"}, dossier:null, documents:[], messages:[], completeness:{percent:0,completed:0,total:12} };
+}
+function loadPreviewState() {
+  try {
+    const saved=JSON.parse(localStorage.getItem(previewStorageKey)||"null");
+    return { completedStepKeys:Array.isArray(saved?.completedStepKeys)?saved.completedStepKeys:[], staff:saved?.staff&&typeof saved.staff==="object"?saved.staff:emptyPreviewStaff() };
+  } catch { return { completedStepKeys:[], staff:emptyPreviewStaff() }; }
+}
+function persistPreviewState() {
+  if(!state.preview)return;
+  const completedStepKeys=(state.data?.steps||[]).filter((step)=>step.status==="completed").map((step)=>step.stepKey);
+  localStorage.setItem(previewStorageKey,JSON.stringify({completedStepKeys,staff:state.staff||emptyPreviewStaff(),savedAt:new Date().toISOString()}));
+}
+function previewCompleteness(staff) {
+  const dossier=staff.dossier||{}; const fields=["legalName","phone","street","houseNumber","postalCode","city","kvkNumber","vatNumber","iban","ibanAccountName"];
+  const types=new Set((staff.documents||[]).map((doc)=>doc.documentType)); const completed=fields.filter((key)=>String(dossier[key]||"").trim()).length+Number(types.has("signed_assignment_agreement"))+Number(types.has("bank_account_proof"));
+  return {percent:Math.round(completed/12*100),completed,total:12};
+}
+function previewStaffAction(input={}) {
+  state.staff=state.staff||emptyPreviewStaff(); const action=input.action||"";
+  if(action==="save_dossier"||action==="submit_dossier") state.staff.dossier={...(state.staff.dossier||{}),...input,status:action==="submit_dossier"?"submitted":"draft",updatedAt:new Date().toISOString()};
+  else if(action==="prepare_document") state.staff.documents.unshift({id:crypto.randomUUID(),documentType:input.documentType,identityDocumentType:input.identityDocumentType,originalFilename:input.previewFilename||input.filename,status:"preview",createdAt:new Date().toISOString()});
+  else if(action==="send_message") state.staff.messages.push({id:crypto.randomUUID(),body:input.body,mine:true,createdAt:new Date().toISOString()});
+  else if(action==="mark_messages_read") for(const message of state.staff.messages)message.readAt=message.readAt||new Date().toISOString();
+  state.staff.completeness=previewCompleteness(state.staff); persistPreviewState(); return structuredClone(state.staff);
 }
 
 initialize();

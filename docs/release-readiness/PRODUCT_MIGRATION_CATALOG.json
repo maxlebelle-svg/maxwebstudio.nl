@@ -43,6 +43,10 @@
     {
       "manifest": "docs/release-readiness/partner-onboarding-v1-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/partner-onboarding-v1-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/staff-zzp-dossier-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/staff-zzp-dossier-v1-product-migrations/FILESET.json"
     }
   ]
 }
