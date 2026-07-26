@@ -1229,17 +1229,26 @@
         function syncLocalCustomerAccessContext(context = {}) {
           if (!context.profileFound || !context.customerId) return;
           const now = new Date().toISOString();
+          const verifiedAuthUserId = String(supabaseSessionResult?.session?.user?.id || "");
+          const profileAuthUserId = String(context.profile?.auth_user_id || context.profile?.authUserId || "");
+          if (!verifiedAuthUserId || !profileAuthUserId || verifiedAuthUserId !== profileAuthUserId) return;
           try {
-            const session = JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
-            if (session) {
-              localStorage.setItem("maxwebstudioCurrentSession", JSON.stringify({
-                ...session,
-                role: session.role || context.profile?.role || "customer",
-                customerId: context.customerId,
-                supabaseCustomerId: context.supabaseCustomerId || context.customerId,
-                updatedAt: now,
-              }));
-            }
+            const existingSession = JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
+            const expiresAtSeconds = Number(supabaseSessionResult?.session?.expires_at || 0);
+            localStorage.setItem("maxwebstudioCurrentSession", JSON.stringify({
+              ...(existingSession || {}),
+              id: existingSession?.id || `supabase-${verifiedAuthUserId}`,
+              userId: verifiedAuthUserId,
+              provider: "supabase",
+              role: context.profile?.role || "customer",
+              customerId: context.customerId,
+              supabaseCustomerId: context.supabaseCustomerId || context.customerId,
+              startedAt: existingSession?.startedAt || now,
+              expiresAt: expiresAtSeconds > 0 ? new Date(expiresAtSeconds * 1000).toISOString() : existingSession?.expiresAt || "",
+              environment: "production",
+              isDemo: false,
+              updatedAt: now,
+            }));
           } catch {
             // Keep the live Supabase session as the source of truth.
           }

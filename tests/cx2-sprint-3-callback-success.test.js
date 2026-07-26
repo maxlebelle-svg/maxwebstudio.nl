@@ -9,6 +9,7 @@ const migration = read("supabase/migrations/20260726193000_cx2_callback_success_
 const client = read("public/src/dca-start.js");
 const endpointSource = read("functions/client-activation-magic-link.js");
 const authProviderSource = read("public/src/services/supabaseAuthProvider.js");
+const portalSource = read("public/klantportaal.html");
 const endpoint = require("../functions/client-activation-magic-link");
 
 async function runtime() {
@@ -142,6 +143,11 @@ test("browsercontract lekt geen callbackstate, authcode of interne identifiers",
   assert.match(authProviderSource, /\/auth\/v1\/user/);
   assert.match(authProviderSource, /if \(!session\?\.user\?\.id\) return \{ success: false, reason: "magic_link_session_unverified" \}/);
   assert.match(authProviderSource, /return \{ \.\.\.session, user \}/);
+  assert.match(portalSource, /verifiedAuthUserId !== profileAuthUserId/);
+  assert.match(portalSource, /id: existingSession\?\.id \|\| `supabase-\$\{verifiedAuthUserId\}`/);
+  assert.match(portalSource, /provider: "supabase"/);
+  assert.match(portalSource, /isDemo: false/);
+  assert.doesNotMatch(portalSource, /maxwebstudioCurrentSession[\s\S]{0,900}accessToken:/);
 });
 
 function response(status, body) {
