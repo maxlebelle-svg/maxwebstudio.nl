@@ -1,4 +1,5 @@
 -- Partner Onboarding V1 / Phase B correction: certification and activation are separate controls.
+-- Staging-integrated migration version: 20260726205000.
 begin;
 
 do $preflight$

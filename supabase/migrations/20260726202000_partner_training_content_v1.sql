@@ -1,4 +1,5 @@
 -- Partner Onboarding V1 / B3: versioned training content.
+-- Staging-integrated migration version: 20260726202000.
 -- Published versions are immutable; existing onboarding assignments remain stable.
 begin;
 

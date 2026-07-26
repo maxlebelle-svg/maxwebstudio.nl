@@ -1,4 +1,5 @@
 -- Partner Onboarding V1 / B5: canonical invoice commission and controlled acknowledgements.
+-- Staging-integrated migration version: 20260726204000.
 -- This migration never reads or writes public.customer_invoices.
 begin;
 

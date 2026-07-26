@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { handler, _test } = require("../functions/admin-relationship-search");
+const { REQUIRED_ONBOARDING_STEPS } = require("../functions/services/partnerOnboardingAccessService");
 
 const ACTOR = "11111111-1111-4111-8111-111111111111";
 const PROFILE = "22222222-2222-4222-8222-222222222222";
@@ -116,6 +117,8 @@ async function withBackend(role, callback, options = {}) {
     state.urls.push(String(url));
     if (String(url).includes("/auth/v1/user")) return response(200, { id: ACTOR, email: "partner@example.test" });
     if (String(url).includes("/rest/v1/profiles")) return response(200, [{ id: PROFILE, role, status: "active" }]);
+    const gateRows = role === "sales_partner" ? completedPartnerGateRows(String(url)) : undefined;
+    if (gateRows !== undefined) return response(200, gateRows);
     if (options.failSearch) return response(503, { code: "UPSTREAM" });
     if (String(url).includes("/rest/v1/customers")) return response(200, [{ id: "44444444-4444-4444-8444-444444444444", company: "Acme Customer", name: "Ada", email: "ada@example.test", status: "active", created_at: "2026-07-16T10:00:00.000Z", metadata: role === "sales_partner" ? { ownerProfileId: PROFILE } : {} }]);
     if (String(url).includes("/rest/v1/leads")) {
@@ -135,4 +138,14 @@ async function withBackend(role, callback, options = {}) {
 }
 
 function event(queryStringParameters = {}, bearer = "token") { return { httpMethod: "GET", headers: bearer ? { authorization: `Bearer ${bearer}` } : {}, queryStringParameters }; }
-function response(status, body) { return { ok: status >= 200 && status < 300, status, json: async () => body }; }
+function response(status, body) { return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) }; }
+
+function completedPartnerGateRows(url) {
+  if (url.includes("/rest/v1/partner_profiles")) return [{ id: "partner-profile", profile_id: PROFILE, status: "active" }];
+  if (url.includes("/rest/v1/partner_onboardings")) return [{ id: "partner-onboarding", partner_profile_id: "partner-profile", status: "active" }];
+  if (url.includes("/rest/v1/partner_onboarding_steps")) return REQUIRED_ONBOARDING_STEPS.map((step_key, index) => ({ step_key, step_order: index + 1, status: "completed" }));
+  if (url.includes("/rest/v1/partner_document_versions")) return [{ id: "document-v1", version_code: "v1" }];
+  if (url.includes("/rest/v1/partner_document_acceptances")) return [{ document_version_id: "document-v1" }];
+  if (url.includes("/rest/v1/partner_certificates")) return [{ id: "certificate-v1", status: "valid", expires_at: "2099-01-01T00:00:00.000Z" }];
+  return undefined;
+}

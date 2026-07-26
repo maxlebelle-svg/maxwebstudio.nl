@@ -6,7 +6,7 @@ const test = require("node:test");
 const policy = require("../functions/services/profileAccessPolicy");
 const migration = fs.readFileSync(path.join(
   __dirname,
-  "../supabase/migrations/20260726110000_partner_profile_role_status_foundation.sql"
+  "../supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql"
 ), "utf8");
 
 test("B1 exposes one canonical role model and normalizes only the legacy sales alias", () => {

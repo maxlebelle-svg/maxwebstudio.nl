@@ -5,12 +5,12 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const migrations = [
-  '20260726110000_partner_profile_role_status_foundation.sql',
-  '20260726120000_partner_onboarding_gate_foundation.sql',
-  '20260726130000_partner_training_content_v1.sql',
-  '20260726140000_partner_assessment_certification.sql',
-  '20260726150000_partner_canonical_commission.sql',
-  '20260726160000_partner_certification_activation_control.sql',
+  '20260726200000_partner_profile_role_status_foundation.sql',
+  '20260726201000_partner_onboarding_gate_foundation.sql',
+  '20260726202000_partner_training_content_v1.sql',
+  '20260726203000_partner_assessment_certification.sql',
+  '20260726204000_partner_canonical_commission.sql',
+  '20260726205000_partner_certification_activation_control.sql',
 ];
 
 test('B1-B5 migration chain is ordered, forward-only and transaction bounded', () => {

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726140000_partner_assessment_certification.sql'), 'utf8');
+const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726203000_partner_assessment_certification.sql'), 'utf8');
 
 test('assessment is versioned, server-scored, capped, and idempotent', () => {
   assert.match(sql, /'partner_knowledge_nl_v1'.*'partner_training_nl_v1'/s);

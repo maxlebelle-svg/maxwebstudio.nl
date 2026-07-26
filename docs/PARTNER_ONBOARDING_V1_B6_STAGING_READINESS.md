@@ -27,11 +27,11 @@ Status: **NO-GO / STAGING CERTIFICATION NOT COMPLETED**
 
 ## Verplichte migratievolgorde
 
-1. `20260726110000_partner_profile_role_status_foundation.sql`
-2. `20260726120000_partner_onboarding_gate_foundation.sql`
-3. `20260726130000_partner_training_content_v1.sql`
-4. `20260726140000_partner_assessment_certification.sql`
-5. `20260726150000_partner_canonical_commission.sql`
+1. `20260726200000_partner_profile_role_status_foundation.sql`
+2. `20260726201000_partner_onboarding_gate_foundation.sql`
+3. `20260726202000_partner_training_content_v1.sql`
+4. `20260726203000_partner_assessment_certification.sql`
+5. `20260726204000_partner_canonical_commission.sql`
 
 Alle vijf zijn forward-only en transactioneel. Toepassen vereist een geïsoleerde stagingdatabase, databasepreflight, rollback door transactiefalen, RLS-rolsmokes en testfixtures zonder echte personen of betalingen.
 

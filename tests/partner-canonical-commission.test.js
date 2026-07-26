@@ -5,7 +5,7 @@ const path = require('node:path');
 const { calculateCommissionCents } = require('../functions/services/partnerCommissionService');
 
 const root = path.resolve(__dirname, '..');
-const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726150000_partner_canonical_commission.sql'), 'utf8');
+const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726204000_partner_canonical_commission.sql'), 'utf8');
 
 test('default progressive commission handles every boundary in integer cents', () => {
   assert.equal(calculateCommissionCents(0), 0);

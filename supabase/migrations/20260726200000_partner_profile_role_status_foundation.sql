@@ -1,4 +1,5 @@
 -- Partner Onboarding V1 / B1: canonical profile roles, statuses and operational access.
+-- Staging-integrated migration version: 20260726200000.
 -- Forward-only and data preserving. This migration sends nothing and activates nobody.
 begin;
 

@@ -6,7 +6,7 @@ const { generateCertificatePdf } = require('../functions/services/certificatePdf
 const { _private: pdfEndpoint } = require('../functions/partner-certificate-pdf');
 
 const root = path.resolve(__dirname, '..');
-const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726160000_partner_certification_activation_control.sql'), 'utf8');
+const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726205000_partner_certification_activation_control.sql'), 'utf8');
 const certificate = {
   certificateId: 'MWS-PARTNER-0123456789ABCDEF',
   partnerName: 'Zoë van den IJssel',

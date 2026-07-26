@@ -39,6 +39,10 @@
     {
       "manifest": "docs/release-readiness/cx2-sprint-3-callback-closure-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/cx2-sprint-3-callback-closure-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/partner-onboarding-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/partner-onboarding-v1-product-migrations/FILESET.json"
     }
   ]
 }

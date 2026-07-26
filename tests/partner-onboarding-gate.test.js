@@ -60,7 +60,7 @@ test('only content-training steps can be self-completed', () => {
 });
 
 test('B2 migration uses service-role mutations, RLS reads, immutable events, and idempotency', () => {
-  const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726120000_partner_onboarding_gate_foundation.sql'), 'utf8');
+  const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260726201000_partner_onboarding_gate_foundation.sql'), 'utf8');
   for (const table of ['partner_profiles', 'partner_onboardings', 'partner_onboarding_steps', 'partner_onboarding_events']) {
     assert.match(sql, new RegExp(`create table public\\.${table}`));
     assert.match(sql, new RegExp(`alter table public\\.${table} enable row level security`));
@@ -90,8 +90,11 @@ test('activation and login flows honor server-side operational access', () => {
   const activation = fs.readFileSync(path.join(root, 'public/account-activeren.html'), 'utf8');
   const login = fs.readFileSync(path.join(root, 'public/admin-login.html'), 'utf8');
   const guard = fs.readFileSync(path.join(root, 'public/src/admin-route-guard.js'), 'utf8');
+  const bridge = fs.readFileSync(path.join(root, 'public/src/services/adminAuthBridgeService.js'), 'utf8');
   assert.match(activation, /account_activated/);
   assert.match(activation, /partner-onboarding\.html/);
   assert.match(login, /access\?\.operational/);
-  assert.match(guard, /account\.access\?\.operational !== false/);
+  assert.match(guard, /await resolveAdminAuth\(\)/);
+  assert.match(bridge, /account\?\.access\?\.operational !== false/);
+  assert.match(bridge, /PARTNER_ONBOARDING_REQUIRED/);
 });

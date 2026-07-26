@@ -1,4 +1,5 @@
 -- Partner Onboarding V1 / B4: server-scored assessment and verifiable certification.
+-- Staging-integrated migration version: 20260726203000.
 begin;
 
 do $preflight$

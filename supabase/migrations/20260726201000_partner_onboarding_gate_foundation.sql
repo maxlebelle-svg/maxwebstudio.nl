@@ -1,4 +1,5 @@
 -- Partner Onboarding V1 / B2: server-enforced onboarding gate and auditable progress.
+-- Staging-integrated migration version: 20260726201000.
 -- Forward-only. No existing profile is activated and no email is sent.
 begin;
 

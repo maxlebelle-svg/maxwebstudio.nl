@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const migrationPath = path.join(root, 'supabase/migrations/20260726130000_partner_training_content_v1.sql');
+const migrationPath = path.join(root, 'supabase/migrations/20260726202000_partner_training_content_v1.sql');
 
 test('B3 publishes one immutable Dutch training version with all seven modules', () => {
   const sql = fs.readFileSync(migrationPath, 'utf8');
