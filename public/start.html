@@ -62,7 +62,7 @@
           <div class="cx2-welcome-progress-track" role="progressbar" aria-label="Voortgang richting oplevering" aria-valuemin="0" aria-valuemax="100" aria-valuenow="46">
             <span></span>
           </div>
-          <p>Nog 3 stappen tot oplevering</p>
+          <p id="cx2-welcome-steps-remaining">Nog 3 stappen tot oplevering</p>
         </div>
 
         <div class="dca-start-actions cx2-welcome-actions">
@@ -81,9 +81,71 @@
         <p id="dca-start-error-message">Vraag Max Webstudio om een nieuwe link.</p>
       </section>
 
-      <section class="dca-preview-dialog" id="dca-preview-dialog" hidden>
-        <header><strong>Jouw website-preview</strong><button class="button secondary" id="dca-preview-close" type="button">Sluiten</button></header>
-        <iframe id="dca-preview-frame" title="Jouw website-preview" sandbox="allow-scripts allow-forms allow-modals" referrerpolicy="no-referrer"></iframe>
+      <section class="dca-preview-dialog cx2-preview-dialog" id="dca-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="cx2-preview-title" hidden>
+        <div class="cx2-preview-shell">
+          <header class="cx2-preview-header">
+            <div class="cx2-preview-brand">
+              <img src="/assets/maxwebstudio-logo-mark.png" alt="" />
+              <span>Max Webstudio</span>
+            </div>
+            <div class="cx2-preview-heading">
+              <p id="cx2-preview-title">Dit is versie <strong id="cx2-preview-version">1</strong> van jouw website</p>
+              <span class="cx2-preview-status"><i aria-hidden="true"></i> Wacht op beoordeling</span>
+            </div>
+            <button class="cx2-preview-close" id="dca-preview-close" type="button" aria-label="Website-preview sluiten">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+              <span>Sluiten</span>
+            </button>
+          </header>
+
+          <nav class="cx2-preview-devices" aria-label="Voorbeeldformaat">
+            <button type="button" data-cx2-device="desktop" aria-pressed="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              Desktop
+            </button>
+            <button type="button" data-cx2-device="tablet" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg>
+              Tablet
+            </button>
+            <button type="button" data-cx2-device="mobile" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+              Mobiel
+            </button>
+          </nav>
+
+          <main class="cx2-preview-canvas">
+            <div class="cx2-preview-device" id="cx2-preview-device" data-device="desktop">
+              <div class="cx2-preview-devicebar" aria-hidden="true"><span></span><span></span><span></span><b>Veilige website-preview</b></div>
+              <div class="cx2-preview-loading" id="cx2-preview-loading" role="status">
+                <span></span>
+                <strong>Jouw website wordt geopend…</strong>
+                <small>Een moment geduld.</small>
+              </div>
+              <div class="cx2-preview-failed" id="cx2-preview-failed" role="alert" hidden>
+                <span aria-hidden="true">!</span>
+                <strong>De preview kon niet worden geladen.</strong>
+                <p>Probeer het gerust opnieuw. Je persoonlijke omgeving blijft veilig.</p>
+                <button type="button" id="cx2-preview-retry">Opnieuw proberen</button>
+              </div>
+              <iframe id="dca-preview-frame" title="Jouw website-preview" sandbox="allow-scripts allow-forms allow-modals" referrerpolicy="no-referrer"></iframe>
+            </div>
+          </main>
+
+          <footer class="cx2-preview-actions" aria-label="Beoordeling website">
+            <button class="cx2-preview-action cx2-preview-action-secondary" id="cx2-preview-feedback" type="button"><span aria-hidden="true">✏️</span> Ik wil iets aanpassen</button>
+            <button class="cx2-preview-action cx2-preview-action-primary" id="cx2-preview-approve" type="button"><span aria-hidden="true">❤️</span> Deze website wil ik hebben</button>
+          </footer>
+        </div>
+
+        <div class="cx2-preview-sheet-backdrop" id="cx2-preview-sheet" hidden>
+          <section class="cx2-preview-sheet" role="dialog" aria-modal="true" aria-labelledby="cx2-preview-sheet-title">
+            <div class="cx2-preview-sheet-handle" aria-hidden="true"></div>
+            <span class="cx2-preview-sheet-icon" id="cx2-preview-sheet-icon" aria-hidden="true">✏️</span>
+            <h2 id="cx2-preview-sheet-title">Feedback</h2>
+            <p id="cx2-preview-sheet-message">Feedback geven wordt in de volgende stap beschikbaar.</p>
+            <button type="button" id="cx2-preview-sheet-close">Begrepen</button>
+          </section>
+        </div>
       </section>
     </main>
     <script src="/src/dca-start.js" defer></script>

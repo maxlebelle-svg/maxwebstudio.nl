@@ -41,6 +41,7 @@ exports.handler = async (event) => {
       presentation: {
         firstName: firstName(journey.contact_name || lead.name),
         companyName: clean(journey.business_name || lead.company) || "jouw bedrijf",
+        versionNumber: Number.isFinite(Number(version.version)) && Number(version.version) > 0 ? Number(version.version) : 1,
         status: "Wacht op jouw beoordeling",
         deliveryExpectation: clean(workflow.deliveryExpectation || workflow.delivery_expectation || "In overleg"),
         canActivate: false,
