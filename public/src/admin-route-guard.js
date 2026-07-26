@@ -88,7 +88,8 @@ function writeAdminBridge(session, account) {
   const user = account.user || session.user || {};
   const role = String(profile.role || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
   const active = String(profile.status || "").toLowerCase() === "active";
-  if (!session.accessToken || !ADMIN_ROLES.has(role) || !active) return false;
+  const operational = account.access?.operational !== false;
+  if (!session.accessToken || !ADMIN_ROLES.has(role) || !active || !operational) return false;
   localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
     id: session.accessToken ? `admin-${session.accessToken.slice(0, 12)}` : `admin-${Date.now()}`,
     accessToken: session.accessToken,

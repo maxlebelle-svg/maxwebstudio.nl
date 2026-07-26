@@ -100,7 +100,8 @@
           const profile = account.profile || {};
           const user = account.user || session.user || {};
           const role = String(profile.role || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-          if (!adminRoles.has(role) || String(profile.status || "").toLowerCase() !== "active") return false;
+          const operational = account.access?.operational !== false;
+          if (!adminRoles.has(role) || String(profile.status || "").toLowerCase() !== "active" || !operational) return false;
           localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
             id: session.accessToken ? `admin-${session.accessToken.slice(0, 12)}` : `admin-${Date.now()}`,
             accessToken: session.accessToken,

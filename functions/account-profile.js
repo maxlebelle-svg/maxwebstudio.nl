@@ -1,3 +1,5 @@
+const { fetchPartnerGate } = require("./services/partnerOnboardingAccessService");
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return jsonResponse(405, { success: false, error: "Alleen GET-verzoeken zijn toegestaan." });
@@ -57,13 +59,19 @@ exports.handler = async (event) => {
     }
 
     const profileStatus = cleanText(profile.status || "active").toLowerCase();
-    if (profileStatus !== "active") {
+    const role = cleanText(profile.role).toLowerCase();
+    const partnerOnboardingProfile = role === "sales_partner" && ["invited", "pending", "active"].includes(profileStatus);
+    if (profileStatus !== "active" && !partnerOnboardingProfile) {
       return jsonResponse(403, {
         success: false,
         code: "PROFILE_INACTIVE",
         error: "Profiel is niet actief.",
       });
     }
+
+    const partnerAccess = role === "sales_partner"
+      ? await fetchPartnerGate({ supabaseUrl, serviceRoleKey, profile })
+      : { required: false, allowed: true, reason: "not_partner" };
 
     return jsonResponse(200, {
       success: true,
@@ -72,6 +80,12 @@ exports.handler = async (event) => {
         email: cleanText(authUser.email).toLowerCase(),
       },
       profile: normalizeProfile(profile),
+      access: {
+        operational: Boolean(partnerAccess.allowed),
+        onboardingRequired: Boolean(partnerAccess.required && !partnerAccess.allowed),
+        reason: partnerAccess.reason,
+        redirectTo: partnerAccess.redirectTo || "",
+      },
     });
   } catch (error) {
     const status = Number(error.status) || 500;

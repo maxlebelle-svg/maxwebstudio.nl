@@ -1,0 +1,94 @@
+const { fetchPartnerGate, SELF_COMPLETABLE_STEPS, rest } = require("./services/partnerOnboardingAccessService");
+const { hasPartnerOnboardingAccess } = require("./services/profileAccessPolicy");
+
+exports.handler = async (event) => {
+  if (!['GET', 'POST'].includes(event.httpMethod)) return json(405, { success: false, code: "METHOD_NOT_ALLOWED", error: "Methode niet toegestaan." });
+  try {
+    const context = config();
+    const token = bearer(event);
+    if (!token) return json(401, { success: false, code: "AUTH_REQUIRED", error: "Log opnieuw in." });
+    const user = await authUser(context, token);
+    const profile = await profileForUser(context, user.id);
+    if (!profile || !hasPartnerOnboardingAccess(profile)) {
+      return json(403, { success: false, code: "PARTNER_ONBOARDING_FORBIDDEN", error: "Dit account heeft geen toegang tot partneronboarding." });
+    }
+
+    if (event.httpMethod === 'POST') {
+      const input = parse(event.body);
+      const action = text(input.action).toLowerCase();
+      const idempotencyKey = text(input.idempotencyKey || input.idempotency_key);
+      if (idempotencyKey.length < 16 || idempotencyKey.length > 160) {
+        return json(400, { success: false, code: "INVALID_IDEMPOTENCY_KEY", error: "De herhaalbeveiliging ontbreekt." });
+      }
+      if (action === 'account_activated') {
+        await rpc(context, 'partner_mark_account_activated', {
+          input_auth_user_id: user.id,
+          input_idempotency_key: idempotencyKey,
+        });
+      } else if (action === 'complete_step') {
+        const stepKey = text(input.stepKey || input.step_key);
+        if (!SELF_COMPLETABLE_STEPS.includes(stepKey)) {
+          return json(400, { success: false, code: "STEP_REQUIRES_SERVER_WORKFLOW", error: "Deze stap vereist een aparte gecontroleerde beoordeling." });
+        }
+        await rpc(context, 'partner_complete_training_step', {
+          input_auth_user_id: user.id,
+          input_step_key: stepKey,
+          input_idempotency_key: idempotencyKey,
+        });
+      } else {
+        return json(400, { success: false, code: "INVALID_ACTION", error: "Onbekende onboardingactie." });
+      }
+    }
+
+    const gate = await fetchPartnerGate({
+      supabaseUrl: context.supabaseUrl,
+      serviceRoleKey: context.serviceRoleKey,
+      profile,
+    });
+    return json(200, {
+      success: true,
+      access: { allowed: gate.allowed, reason: gate.reason, redirectTo: gate.redirectTo || "" },
+      partnerProfile: safePartnerProfile(gate.partnerProfile),
+      onboarding: safeOnboarding(gate.onboarding),
+      steps: (gate.steps || []).map(safeStep),
+    });
+  } catch (error) {
+    console.error("Partner onboarding request failed", { code: error.code || "", status: error.status || 500 });
+    return json(error.status || 500, { success: false, code: error.code || "PARTNER_ONBOARDING_FAILED", error: error.status ? error.message : "Partneronboarding kon niet worden geladen." });
+  }
+};
+
+async function authUser(context, token) {
+  const response = await fetch(`${context.supabaseUrl}/auth/v1/user`, { headers: { apikey: context.anonKey, Authorization: `Bearer ${token}`, Accept: "application/json" } });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.id) throw coded("AUTH_INVALID", 401, "Sessie is ongeldig.");
+  return data;
+}
+
+async function profileForUser(context, userId) {
+  const rows = await rest(context.supabaseUrl, context.serviceRoleKey, `profiles?select=id,auth_user_id,name,email,role,status&auth_user_id=eq.${encodeURIComponent(userId)}&limit=1`);
+  return rows?.[0] || null;
+}
+
+async function rpc(context, name, body) {
+  return rest(context.supabaseUrl, context.serviceRoleKey, `rpc/${name}`, { method: "POST", body: JSON.stringify(body) });
+}
+
+function config() {
+  const supabaseUrl = text(process.env.SUPABASE_URL).replace(/\/$/, "");
+  const anonKey = text(process.env.SUPABASE_ANON_KEY);
+  const serviceRoleKey = text(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) throw coded("CONFIGURATION_MISSING", 500, "Partneronboarding is nog niet geconfigureerd.");
+  return { supabaseUrl, anonKey, serviceRoleKey };
+}
+
+function safePartnerProfile(row) { return row ? { id: row.id, status: row.status, assignedManagerProfileId: row.assigned_manager_profile_id || null } : null; }
+function safeOnboarding(row) { return row ? { id: row.id, status: row.status, currentStep: row.current_step, trainingProgramVersion: row.training_program_version, startedAt: row.started_at, completedAt: row.completed_at, activatedAt: row.activated_at } : null; }
+function safeStep(row) { return { id: row.id, stepKey: row.step_key, order: Number(row.step_order), status: row.status, contentVersion: row.content_version, completedAt: row.completed_at }; }
+function bearer(event) { const value = event.headers?.authorization || event.headers?.Authorization || ""; return value.startsWith("Bearer ") ? value.slice(7).trim() : ""; }
+function parse(body) { try { return JSON.parse(body || "{}"); } catch { throw coded("INVALID_JSON", 400, "Ongeldige invoer."); } }
+function text(value = "") { return String(value || "").trim(); }
+function coded(code, status, message) { return Object.assign(new Error(message), { code, status }); }
+function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }, body: JSON.stringify(body) }; }
+
+exports._private = { safePartnerProfile, safeOnboarding, safeStep };

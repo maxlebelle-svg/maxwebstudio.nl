@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Partner onboarding | Max Webstudio</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;background:#08111f;color:#eef4ff}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 0,#183250 0,transparent 42%),#08111f}.shell{width:min(920px,calc(100% - 32px));margin:0 auto;padding:48px 0 72px}.eyebrow{color:#74d9c8;font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:.75rem}h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.02;margin:.45rem 0 1rem}.intro{color:#afbed1;max-width:66ch}.progress{height:10px;background:#1b2a3d;border-radius:99px;overflow:hidden;margin:28px 0}.progress>span{display:block;height:100%;background:linear-gradient(90deg,#42cfb6,#6ba8ff);transition:width .25s}.steps{display:grid;gap:12px}.step{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;padding:18px;border:1px solid #263a52;border-radius:16px;background:#101d2d}.number{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#1d3047;font-weight:800}.step h2{font-size:1rem;margin:0 0 4px}.step p{font-size:.88rem;color:#91a5bd;margin:0}.done{border-color:#357d72}.done .number{background:#235f56}.button{border:0;border-radius:999px;padding:10px 16px;background:#eef4ff;color:#08111f;font-weight:800;cursor:pointer}.button:disabled{opacity:.5;cursor:not-allowed}.notice{padding:14px 16px;border-radius:12px;background:#19283b;color:#b9c8d9;margin:18px 0}.error{background:#51252b;color:#ffd5da}@media(max-width:640px){.step{grid-template-columns:40px 1fr}.step .button{grid-column:1/-1;width:100%}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="eyebrow">Max Webstudio partnerprogramma</div>
+    <h1>Goed voorbereid aan de slag.</h1>
+    <p class="intro">Doorloop iedere stap. Je verkoopomgeving blijft veilig afgesloten totdat training, beoordeling en documenten volledig zijn afgerond.</p>
+    <div class="progress" aria-label="Voortgang"><span id="progress" style="width:0"></span></div>
+    <p id="notice" class="notice">Je onboarding wordt geladen…</p>
+    <section id="steps" class="steps" aria-live="polite"></section>
+  </main>
+  <script type="module">
+    const labels = {
+      welcome: ["Welkom", "Maak kennis met het partnerprogramma."],
+      vision: ["Visie", "Begrijp waar Max Webstudio voor staat."],
+      working_principles: ["Werkwijze", "Werk zorgvuldig, transparant en controleerbaar."],
+      lead_and_task_registration: ["Leads en taken", "Registreer klantcontact en opvolging correct."],
+      privacy_confidentiality: ["Privacy en vertrouwelijkheid", "Ga verantwoordelijk om met persoonsgegevens."],
+      responsible_customer_contact: ["Klantcontact", "Communiceer duidelijk zonder ongefundeerde toezeggingen."],
+      sales_process_call_script: ["Salesproces", "Volg de afgesproken gespreks- en overdrachtsstappen."],
+      commission_system: ["Commissie", "Accepteer de actuele commissieregels."],
+      knowledge_assessment: ["Kennistoets", "Toon aan dat je de werkwijze beheerst."],
+      document_acceptance: ["Documenten", "Controleer en onderteken de vereiste afspraken."],
+    };
+    const selfCompletable = new Set(Object.keys(labels).slice(0, 7));
+    const notice = document.querySelector("#notice");
+    const stepsNode = document.querySelector("#steps");
+
+    async function sessionToken() {
+      const keys = ["maxwebstudioSupabaseAuthSession", "mws_admin_supabase_session"];
+      for (const key of keys) {
+        try {
+          const session = JSON.parse(localStorage.getItem(key) || "null");
+          const token = session?.access_token || session?.accessToken || "";
+          if (token) return token;
+        } catch { /* A corrupted local cache is treated as signed out. */ }
+      }
+      const next = encodeURIComponent(`${location.pathname}${location.search}`);
+      location.replace(`/admin-login.html?next=${next}`);
+      return "";
+    }
+    async function request(token, body) {
+      const response = await fetch("/.netlify/functions/partner-onboarding", {
+        method: body ? "POST" : "GET",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Onboarding kon niet worden geladen.");
+      return data;
+    }
+    function render(data, token) {
+      const completed = data.steps.filter((step) => step.status === "completed").length;
+      document.querySelector("#progress").style.width = `${data.steps.length ? completed / data.steps.length * 100 : 0}%`;
+      notice.className = "notice";
+      notice.textContent = data.access.allowed
+        ? "Je onboarding is afgerond. Je verkoopomgeving is vrijgegeven."
+        : `${completed} van ${data.steps.length} stappen afgerond.`;
+      stepsNode.replaceChildren(...data.steps.map((step) => {
+        const [title, description] = labels[step.stepKey] || [step.stepKey, "Onboardingstap"];
+        const article = document.createElement("article");
+        article.className = `step ${step.status === "completed" ? "done" : ""}`;
+        article.innerHTML = `<span class="number">${step.status === "completed" ? "✓" : step.order}</span><div><h2>${title}</h2><p>${description}</p></div>`;
+        const button = document.createElement("button");
+        button.className = "button";
+        button.type = "button";
+        button.textContent = step.status === "completed" ? "Afgerond" : selfCompletable.has(step.stepKey) ? "Markeer afgerond" : "Volgt in een beveiligde stap";
+        button.disabled = step.status === "completed" || !selfCompletable.has(step.stepKey);
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try {
+            const next = await request(token, { action: "complete_step", stepKey: step.stepKey, idempotencyKey: crypto.randomUUID() });
+            render(next, token);
+          } catch (error) {
+            notice.className = "notice error";
+            notice.textContent = error.message;
+            button.disabled = false;
+          }
+        });
+        article.append(button);
+        return article;
+      }));
+    }
+    try {
+      const token = await sessionToken();
+      if (!token) throw new Error("Log opnieuw in om verder te gaan.");
+      render(await request(token), token);
+    } catch (error) {
+      notice.className = "notice error";
+      notice.textContent = error.message;
+    }
+  </script>
+</body>
+</html>
