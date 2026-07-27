@@ -19594,6 +19594,7 @@
       let activeSalesDetailTab = "overview";
       let leadPreviewRequestId = "";
       let leadfinderDataLayerLeads = [];
+      let leadfinderAssignableEmployees = [];
       let leadfinderSourceStatus = null;
       let leadfinderLastDiagnostics = null;
       let activeLeadfinderQuickFilter = null;
@@ -20302,6 +20303,7 @@
         try {
           const result = await leadApiRequest("GET");
           let remoteRecords = Array.isArray(result.records) ? result.records : [];
+          leadfinderAssignableEmployees = Array.isArray(result.assignableEmployees) ? result.assignableEmployees : [];
           const localRecords = readAllLocalLeadSources();
           const localSyncResult = await centralizeLocalLeadRecords(remoteRecords, localRecords);
           if (localSyncResult.synced) {
@@ -20310,6 +20312,9 @@
             result.counts = refreshed.counts || result.counts;
             result.diagnostics = refreshed.diagnostics || result.diagnostics;
             result.refreshedAt = refreshed.refreshedAt || result.refreshedAt;
+            leadfinderAssignableEmployees = Array.isArray(refreshed.assignableEmployees)
+              ? refreshed.assignableEmployees
+              : leadfinderAssignableEmployees;
           }
           leadfinderDataLayerLeads = mergeLeadDataLayerRecords(remoteRecords, localRecords);
           leadfinderLastDiagnostics = result.diagnostics || null;
@@ -20338,6 +20343,7 @@
             if (queueResult.synced) {
               const refreshed = await leadApiRequest("GET");
               const refreshedRemoteRecords = Array.isArray(refreshed.records) ? refreshed.records : [];
+              leadfinderAssignableEmployees = Array.isArray(refreshed.assignableEmployees) ? refreshed.assignableEmployees : leadfinderAssignableEmployees;
               const refreshedLocalRecords = readAllLocalLeadSources();
               leadfinderDataLayerLeads = mergeLeadDataLayerRecords(refreshedRemoteRecords, refreshedLocalRecords);
               leadfinderLastDiagnostics = refreshed.diagnostics || leadfinderLastDiagnostics;
@@ -20369,6 +20375,7 @@
             fallbackRecords = Array.isArray(fallback.records) ? fallback.records : readLeadFinderLeads();
           }
           leadfinderDataLayerLeads = developerFallbackActive ? fallbackRecords : [];
+          leadfinderAssignableEmployees = [];
           leadfinderLastDiagnostics = error.diagnostics || null;
           leadfinderSourceStatus = {
             mode: developerFallbackActive ? "local-dev-fallback" : "supabase-production",
@@ -20561,7 +20568,19 @@
               value: profile.email || profile.authUserId || profile.auth_user_id || profile.id || profile.name,
             }))
           : [];
-        return [...SALES_EMPLOYEE_FILTER_FALLBACKS, ...profileEmployees];
+        const centralEmployees = Array.isArray(leadfinderAssignableEmployees)
+          ? leadfinderAssignableEmployees.map((employee) => ({
+            id: employee.id,
+            authUserId: employee.authUserId || employee.auth_user_id,
+            email: employee.email,
+            name: employee.name,
+            label: employee.name || employee.email,
+            value: employee.email || employee.authUserId || employee.auth_user_id || employee.id || employee.name,
+          }))
+          : [];
+        return centralEmployees.length
+          ? centralEmployees
+          : [...SALES_EMPLOYEE_FILTER_FALLBACKS, ...profileEmployees];
       }
 
       function getLeadfinderUserContext() {
@@ -20858,6 +20877,7 @@
         leadfinderElements.ownerAssignmentSelect.innerHTML = options
           .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(employeeOptionAccountLabel(option))}</option>`)
           .join("");
+        leadfinderElements.ownerAssignmentSelect.insertAdjacentHTML("afterbegin", '<option value="">Kies medewerker</option>');
         leadfinderElements.ownerAssignmentSelect.value = lead?.id ? employeeOptionFromValue(getLeadOwnerValue(lead))?.value || "" : "";
         if (leadfinderElements.ownerAssignmentSave) leadfinderElements.ownerAssignmentSave.disabled = !lead?.id;
         setLeadOwnerAssignmentMessage(lead?.id ? "" : "Selecteer eerst een lead.", "");
@@ -20883,12 +20903,34 @@
           getLeadNotes(lead),
           `[${new Date().toLocaleDateString("nl-NL")}] Lead toegewezen aan ${employee.label}${previousLabel && previousLabel !== employee.label ? `, hiervoor ${previousLabel}` : ""}.`,
         ].filter(Boolean).join("\n\n");
+        let savedLead = null;
         try {
-          await updateLeadfinderLead(lead, updates, `Lead toegewezen aan ${employee.label}.`);
-          messageSetter(`Opgeslagen op naam van ${employee.label}.`, "success");
+          const result = await leadApiRequest("PATCH", {
+            id: lead.id,
+            action: "assign",
+            assignedUserId: employee.authUserId || "",
+            assignedUserEmail: employee.email || "",
+            assignedUserName: employee.name || employee.label || "",
+            assignedTo: employee.authUserId || employee.email || employee.value,
+            notes: updates.notes,
+          }, { id: lead.id });
+          savedLead = result.lead || null;
+          selectedLeadFinderId = result.lead?.id || lead.id;
+          await refreshLeads({ keepSelection: true });
+          if (result.notification?.attempted && result.notification?.sent) {
+            messageSetter(`Opgeslagen op naam van ${employee.label}. E-mailnotificatie verstuurd.`, "success");
+          } else if (result.warning) {
+            messageSetter(`Opgeslagen op naam van ${employee.label}. ${result.warning}`, "warning");
+          } else if (result.assignmentChanged === false) {
+            messageSetter(`${employee.label} stond al als medewerker ingesteld.`, "success");
+          } else {
+            messageSetter(`Opgeslagen op naam van ${employee.label}.`, "success");
+          }
         } catch (error) {
           messageSetter(error.message || "Medewerker kon niet worden opgeslagen.", "error");
+          return null;
         }
+        return savedLead || selectedLeadFinderLead();
       }
 
       async function saveSelectedLeadOwnerAssignment() {
