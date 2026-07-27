@@ -33,6 +33,7 @@ test("self-service validates IBANs, document signatures and signed storage URLs"
 test("admin staff directory is superadmin-only and exposes the requested controls", () => {
   const endpoint = read("functions/admin-staff-directory.js");
   const html = read("public/admin-medewerkers.html");
+  const partnerAdmin = read("public/admin-partners.html");
   const client = read("public/src/staff/admin-staff-directory.js");
   assert.match(endpoint, /allowedRoles:\["super_admin"\]/);
   assert.match(endpoint, /disableLegacyToken:true/);
@@ -42,6 +43,8 @@ test("admin staff directory is superadmin-only and exposes the requested control
   assert.match(client, /send_message/);
   assert.match(client, /download_document/);
   assert.match(html, /id="employee-list"/);
+  assert.match(partnerAdmin, /Open superadmin-medewerkersportaal/);
+  assert.match(partnerAdmin, /href="\/admin-medewerkers\.html"/);
 });
 
 test("directory helpers reject unsafe staff records and resolve private downloads", () => {
