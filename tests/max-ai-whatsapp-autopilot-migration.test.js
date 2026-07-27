@@ -1,0 +1,4 @@
+const assert=require("node:assert/strict");const fs=require("node:fs");const path=require("node:path");const test=require("node:test");
+const source=fs.readFileSync(path.join(__dirname,"../supabase/migrations/20260727173000_max_ai_whatsapp_autopilot.sql"),"utf8");
+test("autopilot queue is service-only, idempotent and tied to one inbound message",()=>{assert.match(source,/mws_queue_whatsapp_ai_text_v1/);assert.match(source,/autopilotInboundMessageId/);assert.match(source,/bot_mode <> 'autopilot'/);assert.match(source,/revoke all on function public\.mws_queue_whatsapp_ai_text_v1[^]*from public,anon,authenticated/);});
+test("automatic replies preserve bot provenance and can hand off",()=>{assert.match(source,/'whatsapp','outbound','bot'/);assert.match(source,/ai_generated/);assert.match(source,/mws_handoff_ai_autopilot_v1/);assert.match(source,/bot_mode='paused'/);assert.match(source,/status='waiting_for_staff'/);assert.match(source,/enable_autopilot/);});

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="nl" data-admin-access="checking">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Gesprekken | Max Webstudio</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="src/admin-conversations.css?v=0.2.0" />
+    <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
+  </head>
+  <body>
+    <main class="conversation-page">
+      <header class="conversation-hero">
+        <div>
+          <span>Max Webstudio · 085 130 2326</span>
+          <h1>Gesprekken</h1>
+          <p>Websitechat en WhatsApp samen in één veilige medewerkersinbox.</p>
+        </div>
+        <div class="conversation-hero__actions">
+          <span id="conversation-scope">Laden…</span>
+          <button type="button" id="conversation-refresh">Vernieuwen</button>
+          <a href="admin-dashboard.html">Dashboard</a>
+        </div>
+      </header>
+
+      <p class="conversation-status" id="conversation-status" role="status" aria-live="polite"></p>
+
+      <section class="conversation-shell" aria-label="Gesprekkeninbox">
+        <aside class="conversation-sidebar">
+          <div class="conversation-filters">
+            <label>Zoeken<input id="conversation-search" type="search" placeholder="Naam, bedrijf of telefoon" /></label>
+            <label>Status<select id="conversation-filter"><option value="active">Actief</option><option value="all">Alles</option><option value="waiting_for_staff">Wacht op medewerker</option><option value="resolved">Afgerond</option></select></label>
+          </div>
+          <div id="conversation-list" class="conversation-list" aria-label="Gesprekken"></div>
+        </aside>
+
+        <section class="conversation-detail" id="conversation-detail">
+          <div class="conversation-empty"><h2>Kies een gesprek</h2><p>Selecteer links een prospect om de chat te openen.</p></div>
+        </section>
+      </section>
+    </main>
+    <script src="src/admin-conversations.js?v=0.2.0" defer></script>
+  </body>
+</html>

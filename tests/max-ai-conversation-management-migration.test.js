@@ -1,0 +1,4 @@
+const assert=require("node:assert/strict");const fs=require("node:fs");const path=require("node:path");const test=require("node:test");
+const source=fs.readFileSync(path.join(__dirname,"../supabase/migrations/20260727153000_max_ai_conversation_management.sql"),"utf8");
+test("conversation management is service-only and audited",()=>{assert.match(source,/create or replace function public\.mws_manage_conversation_v1/);assert.match(source,/security definer/);assert.match(source,/revoke all on function[^]*from public,anon,authenticated/);assert.match(source,/actor_auth_user_id/);});
+test("management supports assignment, lifecycle and immediate bot control",()=>{for(const action of ["assign","unassign","resolve","reopen","pause_bot","resume_bot"])assert.match(source,new RegExp(`'${action}'`));assert.match(source,/bot_mode='paused'/);assert.match(source,/bot_mode='assisted'/);});

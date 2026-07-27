@@ -81,6 +81,10 @@ export const PROTECTED_ROUTES = Object.freeze({
     requiredRoles: SALES_ROLES,
     requiredPermissions: [{ resource: "leads", action: "view" }],
   }),
+  "admin-gesprekken": adminRoute("/admin-gesprekken.html", {
+    requiredRoles: ALL_STAFF_ROLES,
+    requiredPermissions: [{ resource: "dashboard", action: "view" }],
+  }),
   "admin-facturen": adminRoute("/admin-facturen.html", {
     requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER],
     requiredPermissions: [{ resource: "invoices", action: "view" }],
