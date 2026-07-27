@@ -47,6 +47,10 @@
     {
       "manifest": "docs/release-readiness/staff-zzp-dossier-v1-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/staff-zzp-dossier-v1-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/staff-signhost-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/staff-signhost-v1-product-migrations/FILESET.json"
     }
   ]
 }

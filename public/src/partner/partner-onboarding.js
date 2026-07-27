@@ -2,6 +2,7 @@ import { partnerPreviewData } from "./partner-onboarding-preview.js";
 
 const endpoint = "/.netlify/functions/partner-onboarding";
 const staffEndpoint = "/.netlify/functions/staff-self-service";
+const signingEndpoint = "/.netlify/functions/partner-signing";
 const previewStorageKey = "mwsPartnerOnboardingPreviewV2";
 const controlledLabels = {
   commission_system: ["Commissievoorwaarden", "Accepteer de exacte, actuele planversie."],
@@ -14,6 +15,7 @@ const state = {
   activeStepKey: "",
   preview: new URLSearchParams(location.search).get("preview") === "1",
   staff: null,
+  signing: null,
 };
 const element = (id) => document.getElementById(id);
 
@@ -51,6 +53,19 @@ async function staffRequest(body) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Het ZZP-dossier kon niet worden geladen.");
   state.staff = data;
+  return data;
+}
+
+async function signingRequest(body) {
+  if (state.preview) return previewSigningAction(body || {});
+  const response = await fetch(signingEndpoint, {
+    method:body ? "POST" : "GET",
+    headers:{ Authorization:`Bearer ${state.token}`, "Content-Type":"application/json" },
+    body:body ? JSON.stringify(body) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "De ondertekening kon niet worden geladen.");
+  state.signing = data;
   return data;
 }
 
@@ -212,6 +227,7 @@ function renderZzpDossierPanel(container) {
       <div class="zzp-form-actions"><button class="secondary" type="submit">Dossier opslaan</button><button id="submitZzpDossier" class="primary" type="button">Dossier ter controle indienen</button></div>
       <p id="zzpDossierStatus" class="document-note" role="status"></p>
     </form>
+    <section id="zzpSigningPanel" class="zzp-signing"></section>
     <section class="zzp-upload"><div><p class="eyebrow">Privédocumenten</p><h3>Veilig aanleveren</h3><p>Geen bankpas uploaden. Gebruik een afgeschermd rekeningbewijs. Een identiteitskopie is voor ZZP optioneel: gebruik KopieID, een watermerk en scherm het BSN af als dit niet nodig is.</p></div>
       <form id="zzpUploadForm" class="zzp-upload-form">
         <label>Documenttype<select name="documentType"><option value="signed_assignment_agreement">Ondertekende opdrachtovereenkomst</option><option value="bank_account_proof">Afgeschermd rekeningbewijs</option><option value="kvk_extract">KvK-uittreksel</option><option value="identity_verification_copy">Optionele identiteitsverificatie</option></select></label>
@@ -225,6 +241,7 @@ function renderZzpDossierPanel(container) {
     <section class="zzp-chat"><div><p class="eyebrow">Direct contact</p><h3>Chat met Max</h3><p>Berichten blijven gekoppeld aan je dossier.</p></div><div id="zzpMessages" class="zzp-messages"></div><form id="zzpMessageForm"><textarea name="body" rows="3" maxlength="4000" placeholder="Schrijf een bericht…" required></textarea><button class="secondary" type="submit">Bericht sturen</button></form></section>`;
   container.append(panel);
   fillDossierForm(panel.querySelector("#zzpDossierForm"), staff.dossier);
+  renderSigningPanel(panel.querySelector("#zzpSigningPanel"), state.signing);
   renderStaffDocuments(panel.querySelector("#zzpDocumentList"), staff.documents || []);
   renderStaffMessages(panel.querySelector("#zzpMessages"), staff.messages || []);
   const uploadForm = panel.querySelector("#zzpUploadForm");
@@ -236,18 +253,51 @@ function renderZzpDossierPanel(container) {
   panel.querySelector("#zzpMessageForm").addEventListener("submit", sendStaffMessage);
 }
 
+function renderSigningPanel(container, signing = {}) {
+  const current = signing?.current || null;
+  const labels = {
+    creating:"Ondertekening voorbereiden", waiting_for_signer:"Wacht op handtekeningen",
+    signed_pending_scan:"Ondertekend · veiligheidscontrole loopt", signed:"Volledig ondertekend",
+    rejected:"Ondertekening geweigerd", expired:"Ondertekening verlopen",
+    cancelled:"Ondertekening geannuleerd", failed:"Ondertekening mislukt",
+  };
+  const ready = Boolean(signing?.configured && signing?.templateReady && signing?.dossierReady);
+  const open = current && ["creating","waiting_for_signer","signed_pending_scan","signed"].includes(current.status);
+  const explanation = current
+    ? `${labels[current.status] || current.status}. Je ontvangt de uitnodiging en herinneringen rechtstreeks via Signhost.`
+    : !signing?.templateReady
+      ? "De definitieve juridisch goedgekeurde overeenkomst wordt nog door Max Webstudio klaargezet."
+      : !signing?.dossierReady
+        ? "Sla eerst je wettelijke naam en mobiele telefoonnummer op."
+        : "De overeenkomst wordt door jou en Max Webstudio via Signhost ondertekend.";
+  container.innerHTML = `<div><p class="eyebrow">Digitale overeenkomst</p><h3>Ondertekenen via Signhost</h3><p>${escapeHtml(explanation)}</p></div>`;
+  const badge=document.createElement("span");badge.className=`signing-badge ${current?.status || "not-ready"}`;badge.textContent=current ? (labels[current.status] || current.status) : "Nog niet gestart";container.append(badge);
+  const button=document.createElement("button");button.type="button";button.className="primary";button.textContent=open ? "Ondertekenstatus vernieuwen" : "ZZP-overeenkomst laten ondertekenen";button.disabled=!open&&!ready;button.addEventListener("click",()=>open ? refreshSigning(button) : startSigning(button));container.append(button);
+}
+
+async function startSigning(button) {
+  button.disabled=true;button.textContent="Signhost voorbereiden…";
+  try{await signingRequest({action:"start_agreement",idempotencyKey:crypto.randomUUID()});showDocuments();}
+  catch(error){showError(error);button.disabled=false;button.textContent="Opnieuw proberen";}
+}
+async function refreshSigning(button) {
+  button.disabled=true;
+  try{await signingRequest();showDocuments();}
+  catch(error){showError(error);button.disabled=false;}
+}
+
 function fillDossierForm(form, dossier = {}) {
   for (const [name, value] of Object.entries(dossier || {})) if (form.elements[name]) form.elements[name].value = value || "";
 }
 function dossierPayload(form) { return Object.fromEntries(new FormData(form).entries()); }
 async function saveZzpDossier(event) {
   event.preventDefault(); const form=event.currentTarget; const status=form.querySelector("#zzpDossierStatus");
-  try { await staffRequest({ action:"save_dossier", ...dossierPayload(form) }); status.textContent="Dossier veilig opgeslagen."; showDocuments(); }
+  try { await staffRequest({ action:"save_dossier", ...dossierPayload(form) }); await signingRequest(); status.textContent="Dossier veilig opgeslagen."; showDocuments(); }
   catch(error){status.textContent=error.message;}
 }
 async function submitZzpDossier(event) {
   const form=event.currentTarget.closest(".zzp-dossier").querySelector("#zzpDossierForm"); const status=form.querySelector("#zzpDossierStatus");
-  try { await staffRequest({ action:"submit_dossier", ...dossierPayload(form) }); status.textContent="Dossier ingediend voor controle door Max."; showDocuments(); }
+  try { await staffRequest({ action:"submit_dossier", ...dossierPayload(form) }); await signingRequest(); status.textContent="Dossier ingediend voor controle door Max."; showDocuments(); }
   catch(error){status.textContent=error.message;}
 }
 async function uploadZzpDocument(event) {
@@ -431,6 +481,7 @@ async function initialize() {
       element("securityText").textContent = "Je voortgang blijft alleen in deze browser bewaard; er worden geen echte persoonsgegevens of bestanden verstuurd.";
       const preview = loadPreviewState();
       state.staff = preview.staff;
+      state.signing = { configured:true, templateReady:true, dossierReady:Boolean(state.staff?.dossier?.legalName && state.staff?.dossier?.phone), current:null, history:[] };
       const data = structuredClone(partnerPreviewData);
       for (const step of data.steps) if (preview.completedStepKeys.includes(step.stepKey)) step.status = "completed";
       render(data);
@@ -438,7 +489,7 @@ async function initialize() {
     }
     state.token = sessionToken();
     if (!state.token) throw new Error("Log opnieuw in om verder te gaan.");
-    const [onboarding] = await Promise.all([request(), staffRequest()]);
+    const [onboarding] = await Promise.all([request(), staffRequest(), signingRequest()]);
     render(onboarding);
   } catch (error) {
     element("notice").className = "notice error";
@@ -458,6 +509,12 @@ function completePreviewStep(stepKey, rerender = true) {
 
 function emptyPreviewStaff() {
   return { profile:{name:"Voorbeeldpartner",email:"preview@maxwebstudio.nl",role:"sales_partner"}, dossier:null, documents:[], messages:[], completeness:{percent:0,completed:0,total:12} };
+}
+function previewSigningAction(input={}) {
+  state.signing=state.signing||{configured:true,templateReady:true,dossierReady:Boolean(state.staff?.dossier?.legalName&&state.staff?.dossier?.phone),current:null,history:[]};
+  state.signing.dossierReady=Boolean(state.staff?.dossier?.legalName&&state.staff?.dossier?.phone);
+  if(input.action==="start_agreement") state.signing.current={id:crypto.randomUUID(),status:"waiting_for_signer",requested_at:new Date().toISOString()};
+  return structuredClone(state.signing);
 }
 function loadPreviewState() {
   try {
@@ -481,7 +538,9 @@ function previewStaffAction(input={}) {
   else if(action==="prepare_document") state.staff.documents.unshift({id:crypto.randomUUID(),documentType:input.documentType,identityDocumentType:input.identityDocumentType,originalFilename:input.previewFilename||input.filename,status:"preview",createdAt:new Date().toISOString()});
   else if(action==="send_message") state.staff.messages.push({id:crypto.randomUUID(),body:input.body,mine:true,createdAt:new Date().toISOString()});
   else if(action==="mark_messages_read") for(const message of state.staff.messages)message.readAt=message.readAt||new Date().toISOString();
-  state.staff.completeness=previewCompleteness(state.staff); persistPreviewState(); return structuredClone(state.staff);
+  state.staff.completeness=previewCompleteness(state.staff);
+  if(state.signing)state.signing.dossierReady=Boolean(state.staff?.dossier?.legalName&&state.staff?.dossier?.phone);
+  persistPreviewState(); return structuredClone(state.staff);
 }
 
 initialize();

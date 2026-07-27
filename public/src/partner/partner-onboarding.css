@@ -116,6 +116,14 @@ h1 { font-size: clamp(2.35rem, 4.5vw, 4rem); line-height: .98; margin: 0 0 20px;
 .disclaimer { color: var(--muted); font-size: .75rem; }
 .secondary { width: auto; background: #e0c277; color: #07111f; box-shadow: none; }
 .assessment-result { padding: 17px; border: 1px solid rgba(25,194,255,.25); border-radius: 9px; background: rgba(25,194,255,.1); margin-bottom: 18px; line-height: 1.55; }
+.zzp-signing { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px 20px; align-items:center; margin:22px 0; padding:22px; border:1px solid rgba(25,194,255,.3); border-radius:12px; background:linear-gradient(135deg,rgba(21,94,239,.14),rgba(43,217,130,.07)); }
+.zzp-signing h3 { margin:0 0 7px; }
+.zzp-signing p { margin:0; color:var(--muted); line-height:1.55; }
+.zzp-signing .primary { grid-column:1/-1; margin-top:0; }
+.signing-badge { display:inline-flex; width:max-content; padding:7px 10px; border-radius:999px; background:rgba(171,196,224,.12); color:#dce9f8; font-size:.68rem; font-weight:900; text-transform:uppercase; letter-spacing:.05em; }
+.signing-badge.signed { background:rgba(43,217,130,.16); color:#9af2c4; }
+.signing-badge.signed_pending_scan { background:rgba(245,158,11,.16); color:#fbd38d; }
+.signing-badge.rejected,.signing-badge.failed,.signing-badge.expired { background:rgba(239,68,68,.16); color:#fecaca; }
 
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; gap: 30px; }
@@ -134,6 +142,7 @@ h1 { font-size: clamp(2.35rem, 4.5vw, 4rem); line-height: .98; margin: 0 0 20px;
   .step-nav { grid-template-columns: 1fr; }
   .module, .assessment { border-radius: 10px; padding: 25px 19px; }
   .certificate dl { grid-template-columns: 1fr; }
+  .zzp-signing { grid-template-columns:1fr; }
 }
 @media print {
   body { background: #fff; color: #111; }
