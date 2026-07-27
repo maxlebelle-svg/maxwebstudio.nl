@@ -12,6 +12,7 @@ const allowedRoles = new Set(CANONICAL_ROLES.filter((role) => role !== "demo_use
 const allowedStatuses = new Set(CANONICAL_PROFILE_STATUSES);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const productionActivationUrl = "https://maxwebstudio.nl/account-activeren";
+const productionPartnerOnboardingUrl = "https://maxwebstudio.nl/partner-onboarding.html";
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -36,7 +37,10 @@ exports.handler = async (event) => {
     const existingUser = await findAuthUserByEmail(supabaseUrl, serviceRoleKey, input.email);
     let authUser = existingUser;
     let setupLink = { actionLink: "", authUser: null };
-    if (existingUser || action === "send_password_reset") {
+    const existingPartnerOnboardingInvite = action === "onboarding_invite" && Boolean(existingUser);
+    if (existingPartnerOnboardingInvite) {
+      setupLink = await generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, "magiclink", partnerOnboardingRedirectTo());
+    } else if (existingUser || action === "send_password_reset") {
       setupLink = await generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, "recovery");
     } else {
       setupLink = await generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, "invite");
@@ -66,9 +70,9 @@ exports.handler = async (event) => {
     let setupLinkSent = false;
     let customMailSent = false;
     let mailWarning = "";
-    if (!existingUser || action === "send_password_reset" || action === "invite") {
+    if (!existingUser || action === "send_password_reset" || action === "invite" || action === "onboarding_invite") {
       if (setupLink.actionLink) {
-        const mailResult = await sendEmployeeInviteMail(input, setupLink.actionLink);
+        const mailResult = await sendEmployeeInviteMail(input, setupLink.actionLink, { onboardingOnly: existingPartnerOnboardingInvite });
         customMailSent = Boolean(mailResult.sent);
         mailWarning = cleanText(mailResult.warning);
       }
@@ -93,7 +97,9 @@ exports.handler = async (event) => {
       activationRedirectTo: inviteRedirectTo(),
       message: setupLinkSent
         ? customMailSent
-          ? "Professionele Max Webstudio uitnodiging is verstuurd."
+          ? action === "onboarding_invite"
+            ? "De persoonlijke onboardinguitnodiging is verstuurd."
+            : "Professionele Max Webstudio uitnodiging is verstuurd."
           : "Setup-link is aangemaakt, maar mail verzenden is niet gelukt. Probeer opnieuw."
         : "Bestaande gebruiker is bijgewerkt. Gebruik de resetlink-actie als wachtwoord setup nodig is.",
     });
@@ -120,6 +126,12 @@ function inviteRedirectTo() {
   const configured = cleanText(process.env.SUPABASE_INVITE_REDIRECT_TO || process.env.EMPLOYEE_INVITE_REDIRECT_URL);
   if (configured && !configured.includes("localhost") && !configured.includes("127.0.0.1")) return configured;
   return productionActivationUrl;
+}
+
+function partnerOnboardingRedirectTo() {
+  const configured = cleanText(process.env.PARTNER_ONBOARDING_INVITE_REDIRECT_TO);
+  if (configured && !configured.includes("localhost") && !configured.includes("127.0.0.1")) return configured;
+  return productionPartnerOnboardingUrl;
 }
 
 function forceInviteRedirect(actionLink = "") {
@@ -172,7 +184,7 @@ async function createAuthUserSilently(supabaseUrl, serviceRoleKey, input) {
   });
 }
 
-async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, type = "invite") {
+async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, type = "invite", redirectTo = inviteRedirectTo()) {
   try {
     const data = await supabaseFetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
       method: "POST",
@@ -181,12 +193,12 @@ async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, typ
         type,
         email: input.email,
         data: { name: input.name, role: input.role },
-        redirect_to: inviteRedirectTo(),
+        redirect_to: redirectTo,
       }),
     });
     const rawActionLink = cleanText(data.action_link || data.actionLink || data.properties?.action_link || data.properties?.actionLink);
     return {
-      actionLink: forceInviteRedirect(rawActionLink),
+      actionLink: type === "magiclink" ? forceRedirect(rawActionLink, redirectTo) : forceInviteRedirect(rawActionLink),
       authUser: data.user || data.properties?.user || null,
     };
   } catch (error) {
@@ -195,26 +207,31 @@ async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, typ
   }
 }
 
-async function sendEmployeeInviteMail(input, actionLink) {
-  const safeActionLink = forceInviteRedirect(actionLink);
+async function sendEmployeeInviteMail(input, actionLink, options = {}) {
+  const onboardingOnly = Boolean(options.onboardingOnly);
+  const safeActionLink = onboardingOnly ? forceRedirect(actionLink, partnerOnboardingRedirectTo()) : forceInviteRedirect(actionLink);
   const firstName = cleanText(input.name).split(/\s+/)[0] || "daar";
   const roleLabel = input.role === "sales_partner" ? "Sales Partner" : input.role.replace(/_/g, " ");
-  const subject = "Welkom bij Max Webstudio";
+  const subject = onboardingOnly ? "Je Max Webstudio-onboarding staat klaar" : "Welkom bij Max Webstudio";
   const text = [
     `Hoi ${firstName},`,
     "",
-    "Welkom bij Max Webstudio.",
+    onboardingOnly ? "Je Max Webstudio-onboarding staat voor je klaar." : "Welkom bij Max Webstudio.",
     "",
-    `Je bent uitgenodigd als ${roleLabel}. Via onderstaande link activeer je je account en kies je je wachtwoord.`,
+    onboardingOnly
+      ? `Via onderstaande persoonlijke link log je veilig in als ${roleLabel} en open je direct je onboarding.`
+      : `Je bent uitgenodigd als ${roleLabel}. Via onderstaande link activeer je je account en kies je je wachtwoord.`,
     "",
-    `Account activeren: ${safeActionLink}`,
+    `${onboardingOnly ? "Onboarding starten" : "Account activeren"}: ${safeActionLink}`,
     "",
-    input.role === "sales_partner" ? "Na activatie start je eerst met jouw beveiligde partneronboarding." : "Na activatie kom je direct in jouw dashboard.",
+    onboardingOnly
+      ? "Doorloop de leerstof, de kennistoets, je ZZP-dossier en daarna de digitale overeenkomst."
+      : input.role === "sales_partner" ? "Na activatie start je eerst met jouw beveiligde partneronboarding." : "Na activatie kom je direct in jouw dashboard.",
     "",
     "Groet,",
     "Max Webstudio",
   ].join("\n");
-  const html = buildEmployeeInviteHtml({ firstName, roleLabel, actionLink: safeActionLink, isSalesPartner: input.role === "sales_partner" });
+  const html = buildEmployeeInviteHtml({ firstName, roleLabel, actionLink: safeActionLink, isSalesPartner: input.role === "sales_partner", onboardingOnly });
   return sendEmail({
     to: input.email,
     from: cleanText(process.env.EMPLOYEE_INVITE_FROM_EMAIL) || cleanText(process.env.FROM_EMAIL) || undefined,
@@ -224,7 +241,7 @@ async function sendEmployeeInviteMail(input, actionLink) {
   });
 }
 
-function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPartner }) {
+function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPartner, onboardingOnly = false }) {
   const safeName = escapeHtml(firstName);
   const safeRole = escapeHtml(roleLabel);
   const safeLink = escapeHtml(actionLink);
@@ -245,7 +262,7 @@ function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPart
                     </td>
                     <td style="vertical-align:middle;">
                       <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#83e6c6;">Max Webstudio</div>
-                      <h1 style="margin:8px 0 0;font-size:28px;line-height:1.15;">Welkom bij Max Webstudio</h1>
+                      <h1 style="margin:8px 0 0;font-size:28px;line-height:1.15;">${onboardingOnly ? "Je onboarding staat klaar" : "Welkom bij Max Webstudio"}</h1>
                     </td>
                   </tr>
                 </table>
@@ -254,9 +271,9 @@ function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPart
             <tr>
               <td style="padding:30px;">
                 <p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Hoi ${safeName},</p>
-                <p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Je bent uitgenodigd als <strong>${safeRole}</strong>. Via onderstaande knop activeer je je account en kies je je wachtwoord.</p>
-                <p style="margin:0 0 24px;font-size:16px;line-height:1.65;">${isSalesPartner ? "Na activatie start je eerst met jouw beveiligde partneronboarding." : "Na activatie kom je direct in jouw dashboard."}</p>
-                <a href="${safeLink}" style="display:inline-block;background:#28d39a;color:#07121f;text-decoration:none;font-weight:900;padding:14px 20px;border-radius:10px;">Account activeren</a>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.65;">${onboardingOnly ? `Via onderstaande persoonlijke link log je veilig in als <strong>${safeRole}</strong> en open je direct je onboarding.` : `Je bent uitgenodigd als <strong>${safeRole}</strong>. Via onderstaande knop activeer je je account en kies je je wachtwoord.`}</p>
+                <p style="margin:0 0 24px;font-size:16px;line-height:1.65;">${onboardingOnly ? "Doorloop de leerstof, de kennistoets, je ZZP-dossier en daarna de digitale overeenkomst." : isSalesPartner ? "Na activatie start je eerst met jouw beveiligde partneronboarding." : "Na activatie kom je direct in jouw dashboard."}</p>
+                <a href="${safeLink}" style="display:inline-block;background:#28d39a;color:#07121f;text-decoration:none;font-weight:900;padding:14px 20px;border-radius:10px;">${onboardingOnly ? "Start je onboarding" : "Account activeren"}</a>
                 <p style="margin:24px 0 0;font-size:13px;line-height:1.55;color:#5b6b7c;">Werkt de knop niet? Kopieer deze link:<br><a href="${safeLink}" style="color:#0f6f92;">${safeLink}</a></p>
               </td>
             </tr>
@@ -369,6 +386,18 @@ function cleanText(value) {
   return String(value || "").trim();
 }
 
+function forceRedirect(actionLink = "", redirectTo = "") {
+  const cleanLink = cleanText(actionLink);
+  if (!cleanLink) return "";
+  try {
+    const url = new URL(cleanLink);
+    url.searchParams.set("redirect_to", redirectTo);
+    return url.toString();
+  } catch {
+    return cleanLink;
+  }
+}
+
 function escapeHtml(value) {
   return cleanText(value)
     .replace(/&/g, "&amp;")
@@ -388,3 +417,5 @@ function jsonResponse(statusCode, body) {
     body: JSON.stringify(body),
   };
 }
+
+exports._test = { buildEmployeeInviteHtml, forceRedirect, partnerOnboardingRedirectTo };
