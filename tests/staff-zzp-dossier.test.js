@@ -61,3 +61,13 @@ test("cross-user agenda access is both client-selected and server-authorized", (
   assert.match(client, /query\.get\("employeeEmail"\)/);
   assert.match(client, /viewingAnotherEmployee/);
 });
+
+test("central admin navigation exposes Partnerbeheer while keeping Medewerkers superadmin-only", () => {
+  const navigation = require("../public/admin/config/sidebar-navigation.js");
+  const items = navigation.ADMIN_SIDEBAR_NAVIGATION.flatMap((section) => section.items);
+  const partners = items.find((item) => item.id === "partner-management");
+  const staff = items.find((item) => item.id === "staff-directory");
+  assert.equal(partners.route, "admin-partners.html");
+  assert.deepEqual(partners.permission.roles, ["super_admin", "admin", "sales_manager"]);
+  assert.deepEqual(staff.permission.roles, ["super_admin"]);
+});

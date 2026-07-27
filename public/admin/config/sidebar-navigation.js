@@ -104,6 +104,7 @@
       label: "Beheer",
       items: Object.freeze([
         item("dashboard", "Dashboard", "admin-dashboard.html", "gauge", { permission: permission("dashboard", "view") }),
+        item("partner-management", "Partnerbeheer", "admin-partners.html", "users", { permission: permission("partners", "view", Object.freeze(["super_admin", "admin", "sales_manager"])) }),
         item("staff-directory", "Medewerkers", "admin-medewerkers.html", "users", { permission: permission("settings", "view", Object.freeze(["super_admin"])) }),
         item("notifications", "Notification Center", "admin-notification-center.html", "bell", { permission: permission("dashboard", "view") }),
         item("automations", "Max Automations", "admin-max-automations.html", "workflow", { permission: permission("developerTools", "view", roleGroups.technical) }),

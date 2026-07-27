@@ -14,7 +14,7 @@ test("central sidebar configuration describes every required section and product
   const items = sections.flatMap((section) => section.items);
   const ids = items.map((item) => item.id);
   assert.equal(new Set(ids).size, ids.length);
-  for (const id of ["leads", "website-factory", "demo-sites", "ai-content-library", "asset-manager", "seo-studio", "social-media-studio", "brand-center", "domain-center", "customer-onboarding", "roadmap"]) assert(ids.includes(id), `missing ${id}`);
+  for (const id of ["leads", "website-factory", "demo-sites", "ai-content-library", "asset-manager", "seo-studio", "social-media-studio", "brand-center", "domain-center", "customer-onboarding", "roadmap", "partner-management", "staff-directory"]) assert(ids.includes(id), `missing ${id}`);
   items.forEach((item) => {
     assert.match(item.route, /^admin-[a-z0-9-]+\.html(?:#.*)?$/);
     assert.equal(typeof item.workspaceRequired, "boolean");
