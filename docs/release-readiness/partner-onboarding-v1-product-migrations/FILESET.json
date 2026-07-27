@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql",
+      "bytes": 7924,
+      "sha256": "049f511b70b440733e0f5f00bb0b7fb5b2c184e9eb0fd8ff8fd637dc84d1fbb3"
+    },
+    {
+      "path": "supabase/migrations/20260726201000_partner_onboarding_gate_foundation.sql",
+      "bytes": 24684,
+      "sha256": "9d40311b0b524f4a5d7a991f7ca1797aecefcfbcc1210fabf1ff724d5a760142"
+    },
+    {
+      "path": "supabase/migrations/20260726202000_partner_training_content_v1.sql",
+      "bytes": 15440,
+      "sha256": "93cd4659e12125b888236f35b3aba2fe3536e39a1ca8bc23c1c16184aeffaf35"
+    },
+    {
+      "path": "supabase/migrations/20260726203000_partner_assessment_certification.sql",
+      "bytes": 23997,
+      "sha256": "bbc41f47e566027bdcc5260c5e3b0e79433fca857437901f7383bf24f7f14af6"
+    },
+    {
+      "path": "supabase/migrations/20260726204000_partner_canonical_commission.sql",
+      "bytes": 32605,
+      "sha256": "875ca6e6e4d7610a8d6d11f5d00b764019c3b20c5dec815c5459633299ceb79b"
+    },
+    {
+      "path": "supabase/migrations/20260726205000_partner_certification_activation_control.sql",
+      "bytes": 15881,
+      "sha256": "173a28ec8c4049184bf55467fb718e7f7afcb6f94800f56794e8003b65a25caf"
+    }
+  ]
+}

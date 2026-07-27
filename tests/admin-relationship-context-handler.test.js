@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { handler, _test } = require("../functions/admin-relationship-context");
+const { REQUIRED_ONBOARDING_STEPS } = require("../functions/services/partnerOnboardingAccessService");
 
 const ACTOR = "11111111-1111-4111-8111-111111111111";
 const PROFILE = "22222222-2222-4222-8222-222222222222";
@@ -69,6 +70,8 @@ async function withBackend(role, callback) {
     state.urls.push(String(url));
     if (String(url).includes("/auth/v1/user")) return response(200, { id: ACTOR, email: "max@example.test" });
     if (String(url).includes("/rest/v1/profiles")) return response(200, [{ id: PROFILE, role, status: "active" }]);
+    const gateRows = role === "sales_partner" ? completedPartnerGateRows(String(url)) : undefined;
+    if (gateRows !== undefined) return response(200, gateRows);
     if (state.failSource) return response(400, { code: "42703", message: "column does not exist" });
     if (state.missing) return response(200, []);
     if (String(url).includes("/rest/v1/leads")) return response(200, [{ id: LEAD, company: "DC Timmerwerken", name: "Daan", status: state.archived ? "archived" : "qualified", owner_auth_user_id: state.foreign ? CUSTOMER : ACTOR, metadata: {} }]);
@@ -81,5 +84,15 @@ async function withBackend(role, callback) {
 
 function contract(type, id) { return { contractVersion: 2, entityType: type, relationshipType: type, relationshipId: id, leadId: type === "lead" ? id : null, customerId: type === "customer" ? id : null }; }
 function event(body) { return { httpMethod: "POST", headers: { authorization: "Bearer token", "x-relationship-contract": "2" }, body: JSON.stringify(body) }; }
-function response(status, body) { return { ok: status >= 200 && status < 300, status, json: async () => body }; }
+function response(status, body) { return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) }; }
 function pick(row) { return { relationshipType: row.relationshipType, relationshipId: row.relationshipId, leadId: row.leadId, customerId: row.customerId, companyName: row.companyName }; }
+
+function completedPartnerGateRows(url) {
+  if (url.includes("/rest/v1/partner_profiles")) return [{ id: "partner-profile", profile_id: PROFILE, status: "active" }];
+  if (url.includes("/rest/v1/partner_onboardings")) return [{ id: "partner-onboarding", partner_profile_id: "partner-profile", status: "active" }];
+  if (url.includes("/rest/v1/partner_onboarding_steps")) return REQUIRED_ONBOARDING_STEPS.map((step_key, index) => ({ step_key, step_order: index + 1, status: "completed" }));
+  if (url.includes("/rest/v1/partner_document_versions")) return [{ id: "document-v1", version_code: "v1" }];
+  if (url.includes("/rest/v1/partner_document_acceptances")) return [{ document_version_id: "document-v1" }];
+  if (url.includes("/rest/v1/partner_certificates")) return [{ id: "certificate-v1", status: "valid", expires_at: "2099-01-01T00:00:00.000Z" }];
+  return undefined;
+}

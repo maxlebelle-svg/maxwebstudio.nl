@@ -1,9 +1,15 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const crypto = require("crypto");
+const {
+  CANONICAL_ROLES,
+  CANONICAL_PROFILE_STATUSES,
+  normalizeRole,
+  normalizeProfileStatus,
+} = require("./services/profileAccessPolicy");
 
-const allowedRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "developer", "designer", "support", "customer"]);
-const allowedStatuses = new Set(["invited", "active", "disabled", "archived"]);
+const allowedRoles = new Set(CANONICAL_ROLES.filter((role) => role !== "demo_user"));
+const allowedStatuses = new Set(CANONICAL_PROFILE_STATUSES);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const productionActivationUrl = "https://maxwebstudio.nl/account-activeren";
 
@@ -49,6 +55,13 @@ exports.handler = async (event) => {
       createdBy: adminCheck.admin?.id || null,
       inviteSentAt: existingUser ? null : new Date().toISOString(),
     });
+    if (input.role === "sales_partner") {
+      await initializePartnerOnboarding(supabaseUrl, serviceRoleKey, {
+        profileId: profile.id,
+        createdByProfileId: adminCheck.admin?.profileId || null,
+        managerProfileId: cleanText(payload.managerProfileId || payload.manager_profile_id) || null,
+      });
+    }
 
     let setupLinkSent = false;
     let customMailSent = false;
@@ -126,8 +139,8 @@ function validateInvitePayload(payload = {}) {
   const name = cleanText(payload.name || payload.naam);
   const email = cleanText(payload.email).toLowerCase();
   const phone = cleanText(payload.phone || payload.telephone || payload.telefoon);
-  const role = cleanText(payload.role || "sales_partner").toLowerCase();
-  const status = cleanText(payload.status || "invited").toLowerCase();
+  const role = normalizeRole(payload.role || "sales_partner");
+  const status = normalizeProfileStatus(payload.status || "invited");
 
   if (!name) return { success: false, error: "Vul een naam in." };
   if (!emailPattern.test(email)) return { success: false, error: "Vul een geldig e-mailadres in." };
@@ -196,7 +209,7 @@ async function sendEmployeeInviteMail(input, actionLink) {
     "",
     `Account activeren: ${safeActionLink}`,
     "",
-    input.role === "sales_partner" ? "Na activatie kom je direct in jouw Sales Dashboard." : "Na activatie kom je direct in jouw dashboard.",
+    input.role === "sales_partner" ? "Na activatie start je eerst met jouw beveiligde partneronboarding." : "Na activatie kom je direct in jouw dashboard.",
     "",
     "Groet,",
     "Max Webstudio",
@@ -242,7 +255,7 @@ function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPart
               <td style="padding:30px;">
                 <p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Hoi ${safeName},</p>
                 <p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Je bent uitgenodigd als <strong>${safeRole}</strong>. Via onderstaande knop activeer je je account en kies je je wachtwoord.</p>
-                <p style="margin:0 0 24px;font-size:16px;line-height:1.65;">${isSalesPartner ? "Na activatie kom je direct in jouw Sales Dashboard." : "Na activatie kom je direct in jouw dashboard."}</p>
+                <p style="margin:0 0 24px;font-size:16px;line-height:1.65;">${isSalesPartner ? "Na activatie start je eerst met jouw beveiligde partneronboarding." : "Na activatie kom je direct in jouw dashboard."}</p>
                 <a href="${safeLink}" style="display:inline-block;background:#28d39a;color:#07121f;text-decoration:none;font-weight:900;padding:14px 20px;border-radius:10px;">Account activeren</a>
                 <p style="margin:24px 0 0;font-size:13px;line-height:1.55;color:#5b6b7c;">Werkt de knop niet? Kopieer deze link:<br><a href="${safeLink}" style="color:#0f6f92;">${safeLink}</a></p>
               </td>
@@ -283,6 +296,23 @@ async function upsertProfile(supabaseUrl, serviceRoleKey, input) {
     body: JSON.stringify(record),
   });
   return Array.isArray(data) ? data[0] : data;
+}
+
+async function initializePartnerOnboarding(supabaseUrl, serviceRoleKey, input) {
+  if (!input.profileId) throw Object.assign(new Error("Partnerprofiel ontbreekt na uitnodiging."), { status: 500 });
+  return supabaseFetch(`${supabaseUrl}/rest/v1/rpc/partner_initialize_onboarding`, {
+    method: "POST",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+    },
+    body: JSON.stringify({
+      input_profile_id: input.profileId,
+      input_created_by_profile_id: input.createdByProfileId,
+      input_manager_profile_id: input.managerProfileId,
+    }),
+  });
 }
 
 async function supabaseFetch(url, options) {

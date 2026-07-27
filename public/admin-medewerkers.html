@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Medewerkers | Max Webstudio Admin</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
+    <link rel="stylesheet" href="src/staff/admin-staff-directory.css" />
+    <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
+    <script src="admin/config/sidebar-navigation.js" defer></script>
+    <script src="admin/components/admin-sidebar.js" defer></script>
+    <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
+    <script src="admin/ui/shared-helpers.js"></script>
+    <script type="module" src="src/admin-route-guard.js?v=20260726-staff-directory"></script>
+  </head>
+  <body class="admin-body" data-shared-admin-sidebar="true" data-admin-page="staff-directory">
+    <main class="admin-crm-shell">
+      <div id="admin-sidebar-root" aria-live="polite"></div>
+      <section class="admin-crm-main">
+        <div class="staff-page">
+          <header class="staff-hero">
+            <div><span class="staff-kicker">SUPERADMIN · ZZP-BEHEER</span><h1>Medewerkers</h1><p>Onboarding, bedrijfsgegevens, beveiligde documenten, agenda en blijvende chat in één overzicht.</p></div>
+            <div class="staff-metrics" id="employee-metrics" aria-label="Medewerkerssamenvatting"></div>
+          </header>
+          <section class="signhost-smoke-card" aria-labelledby="signhost-smoke-title">
+            <div>
+              <span class="staff-kicker">STAGING · NIET-BINDENDE TEST</span>
+              <h2 id="signhost-smoke-title">Signhost end-to-endcontrole</h2>
+              <p>Verstuur een apart testdocument naar je eigen superadminadres. Na ondertekening worden het getekende PDF en auditbewijs automatisch in de besloten stagingopslag bewaard.</p>
+            </div>
+            <div class="signhost-smoke-actions">
+              <span class="status-pill" id="signhost-smoke-status">Controleren…</span>
+              <button class="button primary" id="signhost-smoke-start" type="button" disabled>Start veilige test</button>
+              <button class="button secondary" id="signhost-smoke-document" type="button" hidden>Open getekend testdocument</button>
+              <button class="button secondary" id="signhost-smoke-receipt" type="button" hidden>Open auditbewijs</button>
+            </div>
+            <p class="staff-notice signhost-smoke-notice" id="signhost-smoke-notice" role="status"></p>
+          </section>
+          <section class="staff-toolbar">
+            <label for="employee-search">Zoek medewerker<input id="employee-search" type="search" placeholder="Naam, e-mail, rol of KvK" autocomplete="off" /></label>
+            <label for="employee-status">Status<select id="employee-status"><option value="">Alle statussen</option><option value="active">Actief</option><option value="invited">Uitgenodigd</option><option value="pending">In behandeling</option></select></label>
+            <button class="button secondary" id="employee-refresh" type="button">Verversen</button>
+          </section>
+          <p class="staff-notice" id="employee-notice" role="status">Medewerkers worden veilig geladen…</p>
+          <section class="employee-list" id="employee-list" aria-live="polite"></section>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="staff-dialog" id="employee-dialog">
+      <div class="staff-dialog-shell">
+        <header><div><span class="staff-kicker">MEDEWERKERDOSSIER</span><h2 id="detail-name">Medewerker</h2><p id="detail-summary"></p></div><button type="button" class="staff-close" id="detail-close" aria-label="Sluiten">×</button></header>
+        <nav class="staff-tabs" aria-label="Dossieronderdelen">
+          <button type="button" data-tab="info" class="is-active">Info</button><button type="button" data-tab="onboarding">Onboarding</button><button type="button" data-tab="documents">Documenten</button><button type="button" data-tab="chat">Chat</button>
+        </nav>
+        <p class="staff-notice" id="detail-notice" role="status"></p>
+        <section id="detail-content" class="staff-detail-content"></section>
+      </div>
+    </dialog>
+    <script type="module" src="src/staff/admin-staff-directory.js"></script>
+  </body>
+</html>

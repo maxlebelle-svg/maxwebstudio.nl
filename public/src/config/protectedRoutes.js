@@ -35,6 +35,15 @@ export const ACCESS_CONTROL_MODES = Object.freeze({
 });
 
 export const PROTECTED_ROUTES = Object.freeze({
+  "partner-onboarding": {
+    pageName: "partner-onboarding",
+    path: "/partner-onboarding.html",
+    requiredRoles: [ROLES.SALES_PARTNER],
+    requiredPermissions: [{ resource: "partnerOnboarding", action: "view_own" }],
+    allowDemo: false,
+    defaultRedirect: "/admin-login.html",
+    hardReady: true,
+  },
   "admin-dashboard": {
     pageName: "admin-dashboard",
     path: "/admin-dashboard.html",
@@ -113,6 +122,14 @@ export const PROTECTED_ROUTES = Object.freeze({
   "admin-offertes": adminRoute("/admin-offertes.html", {
     requiredRoles: SALES_ROLES,
     requiredPermissions: [{ resource: "quotes", action: "view" }],
+  }),
+  "admin-partners": adminRoute("/admin-partners.html", {
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER],
+    requiredPermissions: [{ resource: "partners", action: "view" }],
+  }),
+  "admin-medewerkers": adminRoute("/admin-medewerkers.html", {
+    requiredRoles: [ROLES.SUPER_ADMIN],
+    requiredPermissions: [{ resource: "settings", action: "view" }],
   }),
   "admin-projecten": adminRoute("/admin-projecten.html", {
     requiredRoles: PRODUCTION_ROLES,

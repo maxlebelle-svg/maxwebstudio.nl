@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#07111f">
+  <title>Partner onboarding | Max Webstudio</title>
+  <link rel="stylesheet" href="/src/partner/partner-onboarding.css">
+  <link rel="stylesheet" href="/src/partner/partner-commercial.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Max Webstudio home">
+      <img src="/max-webstudio-logo-mark.svg" alt="" width="44" height="44">
+      <span class="brand-copy"><strong>Max Webstudio</strong><small>Build better online</small></span>
+    </a>
+    <div class="topbar-meta"><span id="previewBadge" class="preview-badge" hidden>Interactieve preview</span><span id="version" class="version">Veilige partneromgeving</span></div>
+  </header>
+  <main class="layout">
+    <aside class="sidebar" aria-label="Onboardingvoortgang">
+      <p class="eyebrow">Partnerprogramma</p>
+      <h1>Goed voorbereid aan de slag.</h1>
+      <p id="sidebarIntro" class="muted">Je voortgang wordt na iedere bevestiging opgeslagen.</p>
+      <div class="progress-label"><span>Voortgang</span><strong id="percentage">0%</strong></div>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress"></span></div>
+      <nav id="stepNav" class="step-nav" aria-label="Trainingshoofdstukken"></nav>
+      <div class="security-note"><span class="security-icon" aria-hidden="true">✓</span><div><strong id="securityTitle">Veilig afgesloten</strong><span id="securityText">De Sales Workspace opent pas na alle vereiste stappen.</span></div></div>
+    </aside>
+    <section class="workspace">
+      <div id="notice" class="notice">Je onboarding wordt geladen…</div>
+      <article id="module" class="module" hidden>
+        <div class="module-meta"><span id="moduleNumber"></span><span id="moduleTime"></span></div>
+        <h2 id="moduleTitle"></h2>
+        <p id="moduleSummary" class="lead"></p>
+        <div id="moduleContent" class="module-content"></div>
+        <div class="acknowledgement">
+          <label><input id="acknowledge" type="checkbox"><span id="acknowledgementText"></span></label>
+          <button id="complete" class="primary" type="button" disabled>Bevestigen en verder</button>
+        </div>
+      </article>
+      <section id="assessment" class="assessment" hidden>
+        <p class="eyebrow">Kennistoets</p><h2 id="assessmentTitle"></h2>
+        <p id="assessmentIntro" class="lead"></p>
+        <form id="assessmentForm"></form>
+      </section>
+      <section id="agreements" class="assessment" hidden>
+        <p class="eyebrow">Voorwaarden en documenten</p><h2 id="agreementsTitle"></h2>
+        <p id="agreementsIntro" class="lead"></p><div id="agreementsContent"></div>
+      </section>
+      <section id="certificate" class="certificate" hidden>
+        <div class="certificate-mark">MW</div><p class="eyebrow">Interne kwalificatie</p>
+        <h2>Certificaat</h2><p class="certificate-name" id="certificateName"></p>
+        <p id="certificateType"></p><dl id="certificateDetails"></dl>
+        <p id="certificateDisclaimer" class="disclaimer"></p><button id="certificateDownload" class="secondary" type="button">Download professioneel PDF-certificaat</button>
+      </section>
+      <section id="controlledSteps" class="controlled" hidden>
+        <p class="eyebrow">Vervolg</p>
+        <h2>Gecontroleerde afronding</h2>
+        <div id="controlledCards" class="controlled-grid"></div>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="/src/partner/partner-onboarding.js"></script>
+</body>
+</html>

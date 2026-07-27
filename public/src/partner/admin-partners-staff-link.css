@@ -1,0 +1,38 @@
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar .staff-link,
+.staff-cta {
+  display: inline-flex;
+  width: max-content;
+  border: 1px solid rgba(25, 194, 255, 0.35);
+  border-radius: 9px;
+  background: rgba(21, 94, 239, 0.16);
+  color: #dff7ff;
+  padding: 9px 13px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.staff-cta {
+  margin-top: 12px;
+  background: linear-gradient(135deg, var(--blue), #0a9fce);
+  border-color: transparent;
+  color: #fff;
+  padding: 11px 15px;
+}
+
+.topbar .staff-link:hover,
+.staff-cta:hover {
+  border-color: var(--cyan);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 520px) {
+  .topbar-actions { gap: 8px; }
+  .topbar .staff-link { padding: 8px 10px; }
+}

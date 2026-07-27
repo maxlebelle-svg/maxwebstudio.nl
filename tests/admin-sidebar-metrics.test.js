@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { handler, _test } = require("../functions/admin-sidebar-metrics");
+const { REQUIRED_ONBOARDING_STEPS } = require("../functions/services/partnerOnboardingAccessService");
 
 const ACTOR = "11111111-1111-4111-8111-111111111111";
 const PROFILE = "22222222-2222-4222-8222-222222222222";
@@ -143,6 +144,8 @@ async function withBackend(role, callback, options = {}) {
     if (stringUrl.includes("/auth/v1/user")) return response(200, { id: ACTOR, email: "partner@example.test" });
     if (stringUrl.includes("/rest/v1/profiles") && stringUrl.includes("auth_user_id=eq.")) return response(200, [{ id: PROFILE, role, status: "active" }]);
     if (stringUrl.includes("/rest/v1/profiles")) return response(200, [{ id: VIEWED_PROFILE, auth_user_id: VIEWED_AUTH, name: "Lisanne", email: "lisanne@example.test", role: "sales_partner", status: "active" }]);
+    const gateRows = role === "sales_partner" ? completedPartnerGateRows(stringUrl) : undefined;
+    if (gateRows !== undefined) return response(200, gateRows);
     const parsed = new URL(stringUrl); const table = parsed.pathname.split("/").at(-1);
     if (options.failTable === table) return response(503, { code: "UPSTREAM" });
     if (options.missingLeadLifecycle && table === "leads" && stringUrl.includes("lead_status")) return response(400, { code: "42703", message: "column leads.lead_status does not exist" });
@@ -170,5 +173,15 @@ function countFor(table, url) {
   return { files: 4, demo_journeys: 2, crm_tasks: 3, customer_timeline_events: 9, email_logs: 5, quotes: 2, invoices: url.searchParams.get("status")?.includes("expired") && !url.searchParams.get("status")?.includes("draft") ? 1 : 3, subscriptions: url.searchParams.get("status") ? 1 : 1, website_preview_versions: 2 }[table] ?? 0;
 }
 function event(queryStringParameters = {}, bearer = "token") { return { httpMethod: "GET", headers: bearer ? { authorization: `Bearer ${bearer}` } : {}, queryStringParameters }; }
-function response(status, body) { return { ok: status >= 200 && status < 300, status, headers: { get: () => null }, json: async () => body }; }
+function response(status, body) { return { ok: status >= 200 && status < 300, status, headers: { get: () => null }, json: async () => body, text: async () => JSON.stringify(body) }; }
 function countResponse(total) { return { ok: true, status: 206, headers: { get: (name) => name.toLowerCase() === "content-range" ? `0-0/${total}` : null }, json: async () => total ? [{ id: "count" }] : [] }; }
+
+function completedPartnerGateRows(url) {
+  if (url.includes("/rest/v1/partner_profiles")) return [{ id: "partner-profile", profile_id: PROFILE, status: "active" }];
+  if (url.includes("/rest/v1/partner_onboardings")) return [{ id: "partner-onboarding", partner_profile_id: "partner-profile", status: "active" }];
+  if (url.includes("/rest/v1/partner_onboarding_steps")) return REQUIRED_ONBOARDING_STEPS.map((step_key, index) => ({ step_key, step_order: index + 1, status: "completed" }));
+  if (url.includes("/rest/v1/partner_document_versions")) return [{ id: "document-v1", version_code: "v1" }];
+  if (url.includes("/rest/v1/partner_document_acceptances")) return [{ document_version_id: "document-v1" }];
+  if (url.includes("/rest/v1/partner_certificates")) return [{ id: "certificate-v1", status: "valid", expires_at: "2099-01-01T00:00:00.000Z" }];
+  return undefined;
+}

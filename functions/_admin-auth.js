@@ -1,3 +1,5 @@
+const { fetchPartnerGate } = require("./services/partnerOnboardingAccessService");
+
 async function verifyAdmin(event, jsonResponse, options = {}) {
   const allowedRoles = Array.isArray(options.allowedRoles) && options.allowedRoles.length
     ? options.allowedRoles.map((role) => String(role || "").trim().toLowerCase()).filter(Boolean)
@@ -49,6 +51,24 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
         reason: "role_or_status_not_allowed",
         event,
       });
+    }
+
+    if (String(profile?.role || "").trim().toLowerCase() === "sales_partner" && options.requirePartnerOnboarding !== false) {
+      const partnerGate = await fetchPartnerGate({
+        supabaseUrl,
+        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+        profile,
+      });
+      if (!partnerGate.allowed) {
+        return unauthorized(jsonResponse, {
+          ...diagnostics,
+          resolvedRole: profile.role,
+          profileStatus: profile.status,
+          reason: partnerGate.reason || "partner_onboarding_required",
+          statusCode: 403,
+          event,
+        });
+      }
     }
 
     return {
@@ -110,7 +130,7 @@ async function fetchProfileForUser({ supabaseUrl, bearer, authUserId }) {
   const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : `Bearer ${bearer}`;
   if (!apiKey || !authUserId) return null;
 
-  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?select=id,role,status&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`, {
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,role,status&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`, {
     method: "GET",
     headers: {
       apikey: apiKey,
@@ -174,7 +194,7 @@ function unauthorized(jsonResponse, details = {}) {
   }
   return {
     success: false,
-    response: jsonResponse(401, body),
+    response: jsonResponse(Number(details.statusCode) || 401, body),
   };
 }
 

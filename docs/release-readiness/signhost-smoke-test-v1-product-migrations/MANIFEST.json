@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "release": "Signhost Smoke Test V1 product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260727120000_signhost_smoke_test.sql"
+  ],
+  "authority": [
+    "docs/release-readiness/signhost-smoke-test-v1-product-migrations/MANIFEST.json"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

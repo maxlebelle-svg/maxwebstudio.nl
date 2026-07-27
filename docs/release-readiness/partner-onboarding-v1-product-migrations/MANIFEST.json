@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "release": "Partner Onboarding V1 Phase B product migrations",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql",
+    "supabase/migrations/20260726201000_partner_onboarding_gate_foundation.sql",
+    "supabase/migrations/20260726202000_partner_training_content_v1.sql",
+    "supabase/migrations/20260726203000_partner_assessment_certification.sql",
+    "supabase/migrations/20260726204000_partner_canonical_commission.sql",
+    "supabase/migrations/20260726205000_partner_certification_activation_control.sql"
+  ],
+  "authority": [
+    "docs/PARTNER_ONBOARDING_V1_PHASE_B_STAGING_EVIDENCE.md",
+    "docs/PARTNER_ONBOARDING_V1_PHASE_B_STATUS_MATRIX.md"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

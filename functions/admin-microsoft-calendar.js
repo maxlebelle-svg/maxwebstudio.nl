@@ -21,7 +21,7 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === "GET" && action === "status") return statusResponse();
-    if (event.httpMethod === "GET" && action === "events") return listEvents(event);
+    if (event.httpMethod === "GET" && action === "events") return listEvents(event, adminCheck.admin);
     if (event.httpMethod === "POST" && action === "createevent") return createEvent(event, adminCheck.admin);
     return jsonResponse(405, { success: false, error: "Deze Microsoft agenda actie wordt niet ondersteund." });
   } catch (error) {
@@ -75,11 +75,12 @@ function statusResponse() {
   });
 }
 
-async function listEvents(event) {
+async function listEvents(event, admin = {}) {
   const config = getConfiguredOrThrow();
   const start = cleanText(event.queryStringParameters?.start);
   const end = cleanText(event.queryStringParameters?.end);
   const userEmail = resolveCalendarUser(event.queryStringParameters?.userEmail, config);
+  assertCalendarAccess(admin, userEmail);
   if (!start || !end) return jsonResponse(400, { success: false, error: "Start- en einddatum ontbreken." });
   if (!userEmail) return jsonResponse(400, { success: false, error: "Geen Microsoft agenda gebruiker gevonden." });
 
@@ -105,6 +106,7 @@ async function createEvent(event, admin = {}) {
   const config = getConfiguredOrThrow();
   const payload = parsePayload(event.body);
   const userEmail = resolveCalendarUser(payload.userEmail || payload.ownerEmail || payload.assignedToEmail || admin?.email, config);
+  assertCalendarAccess(admin, userEmail);
   if (!userEmail) return jsonResponse(400, { success: false, error: "Geen Microsoft agenda gebruiker gevonden." });
 
   const title = cleanText(payload.title);
@@ -206,6 +208,17 @@ function getConfiguredOrThrow() {
 
 function resolveCalendarUser(value, config) {
   return cleanText(value) || config.defaultUser;
+}
+
+function assertCalendarAccess(admin = {}, requestedEmail = "") {
+  const ownEmail = cleanText(admin.email).toLowerCase();
+  const targetEmail = cleanText(requestedEmail).toLowerCase();
+  if (!targetEmail || !ownEmail || targetEmail === ownEmail || cleanText(admin.role).toLowerCase() === "super_admin") return;
+  const error = new Error("Alleen een superadmin kan de agenda van een andere medewerker openen.");
+  error.status = 403;
+  error.reason = "calendar_cross_user_forbidden";
+  error.publicMessage = error.message;
+  throw error;
 }
 
 function mapGraphEvent(event = {}) {

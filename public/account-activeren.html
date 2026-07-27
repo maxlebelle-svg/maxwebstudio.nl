@@ -231,7 +231,9 @@
           lastLoginAt: now,
           updatedAt: now,
         };
-        localStorage.setItem(adminSessionKey, JSON.stringify(adminSession));
+        const operational = account.access?.operational !== false;
+        if (profile.status === "active" && operational) localStorage.setItem(adminSessionKey, JSON.stringify(adminSession));
+        else localStorage.removeItem(adminSessionKey);
         localStorage.setItem(accessSessionKey, JSON.stringify(accessSession));
         localStorage.setItem("maxwebstudioAuthProvider", "supabase-prepared");
         localStorage.setItem("maxwebstudioAuthMode", "supabase-prepared");
@@ -251,7 +253,7 @@
         }
       }
 
-      function dashboardUrlForRole(role) {
+      function dashboardUrlForRole(role, access = {}) {
         if (previewContext.mode === "lead_demo") return "/lead-preview.html";
         if (previewContext.mode === "preview") {
           const previewUrl = new URL("/preview.html", window.location.origin);
@@ -262,9 +264,28 @@
         }
         if (previewContext.mode === "customer_portal") return "/klantportaal.html";
         if (role === "customer") return "/klantportaal.html";
+        if (role === "sales_partner" && access.onboardingRequired) return "/partner-onboarding.html";
         return ["sales_partner", "sales_manager"].includes(role)
           ? "/admin-sales.html"
           : "/admin-dashboard.html";
+      }
+
+      async function markPartnerAccountActivated(accessToken) {
+        const response = await fetch("/.netlify/functions/partner-onboarding", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            action: "account_activated",
+            idempotencyKey: `account-activated:${crypto.randomUUID()}`,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) throw new Error(data.error || "Partneronboarding kon niet veilig worden gestart.");
+        return data;
       }
 
       async function initializeActivation() {
@@ -316,6 +337,8 @@
             const activationData = await activationResponse.json().catch(() => ({}));
             if (!activationResponse.ok || !activationData.success) throw new Error(activationData.error || "Het demo-account kon niet worden geactiveerd.");
           }
+          const activationAccount = await fetchAccountProfile(session.access_token);
+          if (activationAccount.profile?.role === "sales_partner") await markPartnerAccountActivated(session.access_token);
           const account = await fetchAccountProfile(session.access_token);
           storeDashboardSessions(session, account);
           const profile = account.profile || {};
@@ -329,7 +352,7 @@
               : "Je wordt doorgestuurd naar je dashboard.";
           setMessage(previewContext.mode === "preview" ? "Je account is geactiveerd. Je preview wordt geopend." : previewContext.mode === "customer_portal" ? "Je account is geactiveerd. Je klantportaal wordt geopend." : "Je account is geactiveerd. Je dashboard wordt geopend.", "success");
           window.setTimeout(() => {
-            window.location.assign(dashboardUrlForRole(profile.role));
+            window.location.assign(dashboardUrlForRole(profile.role, account.access || {}));
           }, 700);
         } catch (error) {
           setMessage(error.message || "Account activeren is niet gelukt. Vraag een nieuwe link aan.", "error");

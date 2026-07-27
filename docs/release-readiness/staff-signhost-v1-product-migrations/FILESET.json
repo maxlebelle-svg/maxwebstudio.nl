@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260727090000_staff_signhost_foundation.sql",
+      "bytes": 5297,
+      "sha256": "d863ec16221b3a5cc88f1618159aa73988aef1302d637bed906eb4eb961dcd0f"
+    }
+  ]
+}

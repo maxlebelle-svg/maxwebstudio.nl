@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260727120000_signhost_smoke_test.sql",
+      "bytes": 2508,
+      "sha256": "f4b9d4e243206eace89bf10ab59a3f75ed62c4384089d5981dc84455c43659ad"
+    }
+  ]
+}

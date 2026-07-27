@@ -39,6 +39,22 @@
     {
       "manifest": "docs/release-readiness/cx2-sprint-3-callback-closure-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/cx2-sprint-3-callback-closure-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/partner-onboarding-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/partner-onboarding-v1-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/staff-zzp-dossier-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/staff-zzp-dossier-v1-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/staff-signhost-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/staff-signhost-v1-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/signhost-smoke-test-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/signhost-smoke-test-v1-product-migrations/FILESET.json"
     }
   ]
 }

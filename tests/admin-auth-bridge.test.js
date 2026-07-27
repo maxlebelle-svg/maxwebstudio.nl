@@ -73,7 +73,8 @@ test("logout clears central and all derived admin sessions", () => {
 
 test("client or inactive profiles cannot become an admin bridge", () => {
   assert.match(bridge, /!ADMIN_ROLES\.has\(role\)/);
-  assert.match(bridge, /error\.code = status !== "active" \? "PROFILE_INACTIVE" : "ROLE_NOT_ALLOWED"/);
+  assert.match(bridge, /account\?\.access\?\.operational !== false/);
+  assert.match(bridge, /error\.code = !operational \? "PARTNER_ONBOARDING_REQUIRED" : status !== "active" \? "PROFILE_INACTIVE" : "ROLE_NOT_ALLOWED"/);
   assert.match(bridge, /clearDerivedAdminSessions\(\)/);
 });
 

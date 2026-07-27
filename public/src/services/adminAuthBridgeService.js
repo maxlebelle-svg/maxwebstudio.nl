@@ -37,10 +37,15 @@ function writeDerivedAdminSessions(session, account) {
   const user = account?.user || session?.user || {};
   const role = normalizeRole(profile.role);
   const status = String(profile.status || "").trim().toLowerCase();
-  if (!session?.access_token || !ADMIN_ROLES.has(role) || status !== "active") {
+  const operational = account?.access?.operational !== false;
+  if (!session?.access_token || !ADMIN_ROLES.has(role) || status !== "active" || !operational) {
     clearDerivedAdminSessions();
-    const error = new Error(status !== "active" ? "Dit adminprofiel is niet actief." : "Dit account heeft geen actieve adminrol.");
-    error.code = status !== "active" ? "PROFILE_INACTIVE" : "ROLE_NOT_ALLOWED";
+    const error = new Error(!operational
+      ? "Je partneronboarding moet eerst volledig zijn afgerond."
+      : status !== "active"
+        ? "Dit adminprofiel is niet actief."
+        : "Dit account heeft geen actieve adminrol.");
+    error.code = !operational ? "PARTNER_ONBOARDING_REQUIRED" : status !== "active" ? "PROFILE_INACTIVE" : "ROLE_NOT_ALLOWED";
     throw error;
   }
 

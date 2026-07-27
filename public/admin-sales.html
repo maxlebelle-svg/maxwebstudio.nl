@@ -18502,12 +18502,18 @@
         const adminSession = readWorkflowObject("mws_admin_supabase_session");
         const currentSession = readWorkflowObject("maxwebstudioCurrentSession");
         const profile = readWorkflowObject("mws_admin_profile");
-        const email = String(adminSession.email || currentSession.email || profile.email || "").trim().toLowerCase();
+        const ownEmail = String(adminSession.email || currentSession.email || profile.email || "").trim().toLowerCase();
+        const role = String(adminSession.role || currentSession.role || profile.role || "").trim().toLowerCase();
+        const query = new URLSearchParams(window.location.search);
+        const selectedEmail = role === "super_admin" ? String(query.get("employeeEmail") || "").trim().toLowerCase() : "";
+        const selectedName = role === "super_admin" ? String(query.get("employeeName") || "").trim() : "";
+        const email = selectedEmail || ownEmail;
         return {
           email,
           userId: String(adminSession.userId || currentSession.userId || currentSession.authUserId || profile.authUserId || "").trim(),
-          name: String(adminSession.name || currentSession.name || profile.name || email || "").trim(),
-          role: String(adminSession.role || currentSession.role || profile.role || "").trim().toLowerCase(),
+          name: selectedName || String(adminSession.name || currentSession.name || profile.name || email || "").trim(),
+          role,
+          viewingAnotherEmployee: Boolean(selectedEmail && selectedEmail !== ownEmail),
         };
       }
 
