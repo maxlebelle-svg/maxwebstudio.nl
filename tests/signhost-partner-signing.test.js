@@ -88,7 +88,9 @@ test("superadmin smoke tests are isolated from the legal agreement workflow", ()
   assert.match(webhook, /signhost_smoke_tests/);
   assert.match(webhook, /signhost-auditbewijs\.pdf/);
   assert.match(adminPage, /Signhost end-to-endcontrole/);
+  assert.match(adminPage, /id="signhost-smoke-card"[^>]*hidden/);
   assert.match(adminClient, /admin-signhost-smoke-test/);
+  assert.match(adminClient, /card\.hidden=!data\.enabled/);
   assert.equal(smoke.smokeEnabled("max@maxwebstudio.nl", { SIGNHOST_SMOKE_TEST_ENABLED:"true", SIGNHOST_SMOKE_TEST_ALLOWED_EMAILS:"max@maxwebstudio.nl" }), true);
   assert.equal(smoke.smokeEnabled("other@example.nl", { SIGNHOST_SMOKE_TEST_ENABLED:"true", SIGNHOST_SMOKE_TEST_ALLOWED_EMAILS:"max@maxwebstudio.nl" }), false);
 });
