@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const invite = require("../functions/admin-invite-user")._test;
+const { normalizeLogRecord } = require("../functions/services/mailLogService");
 
 test("existing partner invite redirects directly to the production onboarding", () => {
   const actionLink = invite.forceRedirect("https://example.supabase.co/auth/v1/verify?token=secret", invite.partnerOnboardingRedirectTo());
@@ -52,4 +53,27 @@ test("settings has an isolated production invite control when the legacy admin s
   assert.match(control, /action === "send_password_reset"/);
   assert.match(control, /\/\.netlify\/functions\/admin-invite-user/);
   assert.match(control, /mailWarning/);
+});
+
+test("sensitive employee invitations create a schema-compatible log without storing the action link", () => {
+  const actionLink = "https://example.supabase.co/auth/v1/verify?token=one-time-secret";
+  const record = normalizeLogRecord({
+    to: "Ravenna@MaxWebstudio.nl",
+    subject: "Welkom bij Max Webstudio",
+    html: `<a href=\"${actionLink}\">Activeren</a>`,
+    text: `Activeren: ${actionLink}`,
+    messageType: "employee_account_activation",
+    templateKey: "employee_account_activation",
+    idempotencyKey: "employee-invite:test",
+    sensitiveContent: true,
+    triggeredBy: "admin_invite_user",
+  });
+
+  assert.match(record.idempotency_key, /^[0-9a-f]{64}$/);
+  assert.equal(record.normalized_recipient_email, "ravenna@maxwebstudio.nl");
+  assert.equal(record.created_by, "admin_invite_user");
+  assert.equal(record.message_type, "employee_account_activation");
+  assert.equal(record.html_body, null);
+  assert.equal(record.text_body, null);
+  assert.equal(JSON.stringify(record).includes("one-time-secret"), false);
 });

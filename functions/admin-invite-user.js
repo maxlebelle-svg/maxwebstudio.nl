@@ -238,6 +238,15 @@ async function sendEmployeeInviteMail(input, actionLink, options = {}) {
     subject,
     html,
     text,
+    messageType: onboardingOnly ? "employee_onboarding_invite" : "employee_account_activation",
+    templateKey: onboardingOnly ? "employee_onboarding_invite" : "employee_account_activation",
+    idempotencyKey: crypto.createHash("sha256").update([
+      onboardingOnly ? "employee-onboarding-invite" : "employee-account-activation",
+      input.email,
+      safeActionLink,
+    ].join(":"), "utf8").digest("hex"),
+    sensitiveContent: true,
+    triggeredBy: "admin_invite_user",
   });
 }
 

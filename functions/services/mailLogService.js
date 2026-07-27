@@ -1,3 +1,5 @@
+const crypto = require("node:crypto");
+
 const EMAIL_LOG_FIELDS = [
   "id",
   "created_at",
@@ -6,9 +8,11 @@ const EMAIL_LOG_FIELDS = [
   "status",
   "provider",
   "provider_message_id",
+  "message_type",
   "from_email",
   "from_name",
   "to_email",
+  "normalized_recipient_email",
   "to_name",
   "reply_to",
   "subject",
@@ -16,12 +20,15 @@ const EMAIL_LOG_FIELDS = [
   "text_body",
   "template_key",
   "template_name",
+  "idempotency_key",
   "customer_id",
   "lead_id",
   "invoice_id",
   "project_id",
   "triggered_by",
   "triggered_by_user_id",
+  "created_by",
+  "sent_at",
   "error_message",
   "error_code",
   "metadata",
@@ -153,20 +160,24 @@ function normalizeLogRecord(input = {}) {
   const to = parseAddress(Array.isArray(input.to) ? input.to[0] : input.to || input.toEmail || input.to_email);
   const metadata = normalizeMetadata(input.metadata);
   const attachments = Array.isArray(input.attachments) ? input.attachments : [];
+  const recipientEmail = cleanEmail(input.toEmail || input.to_email || to.email) || cleanText(input.toEmail || input.to_email || to.email).toLowerCase();
+  const sensitiveContent = Boolean(input.sensitiveContent || input.sensitive_content);
   const now = new Date().toISOString();
   return {
     direction: cleanText(input.direction) || "outbound",
     status: normalizeStatus(input.status) || "pending",
     provider: cleanText(input.provider) || "resend",
     provider_message_id: cleanText(input.providerMessageId || input.provider_message_id) || null,
+    message_type: cleanText(input.messageType || input.message_type || input.templateKey || input.template_key) || "generic",
     from_email: cleanEmail(input.fromEmail || input.from_email || from.email) || null,
     from_name: cleanText(input.fromName || input.from_name || from.name) || null,
-    to_email: cleanEmail(input.toEmail || input.to_email || to.email) || cleanText(input.toEmail || input.to_email || to.email),
+    to_email: recipientEmail,
+    normalized_recipient_email: recipientEmail,
     to_name: cleanText(input.toName || input.to_name || to.name) || null,
     reply_to: cleanText(input.replyTo || input.reply_to) || null,
     subject: cleanText(input.subject),
-    html_body: cleanText(input.html || input.htmlBody || input.html_body) || null,
-    text_body: cleanText(input.text || input.textBody || input.text_body) || null,
+    html_body: sensitiveContent ? null : cleanText(input.html || input.htmlBody || input.html_body) || null,
+    text_body: sensitiveContent ? null : cleanText(input.text || input.textBody || input.text_body) || null,
     template_key: cleanText(input.templateKey || input.template_key) || null,
     template_name: cleanText(input.templateName || input.template_name) || null,
     customer_id: uuidOrNull(input.customerId || input.customer_id),
@@ -175,6 +186,8 @@ function normalizeLogRecord(input = {}) {
     project_id: uuidOrNull(input.projectId || input.project_id),
     triggered_by: cleanText(input.triggeredBy || input.triggered_by) || null,
     triggered_by_user_id: uuidOrNull(input.triggeredByUserId || input.triggered_by_user_id),
+    created_by: cleanText(input.createdBy || input.created_by || input.triggeredBy || input.triggered_by) || "mail_service",
+    idempotency_key: sha256Key(input.idempotencyKey || input.idempotency_key),
     error_message: cleanText(input.errorMessage || input.error_message) || null,
     error_code: cleanText(input.errorCode || input.error_code) || null,
     metadata: {
@@ -183,6 +196,7 @@ function normalizeLogRecord(input = {}) {
       bcc: input.bcc ? input.bcc : metadata.bcc,
       attachmentCount: attachments.length || metadata.attachmentCount || 0,
       attachmentNames: attachments.map((attachment) => cleanText(attachment.filename || attachment.name)).filter(Boolean),
+      ...(sensitiveContent ? { contentRedacted: true } : {}),
     },
     updated_at: now,
   };
@@ -199,6 +213,8 @@ function normalizePatch(patch = {}) {
     errorCode: "error_code",
     error_code: "error_code",
     metadata: "metadata",
+    sentAt: "sent_at",
+    sent_at: "sent_at",
   };
 
   Object.entries(fieldMap).forEach(([source, target]) => {
@@ -209,7 +225,13 @@ function normalizePatch(patch = {}) {
   });
 
   normalized.updated_at = new Date().toISOString();
+  if (normalized.status === "sent" && !normalized.sent_at) normalized.sent_at = normalized.updated_at;
   return normalized;
+}
+
+function sha256Key(value) {
+  const source = cleanText(value) || crypto.randomUUID();
+  return crypto.createHash("sha256").update(source).digest("hex");
 }
 
 function parseAddress(value = "") {
