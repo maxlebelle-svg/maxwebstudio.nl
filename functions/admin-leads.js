@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
+const { sendTrackedEmail } = require("./services/resendMailService");
 const {
   mergeMissingLeadValues,
   normalizedLeadIdentifiers,
@@ -10,6 +11,8 @@ const {
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
+const assignableStaffRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
+const assignableProfileStatuses = new Set(["active", "invited", "pending"]);
 const allowedStatuses = new Set([
   "lead",
   "bellen",
@@ -158,7 +161,12 @@ exports.handler = async (event) => {
 };
 
 async function readLeads({ supabaseUrl, serviceRoleKey, admin }) {
-  const rows = await readLeadRows({ supabaseUrl, serviceRoleKey });
+  const [rows, assignableEmployees] = await Promise.all([
+    readLeadRows({ supabaseUrl, serviceRoleKey }),
+    normalizeRole(admin.role) === "super_admin"
+      ? readAssignableEmployees({ supabaseUrl, serviceRoleKey })
+      : Promise.resolve([]),
+  ]);
   const mappedRows = rows.map(mapLead).filter((lead) => !isDemoLead(lead));
   const records = mappedRows.filter((lead) => isLeadVisibleForAdmin(lead, admin));
   const diagnostics = buildLeadReadDiagnostics({ rows: mappedRows, records, admin });
@@ -169,6 +177,7 @@ async function readLeads({ supabaseUrl, serviceRoleKey, admin }) {
     success: true,
     mode: "supabase-production",
     records,
+    assignableEmployees,
     counts: { supabase: records.length, hybrid: records.length, local: 0, beforeRoleFilter: mappedRows.length, afterRoleFilter: records.length },
     diagnostics,
     refreshedAt: new Date().toISOString(),
@@ -1047,8 +1056,26 @@ async function reviewLead({ payload = {}, existingLead = {}, supabaseUrl, servic
 
 async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, serviceRoleKey, admin, id }) {
   const now = new Date().toISOString();
-  const assignment = resolveLeadAssignment(payload, admin, { update: true, existingLead });
-  if (!assignment.id && !assignment.email) return jsonResponse(400, { success: false, error: "Kies een medewerker om toe te wijzen." });
+  const requestedAssignment = resolveLeadAssignment(payload, admin, { update: true, existingLead: {} });
+  if (!requestedAssignment.id && !requestedAssignment.userId && !requestedAssignment.email) {
+    return jsonResponse(400, { success: false, error: "Kies een medewerker om toe te wijzen." });
+  }
+  const assignableEmployees = await readAssignableEmployees({ supabaseUrl, serviceRoleKey });
+  const employee = findAssignableEmployee(assignableEmployees, requestedAssignment);
+  if (!employee) {
+    return jsonResponse(400, {
+      success: false,
+      error: "Deze medewerker heeft nog geen actief of uitgenodigd medewerkersaccount. Ververs na accountactivatie en probeer opnieuw.",
+    });
+  }
+  const assignment = {
+    id: employee.authUserId,
+    userId: employee.authUserId,
+    email: employee.email,
+    name: employee.name,
+  };
+  const previousLead = mapLead(existingLead);
+  const assignmentChanged = !sameLeadAssignment(previousLead, assignment);
   const existingMeta = existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {};
   const metadata = {
     ...existingMeta,
@@ -1058,6 +1085,16 @@ async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, servic
     assignedUserId: assignment.userId,
     assignedUserEmail: assignment.email,
     assignedUserName: assignment.name,
+    assignedToEmail: assignment.email,
+    assignedToName: assignment.name,
+    medewerker: assignment.name,
+    medewerkerEmail: assignment.email,
+    employee: assignment.name,
+    employeeEmail: assignment.email,
+    userEmail: assignment.email,
+    userName: assignment.name,
+    salesPartnerEmail: assignment.email,
+    salesPartnerName: assignment.name,
     assignedAt: now,
     assignedBy: admin.id,
     lastActivityAt: now,
@@ -1072,10 +1109,13 @@ async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, servic
     assigned_by: admin.id,
     owner_email: assignment.email,
     owner_name: assignment.name,
+    sales_partner_email: assignment.email,
+    sales_partner_name: assignment.name,
     last_activity_at: now,
     metadata,
     updated_at: now,
   };
+  if (Object.prototype.hasOwnProperty.call(payload, "notes")) record.notes = cleanText(payload.notes);
   const attempts = [
     () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record }),
     () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: { assigned_to: assignment.id, metadata, updated_at: now } }),
@@ -1083,7 +1123,136 @@ async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, servic
   const rows = await trySchemaAttempts(attempts);
   const lead = mapLead(rows[0] || { id, ...existingLead, ...record });
   await insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId: id, admin, eventType: "lead_assigned", title: "Lead toegewezen", metadata: { assignedTo: assignment.id, assignedUserEmail: assignment.email, assignedUserName: assignment.name } });
-  return jsonResponse(200, { success: true, lead, updated: true, assigned: true });
+  let notification = { attempted: false, sent: false, warning: "" };
+  if (assignmentChanged && assignment.email) {
+    try {
+      const mailResult = await sendLeadAssignmentEmail({ lead, employee, admin });
+      notification = {
+        attempted: true,
+        sent: Boolean(mailResult.sent),
+        warning: cleanText(mailResult.warning),
+        logId: cleanText(mailResult.logId),
+      };
+    } catch (error) {
+      console.error("Lead assignment notification failed", { leadId: id, message: error.message });
+      notification = {
+        attempted: true,
+        sent: false,
+        warning: "De e-mailnotificatie kon niet worden verwerkt.",
+      };
+    }
+  }
+  return jsonResponse(200, {
+    success: true,
+    lead,
+    updated: true,
+    assigned: true,
+    assignmentChanged,
+    notification,
+    warning: notification.attempted && !notification.sent
+      ? "De lead is toegewezen, maar de e-mailnotificatie kon niet worden verstuurd."
+      : undefined,
+  });
+}
+
+async function readAssignableEmployees({ supabaseUrl, serviceRoleKey }) {
+  const params = new URLSearchParams({
+    select: "id,auth_user_id,name,email,role,status",
+    order: "name.asc.nullslast",
+    limit: "300",
+  });
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/profiles?${params.toString()}`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      id: cleanText(row.id),
+      authUserId: cleanText(row.auth_user_id),
+      name: cleanText(row.name || row.email),
+      email: cleanText(row.email).toLowerCase(),
+      role: normalizeRole(row.role),
+      status: normalizeRole(row.status),
+    }))
+    .filter((employee) => employee.authUserId
+      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(employee.email)
+      && assignableStaffRoles.has(employee.role)
+      && assignableProfileStatuses.has(employee.status));
+}
+
+function findAssignableEmployee(employees = [], assignment = {}) {
+  const tokens = [assignment.userId, assignment.id, assignment.email]
+    .map((value) => cleanText(value).toLowerCase())
+    .filter(Boolean);
+  return employees.find((employee) => [employee.authUserId, employee.id, employee.email]
+    .map((value) => cleanText(value).toLowerCase())
+    .some((value) => value && tokens.includes(value))) || null;
+}
+
+function sameLeadAssignment(lead = {}, assignment = {}) {
+  const currentUserId = firstUuid(lead.assignedUserId, lead.assignedTo, lead.metadata?.assignedUserId, lead.metadata?.assigned_user_id);
+  const nextUserId = firstUuid(assignment.userId, assignment.id);
+  if (currentUserId && nextUserId) return currentUserId.toLowerCase() === nextUserId.toLowerCase();
+  const currentTokens = leadOwnerTokens(lead);
+  const nextTokens = [assignment.id, assignment.userId, assignment.email]
+    .map((value) => cleanText(value).toLowerCase())
+    .filter(Boolean);
+  return nextTokens.some((token) => currentTokens.includes(token));
+}
+
+async function sendLeadAssignmentEmail({ lead = {}, employee = {}, admin = {} }) {
+  const companyName = cleanText(lead.companyName || "Nieuwe lead");
+  const firstName = cleanText(employee.name).split(/\s+/)[0] || "daar";
+  const leadUrl = buildLeadUrl(lead.id);
+  const assignedBy = cleanText(admin.email || "Max Webstudio");
+  const contactLines = [
+    lead.contactName ? `Contactpersoon: ${lead.contactName}` : "",
+    lead.phone ? `Telefoon: ${lead.phone}` : "",
+    lead.email ? `E-mail: ${lead.email}` : "",
+    lead.websiteUrl ? `Website: ${lead.websiteUrl}` : "",
+  ].filter(Boolean);
+  const text = [
+    `Hoi ${firstName},`,
+    "",
+    `Er is een nieuwe lead aan jou toegewezen: ${companyName}.`,
+    ...contactLines,
+    "",
+    `Toegewezen door: ${assignedBy}`,
+    leadUrl ? `Open de lead: ${leadUrl}` : "",
+    "",
+    "Groet,",
+    "Max Webstudio",
+  ].filter((line) => line !== "").join("\n");
+  const detailRows = contactLines.length
+    ? contactLines.map((line) => `<li style="margin:0 0 8px;">${escapeHtml(line)}</li>`).join("")
+    : '<li style="margin:0 0 8px;">Open de lead voor de beschikbare contactgegevens.</li>';
+  const html = `<!doctype html><html lang="nl"><body style="margin:0;background:#07121f;font-family:Inter,Arial,sans-serif;color:#102033;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#07121f;padding:32px 16px;"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#fff;border-radius:18px;overflow:hidden;"><tr><td style="padding:28px 30px;background:#0f2742;color:#fff;"><div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#83e6c6;">Max Webstudio Sales</div><h1 style="margin:8px 0 0;font-size:28px;line-height:1.15;">Nieuwe lead toegewezen</h1></td></tr><tr><td style="padding:30px;"><p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Hoi ${escapeHtml(firstName)},</p><p style="margin:0 0 18px;font-size:16px;line-height:1.65;">De lead <strong>${escapeHtml(companyName)}</strong> staat vanaf nu op jouw naam.</p><ul style="margin:0 0 22px;padding-left:20px;font-size:15px;line-height:1.55;">${detailRows}</ul><p style="margin:0 0 22px;color:#5b6b7c;font-size:14px;">Toegewezen door ${escapeHtml(assignedBy)}</p>${leadUrl ? `<a href="${escapeHtml(leadUrl)}" style="display:inline-block;background:#28d39a;color:#07121f;text-decoration:none;font-weight:900;padding:14px 20px;border-radius:10px;">Open lead in CRM</a>` : ""}</td></tr></table></td></tr></table></body></html>`;
+  return sendTrackedEmail({
+    to: employee.email,
+    subject: `Nieuwe lead toegewezen: ${companyName}`,
+    text,
+    html,
+    leadId: lead.id,
+    templateKey: "lead_assignment_notification",
+    templateName: "Nieuwe lead toegewezen",
+  });
+}
+
+function buildLeadUrl(leadId = "") {
+  const id = cleanText(leadId);
+  if (!id) return "";
+  const configured = cleanText(process.env.SITE_URL || process.env.URL || "https://maxwebstudio.nl").replace(/\/$/, "");
+  return `${configured}/admin-sales.html?leadId=${encodeURIComponent(id)}#leadfinder-detail`;
+}
+
+function escapeHtml(value = "") {
+  return cleanText(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[character]);
 }
 
 async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUrl, serviceRoleKey, admin, id }) {
@@ -1748,3 +1917,9 @@ function jsonResponse(statusCode, body) {
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };
 }
+
+module.exports.__test = {
+  findAssignableEmployee,
+  sameLeadAssignment,
+  buildLeadUrl,
+};

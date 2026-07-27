@@ -1,10 +1,21 @@
 .env
 .env.local
-.env.*.local
+.env.*
 !.env.example
 !.env.local.example
 !.env.p0.example
 supabase/.temp/
+
+# Generated dependency/build caches in nested Website Factory projects
+**/node_modules/
+**/.npm-cache/
+**/.next/
+**/.wrangler/
+
+# Local customer exports and recordings are not source code
+/Website factory maxwebstudio.nl/*.zip
+/Website factory maxwebstudio.nl/*.mov
+/tmp/pdfs/
 
 # macOS
 .DS_Store
