@@ -4,6 +4,7 @@ const { rest } = require("./services/partnerOnboardingAccessService");
 const { buildAgreementMetadata, createTransaction, signhostConfig, startTransaction, uploadFileMetadata, uploadPdf } = require("./services/signhostService");
 
 const BUCKET = "staff-private-documents";
+const SIGNABLE_REVIEW_STATUSES = new Set(["internal_approved", "legally_reviewed"]);
 
 exports.handler = async (event) => {
   if (!["GET","POST"].includes(event.httpMethod)) return json(405, { success:false, error:"Methode niet toegestaan." });
@@ -55,11 +56,11 @@ async function startAgreement(context, profile) {
   const dossier = dossiers?.[0];
   if (!dossier?.id || !clean(dossier.legal_name) || !clean(dossier.phone)) throw coded("SIGNING_DOSSIER_INCOMPLETE", 409, "Vul eerst je naam en mobiele telefoonnummer in het ZZP-dossier in.");
   const template = templates?.[0];
-  if (!template) throw coded("SIGNING_TEMPLATE_NOT_READY", 409, "De juridisch goedgekeurde ZZP-overeenkomst is nog niet geactiveerd.");
+  if (!template) throw coded("SIGNING_TEMPLATE_NOT_READY", 409, "De goedgekeurde ZZP-overeenkomst is nog niet geactiveerd.");
   const versions = await rest(context.url, context.service, `partner_document_versions?select=id,version_code,review_status,status&id=eq.${template.document_version_id}&limit=1`);
   const version = versions?.[0];
-  if (!version || version.status !== "published" || version.review_status !== "legally_reviewed") {
-    throw coded("SIGNING_TEMPLATE_NOT_LEGALLY_REVIEWED", 409, "De overeenkomst moet eerst juridisch worden goedgekeurd.");
+  if (!version || version.status !== "published" || !SIGNABLE_REVIEW_STATUSES.has(version.review_status)) {
+    throw coded("SIGNING_TEMPLATE_NOT_APPROVED", 409, "De overeenkomst moet eerst expliciet door de eigenaar of een jurist worden goedgekeurd.");
   }
   const open = await rest(context.url, context.service, `staff_signing_transactions?select=id,status&dossier_id=eq.${dossier.id}&status=in.(creating,waiting_for_signer,signed_pending_scan)&limit=1`);
   if (open?.[0]) return open[0];

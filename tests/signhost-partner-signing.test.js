@@ -16,7 +16,8 @@ test("Signhost credentials remain server-side and the signing model is owner sco
   const client = read("public/src/partner/partner-onboarding.js");
   assert.match(migration, /create table public\.staff_signing_transactions/);
   assert.match(migration, /profile_id = public\.current_profile_id\(\)/);
-  assert.match(endpoint, /review_status !== "legally_reviewed"/);
+  assert.match(endpoint, /SIGNABLE_REVIEW_STATUSES = new Set\(\["internal_approved", "legally_reviewed"\]\)/);
+  assert.match(endpoint, /SIGNING_TEMPLATE_NOT_APPROVED/);
   assert.doesNotMatch(client, /SIGNHOST_(?:APP_KEY|USER_TOKEN)/);
   assert.match(client, /\/\.netlify\/functions\/partner-signing/);
 });
