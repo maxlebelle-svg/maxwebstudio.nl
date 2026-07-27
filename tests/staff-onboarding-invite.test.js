@@ -47,6 +47,8 @@ test("settings has an isolated production invite control when the legacy admin s
   assert.match(control, /getAdminAccessToken/);
   assert.match(control, /event\.stopImmediatePropagation\(\)/);
   assert.match(control, /dataset\.inviteControls/);
+  assert.doesNotMatch(control, /if \(!form \|\| submitting\)/);
+  assert.match(control, /emailField\?\.value/);
   assert.match(control, /action === "send_password_reset"/);
   assert.match(control, /\/\.netlify\/functions\/admin-invite-user/);
   assert.match(control, /mailWarning/);

@@ -5,6 +5,10 @@ const form = document.getElementById("invite-user-form");
 const submitButton = document.getElementById("invite-user-submit");
 const resetButton = document.getElementById("invite-user-reset-link");
 const message = document.getElementById("invite-user-message");
+const nameField = document.getElementById("invite-user-name");
+const emailField = document.getElementById("invite-user-email");
+const roleField = document.getElementById("invite-user-role");
+const statusField = document.getElementById("invite-user-status");
 let submitting = false;
 
 function setMessage(text, type = "") {
@@ -31,14 +35,19 @@ async function currentBearer() {
 }
 
 async function sendInvite(action, button) {
-  if (!form || submitting) return;
+  if (submitting) return;
   const token = await currentBearer();
   if (!token) {
     setMessage("Log opnieuw in als superadmin om een geldige activatielink te versturen.", "error");
     return;
   }
 
-  const data = Object.fromEntries(new FormData(form).entries());
+  const data = {
+    name: String(nameField?.value || "").trim(),
+    email: String(emailField?.value || "").trim(),
+    role: String(roleField?.value || "").trim(),
+    status: String(statusField?.value || "").trim(),
+  };
   setSubmitting(button, true, action);
   setMessage(action === "send_password_reset" ? "Verse activatielink wordt verstuurd..." : "Uitnodiging wordt verstuurd...");
 
@@ -83,4 +92,4 @@ submitButton?.addEventListener("click", handleButtonClick, true);
 resetButton?.addEventListener("click", handleButtonClick, true);
 form?.addEventListener("submit", handleFormSubmit, true);
 
-document.documentElement.dataset.inviteControls = form && submitButton && resetButton ? "ready" : "missing";
+document.documentElement.dataset.inviteControls = nameField && emailField && submitButton && resetButton ? "ready" : "missing";
