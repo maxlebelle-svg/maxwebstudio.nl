@@ -86,6 +86,63 @@ async function uploadPdf(config, transactionId, fileId, bytes) {
   });
 }
 
+async function uploadFileMetadata(config, transactionId, fileId, metadata) {
+  return signhostRequest(config, `/api/transaction/${encodeURIComponent(transactionId)}/file/${encodeURIComponent(fileId)}`, {
+    method:"PUT", contentType:"application/json", body:JSON.stringify(metadata),
+  });
+}
+
+function buildAgreementMetadata(transaction, input) {
+  const signers = Array.isArray(transaction?.Signers) ? transaction.Signers : [];
+  const partnerId = signerId(signers, input.signerEmail, 0);
+  const countersignerId = signerId(signers, input.countersignerEmail, 1);
+  if (!partnerId || !countersignerId || partnerId === countersignerId) {
+    throw coded("SIGNHOST_SIGNERS_INVALID", 502, "Signhost gaf geen geldige ondertekenaars terug.");
+  }
+  return {
+    DisplayName:"ZZP-overeenkomst met Max Webstudio",
+    Signers:{
+      [partnerId]:{ FormSets:["PartnerDetails", "PartnerSignature"] },
+      [countersignerId]:{ FormSets:["MaxSignature"] },
+    },
+    FormSets:{
+      PartnerDetails:{
+        Bedrijfsnaam:singleLine(2, 365, 134, 125),
+        Naam:singleLine(2, 340, 147, 150),
+        Rechtsvorm:singleLine(2, 360, 160, 130),
+        KvkNummer:singleLine(2, 365, 173, 125),
+        BtwNummer:singleLine(2, 368, 186, 122),
+        Vestigingsadres:singleLine(2, 378, 199, 112),
+        PostcodeEnPlaats:singleLine(2, 390, 212, 100),
+        Email:singleLine(2, 340, 225, 150),
+        Ondertekenplaats:singleLine(7, 340, 628, 150),
+        Ondertekendatum:singleLine(7, 340, 654, 150),
+        OndertekenaarNaam:singleLine(7, 340, 706, 150),
+        Functie:singleLine(7, 345, 719, 145),
+      },
+      PartnerSignature:{
+        Handtekening:{ Type:"Signature", Location:{ PageNumber:7, Left:365, Top:675, Width:125, Height:30 } },
+      },
+      MaxSignature:{
+        Plaats:singleLine(7, 100, 628, 140),
+        Datum:singleLine(7, 100, 654, 140),
+        Functie:singleLine(7, 102, 719, 138),
+        Handtekening:{ Type:"Signature", Location:{ PageNumber:7, Left:115, Top:675, Width:125, Height:30 } },
+      },
+    },
+  };
+}
+
+function singleLine(page, left, top, width) {
+  return { Type:"SingleLine", Location:{ PageNumber:page, Left:left, Top:top, Width:width, Height:12 } };
+}
+
+function signerId(signers, email, fallbackIndex) {
+  const expected = clean(email).toLowerCase();
+  const matching = signers.find((signer) => clean(signer?.Email || signer?.email).toLowerCase() === expected);
+  return clean(matching?.Id || matching?.id || signers[fallbackIndex]?.Id || signers[fallbackIndex]?.id);
+}
+
 async function startTransaction(config, transactionId) {
   return signhostRequest(config, `/api/transaction/${encodeURIComponent(transactionId)}/start`, { method:"PUT" });
 }
@@ -142,6 +199,7 @@ function coded(code, status, message) { return Object.assign(new Error(message),
 module.exports = {
   API_BASE,
   createTransaction,
+  buildAgreementMetadata,
   downloadReceipt,
   downloadSignedPdf,
   normalizePhone,
@@ -149,6 +207,7 @@ module.exports = {
   signhostRequest,
   startTransaction,
   uploadPdf,
+  uploadFileMetadata,
   validatePostback,
   verification,
 };

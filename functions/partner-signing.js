@@ -1,7 +1,7 @@
 const crypto = require("node:crypto");
 const { hasPartnerOnboardingAccess } = require("./services/profileAccessPolicy");
 const { rest } = require("./services/partnerOnboardingAccessService");
-const { createTransaction, signhostConfig, startTransaction, uploadPdf } = require("./services/signhostService");
+const { buildAgreementMetadata, createTransaction, signhostConfig, startTransaction, uploadFileMetadata, uploadPdf } = require("./services/signhostService");
 
 const BUCKET = "staff-private-documents";
 
@@ -81,12 +81,14 @@ async function startAgreement(context, profile) {
     const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
     if (checksum !== template.checksum_sha256) throw coded("SIGNING_TEMPLATE_INTEGRITY_FAILED", 409, "De integriteitscontrole van de overeenkomst is mislukt.");
     const provider = signhostConfig();
-    const transaction = await createTransaction(provider, {
+    const signerInput = {
       signerEmail:profile.email, signerName:dossier.legal_name, signerPhone:dossier.phone,
       countersignerEmail, countersignerName, verificationMethod:template.verification_method,
-    });
+    };
+    const transaction = await createTransaction(provider, signerInput);
     const transactionId = clean(transaction.Id || transaction.id);
     if (!transactionId) throw coded("SIGNHOST_RESPONSE_INVALID", 502, "Signhost gaf geen geldig transactienummer terug.");
+    await uploadFileMetadata(provider, transactionId, signing.provider_file_id, buildAgreementMetadata(transaction, signerInput));
     await uploadPdf(provider, transactionId, signing.provider_file_id, pdf);
     await startTransaction(provider, transactionId);
     const now = new Date().toISOString();

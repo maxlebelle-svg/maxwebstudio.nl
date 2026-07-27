@@ -39,6 +39,30 @@ test("SMS verification normalizes Dutch mobile numbers and rejects unsafe input"
   assert.throws(() => signhost.verification("PhoneNumber", "06123", "Test Partner"), /mobiel telefoonnummer/i);
 });
 
+test("Signhost agreement metadata assigns partner details and both signatures", () => {
+  const metadata = signhost.buildAgreementMetadata({ Signers:[
+    { Id:"SignerPartner", Email:"partner@example.nl" },
+    { Id:"SignerMax", Email:"max@maxwebstudio.nl" },
+  ] }, { signerEmail:"partner@example.nl", countersignerEmail:"max@maxwebstudio.nl" });
+  assert.deepEqual(metadata.Signers.SignerPartner.FormSets, ["PartnerDetails", "PartnerSignature"]);
+  assert.deepEqual(metadata.Signers.SignerMax.FormSets, ["MaxSignature"]);
+  assert.equal(metadata.FormSets.PartnerDetails.Bedrijfsnaam.Location.PageNumber, 2);
+  assert.deepEqual(metadata.FormSets.PartnerSignature.Handtekening.Location, { PageNumber:7, Left:365, Top:675, Width:125, Height:30 });
+  assert.deepEqual(metadata.FormSets.MaxSignature.Handtekening.Location, { PageNumber:7, Left:115, Top:675, Width:125, Height:30 });
+});
+
+test("Signhost transaction uploads form metadata before the PDF", () => {
+  const endpoint = read("functions/partner-signing.js");
+  assert.match(endpoint, /await uploadFileMetadata[\s\S]+await uploadPdf[\s\S]+await startTransaction/);
+});
+
+test("The deployed Signhost template is a real unsigned PDF", () => {
+  const pdf = fs.readFileSync(path.join(root, "public/documents/max-webstudio-overeenkomst-van-opdracht-salespartner-v2-signhost-unsigned.pdf"));
+  assert.equal(pdf.subarray(0, 5).toString("ascii"), "%PDF-");
+  assert.match(pdf.subarray(-2048).toString("latin1"), /%%EOF/);
+  assert.doesNotMatch(pdf.toString("latin1"), /FormXob\.edf35082acc3c16872083ee79456e2ad/);
+});
+
 test("Signed artifacts stay quarantined until malware scanning succeeds", () => {
   const endpoint = read("functions/signhost-postback.js");
   assert.match(endpoint, /status:"quarantined"/);
