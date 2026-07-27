@@ -26,6 +26,20 @@
             <div><span class="staff-kicker">SUPERADMIN · ZZP-BEHEER</span><h1>Medewerkers</h1><p>Onboarding, bedrijfsgegevens, beveiligde documenten, agenda en blijvende chat in één overzicht.</p></div>
             <div class="staff-metrics" id="employee-metrics" aria-label="Medewerkerssamenvatting"></div>
           </header>
+          <section class="signhost-smoke-card" aria-labelledby="signhost-smoke-title">
+            <div>
+              <span class="staff-kicker">STAGING · NIET-BINDENDE TEST</span>
+              <h2 id="signhost-smoke-title">Signhost end-to-endcontrole</h2>
+              <p>Verstuur een apart testdocument naar je eigen superadminadres. Na ondertekening worden het getekende PDF en auditbewijs automatisch in de besloten stagingopslag bewaard.</p>
+            </div>
+            <div class="signhost-smoke-actions">
+              <span class="status-pill" id="signhost-smoke-status">Controleren…</span>
+              <button class="button primary" id="signhost-smoke-start" type="button" disabled>Start veilige test</button>
+              <button class="button secondary" id="signhost-smoke-document" type="button" hidden>Open getekend testdocument</button>
+              <button class="button secondary" id="signhost-smoke-receipt" type="button" hidden>Open auditbewijs</button>
+            </div>
+            <p class="staff-notice signhost-smoke-notice" id="signhost-smoke-notice" role="status"></p>
+          </section>
           <section class="staff-toolbar">
             <label for="employee-search">Zoek medewerker<input id="employee-search" type="search" placeholder="Naam, e-mail, rol of KvK" autocomplete="off" /></label>
             <label for="employee-status">Status<select id="employee-status"><option value="">Alle statussen</option><option value="active">Actief</option><option value="invited">Uitgenodigd</option><option value="pending">In behandeling</option></select></label>

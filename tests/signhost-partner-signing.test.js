@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const signhost = require("../functions/services/signhostService");
 const postback = require("../functions/signhost-postback")._test;
+const smoke = require("../functions/admin-signhost-smoke-test")._test;
 
 test("Signhost credentials remain server-side and the signing model is owner scoped", () => {
   const migration = read("supabase/migrations/20260727090000_staff_signhost_foundation.sql");
@@ -70,4 +71,38 @@ test("Signed artifacts stay quarantined until malware scanning succeeds", () => 
   assert.equal(postback.eventName("signed_pending_scan"), "signing.signed");
   assert.doesNotThrow(() => postback.assertPdf(Buffer.from("%PDF-1.4\nbody\n%%EOF"), "testdocument"));
   assert.throws(() => postback.assertPdf(Buffer.from("not a pdf"), "testdocument"), /geldige testdocument/i);
+});
+
+test("superadmin smoke tests are isolated from the legal agreement workflow", () => {
+  const migration = read("supabase/migrations/20260727120000_signhost_smoke_test.sql");
+  const endpoint = read("functions/admin-signhost-smoke-test.js");
+  const webhook = read("functions/signhost-postback.js");
+  const adminPage = read("public/admin-medewerkers.html");
+  const adminClient = read("public/src/staff/admin-staff-directory.js");
+  assert.match(migration, /create table public\.signhost_smoke_tests/);
+  assert.match(migration, /has_app_role\(array\['super_admin'\]\)/);
+  assert.match(endpoint, /allowedRoles:\["super_admin"\]/);
+  assert.match(endpoint, /SIGNHOST_SMOKE_TEST_ENABLED/);
+  assert.match(endpoint, /SIGNHOST_SMOKE_TEST_ALLOWED_EMAILS/);
+  assert.match(read("functions/services/signhostService.js"), /TECHNISCHE TEST - geen overeenkomst/);
+  assert.match(webhook, /signhost_smoke_tests/);
+  assert.match(webhook, /signhost-auditbewijs\.pdf/);
+  assert.match(adminPage, /Signhost end-to-endcontrole/);
+  assert.match(adminClient, /admin-signhost-smoke-test/);
+  assert.equal(smoke.smokeEnabled("max@maxwebstudio.nl", { SIGNHOST_SMOKE_TEST_ENABLED:"true", SIGNHOST_SMOKE_TEST_ALLOWED_EMAILS:"max@maxwebstudio.nl" }), true);
+  assert.equal(smoke.smokeEnabled("other@example.nl", { SIGNHOST_SMOKE_TEST_ENABLED:"true", SIGNHOST_SMOKE_TEST_ALLOWED_EMAILS:"max@maxwebstudio.nl" }), false);
+});
+
+test("smoke-test metadata contains exactly one visible signature field", () => {
+  const metadata = signhost.buildSmokeTestMetadata({ Signers:[{ Id:"SmokeSigner", Email:"max@maxwebstudio.nl" }] }, { signerEmail:"max@maxwebstudio.nl" });
+  assert.deepEqual(metadata.Signers.SmokeSigner.FormSets, ["SmokeTestSignature"]);
+  assert.deepEqual(metadata.FormSets.SmokeTestSignature.Handtekening.Location, { PageNumber:1, Left:115, Top:545, Width:365, Height:45 });
+  assert.equal(postback.smokeStatus("signed_pending_scan"), "signed");
+});
+
+test("the automated smoke-test asset is explicitly non-binding and checksum pinned", () => {
+  const pdf = fs.readFileSync(path.join(root, "public/documents/max-webstudio-signhost-technische-test.pdf"));
+  assert.equal(pdf.subarray(0,5).toString("ascii"), "%PDF-");
+  assert.match(pdf.subarray(-2048).toString("latin1"), /%%EOF/);
+  assert.equal(crypto.createHash("sha256").update(pdf).digest("hex"), smoke.TEMPLATE_SHA256);
 });

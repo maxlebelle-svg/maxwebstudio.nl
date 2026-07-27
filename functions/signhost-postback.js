@@ -19,7 +19,13 @@ exports.handler = async (event) => {
     const rows = await rest(context.url, context.service, `staff_signing_transactions?select=*&provider=eq.signhost&provider_transaction_id=eq.${encodeURIComponent(validation.id)}&limit=1`);
     const signing = rows?.[0];
     if (!signing) {
-      console.error("Signhost postback has no local transaction", { providerStatus:validation.status });
+      const smokeRows = await rest(context.url, context.service, `signhost_smoke_tests?select=*&provider=eq.signhost&provider_transaction_id=eq.${encodeURIComponent(validation.id)}&limit=1`);
+      const smoke = smokeRows?.[0];
+      if (!smoke) {
+        console.error("Signhost postback has no local transaction", { providerStatus:validation.status });
+        return ok();
+      }
+      await processSmokePostback(context, smoke, validation);
       return ok();
     }
     const now = new Date().toISOString();
@@ -37,6 +43,17 @@ exports.handler = async (event) => {
   }
   return ok();
 };
+
+async function processSmokePostback(context, smoke, validation) {
+  const now = new Date().toISOString();
+  const status = smokeStatus(validation.mappedStatus);
+  const patch = { provider_status:validation.status, status, last_postback_at:now, updated_at:now };
+  if (status === "signed") {
+    if (!smoke.signed_document_path || !smoke.receipt_path) Object.assign(patch, await preserveSmokeArtifacts(context, smoke));
+    patch.signed_at = smoke.signed_at || now;
+  }
+  await rest(context.url, context.service, `signhost_smoke_tests?id=eq.${smoke.id}`, { method:"PATCH", body:JSON.stringify(patch) });
+}
 
 async function preserveArtifacts(context, signing) {
   const provider = signhostConfig();
@@ -76,6 +93,28 @@ async function preserveArtifacts(context, signing) {
   return { signed_document_path:documentPath, receipt_path:receiptPath, signed_document_sha256:documentSha, receipt_sha256:receiptSha };
 }
 
+async function preserveSmokeArtifacts(context, smoke) {
+  const provider = signhostConfig();
+  const [document, receipt] = await Promise.all([
+    downloadSignedPdf(provider, smoke.provider_transaction_id, smoke.provider_file_id),
+    downloadReceipt(provider, smoke.provider_transaction_id),
+  ]);
+  assertPdf(document.bytes, "ondertekende technische test");
+  assertPdf(receipt.bytes, "technisch testbewijs");
+  const documentPath = `signhost-smoke-tests/${smoke.id}/ondertekende-technische-test.pdf`;
+  const receiptPath = `signhost-smoke-tests/${smoke.id}/signhost-auditbewijs.pdf`;
+  await Promise.all([
+    storageUpload(context, documentPath, document.bytes),
+    storageUpload(context, receiptPath, receipt.bytes),
+  ]);
+  return {
+    signed_document_path:documentPath,
+    receipt_path:receiptPath,
+    signed_document_sha256:crypto.createHash("sha256").update(document.bytes).digest("hex"),
+    receipt_sha256:crypto.createHash("sha256").update(receipt.bytes).digest("hex"),
+  };
+}
+
 async function storageUpload(context, path, bytes) {
   const response = await fetch(`${context.url}/storage/v1/object/${BUCKET}/${encodePath(path)}`, {
     method:"POST",
@@ -92,6 +131,7 @@ function assertPdf(bytes, label) {
 }
 async function logEvent(context, signing, eventType, metadata) { return rest(context.url, context.service, "staff_dossier_events", { method:"POST", body:JSON.stringify({ employee_profile_id:signing.profile_id, actor_profile_id:null, event_type:eventType, subject_type:"signing_transaction", subject_id:signing.id, safe_metadata:metadata }) }); }
 function eventName(status){return ({signed_pending_scan:"signing.signed",rejected:"signing.rejected",expired:"signing.expired",cancelled:"signing.cancelled",failed:"signing.failed"})[status]||"signing.updated";}
+function smokeStatus(status){return status === "signed_pending_scan" ? "signed" : status;}
 function config(){const url=clean(process.env.SUPABASE_URL).replace(/\/$/,"");const service=clean(process.env.SUPABASE_SERVICE_ROLE_KEY);if(!url||!service)throw coded("CONFIG_MISSING",500,"Postbackconfiguratie ontbreekt.");return {url,service};}
 function encodePath(value){return String(value).split("/").map(encodeURIComponent).join("/");}
 function parseSoft(value){try{const parsed=JSON.parse(value||"{}");return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{};}catch{return {};}}
@@ -99,4 +139,4 @@ function clean(value){return String(value??"").trim();}
 function coded(code,status,message){return Object.assign(new Error(message),{code,status});}
 function ok(){return {statusCode:200,headers:{"Content-Type":"text/plain","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"},body:"OK"};}
 
-exports._test = { assertPdf, eventName, parseSoft };
+exports._test = { assertPdf, eventName, parseSoft, smokeStatus };

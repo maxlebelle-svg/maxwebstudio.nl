@@ -70,6 +70,27 @@ async function createTransaction(config, input) {
   });
 }
 
+async function createSmokeTestTransaction(config, input) {
+  return signhostRequest(config, "/api/transaction/", {
+    method:"POST",
+    contentType:"application/json",
+    body:JSON.stringify({
+      Signers:[{
+        Email:input.signerEmail,
+        Language:"nl-NL",
+        Verifications:[verification("Scribble", "", input.signerName)],
+        SendSignRequest:true,
+        SignRequestSubject:"TECHNISCHE TEST - geen overeenkomst",
+        SignRequestMessage:"Dit is een niet-bindende technische test van de Signhost-koppeling van Max Webstudio.",
+        SendSignConfirmation:true,
+        DaysToRemind:3,
+      }],
+      SendEmailNotifications:true,
+      Reference:"MWS-AUTOMATISCHE-SIGNHOST-TEST",
+    }),
+  });
+}
+
 function verification(method, phone, name) {
   if (method === "PhoneNumber") {
     const number = normalizePhone(phone);
@@ -128,6 +149,21 @@ function buildAgreementMetadata(transaction, input) {
         Datum:singleLine(7, 100, 654, 140),
         Functie:singleLine(7, 102, 719, 138),
         Handtekening:{ Type:"Signature", Location:{ PageNumber:7, Left:115, Top:675, Width:125, Height:30 } },
+      },
+    },
+  };
+}
+
+function buildSmokeTestMetadata(transaction, input) {
+  const signers = Array.isArray(transaction?.Signers) ? transaction.Signers : [];
+  const signer = signerId(signers, input.signerEmail, 0);
+  if (!signer) throw coded("SIGNHOST_SIGNERS_INVALID", 502, "Signhost gaf geen geldige testondertekenaar terug.");
+  return {
+    DisplayName:"Max Webstudio - technische Signhost-test (geen overeenkomst)",
+    Signers:{ [signer]:{ FormSets:["SmokeTestSignature"] } },
+    FormSets:{
+      SmokeTestSignature:{
+        Handtekening:{ Type:"Signature", Location:{ PageNumber:1, Left:115, Top:545, Width:365, Height:45 } },
       },
     },
   };
@@ -198,7 +234,9 @@ function coded(code, status, message) { return Object.assign(new Error(message),
 
 module.exports = {
   API_BASE,
+  buildSmokeTestMetadata,
   createTransaction,
+  createSmokeTestTransaction,
   buildAgreementMetadata,
   downloadReceipt,
   downloadSignedPdf,
