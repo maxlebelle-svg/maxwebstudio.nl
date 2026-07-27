@@ -5,6 +5,7 @@
   directory = "functions"
 
 [functions."website-factory"]
+  node_bundler = "esbuild"
   included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
 
 [functions."demo-journey"]
