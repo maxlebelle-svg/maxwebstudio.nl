@@ -517,7 +517,7 @@ export async function consumeMagicLinkSessionFromUrl() {
   return { success: true, provider: "supabase", session };
 }
 
-export async function updatePassword(newPassword) {
+export async function updatePassword(newPassword, options = {}) {
   if (!newPassword) throw new Error("Vul een nieuw wachtwoord in.");
   const config = await getRuntimeAuthConfig();
   if (!config.active) return throwPrepared("updatePassword");
@@ -563,8 +563,9 @@ export async function updatePassword(newPassword) {
     throw error;
   }
 
-  localStorage.removeItem(AUTH_SESSION_KEY);
-  return { success: true, provider: "supabase" };
+  const preserveSession = Boolean(options.preserveSession);
+  if (!preserveSession) localStorage.removeItem(AUTH_SESSION_KEY);
+  return { success: true, provider: "supabase", session: preserveSession ? session : null };
 }
 
 export function onAuthStateChange(callback) {

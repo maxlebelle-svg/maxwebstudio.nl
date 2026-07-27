@@ -52,7 +52,7 @@
     </main>
 
     <script type="module">
-      import { consumeRecoverySessionFromUrl, updatePassword } from "./src/services/supabaseAuthProvider.js?v=20260704-invite-activation";
+      import { consumeRecoverySessionFromUrl, updatePassword } from "./src/services/supabaseAuthProvider.js?v=20260727-partner-activation-session";
 
       const form = document.getElementById("activation-form");
       const message = document.getElementById("activation-message");
@@ -68,10 +68,11 @@
       const params = new URLSearchParams(window.location.search);
       const activationMode = String(params.get("mode") || params.get("context") || "").toLowerCase();
       const isLeadDemoActivation = activationMode === "lead_demo" || activationMode === "lead-preview";
+      const isPartnerActivation = ["partner", "sales_partner", "employee", "medewerker"].includes(activationMode);
       const isPreviewActivation = activationMode === "preview" || params.has("previewToken");
       const isCustomerActivation = isPreviewActivation || ["customer", "klant", "portal", "portaal", "onboarding", "project"].includes(activationMode) || params.has("projectId") || params.has("customerId");
       const previewContext = {
-        mode: isLeadDemoActivation ? "lead_demo" : isPreviewActivation ? "preview" : isCustomerActivation ? "customer_portal" : "dashboard",
+        mode: isLeadDemoActivation ? "lead_demo" : isPartnerActivation ? "partner" : isPreviewActivation ? "preview" : isCustomerActivation ? "customer_portal" : "dashboard",
         projectId: params.get("projectId") || params.get("project") || "",
         token: params.get("token") || params.get("previewToken") || "",
         customerId: params.get("customerId") || "",
@@ -93,6 +94,23 @@
       }
 
       function applyActivationCopy() {
+        if (previewContext.mode === "partner") {
+          kicker.textContent = "Partneraccount activeren";
+          title.textContent = "Welkom bij Max Webstudio.";
+          intro.textContent = "Kies je wachtwoord. Daarna start je direct met je persoonlijke onboarding.";
+          statusTitle.textContent = "Partneruitnodiging controleren";
+          statusText.textContent = "We controleren je beveiligde persoonlijke uitnodigingslink.";
+          submit.textContent = "Account activeren en onboarding starten";
+          asideKicker.textContent = "Partnerprogramma";
+          asideTitle.textContent = "Alles staat klaar voor jouw start bij Max Webstudio.";
+          asideList.innerHTML = [
+            "Doorloop de leerstof en de kennistoets.",
+            "Vul veilig je ZZP- en contactgegevens in.",
+            "Onderteken daarna digitaal je overeenkomst.",
+            "Je voortgang wordt automatisch opgeslagen.",
+          ].map((item) => `<li>${item}</li>`).join("");
+          return;
+        }
         if (previewContext.mode === "lead_demo") {
           kicker.textContent = "Demo-account activeren";
           title.textContent = "Je persoonlijke website-demo staat klaar.";
@@ -325,8 +343,8 @@
         submit.textContent = "Account activeren...";
         setMessage("Je account wordt geactiveerd...", "");
         try {
-          await updatePassword(data.password);
-          const session = readJson(supabaseSessionKey, null);
+          const passwordResult = await updatePassword(data.password, { preserveSession: true });
+          const session = passwordResult.session || readJson(supabaseSessionKey, null);
           if (!session?.access_token) throw new Error("Sessie ontbreekt na wachtwoord instellen. Log opnieuw in.");
           if (previewContext.mode === "lead_demo") {
             const activationResponse = await fetch("/.netlify/functions/lead-preview-portal", {

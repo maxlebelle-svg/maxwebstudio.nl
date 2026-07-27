@@ -83,3 +83,17 @@ test("mail logging keeps modern sent timestamps out of legacy list projections",
   assert.match(source, /sent_at\.\*schema cache/);
   assert.match(source, /const \{ sent_at, \.\.\.legacyPatch \} = normalizedPatch/);
 });
+
+test("partner activation keeps the recovery session and uses partner-specific copy", () => {
+  const activation = fs.readFileSync(path.join(__dirname, "../public/account-activeren.html"), "utf8");
+  const provider = fs.readFileSync(path.join(__dirname, "../public/src/services/supabaseAuthProvider.js"), "utf8");
+  const inviteSource = fs.readFileSync(path.join(__dirname, "../functions/admin-invite-user.js"), "utf8");
+
+  assert.match(activation, /updatePassword\(data\.password, \{ preserveSession: true \}\)/);
+  assert.match(activation, /passwordResult\.session \|\| readJson/);
+  assert.match(activation, /previewContext\.mode === "partner"/);
+  assert.match(activation, /Account activeren en onboarding starten/);
+  assert.match(provider, /if \(!preserveSession\) localStorage\.removeItem\(AUTH_SESSION_KEY\)/);
+  assert.match(inviteSource, /account-activeren\?context=partner/);
+  assert.match(inviteSource, /forceRedirect\(actionLink, partnerActivationRedirectTo\(\)\)/);
+});

@@ -12,6 +12,7 @@ const allowedRoles = new Set(CANONICAL_ROLES.filter((role) => role !== "demo_use
 const allowedStatuses = new Set(CANONICAL_PROFILE_STATUSES);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const productionActivationUrl = "https://maxwebstudio.nl/account-activeren";
+const productionPartnerActivationUrl = "https://maxwebstudio.nl/account-activeren?context=partner";
 const productionPartnerOnboardingUrl = "https://maxwebstudio.nl/partner-onboarding.html";
 
 exports.handler = async (event) => {
@@ -134,6 +135,12 @@ function partnerOnboardingRedirectTo() {
   return productionPartnerOnboardingUrl;
 }
 
+function partnerActivationRedirectTo() {
+  const configured = cleanText(process.env.PARTNER_ACTIVATION_REDIRECT_TO);
+  if (configured && !configured.includes("localhost") && !configured.includes("127.0.0.1")) return configured;
+  return productionPartnerActivationUrl;
+}
+
 function forceInviteRedirect(actionLink = "") {
   const cleanLink = cleanText(actionLink);
   if (!cleanLink) return "";
@@ -209,7 +216,11 @@ async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, typ
 
 async function sendEmployeeInviteMail(input, actionLink, options = {}) {
   const onboardingOnly = Boolean(options.onboardingOnly);
-  const safeActionLink = onboardingOnly ? forceRedirect(actionLink, partnerOnboardingRedirectTo()) : forceInviteRedirect(actionLink);
+  const safeActionLink = onboardingOnly
+    ? forceRedirect(actionLink, partnerOnboardingRedirectTo())
+    : input.role === "sales_partner"
+      ? forceRedirect(actionLink, partnerActivationRedirectTo())
+      : forceInviteRedirect(actionLink);
   const firstName = cleanText(input.name).split(/\s+/)[0] || "daar";
   const roleLabel = input.role === "sales_partner" ? "Sales Partner" : input.role.replace(/_/g, " ");
   const subject = onboardingOnly ? "Je Max Webstudio-onboarding staat klaar" : "Welkom bij Max Webstudio";
