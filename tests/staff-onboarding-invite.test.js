@@ -39,3 +39,14 @@ test("existing users still receive the dedicated onboarding email", () => {
   assert.match(source, /action === "invite" \|\| action === "onboarding_invite"/);
   assert.match(source, /"magiclink", partnerOnboardingRedirectTo\(\)/);
 });
+
+test("settings has an isolated production invite control when the legacy admin script stops early", () => {
+  const page = fs.readFileSync(path.join(__dirname, "../public/admin-instellingen.html"), "utf8");
+  const control = fs.readFileSync(path.join(__dirname, "../public/src/staff/admin-invite-controls.js"), "utf8");
+  assert.match(page, /src\/staff\/admin-invite-controls\.js/);
+  assert.match(control, /getSession/);
+  assert.match(control, /event\.stopImmediatePropagation\(\)/);
+  assert.match(control, /action === "send_password_reset"/);
+  assert.match(control, /\/\.netlify\/functions\/admin-invite-user/);
+  assert.match(control, /mailWarning/);
+});
