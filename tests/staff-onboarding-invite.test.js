@@ -77,3 +77,9 @@ test("sensitive employee invitations create a schema-compatible log without stor
   assert.equal(record.text_body, null);
   assert.equal(JSON.stringify(record).includes("one-time-secret"), false);
 });
+
+test("mail logging keeps modern sent timestamps out of legacy list projections", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../functions/services/mailLogService.js"), "utf8");
+  assert.match(source, /sent_at\.\*schema cache/);
+  assert.match(source, /const \{ sent_at, \.\.\.legacyPatch \} = normalizedPatch/);
+});

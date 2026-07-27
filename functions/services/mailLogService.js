@@ -28,7 +28,6 @@ const EMAIL_LOG_FIELDS = [
   "triggered_by",
   "triggered_by_user_id",
   "created_by",
-  "sent_at",
   "error_message",
   "error_code",
   "metadata",
@@ -71,16 +70,22 @@ async function updateEmailLog(id, patch = {}) {
   const config = getSupabaseConfig();
   if (!config.available || !isUuid(id)) return { skipped: true, reason: "missing_supabase_config_or_id" };
 
-  const rows = await supabaseFetch(`${config.supabaseUrl}/rest/v1/email_logs?id=eq.${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: {
-      ...restHeaders(config.serviceRoleKey),
-      "Content-Type": "application/json",
-      "Content-Profile": "public",
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify(normalizePatch(patch)),
-  });
+  const url = `${config.supabaseUrl}/rest/v1/email_logs?id=eq.${encodeURIComponent(id)}`;
+  const headers = {
+    ...restHeaders(config.serviceRoleKey),
+    "Content-Type": "application/json",
+    "Content-Profile": "public",
+    Prefer: "return=representation",
+  };
+  const normalizedPatch = normalizePatch(patch);
+  let rows;
+  try {
+    rows = await supabaseFetch(url, { method: "PATCH", headers, body: JSON.stringify(normalizedPatch) });
+  } catch (error) {
+    if (!normalizedPatch.sent_at || !/sent_at.*schema cache/i.test(cleanText(error.message))) throw error;
+    const { sent_at, ...legacyPatch } = normalizedPatch;
+    rows = await supabaseFetch(url, { method: "PATCH", headers, body: JSON.stringify(legacyPatch) });
+  }
 
   return Array.isArray(rows) ? rows[0] : rows;
 }
