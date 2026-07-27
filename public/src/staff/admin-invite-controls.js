@@ -1,4 +1,4 @@
-import { getSession } from "../services/supabaseAuthProvider.js";
+import { getAdminAccessToken } from "../services/adminAuthBridgeService.js";
 
 const endpoint = "/.netlify/functions/admin-invite-user";
 const form = document.getElementById("invite-user-form");
@@ -27,8 +27,7 @@ function setSubmitting(button, active, action) {
 }
 
 async function currentBearer() {
-  const result = await getSession().catch(() => null);
-  return String(result?.session?.access_token || "").trim();
+  return String(await getAdminAccessToken().catch(() => "")).trim();
 }
 
 async function sendInvite(action, button) {
@@ -67,16 +66,21 @@ async function sendInvite(action, button) {
   }
 }
 
-document.addEventListener("click", (event) => {
-  const button = event.target.closest("#invite-user-submit, #invite-user-reset-link");
-  if (!button) return;
+function handleButtonClick(event) {
+  const button = event.currentTarget;
   event.preventDefault();
   event.stopImmediatePropagation();
   void sendInvite(button === resetButton ? "send_password_reset" : "invite", button);
-}, true);
+}
 
-form?.addEventListener("submit", (event) => {
+function handleFormSubmit(event) {
   event.preventDefault();
   event.stopImmediatePropagation();
   void sendInvite("invite", submitButton);
-}, true);
+}
+
+submitButton?.addEventListener("click", handleButtonClick, true);
+resetButton?.addEventListener("click", handleButtonClick, true);
+form?.addEventListener("submit", handleFormSubmit, true);
+
+document.documentElement.dataset.inviteControls = form && submitButton && resetButton ? "ready" : "missing";

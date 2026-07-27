@@ -44,8 +44,9 @@ test("settings has an isolated production invite control when the legacy admin s
   const page = fs.readFileSync(path.join(__dirname, "../public/admin-instellingen.html"), "utf8");
   const control = fs.readFileSync(path.join(__dirname, "../public/src/staff/admin-invite-controls.js"), "utf8");
   assert.match(page, /src\/staff\/admin-invite-controls\.js/);
-  assert.match(control, /getSession/);
+  assert.match(control, /getAdminAccessToken/);
   assert.match(control, /event\.stopImmediatePropagation\(\)/);
+  assert.match(control, /dataset\.inviteControls/);
   assert.match(control, /action === "send_password_reset"/);
   assert.match(control, /\/\.netlify\/functions\/admin-invite-user/);
   assert.match(control, /mailWarning/);
