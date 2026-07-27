@@ -8,7 +8,11 @@
   included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
 
 [functions."demo-journey"]
+  node_bundler = "esbuild"
   included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
+
+[functions."customer-onboarding"]
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/account-activeren"
