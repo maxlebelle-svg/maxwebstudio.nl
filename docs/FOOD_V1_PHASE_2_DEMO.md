@@ -64,6 +64,8 @@ De tweede opdracht bouwt een tijdelijke PostgreSQL-cluster op een lokale Unix-so
 
 De Silverado-verkoopdemo uit het aangeleverde ZIP-bestand is alleen als visuele en inhoudelijke referentie gebruikt. De groene, crème en gouden richting is vertaald naar de generieke storefront. Beoordelingen, bezorgbeloften, allergenenclaims en andere niet-bevestigde verkoopclaims zijn bewust niet overgenomen.
 
+Het officiële woordmerk is op 28 juli 2026 gecontroleerd op de bestaande Silverado-site. Daar is geen afzonderlijk logo-afbeeldingsbestand gepubliceerd: het merk wordt weergegeven als `Silverado` in een klassieke serifstijl met de Surinaamse vlag. Food v1 modelleert dit daarom als veilige, configureerbare `logo_text` plus `logo_suffix`; andere tenants kunnen dezelfde brandingconfiguratie of een veilige `logo_url` gebruiken.
+
 Alle gerechten, prijzen, openingstijden, contact- en adresgegevens in de fixture zijn realistische pilotinhoud en moeten vóór livegang door Silverado worden bevestigd.
 
 ## Bekende grenzen van Fase 2

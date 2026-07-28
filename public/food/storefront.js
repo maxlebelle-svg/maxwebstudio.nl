@@ -152,7 +152,7 @@
   const slug = storefrontSlug(globalScope.location);
   const api = createApiClient(globalScope.fetch.bind(globalScope));
   const nodes = Object.fromEntries([
-    "brandMark", "storefrontName", "openingChip", "openingLabel", "hero", "heroTitle", "heroIntro", "phoneLink",
+    "brandLink", "brandMark", "brandWordmark", "brandLogoText", "brandLogoSuffix", "brandFallback", "storefrontName", "openingChip", "openingLabel", "hero", "heroTitle", "heroIntro", "phoneLink",
     "locationName", "locationAddress", "menuLoading", "loadError", "loadErrorMessage", "retryLoad", "categoryNav",
     "menuGroups", "menuDisclaimer", "infoName", "infoIntro", "infoAddress", "infoOpening", "infoPhone", "footerName",
     "cartCount", "stickyCount", "stickyTotal", "stickyCart", "cartDialog", "cartEmpty", "cartLines", "cartTotals",
@@ -208,7 +208,26 @@
     state.profile = profile;
     document.title = `${profile.name} | Afhalen`;
     for (const node of document.querySelectorAll("[data-storefront-name]")) node.textContent = profile.name;
-    nodes.brandMark.textContent = String(profile.name || "R").charAt(0).toUpperCase();
+    nodes.brandLink.setAttribute("aria-label", `${profile.name} — terug naar boven`);
+    const logoText = String(profile.branding?.logo_text || "").trim();
+    const logoSuffix = String(profile.branding?.logo_suffix || "").trim();
+    const logoUrl = safeImageUrl(profile.branding?.logo_url);
+    nodes.brandWordmark.hidden = !logoText;
+    nodes.brandFallback.hidden = Boolean(logoText);
+    nodes.brandLogoText.textContent = logoText;
+    nodes.brandLogoSuffix.textContent = logoSuffix;
+    nodes.brandMark.hidden = Boolean(logoText);
+    nodes.brandMark.replaceChildren();
+    if (logoUrl && !logoText) {
+      const logo = element("img");
+      logo.src = logoUrl;
+      logo.alt = "";
+      nodes.brandMark.classList.add("is-image");
+      nodes.brandMark.append(logo);
+    } else {
+      nodes.brandMark.classList.remove("is-image");
+      nodes.brandMark.textContent = String(profile.name || "R").charAt(0).toUpperCase();
+    }
     nodes.heroTitle.textContent = profile.name;
     nodes.heroIntro.textContent = profile.intro || "Bekijk het actuele menu en plaats een afhaalbestelling.";
     nodes.locationName.textContent = profile.address?.city || profile.name;

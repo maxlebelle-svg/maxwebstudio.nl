@@ -17,6 +17,8 @@
     "intro": "Surinaamse gerechten voor afhalen in Emmeloord. Dit is realistische pilotinhoud die vóór livegang samen met Silverado wordt bevestigd.",
     "branding": {
       "logo_url": null,
+      "logo_text": "Silverado",
+      "logo_suffix": "🇸🇷",
       "hero_image_url": "/assets/demo-images/demo-hero-horeca.jpg"
     },
     "opening": {

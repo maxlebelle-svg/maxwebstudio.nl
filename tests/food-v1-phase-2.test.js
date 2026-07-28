@@ -94,6 +94,16 @@ test("public menu API still selects only published menus and active categories/i
   assert.match(apiSource, /active: "eq\.true", available: "eq\.true"/);
 });
 
+test("tenant wordmark branding is safe, optional and independent from platform branding", () => {
+  assert.equal(apiPrivate.safeBrandText("Silverado", 80), "Silverado");
+  assert.equal(apiPrivate.safeBrandText("🇸🇷", 8), "🇸🇷");
+  assert.equal(apiPrivate.safeBrandText("x\nscript", 80), null);
+  assert.match(html, /data-brand-wordmark/);
+  assert.match(browserSource, /profile\.branding\?\.logo_text/);
+  assert.equal(fixture.storefront.branding.logo_text, "Silverado");
+  assert.equal(fixture.storefront.branding.logo_suffix, "🇸🇷");
+});
+
 test("unavailable or unknown items cannot enter a restored or mutated cart", () => {
   const unavailable = { ...firstItem, available: false };
   assert.deepEqual(storefront.cartSnapshot({ [firstItem.item_ref]: 2 }, [unavailable]), {});

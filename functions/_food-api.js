@@ -152,6 +152,11 @@ function safePublicAssetUrl(value) {
   }
 }
 
+function safeBrandText(value, maxLength) {
+  const text = String(value || "").trim();
+  return text && text.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(text) ? text : null;
+}
+
 function publicConfiguration(configuration) {
   const source = configuration && typeof configuration === "object" && !Array.isArray(configuration)
     ? configuration.public
@@ -174,6 +179,8 @@ function publicConfiguration(configuration) {
   return {
     intro,
     logo_url: safePublicAssetUrl(value.logo_url),
+    logo_text: safeBrandText(value.logo_text, 80),
+    logo_suffix: safeBrandText(value.logo_suffix, 8),
     hero_image_url: safePublicAssetUrl(value.hero_image_url),
     opening_hours: openingHours,
   };
@@ -240,7 +247,12 @@ async function storefront(slug) {
     currency: account.currency,
     fulfilment: { pickup: pickup === true },
     intro: published.intro,
-    branding: { logo_url: published.logo_url, hero_image_url: published.hero_image_url },
+    branding: {
+      logo_url: published.logo_url,
+      logo_text: published.logo_text,
+      logo_suffix: published.logo_suffix,
+      hero_image_url: published.hero_image_url,
+    },
     opening,
     ordering: {
       enabled: pickup === true
@@ -443,7 +455,7 @@ async function sessionContext(event) {
   if (!platformAdmin && !allowedAccounts.length) throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
   const allowedAccountIds = allowedAccounts.map((account) => account.id).filter((id) => UUID.test(id));
   const locations = allowedAccountIds.length ? await sessionQuery("restaurant_locations", new URLSearchParams({
-    select: "id,food_account_id,name,slug,timezone,city,status",
+    select: "id,food_account_id,name,slug,timezone,city,status,configuration",
     food_account_id: `in.(${allowedAccountIds.join(",")})`, status: "eq.active", order: "name.asc", limit: "100",
   }).toString(), bearer) : [];
   const accountsById = new Map(allowedAccounts.map((account) => [account.id, account]));
@@ -456,6 +468,7 @@ async function sessionContext(event) {
       sessionRpc("food_has_capability", { target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "menu.management" }, bearer),
     ]);
     const role = membership.role;
+    const publicBranding = publicConfiguration(location.configuration);
     const permissions = {
       orders_read: ordersEnabled === true,
       orders_update: ordersEnabled === true && role !== "viewer",
@@ -473,6 +486,11 @@ async function sessionContext(event) {
       city: location.city || null,
       currency: account.currency,
       role,
+      branding: {
+        logo_url: publicBranding.logo_url,
+        logo_text: publicBranding.logo_text,
+        logo_suffix: publicBranding.logo_suffix,
+      },
       permissions,
     };
   }));
@@ -694,6 +712,7 @@ module.exports = {
     publicClientKey,
     publicConfiguration,
     routePath,
+    safeBrandText,
     safePublicAssetUrl,
     sessionContext,
     validateOrder,

@@ -77,7 +77,7 @@
     const node = (name) => document.querySelector(`[data-${name}]`);
     const nodes = {
       app: node("app"), loading: node("loading"), error: node("error"), errorTitle: node("error-title"), errorMessage: node("error-message"), retry: node("retry"),
-      locationName: node("location-name"), locationRole: node("location-role"), scopeSelect: node("scope-select"), pollingLabel: node("polling-label"), signout: node("signout"),
+      locationName: node("location-name"), locationWordmark: node("location-wordmark"), locationLogoText: node("location-logo-text"), locationLogoSuffix: node("location-logo-suffix"), locationRole: node("location-role"), scopeSelect: node("scope-select"), pollingLabel: node("polling-label"), signout: node("signout"),
       breadcrumb: node("breadcrumb"), pageTitle: node("page-title"), lastUpdated: node("last-updated"), refresh: node("refresh"), storefrontLink: node("storefront-link"),
       newNavCount: node("new-nav-count"), newCallout: node("new-callout"), newCount: node("new-count"), welcomeTitle: node("welcome-title"),
       metricPending: node("metric-pending"), metricPreparing: node("metric-preparing"), metricReady: node("metric-ready"), metricCompleted: node("metric-completed"), metricRevenue: node("metric-revenue"),
@@ -119,7 +119,12 @@
     function configureScope() {
       const scopes = state.context?.scopes || [];
       state.scope = state.scope || scopes[0];
+      const logoText = String(state.scope.branding?.logo_text || "").trim();
       nodes.locationName.textContent = state.scope.location_name;
+      nodes.locationName.hidden = Boolean(logoText);
+      nodes.locationWordmark.hidden = !logoText;
+      nodes.locationLogoText.textContent = logoText;
+      nodes.locationLogoSuffix.textContent = String(state.scope.branding?.logo_suffix || "").trim();
       nodes.locationRole.textContent = `${roleLabel(state.scope.role)} · ${state.scope.city || "Locatie"}`;
       nodes.welcomeTitle.textContent = `${state.scope.location_name} in één oogopslag.`;
       nodes.storefrontLink.href = `/food/${encodeURIComponent(state.scope.storefront_slug)}`;

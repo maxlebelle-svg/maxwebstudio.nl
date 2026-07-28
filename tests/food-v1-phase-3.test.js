@@ -65,7 +65,15 @@ test("restaurant context is derived server-side from membership and capability",
   assert.match(apiSource, /profile_id: `eq\.\$\{profile\.id\}`/);
   assert.match(apiSource, /food_has_capability[\s\S]*orders\.management[\s\S]*menu\.management/);
   assert.match(apiSource, /if \(!permissions\.orders_read && !permissions\.menu_read\) return null/);
+  assert.match(apiSource, /branding:[\s\S]*logo_text: publicBranding\.logo_text/);
   assert.doesNotMatch(netlify, /account_id=|location_id=/);
+});
+
+test("dashboard keeps platform branding separate from the active tenant wordmark", () => {
+  assert.match(html, /Max Webstudio[\s\S]*Food/);
+  assert.match(html, /data-location-wordmark/);
+  assert.match(source, /state\.scope\.branding\?\.logo_text/);
+  assert.doesNotMatch(`${html}\n${source}\n${css}`, /Silverado/i);
 });
 
 test("restaurant member sees only the own server-derived scope", async () => {
