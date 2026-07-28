@@ -103,6 +103,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/food/v1/*"
+  to = "/.netlify/functions/food-v1/:splat"
+  status = 200
+
+[[redirects]]
   from = "/api/:splat"
   to = "/.netlify/functions/:splat"
   status = 200

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260728162000_food_v1_application_api_support.sql",
+      "bytes": 5872,
+      "sha256": "bb158c7c424105fa5af78b11f7b314ddf5c48560ff5573dfebcdb89afffc34c0"
+    }
+  ]
+}
