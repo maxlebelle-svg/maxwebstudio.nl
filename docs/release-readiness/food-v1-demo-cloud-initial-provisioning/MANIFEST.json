@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "food-v1-demo-cloud-initial-provisioning-2026-07-28",
+  "release": "Max Webstudio Food v1 Demo Cloud initial database provisioning",
+  "status": "LOCAL_EVIDENCE_READY_REMOTE_EXECUTION_NOT_AUTHORIZED",
+  "targetProjectName": "max-webstudio-food-demo",
+  "targetProjectRef": "obprooubcbnfgouytvrw",
+  "targetOrganization": "Max Webstudio Demo",
+  "targetEnvironment": "food_demo",
+  "productionAllowed": false,
+  "stagingAllowed": false,
+  "sourceBranch": "codex/food-v1-silverado-pilot",
+  "sourceCommit": "2fed2907978a6dea47aebcd508aa4abca1be147c",
+  "oneTimeExecution": true,
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 7,
+  "executionOrder": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/00000000000000_authoritative_baseline.sql",
+      "sha256": "1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315"
+    },
+    {
+      "order": 2,
+      "path": "supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql",
+      "sha256": "049f511b70b440733e0f5f00bb0b7fb5b2c184e9eb0fd8ff8fd637dc84d1fbb3"
+    },
+    {
+      "order": 3,
+      "path": "supabase/migrations/20260728160000_food_v1_data_foundation.sql",
+      "sha256": "9bcb252d2e3e136251b9bf2200aa9c314ae7807712735d9bfeff4d6e69c8cbdf"
+    },
+    {
+      "order": 4,
+      "path": "supabase/migrations/20260728161000_food_v1_tenant_security.sql",
+      "sha256": "e9511b6a527ce4876287b3070215b2e2376fdb5f8f48a918e81dbf650fb0d3fe"
+    },
+    {
+      "order": 5,
+      "path": "supabase/migrations/20260728162000_food_v1_application_api_support.sql",
+      "sha256": "bb158c7c424105fa5af78b11f7b314ddf5c48560ff5573dfebcdb89afffc34c0"
+    },
+    {
+      "order": 6,
+      "path": "supabase/migrations/20260728163000_food_v1_storefront_confirmation.sql",
+      "sha256": "4b1deb237cf8fa86890e5ea58c33ad65aac441d6ac60e4a37e9885fae3bea6ac"
+    },
+    {
+      "order": 7,
+      "path": "supabase/migrations/20260728210000_food_v1_online_demo_reset.sql",
+      "sha256": "19842a24cacf2976d57693c5232c2f87cab49ef264bbf96d36ae49828471915b"
+    }
+  ],
+  "forbiddenTargets": {
+    "productionProjectRef": "yxxahurphdbblkuxoeje",
+    "stagingProjectRef": "xlxpuuycigeqhgxqtzni"
+  },
+  "permissions": {
+    "seedAllowed": false,
+    "authUserCreationAllowed": false,
+    "netlifyChangesAllowed": false,
+    "providerChangesAllowed": false,
+    "projectLinkMutationAllowed": false,
+    "ordinarySupabaseDbPushAllowed": false
+  },
+  "rollbackDisablePlan": {
+    "destructiveDownMigrationsAllowed": false,
+    "initialOperationalBlock": "FOOD_PUBLIC_ORDERING_ENABLED=false",
+    "schemaFailureAction": "Stop before seed and repair forward-only under separate authorization.",
+    "wrongTargetAction": "Do not execute.",
+    "projectDeletionRequiresSeparateDestructiveAuthorization": true
+  },
+  "evidence": {
+    "fileset": "docs/release-readiness/food-v1-demo-cloud-initial-provisioning/FILESET.json",
+    "executionPlan": "docs/release-readiness/food-v1-demo-cloud-initial-provisioning/EXECUTION_PLAN.md",
+    "sourceBundle": "docs/release-readiness/food-v1-online-demo-bundle"
+  }
+}
