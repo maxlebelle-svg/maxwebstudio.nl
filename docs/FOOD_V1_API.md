@@ -1,6 +1,6 @@
 # Max Webstudio Food v1 API
 
-Status: lokale Phase 1B-contractlaag. Niet gedeployed en niet remote toegepast.
+Status: lokale Food v1-contractlaag tot en met Phase 3. Niet gedeployed en niet remote toegepast.
 
 ## Grens en uitgangspunten
 
@@ -35,6 +35,7 @@ Het publieke menu noemt UUID-gebaseerde `category_ref` en `item_ref` als opaque 
 
 | Methode | Route | Vereisten |
 | --- | --- | --- |
+| `GET` | `/api/food/v1/session/context` | Actieve sessie; retourneert uitsluitend Food-locaties waarvoor de actor lidmaatschap en beheerrechten heeft |
 | `GET` | `/api/food/v1/accounts/:account_id/orders?location_id=...&status=...&limit=...&offset=...` | Actieve sessie, Food-lidmaatschap voor locatie, `orders.management` |
 | `GET` | `/api/food/v1/accounts/:account_id/orders/:order_id` | Zelfde, plus order binnen account en locatiebereik |
 | `PATCH` | `/api/food/v1/accounts/:account_id/orders/:order_id/status` | Muterende orderrol; transitie via `food_transition_order_status_v1` |
@@ -42,6 +43,8 @@ Het publieke menu noemt UUID-gebaseerde `category_ref` en `item_ref` als opaque 
 | `PATCH` | `/api/food/v1/accounts/:account_id/menu/items/:item_id` | `owner` of `manager`, item binnen eigen account/locatie, `menu.management` |
 
 Platformrollen `admin` en `super_admin` mogen dezelfde beheercontracten gebruiken. Alle overige accounts worden via het actieve profiel en `food_account_members` aan hun locatiebereik gebonden. De authenticated Supabase-JWT blijft actief voor RLS-gelezen orders en menugegevens. Alleen de gecontroleerde RPC-adapters gebruiken service role.
+
+`GET /session/context` is de veilige bootstrap voor het restaurantdashboard. De browser kiest geen account- of locatie-ID uit URL, local storage of hardcoded Silverado-configuratie. De response bevat per toegestaan bereik alleen de opaque account-/locatiereferentie, weergavenaam, storefrontslug, tijdzone, plaats, valuta, sterkste rol en beschikbare beheerrechten. Zonder passend Food-lidmaatschap volgt `FORBIDDEN`. Secrets, service-role-gegevens en lidmaatschappen van andere tenants worden nooit teruggegeven.
 
 ## Ordercontract
 
@@ -78,6 +81,8 @@ Statusbody:
 ```
 
 De Phase 1A-RPC controleert actor, rol, capability en transitiegraaf en schrijft append-only geschiedenis. Kitchen staff kan uitsluitend `accepted → preparing → ready` uitvoeren.
+
+Het orderdetail bevat de publieke orderreferentie en een veilige statusgeschiedenis met status, tijdstip en optionele reden. Interne actorprofiel-ID's worden niet aan het restaurantdashboard geleverd.
 
 Menu-itembody bevat minimaal één en uitsluitend:
 
@@ -120,6 +125,7 @@ Naast de rol moet de accountentitlement actief zijn en de locatieconfiguratie re
 | `FORBIDDEN`, `CAPABILITY_UNAVAILABLE`, `ORIGIN_NOT_ALLOWED` | 403 | Bereik, rol, capability of origin geweigerd |
 | `NOT_FOUND` | 404 | Generiek niet gevonden, zonder tenantinformatie |
 | `IDEMPOTENCY_CONFLICT` | 409 | Key opnieuw gebruikt met andere payload |
+| `INVALID_TRANSITION` | 409 | De gevraagde orderstatus volgt niet op de actuele status |
 | `PAYLOAD_TOO_LARGE` | 413 | Body groter dan 16 KiB |
 | `RATE_LIMITED` | 429 | Publieke orderlimiet bereikt |
 | `ORDERING_UNAVAILABLE`, `SERVICE_UNAVAILABLE`, `UPSTREAM_TIMEOUT` | 503 | Veilig gesloten of tijdelijk niet beschikbaar |
@@ -138,7 +144,7 @@ De validatiescript weigert alle bekende remote databasevariabelen, start Postgre
 ## Bekende beperkingen en releasegrens
 
 - Alleen pickup; geen betaling, delivery, reservering, QR, kiosk of providerintegratie.
-- Geen UI, deploy, stagingapply of productieapply in Phase 1B.
+- Het restaurantdashboard bestaat lokaal vanaf Phase 3; er is nog geen deploy, stagingapply of productieapply uitgevoerd.
 - De routeconfiguratie bestaat alleen in de repository en verandert pas runtimegedrag na een afzonderlijk geautoriseerde deploy.
 - Publieke ordercreatie blijft veilig uit totdat de lokale migratie via een later expliciet stagingmanifest is toegepast en beide vereiste environmentvariabelen bewust zijn ingesteld.
 - Repositorybrede migratie-governance blijft extern aan Food geblokkeerd door de reeds bestaande ongecatalogiseerde `20260728134000_partner_existing_user_onboarding_activation.sql`. Deze Phase 1B-release-eenheid autoriseert geen remote uitvoering.
