@@ -13,7 +13,7 @@
   </head>
   <body class="food-page is-loading">
     <a class="skip-link" href="#menu">Ga direct naar het menu</a>
-    <div class="pilot-ribbon">Pilotomgeving · restaurantgegevens worden vóór livegang bevestigd</div>
+    <div class="pilot-ribbon" data-pilot-ribbon>Pilotomgeving · restaurantgegevens worden vóór livegang bevestigd</div>
 
     <header class="food-header" data-header>
       <a class="food-brand" href="#top" data-brand-link aria-label="Terug naar boven">
@@ -21,7 +21,7 @@
         <span class="food-brand-copy">
           <strong class="food-brand-wordmark" data-brand-wordmark hidden><span data-brand-logo-text></span><span data-brand-logo-suffix></span></strong>
           <strong data-brand-fallback data-storefront-name>Restaurant</strong>
-          <small>Afhalen via Max Webstudio Food</small>
+          <small data-brand-strapline>Afhalen via Max Webstudio Food</small>
         </span>
       </a>
       <div class="food-header-actions">
@@ -50,6 +50,14 @@
         <article><span aria-hidden="true">↗</span><div><strong>Alleen afhalen</strong><small>Geen bezorgadres of betaling nodig</small></div></article>
         <article><span aria-hidden="true">✓</span><div><strong>Prijs door de server</strong><small>Het definitieve totaal volgt na bestellen</small></div></article>
         <article><span aria-hidden="true">⌁</span><div><strong data-location-name>Locatie laden…</strong><small data-location-address>Adres wordt opgehaald</small></div></article>
+      </section>
+
+      <section class="food-gallery" data-gallery-section hidden aria-labelledby="gallery-title">
+        <div class="food-gallery-heading">
+          <div><p class="section-kicker" data-gallery-kicker>Uit de keuken</p><h2 id="gallery-title" data-gallery-title>Favorieten</h2></div>
+          <p data-gallery-intro>Een visuele voorproef van de gerechten.</p>
+        </div>
+        <div class="food-gallery-grid" data-gallery-grid></div>
       </section>
 
       <section class="menu-section" id="menu" aria-labelledby="menu-title">

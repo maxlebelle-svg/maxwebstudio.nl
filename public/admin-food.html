@@ -14,12 +14,13 @@
     <a class="food-skip" href="#food-main">Ga naar de inhoud</a>
     <div class="food-dashboard-shell">
       <aside class="food-side" aria-label="Food-navigatie">
-        <a class="food-product" href="/admin/food" aria-label="Max Webstudio Food dashboard">
-          <span class="food-product-mark">F</span>
-          <span><strong>Max Webstudio</strong><small>Food</small></span>
+        <a class="food-product" href="/admin/food" aria-label="Food dashboard">
+          <span class="food-product-mark" data-product-mark>F</span>
+          <span><strong data-product-title>Max Webstudio</strong><small data-product-subtitle>Food</small></span>
         </a>
         <div class="food-location-card">
           <span>Actieve locatie</span>
+          <span class="food-location-mark" data-location-mark hidden></span>
           <strong class="food-location-wordmark" data-location-wordmark hidden><span data-location-logo-text></span><span data-location-logo-suffix></span></strong>
           <strong data-location-name>Restaurant laden…</strong>
           <small data-location-role>Bevoegdheid controleren</small>
@@ -109,7 +110,7 @@
 
           <section data-view="integrations" hidden>
             <div class="food-integrations-intro">
-              <div><p class="food-kicker">Groeimogelijkheden</p><h2>Alles klaar voor de volgende stap</h2><p>Verbind later betalingen, vindbaarheid, advertenties en klantcontact. Alleen aantoonbaar werkende koppelingen krijgen de status verbonden.</p></div>
+              <div><p class="food-kicker">Groeimogelijkheden</p><h2 data-integrations-title>Alles klaar voor de volgende stap</h2><p data-integrations-intro>Verbind later betalingen, vindbaarheid, advertenties en klantcontact. Alleen aantoonbaar werkende koppelingen krijgen de status verbonden.</p></div>
               <span>0 van 6 verbonden</span>
             </div>
             <div class="food-integration-grid" aria-label="Beschikbare Food-integraties">

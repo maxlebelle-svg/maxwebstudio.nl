@@ -18,6 +18,25 @@
     return new Intl.NumberFormat("nl-NL", { style: "currency", currency }).format((Number(minor) || 0) / 100);
   }
 
+  function safeImageUrl(value) {
+    const url = String(value || "").trim();
+    return /^\/assets\/[A-Za-z0-9_./-]+$/.test(url) ? url : "";
+  }
+
+  async function tenantPresentation(fetchImpl, slug) {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(slug || ""))) return null;
+    try {
+      const response = await fetchImpl(`/food/tenant-presentations/${encodeURIComponent(slug)}.json`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const value = await response.json();
+      return value && value.slug === slug ? value : null;
+    } catch { return null; }
+  }
+
+  function presentationImage(presentation, itemName) {
+    return safeImageUrl(presentation?.menu_images?.[String(itemName || "").trim().toLowerCase()]);
+  }
+
   function nextStatus(status, role) {
     if (role === "viewer") return null;
     if (role === "kitchen_staff") return status === "accepted" ? "preparing" : status === "preparing" ? "ready" : null;
@@ -78,15 +97,15 @@
     const node = (name) => document.querySelector(`[data-${name}]`);
     const nodes = {
       app: node("app"), loading: node("loading"), error: node("error"), errorTitle: node("error-title"), errorMessage: node("error-message"), retry: node("retry"),
-      locationName: node("location-name"), locationWordmark: node("location-wordmark"), locationLogoText: node("location-logo-text"), locationLogoSuffix: node("location-logo-suffix"), locationRole: node("location-role"), scopeSelect: node("scope-select"), pollingLabel: node("polling-label"), signout: node("signout"),
+      productMark: node("product-mark"), productTitle: node("product-title"), productSubtitle: node("product-subtitle"), locationMark: node("location-mark"), locationName: node("location-name"), locationWordmark: node("location-wordmark"), locationLogoText: node("location-logo-text"), locationLogoSuffix: node("location-logo-suffix"), locationRole: node("location-role"), scopeSelect: node("scope-select"), pollingLabel: node("polling-label"), signout: node("signout"),
       breadcrumb: node("breadcrumb"), pageTitle: node("page-title"), lastUpdated: node("last-updated"), refresh: node("refresh"), storefrontLink: node("storefront-link"),
       newNavCount: node("new-nav-count"), newCallout: node("new-callout"), newCount: node("new-count"), welcomeTitle: node("welcome-title"),
       metricPending: node("metric-pending"), metricPreparing: node("metric-preparing"), metricReady: node("metric-ready"), metricCompleted: node("metric-completed"), metricRevenue: node("metric-revenue"),
       recentOrders: node("recent-orders"), recentEmpty: node("recent-empty"), orders: node("orders"), ordersEmpty: node("orders-empty"), orderCount: node("order-count"),
       menuPermission: node("menu-permission"), menuGroups: node("menu-groups"), menuEmpty: node("menu-empty"), detailOverlay: node("detail-overlay"), detailDrawer: node("detail-drawer"), detailTitle: node("detail-title"), detailBody: node("detail-body"), detailClose: node("detail-close"), toast: node("toast"),
-      demoResetPanel: node("demo-reset-panel"), demoResetOpen: node("demo-reset-open"), demoResetDialog: node("demo-reset-dialog"), demoResetForm: node("demo-reset-form"), demoResetPhrase: node("demo-reset-phrase"), demoResetInput: node("demo-reset-input"), demoResetMessage: node("demo-reset-message"), demoResetCancel: node("demo-reset-cancel"), demoResetConfirm: node("demo-reset-confirm"),
+      integrationsTitle: node("integrations-title"), integrationsIntro: node("integrations-intro"), demoResetPanel: node("demo-reset-panel"), demoResetOpen: node("demo-reset-open"), demoResetDialog: node("demo-reset-dialog"), demoResetForm: node("demo-reset-form"), demoResetPhrase: node("demo-reset-phrase"), demoResetInput: node("demo-reset-input"), demoResetMessage: node("demo-reset-message"), demoResetCancel: node("demo-reset-cancel"), demoResetConfirm: node("demo-reset-confirm"),
     };
-    const state = { active: false, context: null, scope: null, orders: [], menu: null, filter: "all", route: "dashboard", pollTimer: null, loadingOrders: false, mutation: false, toastTimer: null, selectedOrder: null };
+    const state = { active: false, context: null, scope: null, presentation: null, orders: [], menu: null, filter: "all", route: "dashboard", pollTimer: null, loadingOrders: false, mutation: false, toastTimer: null, selectedOrder: null };
 
     function el(tag, className, text) { const result = document.createElement(tag); if (className) result.className = className; if (text !== undefined) result.textContent = text; return result; }
     function roleLabel(role) { return ({ owner: "Eigenaar", manager: "Manager", staff: "Medewerker", kitchen_staff: "Keukenmedewerker", viewer: "Alleen bekijken", platform_admin: "Platformbeheer" })[role] || "Restaurantlid"; }
@@ -119,17 +138,34 @@
       if (route === "menu" && !state.menu) loadMenu().catch(showError);
     }
 
-    function configureScope() {
+    async function configureScope() {
       const scopes = state.context?.scopes || [];
       state.scope = state.scope || scopes[0];
-      const logoText = String(state.scope.branding?.logo_text || "").trim();
+      state.presentation = await tenantPresentation(options.fetch || globalScope.fetch.bind(globalScope), state.scope.storefront_slug);
+      const presentationBranding = state.presentation?.branding || {};
+      const branding = { ...(state.scope.branding || {}), ...presentationBranding };
+      const theme = state.presentation?.theme || {};
+      const themeProperties = { green: "--food-green", green_deep: "--food-deep", gold: "--food-gold", cream: "--food-cream" };
+      for (const [key, property] of Object.entries(themeProperties)) if (/^#[0-9a-f]{6}$/i.test(String(theme[key] || ""))) document.documentElement.style.setProperty(property, theme[key]);
+      const baseLogoText = String(state.scope.branding?.logo_text || "").trim();
+      const logoText = String(branding.logo_text || baseLogoText).trim();
+      const logoUrl = safeImageUrl(branding.logo_url);
+      nodes.productTitle.textContent = presentationBranding.dashboard_title || logoText || "Max Webstudio";
+      nodes.productSubtitle.textContent = presentationBranding.dashboard_subtitle || "Food";
+      nodes.productMark.replaceChildren();
+      if (logoUrl) { const image = el("img"); image.src = logoUrl; image.alt = ""; nodes.productMark.append(image); nodes.productMark.classList.add("is-image"); }
+      else { nodes.productMark.textContent = "F"; nodes.productMark.classList.remove("is-image"); }
+      nodes.locationMark.replaceChildren(); nodes.locationMark.hidden = !logoUrl;
+      if (logoUrl) { const image = el("img"); image.src = logoUrl; image.alt = ""; nodes.locationMark.append(image); }
       nodes.locationName.textContent = state.scope.location_name;
       nodes.locationName.hidden = Boolean(logoText);
       nodes.locationWordmark.hidden = !logoText;
       nodes.locationLogoText.textContent = logoText;
-      nodes.locationLogoSuffix.textContent = String(state.scope.branding?.logo_suffix || "").trim();
+      nodes.locationLogoSuffix.textContent = String(branding.logo_suffix || "").trim();
       nodes.locationRole.textContent = `${roleLabel(state.scope.role)} · ${state.scope.city || "Locatie"}`;
-      nodes.welcomeTitle.textContent = `${state.scope.location_name} in één oogopslag.`;
+      nodes.welcomeTitle.textContent = presentationBranding.dashboard_welcome || `${state.scope.location_name} in één oogopslag.`;
+      nodes.integrationsTitle.textContent = presentationBranding.integrations_title || "Alles klaar voor de volgende stap";
+      nodes.integrationsIntro.textContent = presentationBranding.integrations_intro || "Verbind later betalingen, vindbaarheid, advertenties en klantcontact. Alleen aantoonbaar werkende koppelingen krijgen de status verbonden.";
       nodes.storefrontLink.href = `/food/${encodeURIComponent(state.scope.storefront_slug)}`;
       nodes.scopeSelect.replaceChildren();
       for (const scope of scopes) { const option = el("option", "", `${scope.account_name} · ${scope.location_name}`); option.value = `${scope.account_ref}:${scope.location_ref}`; nodes.scopeSelect.append(option); }
@@ -215,7 +251,8 @@
       for (const category of menu.categories || []) {
         const group = el("section", "food-menu-group"); group.append(el("h3", "", category.name));
         for (const item of itemsByCategory.get(category.id) || []) {
-          const row = el("article", "food-menu-item"); const copy = el("div", "food-menu-copy"); copy.append(el("strong", "", item.name), el("small", "", item.description || "Geen omschrijving"));
+          const row = el("article", "food-menu-item"); const imageUrl = presentationImage(state.presentation, item.name); if (imageUrl) { row.classList.add("has-media"); const media = el("span", "food-menu-media"); const image = el("img"); image.src = imageUrl; image.alt = ""; image.loading = "lazy"; media.append(image); row.append(media); }
+          const copy = el("div", "food-menu-copy"); copy.append(el("strong", "", item.name), el("small", "", item.description || "Geen omschrijving"));
           const form = el("form", "food-price-form"); const label = el("label", "", `Prijs van ${item.name}`); const input = el("input"); input.name = "price"; input.inputMode = "decimal"; input.value = (item.price_minor / 100).toFixed(2).replace(".", ","); input.disabled = !state.scope.permissions.menu_update; const save = el("button", "food-button food-button-secondary", "Opslaan"); save.type = "submit"; save.disabled = !state.scope.permissions.menu_update; form.append(label, input, save); form.addEventListener("submit", (event) => { event.preventDefault(); updatePrice(item, input, save); });
           const availability = el("label", "food-availability"); const toggle = el("input"); toggle.type = "checkbox"; toggle.checked = item.available === true; toggle.disabled = !state.scope.permissions.menu_update; toggle.addEventListener("change", () => updateAvailability(item, toggle)); availability.append(toggle, el("span", "", toggle.checked ? "Beschikbaar" : "Niet beschikbaar"));
           row.append(copy, form, availability); group.append(row);
@@ -282,20 +319,20 @@
     function handleLogout(path = "/login.html?next=%2Fadmin%2Ffood") { stop(); globalScope.location.assign(path); }
     async function start(initialContext = null) {
       state.active = true; nodes.loading.hidden = false; nodes.error.hidden = true;
-      try { state.context = initialContext || await api.context(); configureScope(); setRoute(currentRoute()); await Promise.all([loadOrders(), state.scope.permissions.menu_read ? loadMenu() : Promise.resolve()]); const directOrder = globalScope.location.pathname.match(/\/admin\/food\/orders\/([0-9a-f-]{36})$/)?.[1]; if (directOrder) await openOrder(directOrder); showApp(); schedulePoll(); }
+      try { state.context = initialContext || await api.context(); await configureScope(); setRoute(currentRoute()); await Promise.all([loadOrders(), state.scope.permissions.menu_read ? loadMenu() : Promise.resolve()]); const directOrder = globalScope.location.pathname.match(/\/admin\/food\/orders\/([0-9a-f-]{36})$/)?.[1]; if (directOrder) await openOrder(directOrder); showApp(); schedulePoll(); }
       catch (error) { showError(error); }
     }
 
     nodes.retry.addEventListener("click", start); nodes.refresh.addEventListener("click", () => Promise.all([loadOrders(), state.route === "menu" ? loadMenu() : Promise.resolve()]).catch(showError)); nodes.signout.addEventListener("click", () => options.logout?.()); nodes.detailClose.addEventListener("click", closeDetail); nodes.detailOverlay.addEventListener("click", closeDetail);
     nodes.demoResetOpen.addEventListener("click", openDemoReset); nodes.demoResetCancel.addEventListener("click", closeDemoReset); nodes.demoResetForm.addEventListener("submit", submitDemoReset); nodes.demoResetInput.addEventListener("input", () => { nodes.demoResetConfirm.disabled = nodes.demoResetInput.value.trim() !== nodes.demoResetInput.dataset.expected || state.mutation; });
-    nodes.scopeSelect.addEventListener("change", async () => { const selected = state.context.scopes.find((scope) => `${scope.account_ref}:${scope.location_ref}` === nodes.scopeSelect.value); if (!selected) return; state.scope = selected; state.menu = null; state.orders = []; configureScope(); await Promise.all([loadOrders(), loadMenu()]).catch(showError); });
+    nodes.scopeSelect.addEventListener("change", async () => { const selected = state.context.scopes.find((scope) => `${scope.account_ref}:${scope.location_ref}` === nodes.scopeSelect.value); if (!selected) return; state.scope = selected; state.menu = null; state.orders = []; await configureScope(); await Promise.all([loadOrders(), loadMenu()]).catch(showError); });
     for (const filter of document.querySelectorAll("[data-order-filter]")) filter.addEventListener("click", () => { state.filter = filter.dataset.orderFilter; for (const candidate of document.querySelectorAll("[data-order-filter]")) candidate.setAttribute("aria-pressed", String(candidate === filter)); renderOrders(); });
     for (const link of document.querySelectorAll("a[data-route],a[data-route-link]")) link.addEventListener("click", (event) => { event.preventDefault(); setRoute(link.dataset.route || link.dataset.routeLink, true); });
     globalScope.addEventListener("popstate", () => { setRoute(currentRoute()); const directOrder = globalScope.location.pathname.match(/\/admin\/food\/orders\/([0-9a-f-]{36})$/)?.[1]; if (directOrder) openOrder(directOrder); else if (!nodes.detailDrawer.hidden) { nodes.detailOverlay.hidden = true; nodes.detailDrawer.hidden = true; state.selectedOrder = null; } }); globalScope.addEventListener("pagehide", stop); document.addEventListener("visibilitychange", () => { if (!state.active) return; if (document.hidden) { globalScope.clearInterval(state.pollTimer); state.pollTimer = null; nodes.pollingLabel.textContent = "Gepauzeerd"; } else { loadOrders({ silent: true }).catch(() => {}); schedulePoll(); } }); document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !nodes.detailDrawer.hidden) closeDetail(); });
     return { start, stop, handleLogout, loadOrders, loadMenu, deny: (error) => { stop(); showError(error); }, state };
   }
 
-  const exported = { MAX_PRICE_MINOR, POLL_INTERVAL_MS, STATUS_LABELS, createDashboardApp, createFoodManagementClient, dashboardMetrics, formatMoney, nextStatus, parseEuroMinor };
+  const exported = { MAX_PRICE_MINOR, POLL_INTERVAL_MS, STATUS_LABELS, createDashboardApp, createFoodManagementClient, dashboardMetrics, formatMoney, nextStatus, parseEuroMinor, presentationImage, safeImageUrl, tenantPresentation };
   if (typeof module !== "undefined" && module.exports) module.exports = exported;
   globalScope.MaxFoodDashboard = exported;
 })(typeof window !== "undefined" ? window : globalThis);

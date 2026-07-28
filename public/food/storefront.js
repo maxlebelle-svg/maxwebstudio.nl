@@ -39,6 +39,21 @@
     }
   }
 
+  async function tenantPresentation(fetchImpl, slugValue) {
+    if (!SLUG_PATTERN.test(String(slugValue || ""))) return null;
+    try {
+      const response = await fetchImpl(`/food/tenant-presentations/${encodeURIComponent(slugValue)}.json`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const value = await response.json();
+      return value && value.slug === slugValue ? value : null;
+    } catch { return null; }
+  }
+
+  function presentationImage(presentation, itemName) {
+    const key = String(itemName || "").trim().toLowerCase();
+    return safeImageUrl(presentation?.menu_images?.[key]);
+  }
+
   function cartSnapshot(raw, menuItems) {
     const available = new Map(menuItems.filter((item) => item.available !== false).map((item) => [item.item_ref, item]));
     const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
@@ -144,6 +159,8 @@
     safeImageUrl,
     setCartQuantity,
     storefrontSlug,
+    tenantPresentation,
+    presentationImage,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = exportsForTests;
@@ -152,9 +169,9 @@
   const slug = storefrontSlug(globalScope.location);
   const api = createApiClient(globalScope.fetch.bind(globalScope));
   const nodes = Object.fromEntries([
-    "brandLink", "brandMark", "brandWordmark", "brandLogoText", "brandLogoSuffix", "brandFallback", "storefrontName", "openingChip", "openingLabel", "hero", "heroTitle", "heroIntro", "phoneLink",
+    "brandLink", "brandMark", "brandWordmark", "brandLogoText", "brandLogoSuffix", "brandFallback", "brandStrapline", "storefrontName", "openingChip", "openingLabel", "hero", "heroTitle", "heroIntro", "phoneLink", "pilotRibbon",
     "locationName", "locationAddress", "menuLoading", "loadError", "loadErrorMessage", "retryLoad", "categoryNav",
-    "menuGroups", "menuDisclaimer", "infoName", "infoIntro", "infoAddress", "infoOpening", "infoPhone", "footerName",
+    "menuGroups", "menuDisclaimer", "gallerySection", "galleryGrid", "galleryKicker", "galleryTitle", "galleryIntro", "infoName", "infoIntro", "infoAddress", "infoOpening", "infoPhone", "footerName",
     "cartCount", "stickyCount", "stickyTotal", "stickyCart", "cartDialog", "cartEmpty", "cartLines", "cartTotals",
     "cartTotal", "cartStep", "checkoutOpen", "orderingMessage", "checkoutStep", "checkoutBack", "checkoutForm",
     "checkoutTotal", "checkoutMessage", "orderSubmit", "confirmationStep", "confirmationReference", "confirmationStatus",
@@ -163,6 +180,7 @@
 
   const state = {
     profile: null,
+    presentation: null,
     menu: null,
     menuItems: [],
     cart: {},
@@ -206,19 +224,26 @@
 
   function applyProfile(profile) {
     state.profile = profile;
+    const presentation = state.presentation || {};
+    const branding = { ...(profile.branding || {}), ...(presentation.branding || {}) };
+    const theme = presentation.theme || {};
+    const themeProperties = { green: "--food-green", green_deep: "--food-green-deep", gold: "--food-gold", cream: "--food-cream" };
+    for (const [key, property] of Object.entries(themeProperties)) if (/^#[0-9a-f]{6}$/i.test(String(theme[key] || ""))) document.documentElement.style.setProperty(property, theme[key]);
     document.title = `${profile.name} | Afhalen`;
     for (const node of document.querySelectorAll("[data-storefront-name]")) node.textContent = profile.name;
     nodes.brandLink.setAttribute("aria-label", `${profile.name} — terug naar boven`);
-    const logoText = String(profile.branding?.logo_text || "").trim();
-    const logoSuffix = String(profile.branding?.logo_suffix || "").trim();
-    const logoUrl = safeImageUrl(profile.branding?.logo_url);
+    const profileLogoText = String(profile.branding?.logo_text || "").trim();
+    const logoText = String(branding.logo_text || profileLogoText).trim();
+    const logoSuffix = String(branding.logo_suffix || "").trim();
+    const logoUrl = safeImageUrl(branding.logo_url);
     nodes.brandWordmark.hidden = !logoText;
     nodes.brandFallback.hidden = Boolean(logoText);
     nodes.brandLogoText.textContent = logoText;
     nodes.brandLogoSuffix.textContent = logoSuffix;
-    nodes.brandMark.hidden = Boolean(logoText);
+    nodes.brandStrapline.textContent = branding.strapline || "Afhalen via Max Webstudio Food";
+    nodes.brandMark.hidden = false;
     nodes.brandMark.replaceChildren();
-    if (logoUrl && !logoText) {
+    if (logoUrl) {
       const logo = element("img");
       logo.src = logoUrl;
       logo.alt = "";
@@ -228,8 +253,9 @@
       nodes.brandMark.classList.remove("is-image");
       nodes.brandMark.textContent = String(profile.name || "R").charAt(0).toUpperCase();
     }
-    nodes.heroTitle.textContent = profile.name;
-    nodes.heroIntro.textContent = profile.intro || "Bekijk het actuele menu en plaats een afhaalbestelling.";
+    nodes.heroTitle.textContent = branding.hero_title || profile.name;
+    nodes.heroIntro.textContent = branding.hero_intro || profile.intro || "Bekijk het actuele menu en plaats een afhaalbestelling.";
+    if (branding.pilot_message) nodes.pilotRibbon.textContent = branding.pilot_message;
     nodes.locationName.textContent = profile.address?.city || profile.name;
     nodes.locationAddress.textContent = addressText(profile.address);
     nodes.infoName.textContent = profile.name;
@@ -255,9 +281,27 @@
       nodes.infoPhone.textContent = "Telefoon wordt nog bevestigd";
     }
 
-    const heroImage = safeImageUrl(profile.branding?.hero_image_url);
+    const heroImage = safeImageUrl(branding.hero_image_url);
     if (heroImage) nodes.hero.style.setProperty("--food-hero-image", `url("${heroImage.replace(/["\\]/g, "")}")`);
+    renderGallery(presentation.gallery);
     syncOrderingState();
+  }
+
+  function renderGallery(items) {
+    const gallery = Array.isArray(items) ? items.filter((item) => safeImageUrl(item?.src)) : [];
+    const copy = state.presentation?.gallery_copy || {};
+    nodes.galleryKicker.textContent = copy.kicker || "Uit de keuken";
+    nodes.galleryTitle.textContent = copy.title || "Favorieten";
+    nodes.galleryIntro.textContent = copy.intro || "Een visuele voorproef van de gerechten.";
+    nodes.galleryGrid.replaceChildren();
+    for (const item of gallery) {
+      const figure = element("figure", "food-gallery-card");
+      const image = element("img");
+      image.src = safeImageUrl(item.src); image.alt = String(item.alt || item.label || "Gerecht"); image.loading = "lazy";
+      figure.append(image, element("figcaption", "", String(item.label || "Restaurantgerecht")));
+      nodes.galleryGrid.append(figure);
+    }
+    nodes.gallerySection.hidden = gallery.length === 0;
   }
 
   function syncOrderingState() {
@@ -310,7 +354,7 @@
   function renderMenuItem(item, currency) {
     const card = element("article", "menu-card");
     const media = element("div", "menu-card-media", String(item.name || "G").charAt(0).toUpperCase());
-    const imageUrl = safeImageUrl(item.image_url);
+    const imageUrl = safeImageUrl(item.image_url) || presentationImage(state.presentation, item.name);
     if (imageUrl) {
       const image = element("img");
       image.src = imageUrl;
@@ -514,7 +558,8 @@
       return;
     }
     try {
-      const [profile, menu] = await Promise.all([api.storefront(slug), api.menu(slug)]);
+      const [profile, menu, presentation] = await Promise.all([api.storefront(slug), api.menu(slug), tenantPresentation(globalScope.fetch.bind(globalScope), slug)]);
+      state.presentation = presentation;
       applyProfile(profile);
       renderMenu(menu);
       document.body.classList.remove("is-loading");

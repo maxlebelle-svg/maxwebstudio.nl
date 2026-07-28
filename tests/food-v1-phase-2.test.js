@@ -14,6 +14,7 @@ const apiSource = fs.readFileSync(path.join(root, "functions/_food-api.js"), "ut
 const migrationPath = path.join(root, "supabase/migrations/20260728163000_food_v1_storefront_confirmation.sql");
 const migration = fs.readFileSync(migrationPath, "utf8");
 const fixture = JSON.parse(fs.readFileSync(path.join(root, "tests/fixtures/food-v1-phase-2-storefront.json"), "utf8"));
+const pilotPresentation = JSON.parse(fs.readFileSync(path.join(root, "public/food/tenant-presentations/silverado-roti-shop-emmeloord.json"), "utf8"));
 const storefront = require(path.join(root, "public/food/storefront.js"));
 const apiPrivate = require(path.join(root, "functions/_food-api.js"))._private;
 
@@ -102,6 +103,17 @@ test("tenant wordmark branding is safe, optional and independent from platform b
   assert.match(browserSource, /profile\.branding\?\.logo_text/);
   assert.equal(fixture.storefront.branding.logo_text, "Silverado");
   assert.equal(fixture.storefront.branding.logo_suffix, "🇸🇷");
+});
+
+test("tenant presentation includes all six supplied food photos without leaking into generic storefront code", () => {
+  assert.equal(pilotPresentation.gallery.length, 6);
+  assert.equal(new Set(pilotPresentation.gallery.map((item) => item.src)).size, 6);
+  for (const item of pilotPresentation.gallery) {
+    assert.match(item.src, /^\/assets\/food\/silverado\/[a-z0-9-]+\.(?:jpg|svg)$/);
+    assert.equal(fs.existsSync(path.join(root, "public", item.src)), true);
+  }
+  assert.equal(fs.existsSync(path.join(root, "public", pilotPresentation.branding.logo_url)), true);
+  assert.doesNotMatch(`${html}\n${browserSource}\n${css}`, /silverado/i);
 });
 
 test("unavailable or unknown items cannot enter a restored or mutated cart", () => {
