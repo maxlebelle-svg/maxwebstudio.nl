@@ -30,6 +30,11 @@
       "path": "supabase/migrations/20260726205000_partner_certification_activation_control.sql",
       "bytes": 15881,
       "sha256": "173a28ec8c4049184bf55467fb718e7f7afcb6f94800f56794e8003b65a25caf"
+    },
+    {
+      "path": "supabase/migrations/20260728131500_partner_activation_accept_active_profile.sql",
+      "bytes": 2975,
+      "sha256": "ca71a6b2523fa766fc5bf61490a38318db13025f65b35b313e957cc4ff47117b"
     }
   ]
 }

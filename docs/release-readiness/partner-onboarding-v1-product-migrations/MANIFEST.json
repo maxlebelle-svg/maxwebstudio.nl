@@ -9,7 +9,8 @@
     "supabase/migrations/20260726202000_partner_training_content_v1.sql",
     "supabase/migrations/20260726203000_partner_assessment_certification.sql",
     "supabase/migrations/20260726204000_partner_canonical_commission.sql",
-    "supabase/migrations/20260726205000_partner_certification_activation_control.sql"
+    "supabase/migrations/20260726205000_partner_certification_activation_control.sql",
+    "supabase/migrations/20260728131500_partner_activation_accept_active_profile.sql"
   ],
   "authority": [
     "docs/PARTNER_ONBOARDING_V1_PHASE_B_STAGING_EVIDENCE.md",
