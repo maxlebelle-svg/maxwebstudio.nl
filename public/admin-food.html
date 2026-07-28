@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
     <meta name="theme-color" content="#071b15" />
     <title>Food dashboard | Max Webstudio</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -67,6 +67,13 @@
               <article><span>Afgerond vandaag</span><strong data-metric-completed>0</strong><small>Voltooide orders</small></article>
               <article class="food-revenue"><span>Omzetindicatie vandaag</span><strong data-metric-revenue>€ 0,00</strong><small>Serverbedrag van afgeronde orders</small></article>
             </div>
+            <section class="food-panel food-demo-reset-panel" data-demo-reset-panel hidden>
+              <header>
+                <div><p class="food-kicker">Alleen online demo</p><h2>Demo veilig herstellen</h2></div>
+                <button class="food-button food-button-secondary" type="button" data-demo-reset-open>Demo herstellen</button>
+              </header>
+              <p class="food-panel-intro">Verwijdert uitsluitend synthetische demo-orders en zet de vaste menuprijzen en beschikbaarheid terug. Accounts, rollen en restaurantinstellingen blijven behouden.</p>
+            </section>
             <section class="food-panel">
               <header><div><p class="food-kicker">Live orderstroom</p><h2>Recente bestellingen</h2></div><a href="/admin/food/orders" data-route-link="orders">Alle bestellingen</a></header>
               <div class="food-order-list" data-recent-orders></div>
@@ -141,6 +148,21 @@
       <header><div><p class="food-kicker">Besteldetail</p><h2 id="food-detail-title" data-detail-title>Bestelling</h2></div><button type="button" data-detail-close aria-label="Besteldetail sluiten">×</button></header>
       <div class="food-detail-body" data-detail-body></div>
     </aside>
+    <dialog class="food-reset-dialog" data-demo-reset-dialog aria-labelledby="food-reset-title">
+      <form method="dialog" data-demo-reset-form>
+        <p class="food-kicker">Beveiligde demofunctie</p>
+        <h2 id="food-reset-title">Demo herstellen?</h2>
+        <p>Alleen de bestellingen van deze allowlisted demorestauranttenant worden verwijderd. Typ ter bevestiging:</p>
+        <code data-demo-reset-phrase></code>
+        <label for="food-reset-confirmation">Bevestiging</label>
+        <input id="food-reset-confirmation" data-demo-reset-input autocomplete="off" spellcheck="false" />
+        <p data-demo-reset-message role="status" aria-live="polite"></p>
+        <div class="food-reset-actions">
+          <button class="food-button food-button-secondary" type="button" data-demo-reset-cancel>Annuleren</button>
+          <button class="food-button food-button-primary" type="submit" data-demo-reset-confirm disabled>Herstel demo</button>
+        </div>
+      </form>
+    </dialog>
     <div class="food-toast" data-toast hidden role="status" aria-live="polite"></div>
   </body>
 </html>

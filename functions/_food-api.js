@@ -12,6 +12,25 @@ const ORDER_ROLES = new Set(["owner", "manager", "staff", "kitchen_staff"]);
 const MAX_BODY_BYTES = 16 * 1024;
 const UPSTREAM_TIMEOUT_MS = 5000;
 
+function demoResetEnabled() {
+  return process.env.APP_ENVIRONMENT === "food_demo"
+    && process.env.FOOD_DEMO_RESET_ENABLED === "true";
+}
+
+function demoResetAllowlist() {
+  return new Set(String(process.env.FOOD_DEMO_RESET_ALLOWLIST || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => UUID.test(value) || (SLUG.test(value) && value.length <= 100))
+    .slice(0, 20));
+}
+
+function demoResetTargetAllowed(accountId, storefrontSlug) {
+  if (!demoResetEnabled()) return false;
+  const allowlist = demoResetAllowlist();
+  return allowlist.has(accountId) || allowlist.has(storefrontSlug);
+}
+
 class ApiError extends Error {
   constructor(status, code, publicMessage) {
     super(code);
@@ -34,6 +53,7 @@ function response(statusCode, body, traceId, methods = "GET, POST, PATCH, OPTION
       ...corsHeaders({ methods, headers: "Content-Type, Authorization, Idempotency-Key, X-Request-Id" }),
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store, max-age=0",
+      "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
       "X-Content-Type-Options": "nosniff",
       "X-Request-Id": traceId,
     },
@@ -119,6 +139,7 @@ async function supabaseRequest(path, { method = "GET", body, bearer, service = f
     if (code === "23514") throw new ApiError(409, "INVALID_TRANSITION", "Deze statuswijziging is niet toegestaan.");
     if (code === "22023") throw new ApiError(400, "ORDER_REJECTED", "De bestelling is ongeldig.");
     if (code === "42501") throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
+    if (code === "P4290") throw new ApiError(429, "RATE_LIMITED", "De demo is te vaak hersteld. Probeer het later opnieuw.");
     if (code === "P0002" || result.status === 404) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
     const error = new ApiError(502, "UPSTREAM_REJECTED", "De Food-service kon de aanvraag niet verwerken.");
     error.upstreamStatus = result.status;
@@ -463,9 +484,12 @@ async function sessionContext(event) {
     const account = accountsById.get(location.food_account_id);
     const membership = platformAdmin ? { role: "platform_admin" } : strongestMembership(memberRows, location.food_account_id, location.id);
     if (!account || !membership) return null;
-    const [ordersEnabled, menuEnabled] = await Promise.all([
+    const [ordersEnabled, menuEnabled, resetEnabled] = await Promise.all([
       sessionRpc("food_has_capability", { target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "orders.management" }, bearer),
       sessionRpc("food_has_capability", { target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "menu.management" }, bearer),
+      demoResetTargetAllowed(account.id, location.slug)
+        ? sessionRpc("food_has_capability", { target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "demo.reset" }, bearer)
+        : Promise.resolve(false),
     ]);
     const role = membership.role;
     const publicBranding = publicConfiguration(location.configuration);
@@ -474,6 +498,7 @@ async function sessionContext(event) {
       orders_update: ordersEnabled === true && role !== "viewer",
       menu_read: menuEnabled === true,
       menu_update: menuEnabled === true && ["owner", "manager", "platform_admin"].includes(role),
+      demo_reset: resetEnabled === true && ["owner", "manager", "platform_admin"].includes(role),
     };
     if (!permissions.orders_read && !permissions.menu_read) return null;
     return {
@@ -652,6 +677,38 @@ async function updateMenuItem(event, accountId, itemId) {
   return { ...updated[0], price_minor: Number(updated[0].price_minor) };
 }
 
+async function resetDemo(event, accountId) {
+  assertOrigin(event);
+  if (!demoResetEnabled()) throw new ApiError(404, "DEMO_RESET_UNAVAILABLE", "Demoherstel is niet beschikbaar.");
+  if (!UUID.test(accountId)) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
+  const body = exactObject(parseJsonBody(event), ["storefront_slug", "confirmation"], "Demoherstel");
+  const storefrontSlug = cleanText(body.storefront_slug, 3, 100, "Demo-restaurant");
+  if (!SLUG.test(storefrontSlug) || !demoResetTargetAllowed(accountId, storefrontSlug)) {
+    throw new ApiError(403, "DEMO_TARGET_NOT_ALLOWED", "Dit restaurant mag niet worden hersteld.");
+  }
+  if (body.confirmation !== `HERSTEL ${storefrontSlug}`) {
+    throw new ApiError(400, "CONFIRMATION_REQUIRED", "Typ de volledige bevestiging om de demo te herstellen.");
+  }
+  const idempotencyKey = String(event?.headers?.["idempotency-key"] || event?.headers?.["Idempotency-Key"] || "").trim();
+  if (!IDEMPOTENCY_KEY.test(idempotencyKey)) throw new ApiError(400, "IDEMPOTENCY_KEY_REQUIRED", "Een geldige idempotency-sleutel is vereist.");
+  const context = await authenticate(event, accountId);
+
+  const locations = await sessionQuery("restaurant_locations", new URLSearchParams({
+    select: "id,slug", food_account_id: `eq.${accountId}`, slug: `eq.${storefrontSlug}`, status: "eq.active", limit: "1",
+  }).toString(), context.bearer);
+  const location = Array.isArray(locations) ? locations[0] : null;
+  if (!location) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
+  const membership = membershipFor(context, location.id, MANAGER_ROLES);
+  if (!context.platformAdmin && !["owner", "manager"].includes(membership.role)) throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
+  await requireCapability(context, accountId, location.id, "demo.reset");
+  return serviceRpc("food_reset_demo_account_v1", {
+    input_food_account_id: accountId,
+    input_storefront_slug: storefrontSlug,
+    input_actor_profile_id: context.profile.id,
+    input_idempotency_key: idempotencyKey,
+  });
+}
+
 function routePath(event) {
   let path = String(event.path || event.rawPath || "").split("?")[0];
   path = path.replace(/^\/\.netlify\/functions\/food-v1/, "").replace(/^\/api\/food\/v1/, "");
@@ -678,6 +735,7 @@ async function dispatch(event) {
   if (method === "PATCH" && (match = path.match(/^\/accounts\/([^/]+)\/orders\/([^/]+)\/status$/))) return { status: 200, body: await changeStatus(event, match[1], match[2]) };
   if (method === "GET" && (match = path.match(/^\/accounts\/([^/]+)\/menu$/))) return { status: 200, body: await managementMenu(event, match[1], params) };
   if (method === "PATCH" && (match = path.match(/^\/accounts\/([^/]+)\/menu\/items\/([^/]+)$/))) return { status: 200, body: await updateMenuItem(event, match[1], match[2]) };
+  if (method === "POST" && (match = path.match(/^\/accounts\/([^/]+)\/demo-reset$/))) return { status: 200, body: await resetDemo(event, match[1]) };
   throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
 }
 
@@ -705,6 +763,9 @@ module.exports = {
   handler,
   _private: {
     ApiError,
+    demoResetAllowlist,
+    demoResetEnabled,
+    demoResetTargetAllowed,
     dispatch,
     membershipFor,
     openingState,

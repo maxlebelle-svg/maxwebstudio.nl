@@ -68,6 +68,7 @@
       transition: (scope, orderId, status) => request(`/accounts/${encodeURIComponent(scope.account_ref)}/orders/${encodeURIComponent(orderId)}/status`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) }),
       menu: (scope) => request(`/accounts/${encodeURIComponent(scope.account_ref)}/menu?${new URLSearchParams({ location_id: scope.location_ref })}`),
       updateMenuItem: (scope, itemId, changes) => request(`/accounts/${encodeURIComponent(scope.account_ref)}/menu/items/${encodeURIComponent(itemId)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(changes) }),
+      resetDemo: (scope, confirmation, idempotencyKey) => request(`/accounts/${encodeURIComponent(scope.account_ref)}/demo-reset`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ storefront_slug: scope.storefront_slug, confirmation }) }),
     };
   }
 
@@ -83,6 +84,7 @@
       metricPending: node("metric-pending"), metricPreparing: node("metric-preparing"), metricReady: node("metric-ready"), metricCompleted: node("metric-completed"), metricRevenue: node("metric-revenue"),
       recentOrders: node("recent-orders"), recentEmpty: node("recent-empty"), orders: node("orders"), ordersEmpty: node("orders-empty"), orderCount: node("order-count"),
       menuPermission: node("menu-permission"), menuGroups: node("menu-groups"), menuEmpty: node("menu-empty"), detailOverlay: node("detail-overlay"), detailDrawer: node("detail-drawer"), detailTitle: node("detail-title"), detailBody: node("detail-body"), detailClose: node("detail-close"), toast: node("toast"),
+      demoResetPanel: node("demo-reset-panel"), demoResetOpen: node("demo-reset-open"), demoResetDialog: node("demo-reset-dialog"), demoResetForm: node("demo-reset-form"), demoResetPhrase: node("demo-reset-phrase"), demoResetInput: node("demo-reset-input"), demoResetMessage: node("demo-reset-message"), demoResetCancel: node("demo-reset-cancel"), demoResetConfirm: node("demo-reset-confirm"),
     };
     const state = { active: false, context: null, scope: null, orders: [], menu: null, filter: "all", route: "dashboard", pollTimer: null, loadingOrders: false, mutation: false, toastTimer: null, selectedOrder: null };
 
@@ -133,6 +135,12 @@
       for (const scope of scopes) { const option = el("option", "", `${scope.account_name} · ${scope.location_name}`); option.value = `${scope.account_ref}:${scope.location_ref}`; nodes.scopeSelect.append(option); }
       nodes.scopeSelect.hidden = scopes.length < 2;
       nodes.scopeSelect.value = `${state.scope.account_ref}:${state.scope.location_ref}`;
+      const resetPhrase = `HERSTEL ${state.scope.storefront_slug}`;
+      nodes.demoResetPhrase.textContent = resetPhrase;
+      nodes.demoResetInput.value = "";
+      nodes.demoResetInput.dataset.expected = resetPhrase;
+      nodes.demoResetConfirm.disabled = true;
+      nodes.demoResetPanel.hidden = state.scope.permissions.demo_reset !== true;
     }
 
     function orderTime(value) { try { return new Intl.DateTimeFormat("nl-NL", { timeZone: state.scope.timezone, hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" }).format(new Date(value)); } catch { return "Onbekend"; } }
@@ -221,6 +229,44 @@
       finally { setBusy(false); toggle.disabled = !state.scope.permissions.menu_update; }
     }
 
+    function closeDemoReset() {
+      nodes.demoResetDialog.close();
+      nodes.demoResetInput.value = "";
+      nodes.demoResetMessage.textContent = "";
+      nodes.demoResetConfirm.disabled = true;
+    }
+    function openDemoReset() {
+      if (state.scope?.permissions?.demo_reset !== true || state.mutation) return;
+      nodes.demoResetInput.value = "";
+      nodes.demoResetMessage.textContent = "";
+      nodes.demoResetConfirm.disabled = true;
+      nodes.demoResetDialog.showModal();
+      nodes.demoResetInput.focus();
+    }
+    async function submitDemoReset(event) {
+      event.preventDefault();
+      if (state.mutation || state.scope?.permissions?.demo_reset !== true) return;
+      const confirmation = nodes.demoResetInput.value.trim();
+      if (confirmation !== nodes.demoResetInput.dataset.expected) return;
+      setBusy(true);
+      nodes.demoResetConfirm.disabled = true;
+      nodes.demoResetMessage.textContent = "Demo wordt transactioneel hersteld…";
+      try {
+        const idempotencyKey = `food-demo-reset:${globalScope.crypto.randomUUID()}`;
+        const result = await api.resetDemo(state.scope, confirmation, idempotencyKey);
+        state.orders = [];
+        state.menu = null;
+        await Promise.all([loadOrders({ silent: true }), loadMenu()]);
+        closeDemoReset();
+        showToast(`Demo hersteld: ${Number(result.orders_deleted) || 0} bestellingen verwijderd.`);
+      } catch (error) {
+        nodes.demoResetMessage.textContent = safeMessage(error);
+      } finally {
+        setBusy(false);
+        nodes.demoResetConfirm.disabled = nodes.demoResetInput.value.trim() !== nodes.demoResetInput.dataset.expected;
+      }
+    }
+
     function schedulePoll() { globalScope.clearInterval(state.pollTimer); state.pollTimer = globalScope.setInterval(() => loadOrders({ silent: true }).catch(() => {}), POLL_INTERVAL_MS); nodes.pollingLabel.textContent = "Elke 5 seconden"; }
     function stop() { state.active = false; globalScope.clearInterval(state.pollTimer); state.pollTimer = null; nodes.pollingLabel.textContent = "Gestopt"; }
     function handleLogout(path = "/login.html?next=%2Fadmin%2Ffood") { stop(); globalScope.location.assign(path); }
@@ -231,6 +277,7 @@
     }
 
     nodes.retry.addEventListener("click", start); nodes.refresh.addEventListener("click", () => Promise.all([loadOrders(), state.route === "menu" ? loadMenu() : Promise.resolve()]).catch(showError)); nodes.signout.addEventListener("click", () => options.logout?.()); nodes.detailClose.addEventListener("click", closeDetail); nodes.detailOverlay.addEventListener("click", closeDetail);
+    nodes.demoResetOpen.addEventListener("click", openDemoReset); nodes.demoResetCancel.addEventListener("click", closeDemoReset); nodes.demoResetForm.addEventListener("submit", submitDemoReset); nodes.demoResetInput.addEventListener("input", () => { nodes.demoResetConfirm.disabled = nodes.demoResetInput.value.trim() !== nodes.demoResetInput.dataset.expected || state.mutation; });
     nodes.scopeSelect.addEventListener("change", async () => { const selected = state.context.scopes.find((scope) => `${scope.account_ref}:${scope.location_ref}` === nodes.scopeSelect.value); if (!selected) return; state.scope = selected; state.menu = null; state.orders = []; configureScope(); await Promise.all([loadOrders(), loadMenu()]).catch(showError); });
     for (const filter of document.querySelectorAll("[data-order-filter]")) filter.addEventListener("click", () => { state.filter = filter.dataset.orderFilter; for (const candidate of document.querySelectorAll("[data-order-filter]")) candidate.setAttribute("aria-pressed", String(candidate === filter)); renderOrders(); });
     for (const link of document.querySelectorAll("a[data-route],a[data-route-link]")) link.addEventListener("click", (event) => { event.preventDefault(); setRoute(link.dataset.route || link.dataset.routeLink, true); });
