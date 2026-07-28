@@ -1,0 +1,29 @@
+{
+  "pilot": {
+    "account_ref": "f4000000-0000-4000-8000-000000000001",
+    "account_name": "Silverado Roti Shop",
+    "location_ref": "f5000000-0000-4000-8000-000000000001",
+    "location_name": "Silverado Roti Shop",
+    "storefront_slug": "silverado-roti-shop-emmeloord",
+    "timezone": "Europe/Amsterdam",
+    "city": "Emmeloord",
+    "currency": "EUR"
+  },
+  "isolation_tenant": {
+    "account_ref": "f4000000-0000-4000-8000-000000000002",
+    "account_name": "Isolatie Restaurant",
+    "location_ref": "f5000000-0000-4000-8000-000000000002",
+    "location_name": "Isolatie Locatie",
+    "storefront_slug": "isolatie-restaurant",
+    "timezone": "Europe/Amsterdam",
+    "city": "Teststad",
+    "currency": "EUR"
+  },
+  "fixture_accounts": [
+    { "label": "Pilotmanager", "token": "demo-manager-token", "role": "manager", "tenant": "pilot" },
+    { "label": "Keukenmedewerker", "token": "demo-kitchen-token", "role": "kitchen_staff", "tenant": "pilot" },
+    { "label": "Viewer", "token": "demo-viewer-token", "role": "viewer", "tenant": "pilot" },
+    { "label": "Gewone klant", "token": "demo-customer-token", "role": "customer", "tenant": null },
+    { "label": "Isolatiemanager", "token": "demo-tenant-b-token", "role": "manager", "tenant": "isolation_tenant" }
+  ]
+}
