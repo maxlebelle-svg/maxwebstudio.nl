@@ -103,6 +103,11 @@
   status = 200
 
 [[redirects]]
+  from = "/food/:storefrontSlug"
+  to = "/food.html?storefront=:storefrontSlug"
+  status = 200
+
+[[redirects]]
   from = "/api/food/v1/*"
   to = "/.netlify/functions/food-v1/:splat"
   status = 200

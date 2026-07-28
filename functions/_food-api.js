@@ -140,10 +140,70 @@ function sessionRpc(name, input, bearer) {
   return supabaseRequest(`/rest/v1/rpc/${name}`, { method: "POST", body: input, bearer });
 }
 
+function safePublicAssetUrl(value) {
+  const url = String(value || "").trim();
+  if (/^\/assets\/[A-Za-z0-9_./-]+$/.test(url)) return url;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function publicConfiguration(configuration) {
+  const source = configuration && typeof configuration === "object" && !Array.isArray(configuration)
+    ? configuration.public
+    : null;
+  const value = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  const intro = typeof value.intro === "string" && value.intro.trim().length <= 280 ? value.intro.trim() : "";
+  const weekly = value.opening_hours && typeof value.opening_hours === "object" && !Array.isArray(value.opening_hours)
+    ? value.opening_hours
+    : {};
+  const openingHours = {};
+  for (const day of ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]) {
+    const windows = Array.isArray(weekly[day]) ? weekly[day] : [];
+    openingHours[day] = windows.slice(0, 3).filter((window) => (
+      window && typeof window === "object"
+      && /^([01]\d|2[0-3]):[0-5]\d$/.test(String(window.open || ""))
+      && /^([01]\d|2[0-3]):[0-5]\d$/.test(String(window.close || ""))
+      && window.open < window.close
+    )).map((window) => ({ open: window.open, close: window.close }));
+  }
+  return {
+    intro,
+    logo_url: safePublicAssetUrl(value.logo_url),
+    hero_image_url: safePublicAssetUrl(value.hero_image_url),
+    opening_hours: openingHours,
+  };
+}
+
+function openingState(configuration, timezone, at = new Date()) {
+  const hours = configuration.opening_hours || {};
+  const hasSchedule = Object.values(hours).some((windows) => Array.isArray(windows) && windows.length);
+  if (!hasSchedule) return { status: "unknown", label: "Openingstijden worden nog bevestigd", weekly: hours };
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: timezone,
+      weekday: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(at);
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    const day = String(values.weekday || "").toLowerCase();
+    const time = `${values.hour}:${values.minute}`;
+    const open = (hours[day] || []).some((window) => time >= window.open && time < window.close);
+    return { status: open ? "open" : "closed", label: open ? "Nu open voor afhalen" : "Nu gesloten", weekly: hours };
+  } catch {
+    return { status: "unknown", label: "Openingstijden worden nog bevestigd", weekly: hours };
+  }
+}
+
 async function publicLocation(slug) {
   if (!SLUG.test(slug) || slug.length > 100) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
   const locations = await serviceQuery("restaurant_locations", new URLSearchParams({
-    select: "id,food_account_id,name,slug,timezone,phone,city,country_code",
+    select: "id,food_account_id,name,slug,timezone,phone,street,house_number,postal_code,city,country_code,configuration",
     slug: `eq.${slug}`, status: "eq.active", is_published: "eq.true", limit: "1",
   }).toString());
   const location = Array.isArray(locations) ? locations[0] : null;
@@ -158,6 +218,8 @@ async function publicLocation(slug) {
 
 async function storefront(slug) {
   const { location, account } = await publicLocation(slug);
+  const published = publicConfiguration(location.configuration);
+  const opening = openingState(published, location.timezone || account.timezone);
   const pickup = await serviceRpc("food_has_capability", {
     target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "ordering.pickup",
   });
@@ -166,10 +228,29 @@ async function storefront(slug) {
     name: location.name || account.name,
     timezone: location.timezone || account.timezone,
     phone: location.phone || null,
-    city: location.city || null,
+    address: {
+      street: location.street || null,
+      house_number: location.house_number || null,
+      postal_code: location.postal_code || null,
+      city: location.city || null,
+      country_code: location.country_code,
+    },
     country_code: location.country_code,
     currency: account.currency,
     fulfilment: { pickup: pickup === true },
+    intro: published.intro,
+    branding: { logo_url: published.logo_url, hero_image_url: published.hero_image_url },
+    opening,
+    ordering: {
+      enabled: pickup === true
+        && String(process.env.FOOD_PUBLIC_ORDERING_ENABLED || "").toLowerCase() === "true"
+        && opening.status !== "closed",
+      reason: pickup !== true
+        ? "pickup_unavailable"
+        : String(process.env.FOOD_PUBLIC_ORDERING_ENABLED || "").toLowerCase() !== "true"
+          ? "pilot_disabled"
+          : opening.status === "closed" ? "storefront_closed" : null,
+    },
   };
 }
 
@@ -187,7 +268,7 @@ async function publishedMenu(slug) {
   }).toString());
   const categoryIds = categories.map((category) => category.id);
   const items = categoryIds.length ? await serviceQuery("menu_items", new URLSearchParams({
-    select: "id,category_id,tax_class_id,name,description,price_minor,available,sort_order",
+    select: "id,category_id,tax_class_id,name,description,price_minor,available,sort_order,metadata",
     food_account_id: `eq.${account.id}`, location_id: `eq.${location.id}`,
     category_id: `in.(${categoryIds.join(",")})`, active: "eq.true", available: "eq.true", order: "sort_order.asc,id.asc",
   }).toString()) : [];
@@ -211,6 +292,7 @@ async function publishedMenu(slug) {
         price_minor: Number(item.price_minor),
         tax_rate_basis_points: Number(rates.get(item.tax_class_id) || 0),
         available: true,
+        image_url: safePublicAssetUrl(item.metadata?.public?.image_url),
       })),
     })),
   };
@@ -263,9 +345,13 @@ async function createOrder(event, slug) {
   if (!SLUG.test(slug) || slug.length > 100) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
   const idempotencyKey = String(event?.headers?.["idempotency-key"] || event?.headers?.["Idempotency-Key"] || "").trim();
   if (!IDEMPOTENCY_KEY.test(idempotencyKey)) throw new ApiError(400, "IDEMPOTENCY_KEY_REQUIRED", "Een geldige idempotency-sleutel is vereist.");
+  const rateKey = publicClientKey(event, slug);
+  const { location, account } = await publicLocation(slug);
+  const opening = openingState(publicConfiguration(location.configuration), location.timezone || account.timezone);
+  if (opening.status === "closed") throw new ApiError(409, "STOREFRONT_CLOSED", "Dit restaurant is momenteel gesloten voor bestellingen.");
   const allowed = await serviceRpc("food_consume_order_rate_limit_v1", {
     input_location_slug: slug,
-    input_rate_key_hash: publicClientKey(event, slug),
+    input_rate_key_hash: rateKey,
     input_max_requests: 8,
     input_window_seconds: 60,
   });
@@ -521,4 +607,18 @@ async function handler(event) {
   }
 }
 
-module.exports = { handler, _private: { ApiError, dispatch, parseJsonBody, validateOrder, publicClientKey, routePath, membershipFor } };
+module.exports = {
+  handler,
+  _private: {
+    ApiError,
+    dispatch,
+    membershipFor,
+    openingState,
+    parseJsonBody,
+    publicClientKey,
+    publicConfiguration,
+    routePath,
+    safePublicAssetUrl,
+    validateOrder,
+  },
+};
