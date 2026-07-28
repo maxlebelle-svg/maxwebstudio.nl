@@ -54,6 +54,18 @@ test("path traversal, absolute paths and executable files are rejected", () => {
   }
 });
 
+test("Apache deployment metadata is ignored without weakening executable-file blocking", () => {
+  const result = _private.extractZip(zip([
+    ["index.html", "<h1>Quantumbouw</h1>"],
+    ["styles.css", "body{color:#fff}"],
+    [".htaccess", "RewriteEngine On"],
+  ]));
+  assert.equal(_private.resolveEntryFile(result.files), "index.html");
+  assert.deepEqual(result.files.map((file) => file.path), ["index.html", "styles.css"]);
+  assert.equal(_private.isIgnoredArchiveEntry("nested/.htaccess"), true);
+  assert.throws(() => _private.safePath("server.php"), (error) => error.code === "invalid_file_type");
+});
+
 test("frontend sends the ZIP to server validation and does not require Demo Sites or a journey", () => {
   const html = fs.readFileSync(path.join(__dirname, "../public/admin-website-factory.html"), "utf8");
   assert.match(html, /admin-manual-preview/);
@@ -129,4 +141,12 @@ test("the actual Fuellinq regression ZIP is accepted and has a root index", () =
   const result = _private.extractZip(buffer);
   assert.equal(_private.resolveEntryFile(result.files), "index.html");
   assert(result.files.some((file) => file.path === "styles.css"));
+});
+
+test("the actual Quantumbouw ZIP is accepted and omits .htaccess", () => {
+  const buffer = fs.readFileSync(path.join(__dirname, "../Klanten MaxWebstudio/Quantumbouw.nl/quantumbouw-factory-upload.zip"));
+  const result = _private.extractZip(buffer);
+  assert.equal(_private.resolveEntryFile(result.files), "index.html");
+  assert(result.files.some((file) => file.path === "assets/quantumbouw-logo.jpg"));
+  assert(!result.files.some((file) => file.path.endsWith(".htaccess")));
 });

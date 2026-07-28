@@ -260,7 +260,7 @@ function extractZip(buffer) {
     const localOffset = buffer.readUInt32LE(offset + 42);
     const rawName = buffer.subarray(offset + 46, offset + 46 + nameLength).toString((flags & 0x800) ? "utf8" : "latin1");
     offset += 46 + nameLength + extraLength + commentLength;
-    if (rawName.endsWith("/") || rawName.startsWith("__MACOSX/")) continue;
+    if (rawName.endsWith("/") || rawName.startsWith("__MACOSX/") || isIgnoredArchiveEntry(rawName)) continue;
     const path = safePath(rawName);
     const unixType = (externalAttributes >>> 16) & 0xf000;
     if (unixType === 0xa000) throw zipError("unsafe_zip_path", "Dit ZIP-bestand bevat een niet-toegestane koppeling.");
@@ -290,6 +290,12 @@ function safePath(value = "") {
   const basename = decoded.split("/").pop();
   if (!allowedExtensions.has(extension) && !["_headers", "_redirects"].includes(basename)) throw zipError("invalid_file_type", "Dit ZIP-bestand bevat een niet-ondersteund bestandstype.");
   return decoded;
+}
+
+function isIgnoredArchiveEntry(value = "") {
+  const normalized = text(value).replace(/\\/g, "/");
+  const basename = normalized.split("/").pop().toLowerCase();
+  return basename === ".htaccess";
 }
 
 function resolveEntryFile(files = []) {
@@ -329,4 +335,4 @@ function phaseForCode(code = "") { if (String(code).startsWith("zip_") || ["inva
 function fail(status, code, error, phase = "manual_preview_upload", requestId = "") { return json(status, { success: false, code, error, details: phase, requestId }); }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", ...corsHeaders({ methods: "POST, OPTIONS" }) }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { extractZip, resolveEntryFile, safePath };
+exports._private = { extractZip, resolveEntryFile, safePath, isIgnoredArchiveEntry };
