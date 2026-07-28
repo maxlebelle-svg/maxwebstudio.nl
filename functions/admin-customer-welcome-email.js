@@ -443,6 +443,10 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -454,4 +458,4 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-exports._test = { invitationStatus, isProductionEnvironment, publicAuthContext };
+exports._test = { buildWelcomeEmailHtml, invitationStatus, isProductionEnvironment, publicAuthContext };

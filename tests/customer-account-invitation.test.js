@@ -37,3 +37,12 @@ test("publieke authstatus lekt geen profilemetadata", () => {
   const safe = customerAccount._test.publicAuthContext({ configured: true, authUserId: "u", profileId: "p", authAction: "existing", accountStatus: "activated", profile: { metadata: { secret: true } } });
   assert.deepEqual(safe, { configured: true, authUserId: "u", profileId: "p", authAction: "existing", accountStatus: "activated" });
 });
+
+test("welkomstmail rendert veilige links zonder ontbrekende helper", () => {
+  const html = customerAccount._test.buildWelcomeEmailHtml(
+    { name: "Michel", company: "Quantumbouw", website: "https://quantumbouw.nl", package: "One Page Website" },
+    { subject: "Je klantportaal", loginLink: "https://maxwebstudio.nl/login.html?mode=client&next=%2Fklantportaal.html", buttonLabel: "Account activeren" },
+  );
+  assert.match(html, /Account activeren/);
+  assert.match(html, /https:\/\/maxwebstudio\.nl\/login\.html\?mode=client&amp;next=%2Fklantportaal\.html/);
+});
