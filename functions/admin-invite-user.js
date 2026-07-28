@@ -66,6 +66,9 @@ exports.handler = async (event) => {
         createdByProfileId: adminCheck.admin?.profileId || null,
         managerProfileId: cleanText(payload.managerProfileId || payload.manager_profile_id) || null,
       });
+      if (existingPartnerOnboardingInvite) {
+        await activateExistingPartnerOnboarding(supabaseUrl, serviceRoleKey, authUser.id);
+      }
     }
 
     let setupLinkSent = false;
@@ -348,6 +351,22 @@ async function initializePartnerOnboarding(supabaseUrl, serviceRoleKey, input) {
       input_profile_id: input.profileId,
       input_created_by_profile_id: input.createdByProfileId,
       input_manager_profile_id: input.managerProfileId,
+    }),
+  });
+}
+
+async function activateExistingPartnerOnboarding(supabaseUrl, serviceRoleKey, authUserId) {
+  if (!authUserId) throw Object.assign(new Error("Auth-account ontbreekt voor onboardingactivatie."), { status: 500 });
+  return supabaseFetch(`${supabaseUrl}/rest/v1/rpc/partner_mark_account_activated`, {
+    method: "POST",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+    },
+    body: JSON.stringify({
+      input_auth_user_id: authUserId,
+      input_idempotency_key: `partner-onboarding-invite:${authUserId}`,
     }),
   });
 }

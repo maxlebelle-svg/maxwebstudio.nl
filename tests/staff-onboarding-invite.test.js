@@ -39,6 +39,9 @@ test("existing users still receive the dedicated onboarding email", () => {
   assert.match(source, /action === "onboarding_invite"/);
   assert.match(source, /action === "invite" \|\| action === "onboarding_invite"/);
   assert.match(source, /"magiclink", partnerOnboardingRedirectTo\(\)/);
+  assert.match(source, /if \(existingPartnerOnboardingInvite\) \{\s*await activateExistingPartnerOnboarding/);
+  assert.match(source, /rpc\/partner_mark_account_activated/);
+  assert.match(source, /partner-onboarding-invite:\$\{authUserId\}/);
 });
 
 test("settings has an isolated production invite control when the legacy admin script stops early", () => {
