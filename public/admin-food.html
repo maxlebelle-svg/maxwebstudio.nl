@@ -29,6 +29,7 @@
           <a href="/admin/food" data-route="dashboard"><span aria-hidden="true">⌂</span>Overzicht</a>
           <a href="/admin/food/orders" data-route="orders"><span aria-hidden="true">▤</span>Bestellingen<strong data-new-nav-count hidden>0</strong></a>
           <a href="/admin/food/menu" data-route="menu"><span aria-hidden="true">≡</span>Menukaart</a>
+          <a href="/admin/food/integrations" data-route="integrations"><span aria-hidden="true">◇</span>Integraties</a>
         </nav>
         <div class="food-side-status">
           <span class="food-live-dot"></span><div><strong>Automatisch verversen</strong><small data-polling-label>Starten…</small></div>
@@ -97,6 +98,39 @@
               <div class="food-menu-groups" data-menu-groups></div>
               <div class="food-empty" data-menu-empty hidden><strong>Nog geen menukaart</strong><p>Er zijn voor deze locatie geen beheerbare menu-items gevonden.</p></div>
             </section>
+          </section>
+
+          <section data-view="integrations" hidden>
+            <div class="food-integrations-intro">
+              <div><p class="food-kicker">Groeimogelijkheden</p><h2>Alles klaar voor de volgende stap</h2><p>Verbind later betalingen, vindbaarheid, advertenties en klantcontact. Alleen aantoonbaar werkende koppelingen krijgen de status verbonden.</p></div>
+              <span>0 van 6 verbonden</span>
+            </div>
+            <div class="food-integration-grid" aria-label="Beschikbare Food-integraties">
+              <article class="food-integration-card" data-integration="mollie" data-integration-state="onboarding">
+                <header><span>M</span><div><h3>Mollie</h3><p>Online betalingen</p></div></header>
+                <strong>Onboarding vereist</strong><p>Testbetaling en betaalstatus worden pas geactiveerd nadat een afzonderlijke sandboxcontrole is geslaagd.</p>
+              </article>
+              <article class="food-integration-card" data-integration="google-business" data-integration-state="disconnected">
+                <header><span>G</span><div><h3>Google Business Profile</h3><p>Openingstijden en zichtbaarheid</p></div></header>
+                <strong>Niet verbonden</strong><p>Publicatie naar Google vereist toestemming en een gecontroleerd bedrijfsprofiel.</p>
+              </article>
+              <article class="food-integration-card" data-integration="google-ads" data-integration-state="planned">
+                <header><span>G</span><div><h3>Google Ads</h3><p>Lokale campagnes</p></div></header>
+                <strong>Binnenkort beschikbaar</strong><p>Campagnes worden pas getoond wanneer accounttoegang, budget en conversiemeting zijn bevestigd.</p>
+              </article>
+              <article class="food-integration-card" data-integration="meta" data-integration-state="planned">
+                <header><span>◎</span><div><h3>Meta</h3><p>Instagram en Facebook</p></div></header>
+                <strong>Binnenkort beschikbaar</strong><p>Geen advertentieaccount, pixel of socialprofiel is momenteel gekoppeld.</p>
+              </article>
+              <article class="food-integration-card" data-integration="whatsapp" data-integration-state="disconnected">
+                <header><span>W</span><div><h3>WhatsApp Business</h3><p>Klantcontact en orderupdates</p></div></header>
+                <strong>Niet verbonden</strong><p>Berichten worden niet verstuurd totdat nummerverificatie en toestemming zijn afgerond.</p>
+              </article>
+              <article class="food-integration-card" data-integration="thuisbezorgd" data-integration-state="research">
+                <header><span>T</span><div><h3>Thuisbezorgd</h3><p>Extern bestelkanaal</p></div></header>
+                <strong>Haalbaarheid onderzoeken</strong><p>Beschikbaarheid hangt af van technische toegang en contractuele voorwaarden.</p>
+              </article>
+            </div>
           </section>
         </div>
       </main>

@@ -101,17 +101,18 @@
     function showApp() { nodes.loading.hidden = true; nodes.error.hidden = true; nodes.app.hidden = false; document.documentElement.dataset.foodDashboardState = "ready"; }
 
     function currentRoute(pathname = globalScope.location.pathname) {
+      if (/\/admin\/food\/integrations\/?$/.test(pathname)) return "integrations";
       if (/\/admin\/food\/menu\/?$/.test(pathname)) return "menu";
       if (/\/admin\/food\/orders(?:\/|$)/.test(pathname)) return "orders";
       return "dashboard";
     }
-    function routePath(route) { return route === "orders" ? "/admin/food/orders" : route === "menu" ? "/admin/food/menu" : "/admin/food"; }
+    function routePath(route) { return route === "orders" ? "/admin/food/orders" : route === "menu" ? "/admin/food/menu" : route === "integrations" ? "/admin/food/integrations" : "/admin/food"; }
     function setRoute(route, push = false) {
       state.route = route;
       if (push && globalScope.location.pathname !== routePath(route)) globalScope.history.pushState({}, "", routePath(route));
       for (const view of document.querySelectorAll("[data-view]")) view.hidden = view.dataset.view !== route;
       for (const link of document.querySelectorAll("[data-route]")) link.setAttribute("aria-current", link.dataset.route === route ? "page" : "false");
-      const copy = { dashboard: ["Food / Overzicht", "Restaurantdashboard"], orders: ["Food / Bestellingen", "Bestellingen"], menu: ["Food / Menukaart", "Menukaart"] }[route];
+      const copy = { dashboard: ["Food / Overzicht", "Restaurantdashboard"], orders: ["Food / Bestellingen", "Bestellingen"], menu: ["Food / Menukaart", "Menukaart"], integrations: ["Food / Integraties", "Integraties"] }[route];
       nodes.breadcrumb.textContent = copy[0]; nodes.pageTitle.textContent = copy[1];
       if (route === "menu" && !state.menu) loadMenu().catch(showError);
     }

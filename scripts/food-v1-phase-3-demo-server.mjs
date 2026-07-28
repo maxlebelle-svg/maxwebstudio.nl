@@ -127,7 +127,7 @@ async function staticRoute(response, url) {
   if (url.pathname === "/admin/food/dashboard-bootstrap.js") { response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); response.end(localBootstrap); return; }
   let relative = url.pathname;
   if (/^\/food\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(relative)) relative = "/food.html";
-  if (/^\/admin\/food(?:\/menu|\/orders(?:\/[0-9a-f-]{36})?)?\/?$/.test(relative)) relative = "/admin-food.html";
+  if (/^\/admin\/food(?:\/menu|\/integrations|\/orders(?:\/[0-9a-f-]{36})?)?\/?$/.test(relative)) relative = "/admin-food.html";
   if (relative === "/") relative = "/food.html";
   const file = resolve(publicRoot, `.${relative}`); if (file !== publicRoot && !file.startsWith(`${publicRoot}${sep}`)) { send(response, 404, safeError("NOT_FOUND")); return; }
   try { const bytes = await readFile(file); response.writeHead(200, { "Content-Type": mime.get(extname(file)) || "application/octet-stream", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }); response.end(bytes); } catch { send(response, 404, safeError("NOT_FOUND", "Niet gevonden.")); }
