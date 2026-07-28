@@ -224,9 +224,10 @@
         }
 
         function getSafeRelativePath(value = "") {
-          if (!value) return "";
+          const raw = String(value || "").trim();
+          if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\") || /[\u0000-\u001f]/.test(raw)) return "";
           try {
-            const parsed = new URL(value, window.location.origin);
+            const parsed = new URL(raw, window.location.origin);
             if (parsed.origin !== window.location.origin) return "";
             return `${parsed.pathname}${parsed.search}${parsed.hash}`;
           } catch {
@@ -241,6 +242,12 @@
 
         function isAdminPath(path = "") {
           return /^\/admin(?:-|\/|$)/.test(String(path || ""));
+        }
+
+        function isFoodAdminPath(path = "") {
+          const value = String(path || "").replace(/\/$/, "");
+          return ["/admin/food", "/admin/food/orders", "/admin/food/menu", "/admin/food/integrations"].includes(value)
+            || /^\/admin\/food\/orders\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
         }
 
         function isAdminLoginRequest() {
@@ -533,6 +540,11 @@
           return import("./src/services/adminAuthBridgeService.js?v=20260712-authbridge");
         }
 
+        async function loadFoodAuthBridge() {
+          await import("./src/services/foodAuthBridgeService.js?v=20260729-food-route-gate");
+          return window.MaxFoodAuthBridge;
+        }
+
         async function renderAuthStatus() {
           try {
             const auth = await loadAuth();
@@ -660,23 +672,46 @@
 
           const role = normalizeRole(account.profile?.role);
           const profileStatus = String(account.profile?.status || "").toLowerCase();
+          const requestedRedirect = getRequestedRedirect();
+          const foodLoginRequest = isFoodAdminPath(requestedRedirect);
           if (adminMode && profileStatus !== "active") {
             logAuthEvent("PROFILE_INACTIVE", { role, profileStatus });
             setMessage(getAdminLoginErrorMessage({ code: "PROFILE_INACTIVE" }), "error");
             return;
           }
-          if (adminMode && !isAdminRole(role)) {
+          if (adminMode && !isAdminRole(role) && !foodLoginRequest) {
             logAuthEvent("PROFILE_ROLE_DENIED", { role, profileStatus });
             setMessage(getAdminLoginErrorMessage({ code: "PROFILE_ROLE_DENIED" }), "error");
             return;
           }
-          storeRealSession(session, account);
-          if (isAdminRole(role)) {
+
+          let foodAccess = null;
+          if (foodLoginRequest) {
+            try {
+              const foodAuthBridge = await loadFoodAuthBridge();
+              foodAccess = await foodAuthBridge.resolveFoodRouteAccess({
+                accessToken: session.access_token,
+                requestedPath: requestedRedirect,
+                origin: window.location.origin,
+              });
+              const adminAuthBridge = await loadAdminAuthBridge();
+              adminAuthBridge.clearAdminAuthBridge();
+              logAuthEvent("FOOD_ACCESS_GRANTED", { role, profileStatus });
+            } catch (error) {
+              await auth.signOut().catch(() => null);
+              logAuthEvent("FOOD_ACCESS_DENIED", { reason: error?.code || "FORBIDDEN" });
+              setMessage("Dit account heeft geen toegang tot het Food-dashboard.", "error");
+              return;
+            }
+          } else {
+            storeRealSession(session, account);
+          }
+          if (!foodAccess && isAdminRole(role)) {
             const adminAuthBridge = await loadAdminAuthBridge();
             await adminAuthBridge.resolveAdminAuth({ account });
             if (adminMode) logAuthEvent("ADMIN_ACCESS_GRANTED", { role, profileStatus });
           }
-          const redirect = getAllowedRedirect(role, account.profile?.customerId) || auth.getLoginRedirectForRole(role, account.profile?.customerId);
+          const redirect = foodAccess?.path || getAllowedRedirect(role, account.profile?.customerId) || auth.getLoginRedirectForRole(role, account.profile?.customerId);
           setMessage("Login gelukt.", "success");
           window.location.href = redirect;
         });

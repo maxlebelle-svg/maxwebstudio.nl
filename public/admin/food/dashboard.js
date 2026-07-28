@@ -173,6 +173,16 @@
       finally { state.loadingOrders = false; }
     }
 
+    async function revalidateAccess() {
+      const context = await api.context();
+      const currentKey = state.scope ? `${state.scope.account_ref}:${state.scope.location_ref}` : "";
+      const scope = (context.scopes || []).find((candidate) => `${candidate.account_ref}:${candidate.location_ref}` === currentKey);
+      if (!scope) { const error = new Error("Deze restauranttoegang is ingetrokken."); error.code = "FORBIDDEN"; error.status = 403; throw error; }
+      state.context = context;
+      state.scope = scope;
+      await loadOrders({ silent: true });
+    }
+
     function detailField(label, value) { const wrap = el("div"); wrap.append(el("span", "", label), el("strong", "", value || "—")); return wrap; }
     function renderDetail(order) {
       nodes.detailTitle.textContent = `Bestelling #${orderReference(order)}`; nodes.detailBody.replaceChildren();
@@ -267,12 +277,12 @@
       }
     }
 
-    function schedulePoll() { globalScope.clearInterval(state.pollTimer); state.pollTimer = globalScope.setInterval(() => loadOrders({ silent: true }).catch(() => {}), POLL_INTERVAL_MS); nodes.pollingLabel.textContent = "Elke 5 seconden"; }
+    function schedulePoll() { globalScope.clearInterval(state.pollTimer); state.pollTimer = globalScope.setInterval(() => revalidateAccess().catch((error) => { stop(); showError(error); }), POLL_INTERVAL_MS); nodes.pollingLabel.textContent = "Elke 5 seconden"; }
     function stop() { state.active = false; globalScope.clearInterval(state.pollTimer); state.pollTimer = null; nodes.pollingLabel.textContent = "Gestopt"; }
     function handleLogout(path = "/login.html?next=%2Fadmin%2Ffood") { stop(); globalScope.location.assign(path); }
-    async function start() {
+    async function start(initialContext = null) {
       state.active = true; nodes.loading.hidden = false; nodes.error.hidden = true;
-      try { state.context = await api.context(); configureScope(); setRoute(currentRoute()); await Promise.all([loadOrders(), state.scope.permissions.menu_read ? loadMenu() : Promise.resolve()]); const directOrder = globalScope.location.pathname.match(/\/admin\/food\/orders\/([0-9a-f-]{36})$/)?.[1]; if (directOrder) await openOrder(directOrder); showApp(); schedulePoll(); }
+      try { state.context = initialContext || await api.context(); configureScope(); setRoute(currentRoute()); await Promise.all([loadOrders(), state.scope.permissions.menu_read ? loadMenu() : Promise.resolve()]); const directOrder = globalScope.location.pathname.match(/\/admin\/food\/orders\/([0-9a-f-]{36})$/)?.[1]; if (directOrder) await openOrder(directOrder); showApp(); schedulePoll(); }
       catch (error) { showError(error); }
     }
 
@@ -282,7 +292,7 @@
     for (const filter of document.querySelectorAll("[data-order-filter]")) filter.addEventListener("click", () => { state.filter = filter.dataset.orderFilter; for (const candidate of document.querySelectorAll("[data-order-filter]")) candidate.setAttribute("aria-pressed", String(candidate === filter)); renderOrders(); });
     for (const link of document.querySelectorAll("a[data-route],a[data-route-link]")) link.addEventListener("click", (event) => { event.preventDefault(); setRoute(link.dataset.route || link.dataset.routeLink, true); });
     globalScope.addEventListener("popstate", () => { setRoute(currentRoute()); const directOrder = globalScope.location.pathname.match(/\/admin\/food\/orders\/([0-9a-f-]{36})$/)?.[1]; if (directOrder) openOrder(directOrder); else if (!nodes.detailDrawer.hidden) { nodes.detailOverlay.hidden = true; nodes.detailDrawer.hidden = true; state.selectedOrder = null; } }); globalScope.addEventListener("pagehide", stop); document.addEventListener("visibilitychange", () => { if (!state.active) return; if (document.hidden) { globalScope.clearInterval(state.pollTimer); state.pollTimer = null; nodes.pollingLabel.textContent = "Gepauzeerd"; } else { loadOrders({ silent: true }).catch(() => {}); schedulePoll(); } }); document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !nodes.detailDrawer.hidden) closeDetail(); });
-    return { start, stop, handleLogout, loadOrders, loadMenu, state };
+    return { start, stop, handleLogout, loadOrders, loadMenu, deny: (error) => { stop(); showError(error); }, state };
   }
 
   const exported = { MAX_PRICE_MINOR, POLL_INTERVAL_MS, STATUS_LABELS, createDashboardApp, createFoodManagementClient, dashboardMetrics, formatMoney, nextStatus, parseEuroMinor };
