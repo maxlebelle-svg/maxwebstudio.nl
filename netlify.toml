@@ -108,6 +108,21 @@
   status = 200
 
 [[redirects]]
+  from = "/admin/food/orders/:orderId"
+  to = "/admin-food.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/food/*"
+  to = "/admin-food.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/food"
+  to = "/admin-food.html"
+  status = 200
+
+[[redirects]]
   from = "/api/food/v1/*"
   to = "/.netlify/functions/food-v1/:splat"
   status = 200

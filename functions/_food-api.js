@@ -116,6 +116,7 @@ async function supabaseRequest(path, { method = "GET", body, bearer, service = f
   if (!result.ok) {
     const code = String(data?.code || "UPSTREAM_REJECTED");
     if (code === "23505") throw new ApiError(409, "IDEMPOTENCY_CONFLICT", "Deze idempotency-sleutel hoort al bij een andere bestelling.");
+    if (code === "23514") throw new ApiError(409, "INVALID_TRANSITION", "Deze statuswijziging is niet toegestaan.");
     if (code === "22023") throw new ApiError(400, "ORDER_REJECTED", "De bestelling is ongeldig.");
     if (code === "42501") throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
     if (code === "P0002" || result.status === 404) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
@@ -387,8 +388,7 @@ async function confirmation(slug, reference) {
   return result;
 }
 
-async function authenticate(event, accountId) {
-  if (!UUID.test(accountId)) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
+async function sessionProfile(event) {
   const header = String(event?.headers?.authorization || event?.headers?.Authorization || "");
   const bearer = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!bearer) throw new ApiError(401, "AUTH_REQUIRED", "Inloggen is vereist.");
@@ -403,6 +403,12 @@ async function authenticate(event, accountId) {
   }).toString(), bearer);
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
+  return { bearer, profile };
+}
+
+async function authenticate(event, accountId) {
+  if (!UUID.test(accountId)) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
+  const { bearer, profile } = await sessionProfile(event);
   const platformAdmin = ["super_admin", "admin"].includes(profile.role);
   const memberships = platformAdmin ? [] : await sessionQuery("food_account_members", new URLSearchParams({
     select: "food_account_id,location_id,role,status", food_account_id: `eq.${accountId}`,
@@ -410,6 +416,69 @@ async function authenticate(event, accountId) {
   }).toString(), bearer);
   if (!platformAdmin && (!Array.isArray(memberships) || !memberships.length)) throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
   return { bearer, profile, platformAdmin, memberships };
+}
+
+function strongestMembership(memberships, accountId, locationId) {
+  const rank = new Map([["owner", 1], ["manager", 2], ["staff", 3], ["kitchen_staff", 4], ["viewer", 5]]);
+  return memberships
+    .filter((row) => row.food_account_id === accountId && (!row.location_id || row.location_id === locationId))
+    .sort((left, right) => (rank.get(left.role) || 99) - (rank.get(right.role) || 99))[0] || null;
+}
+
+async function sessionContext(event) {
+  const { bearer, profile } = await sessionProfile(event);
+  const platformAdmin = ["super_admin", "admin"].includes(profile.role);
+  const memberships = await sessionQuery("food_account_members", new URLSearchParams({
+    select: "food_account_id,location_id,role,status",
+    ...(platformAdmin ? {} : { profile_id: `eq.${profile.id}` }), status: "eq.active", limit: "100",
+  }).toString(), bearer);
+  const memberRows = Array.isArray(memberships) ? memberships : [];
+  const accountIds = [...new Set(memberRows.map((row) => row.food_account_id).filter((id) => UUID.test(id)))];
+  const accounts = await sessionQuery("food_accounts", new URLSearchParams({
+    select: "id,name,status,currency,timezone",
+    status: "in.(pilot,active)", ...(platformAdmin || !accountIds.length ? {} : { id: `in.(${accountIds.join(",")})` }),
+    order: "name.asc", limit: "50",
+  }).toString(), bearer);
+  const allowedAccounts = Array.isArray(accounts) ? accounts : [];
+  if (!platformAdmin && !allowedAccounts.length) throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
+  const allowedAccountIds = allowedAccounts.map((account) => account.id).filter((id) => UUID.test(id));
+  const locations = allowedAccountIds.length ? await sessionQuery("restaurant_locations", new URLSearchParams({
+    select: "id,food_account_id,name,slug,timezone,city,status",
+    food_account_id: `in.(${allowedAccountIds.join(",")})`, status: "eq.active", order: "name.asc", limit: "100",
+  }).toString(), bearer) : [];
+  const accountsById = new Map(allowedAccounts.map((account) => [account.id, account]));
+  const scopes = await Promise.all((Array.isArray(locations) ? locations : []).map(async (location) => {
+    const account = accountsById.get(location.food_account_id);
+    const membership = platformAdmin ? { role: "platform_admin" } : strongestMembership(memberRows, location.food_account_id, location.id);
+    if (!account || !membership) return null;
+    const [ordersEnabled, menuEnabled] = await Promise.all([
+      sessionRpc("food_has_capability", { target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "orders.management" }, bearer),
+      sessionRpc("food_has_capability", { target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "menu.management" }, bearer),
+    ]);
+    const role = membership.role;
+    const permissions = {
+      orders_read: ordersEnabled === true,
+      orders_update: ordersEnabled === true && role !== "viewer",
+      menu_read: menuEnabled === true,
+      menu_update: menuEnabled === true && ["owner", "manager", "platform_admin"].includes(role),
+    };
+    if (!permissions.orders_read && !permissions.menu_read) return null;
+    return {
+      account_ref: account.id,
+      account_name: account.name,
+      location_ref: location.id,
+      location_name: location.name,
+      storefront_slug: location.slug,
+      timezone: location.timezone || account.timezone,
+      city: location.city || null,
+      currency: account.currency,
+      role,
+      permissions,
+    };
+  }));
+  const visibleScopes = scopes.filter(Boolean);
+  if (!visibleScopes.length) throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
+  return { platform_role: profile.role, scopes: visibleScopes };
 }
 
 function membershipFor(context, locationId, roles) {
@@ -439,6 +508,7 @@ function pageInput(params) {
 function publicOrder(row) {
   return {
     id: row.id,
+    public_reference: row.public_reference,
     location_id: row.location_id,
     status: row.status,
     fulfilment_type: row.fulfilment_type,
@@ -461,7 +531,7 @@ async function listOrders(event, accountId, params) {
   const status = params.get("status");
   if (status && !ORDER_STATUSES.has(status)) throw new ApiError(400, "INVALID_STATUS", "Orderstatus is ongeldig.");
   const query = new URLSearchParams({
-    select: "id,location_id,status,fulfilment_type,channel,currency,subtotal_minor,tax_minor,total_minor,created_at,updated_at",
+    select: "id,location_id,public_reference,status,fulfilment_type,channel,currency,subtotal_minor,tax_minor,total_minor,created_at,updated_at",
     food_account_id: `eq.${accountId}`, location_id: `eq.${locationId}`, order: "created_at.desc,id.desc",
     limit: String(limit), offset: String(offset), ...(status ? { status: `eq.${status}` } : {}),
   });
@@ -473,7 +543,7 @@ async function orderDetail(event, accountId, orderId) {
   if (!UUID.test(orderId)) throw new ApiError(404, "NOT_FOUND", "Niet gevonden.");
   const context = await authenticate(event, accountId);
   const rows = await sessionQuery("food_orders", new URLSearchParams({
-    select: "id,location_id,status,fulfilment_type,channel,currency,subtotal_minor,tax_minor,total_minor,customer_snapshot,fulfilment_snapshot,customer_note,created_at,updated_at",
+    select: "id,location_id,public_reference,status,fulfilment_type,channel,currency,subtotal_minor,tax_minor,total_minor,customer_snapshot,fulfilment_snapshot,customer_note,created_at,updated_at",
     id: `eq.${orderId}`, food_account_id: `eq.${accountId}`, limit: "1",
   }).toString(), context.bearer);
   const row = Array.isArray(rows) ? rows[0] : null;
@@ -484,12 +554,17 @@ async function orderDetail(event, accountId, orderId) {
     select: "item_name_snapshot,item_description_snapshot,quantity,unit_price_minor,line_subtotal_minor,tax_rate_basis_points,tax_minor,line_total_minor",
     food_account_id: `eq.${accountId}`, order_id: `eq.${orderId}`, order: "created_at.asc,id.asc",
   }).toString(), context.bearer);
+  const history = await sessionQuery("food_order_status_history", new URLSearchParams({
+    select: "old_status,new_status,actor_type,reason,created_at",
+    food_account_id: `eq.${accountId}`, order_id: `eq.${orderId}`, order: "created_at.asc,id.asc",
+  }).toString(), context.bearer);
   return {
     ...publicOrder(row),
     customer: row.customer_snapshot,
     fulfilment: row.fulfilment_snapshot,
     customer_note: row.customer_note,
     items,
+    status_history: Array.isArray(history) ? history : [],
   };
 }
 
@@ -579,6 +654,7 @@ async function dispatch(event) {
     return { status: body.idempotent_replay ? 200 : 201, body };
   }
   if (method === "GET" && (match = path.match(/^\/storefronts\/([^/]+)\/orders\/([^/]+)\/confirmation$/))) return { status: 200, body: await confirmation(match[1], match[2]) };
+  if (method === "GET" && path === "/session/context") return { status: 200, body: await sessionContext(event) };
   if (method === "GET" && (match = path.match(/^\/accounts\/([^/]+)\/orders$/))) return { status: 200, body: await listOrders(event, match[1], params) };
   if (method === "GET" && (match = path.match(/^\/accounts\/([^/]+)\/orders\/([^/]+)$/))) return { status: 200, body: await orderDetail(event, match[1], match[2]) };
   if (method === "PATCH" && (match = path.match(/^\/accounts\/([^/]+)\/orders\/([^/]+)\/status$/))) return { status: 200, body: await changeStatus(event, match[1], match[2]) };
@@ -619,6 +695,7 @@ module.exports = {
     publicConfiguration,
     routePath,
     safePublicAssetUrl,
+    sessionContext,
     validateOrder,
   },
 };
