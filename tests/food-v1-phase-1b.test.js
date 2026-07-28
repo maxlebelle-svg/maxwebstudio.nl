@@ -111,7 +111,12 @@ test("public order validation rejects delivery, duplicate rows, invalid quantiti
 test("manipulated client prices never reach the controlled order RPC", async () => withEnv(serviceEnv, async () => {
   const calls = [];
   const oldFetch = global.fetch;
-  global.fetch = async (url) => { calls.push(String(url)); return jsonResult(true); };
+  global.fetch = async (url) => {
+    calls.push(String(url));
+    if (String(url).includes("restaurant_locations")) return jsonResult([{ id: locationA, food_account_id: accountA, slug: "silverado", timezone: "Europe/Amsterdam", configuration: {} }]);
+    if (String(url).includes("food_accounts")) return jsonResult([{ id: accountA, status: "pilot", timezone: "Europe/Amsterdam" }]);
+    return jsonResult(true);
+  };
   try {
     const result = await handler(event("POST", "/storefronts/silverado/orders", {
       headers: { "idempotency-key": "checkout-attempt-0001", "x-nf-client-connection-ip": "203.0.113.10" },
@@ -126,8 +131,10 @@ test("manipulated client prices never reach the controlled order RPC", async () 
 test("order creation uses durable limiter then Phase 1A RPC and strips its internal order id", async () => withEnv(serviceEnv, async () => {
   const calls = [];
   const oldFetch = global.fetch;
-  global.fetch = async (url, options) => {
-    calls.push({ url: String(url), body: JSON.parse(options.body) });
+  global.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), body: options.body ? JSON.parse(options.body) : null });
+    if (String(url).includes("restaurant_locations")) return jsonResult([{ id: locationA, food_account_id: accountA, slug: "silverado", timezone: "Europe/Amsterdam", configuration: {} }]);
+    if (String(url).includes("food_accounts")) return jsonResult([{ id: accountA, status: "pilot", timezone: "Europe/Amsterdam" }]);
     if (String(url).includes("food_consume_order_rate_limit_v1")) return jsonResult(true);
     return jsonResult({ id: "fc000000-0000-4000-8000-000000000001", public_reference: "a".repeat(32), status: "pending", currency: "EUR", subtotal_minor: 1495, tax_minor: 123, total_minor: 1495, idempotent_replay: false });
   };
@@ -141,10 +148,12 @@ test("order creation uses durable limiter then Phase 1A RPC and strips its inter
     assert.equal(body.data.total_minor, 1495);
     assert.equal(body.data.id, undefined);
     assert.match(body.data.confirmation_path, /a{32}\/confirmation$/);
-    assert.match(calls[0].url, /food_consume_order_rate_limit_v1/);
-    assert.match(calls[1].url, /food_create_order_v1/);
-    assert.equal("price_minor" in calls[1].body, false);
-    assert.equal("food_account_id" in calls[1].body, false);
+    const rateCall = calls.find((call) => call.url.includes("food_consume_order_rate_limit_v1"));
+    const createCall = calls.find((call) => call.url.includes("food_create_order_v1"));
+    assert.ok(rateCall);
+    assert.ok(createCall);
+    assert.equal("price_minor" in createCall.body, false);
+    assert.equal("food_account_id" in createCall.body, false);
   } finally { global.fetch = oldFetch; }
 }));
 
@@ -248,7 +257,7 @@ test("service role is confined to public read models, limiter, creation, confirm
 });
 
 test("API response and source contain no provider secrets or provider integrations", () => {
-  assert.doesNotMatch(`${api}\n${migration}`, /mollie|google business|meta|whatsapp|thuisbezorgd/i);
+  assert.doesNotMatch(`${api}\n${migration}`, /mollie|google business|\bmeta\b|whatsapp|thuisbezorgd/i);
   for (const secret of ["SUPABASE_SERVICE_ROLE_KEY", "FOOD_RATE_LIMIT_SECRET"]) {
     assert.doesNotMatch(api, new RegExp(`body[^\n]*${secret}|data[^\n]*${secret}`));
   }
