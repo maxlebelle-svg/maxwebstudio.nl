@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "release": "Partner existing-user onboarding activation product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260728134000_partner_existing_user_onboarding_activation.sql"
+  ],
+  "authority": [
+    "functions/admin-invite-user.js",
+    "tests/staff-onboarding-invite.test.js"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}
