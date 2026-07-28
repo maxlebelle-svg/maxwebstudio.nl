@@ -13,13 +13,20 @@ const portArgument = process.argv.find((argument) => argument.startsWith("--port
 const port = Number(portArgument?.split("=")[1] || 4173);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("Invalid local demo port.");
 
-const menu = structuredClone(storefrontFixture.menu);
+let menu = structuredClone(storefrontFixture.menu);
 const attempts = new Map();
 const orders = new Map();
 const confirmations = new Map();
 const tokenProfiles = new Map(dashboardFixture.fixture_accounts.map((account) => [account.token, account]));
 const mime = new Map([[".html", "text/html; charset=utf-8"], [".css", "text/css; charset=utf-8"], [".js", "text/javascript; charset=utf-8"], [".jpg", "image/jpeg"], [".jpeg", "image/jpeg"], [".png", "image/png"], [".svg", "image/svg+xml"], [".json", "application/json; charset=utf-8"]]);
 const statusGraph = new Map([["pending", "accepted"], ["accepted", "preparing"], ["preparing", "ready"], ["ready", "completed"]]);
+
+function resetDemo() {
+  menu = structuredClone(storefrontFixture.menu);
+  attempts.clear();
+  orders.clear();
+  confirmations.clear();
+}
 
 function send(response, status, body, requestId = randomUUID()) {
   response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Request-Id": requestId });
@@ -107,7 +114,15 @@ async function managementApi(request, response, url) {
   send(response, 404, safeError("NOT_FOUND", "Niet gevonden.")); return true;
 }
 
-const localBootstrap = `import "/admin/food/dashboard.js";const role=new URLSearchParams(location.search).get("demo_role");const token=role==="customer"?"demo-customer-token":role==="viewer"?"demo-viewer-token":role==="kitchen"?"demo-kitchen-token":"demo-manager-token";const app=window.MaxFoodDashboard.createDashboardApp({sessionProvider:async()=>token,logout:async()=>window.location.assign("/admin/food")});app.start();window.addEventListener("pagehide",()=>app.stop(),{once:true});`;
+async function demoControl(request, response, url) {
+  if (url.pathname !== "/__demo/reset") return false;
+  if (request.method !== "POST") { send(response, 405, safeError("METHOD_NOT_ALLOWED", "Alleen POST is toegestaan.")); return true; }
+  resetDemo();
+  send(response, 200, { reset: true });
+  return true;
+}
+
+const localBootstrap = `import "/admin/food/dashboard.js";const role=new URLSearchParams(location.search).get("demo_role");const token=role==="customer"?"demo-customer-token":role==="viewer"?"demo-viewer-token":role==="kitchen"?"demo-kitchen-token":"demo-manager-token";const app=window.MaxFoodDashboard.createDashboardApp({sessionProvider:async()=>token,logout:async()=>window.location.assign("/admin/food")});app.start();const reset=document.createElement("button");reset.type="button";reset.className="food-signout";reset.textContent="Demo herstellen";reset.addEventListener("click",async()=>{reset.disabled=true;reset.textContent="Herstellen…";const response=await fetch("/__demo/reset",{method:"POST"}).catch(()=>null);if(response?.ok)location.assign("/admin/food");else{reset.disabled=false;reset.textContent="Demo herstellen";}});document.querySelector(".food-side-status")?.after(reset);window.addEventListener("pagehide",()=>app.stop(),{once:true});`;
 async function staticRoute(response, url) {
   if (url.pathname === "/admin/food/dashboard-bootstrap.js") { response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); response.end(localBootstrap); return; }
   let relative = url.pathname;
@@ -120,7 +135,7 @@ async function staticRoute(response, url) {
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url || "/", `http://${request.headers.host || `127.0.0.1:${port}`}`);
-  try { if (await publicApi(request, response, url)) return; if (await managementApi(request, response, url)) return; await staticRoute(response, url); }
+  try { if (await demoControl(request, response, url)) return; if (await publicApi(request, response, url)) return; if (await managementApi(request, response, url)) return; await staticRoute(response, url); }
   catch { send(response, 500, safeError("INTERNAL_ERROR", "De lokale demo kon de aanvraag niet verwerken.")); }
 });
 server.listen(port, "127.0.0.1", () => {

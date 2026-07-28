@@ -23,6 +23,8 @@ Storefront: http://127.0.0.1:4173/food/silverado-roti-shop-emmeloord
 
 De demo-server gebruikt `tests/fixtures/food-v1-phase-3-dashboard.json` en bewaart menu en orders uitsluitend in het geheugen. Stoppen en opnieuw starten herstelt de uitgangssituatie. De fixtures bevatten herkenbare lokale testtokens, geen echte sessies of secrets. De normale dashboardbootstrap gebruikt uitsluitend de centrale Supabase-sessie; alleen de lokale demo-server serveert een aparte testbootstrap.
 
+In het lokale dashboard staat daarnaast **Demo herstellen**. Die knop wist uitsluitend de in-memory demo-orders en zet prijzen en beschikbaarheid terug naar de vaste fixture. De knop en het resetendpoint worden alleen door de lokale demoserver geleverd en bestaan niet in de productiebootstrap.
+
 ## Complete demonstratie
 
 1. Open de storefront op telefoonformaat en plaats een afhaalbestelling met twee gerechten.

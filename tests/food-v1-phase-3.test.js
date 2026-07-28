@@ -207,3 +207,19 @@ test("complete local Phase 3 flow links storefront order, dashboard statuses and
     const isolated = await request(base, `/api/food/v1/accounts/${pilot.account_ref}/orders/${orderId}`, auth("demo-tenant-b-token")); assert.equal(isolated.response.status, 404);
   } finally { await stopDemo(child); }
 });
+
+test("local presentation reset clears orders and restores the original menu fixture", async () => {
+  const { child, base } = await startDemo();
+  try {
+    await createPilotOrder(base, "phase-3-reset-order-01");
+    const itemRoute = `/api/food/v1/accounts/${pilot.account_ref}/menu/items/${firstItem.item_ref}`;
+    await request(base, itemRoute, auth("demo-manager-token", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ price_minor: firstItem.price_minor + 500 }) }));
+    const reset = await request(base, "/__demo/reset", { method: "POST" });
+    assert.equal(reset.response.status, 200);
+    assert.equal(reset.body.data.reset, true);
+    const orders = await request(base, `/api/food/v1/accounts/${pilot.account_ref}/orders?location_id=${pilot.location_ref}`, auth("demo-manager-token"));
+    assert.equal(orders.body.data.orders.length, 0);
+    const publicMenu = await request(base, `/api/food/v1/storefronts/${pilot.storefront_slug}/menu`);
+    assert.equal(publicMenu.body.data.categories.flatMap((category) => category.items).find((item) => item.item_ref === firstItem.item_ref).price_minor, firstItem.price_minor);
+  } finally { await stopDemo(child); }
+});
