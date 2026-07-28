@@ -39,6 +39,8 @@
     ["won", "Gewonnen"], ["lost", "Verloren"], ["archived", "Gearchiveerd"],
     ["hot", "Warme leads"], ["customers", "Klanten"], ["closed", "Afgesloten"],
   ].map(([value, label]) => Object.freeze({ value, label })));
+  const MANUAL_SMART_VIEWS = Object.freeze(SMART_VIEWS.filter(({ value }) => !["all", "today"].includes(value)));
+  const MANUAL_SMART_VIEW_VALUES = new Set(MANUAL_SMART_VIEWS.map(({ value }) => value));
 
   const FAVORITE_WRITE_ROLES = new Set(["super_admin", "admin", "sales_manager", "sales_partner"]);
 
@@ -77,7 +79,9 @@
     const lostReason = asText(lead.lostReason || lead.lost_reason || metadata.lostReason || metadata.lost_reason);
     const lostNote = asText(lead.lostNote || lead.lost_note || metadata.lostNote || metadata.lost_note);
     const isFavorite = Boolean(lead.isFavorite ?? lead.is_favorite ?? metadata.isFavorite ?? false);
-    return { ...lead, pipelineStage, callDisposition: callStatus, interestLevel, priority, nextActionAt, leadScore: score, leadStatus, archivedAt, wonAt, lostAt, lostReason, lostNote, isFavorite };
+    const requestedManualSmartView = asText(lead.manualSmartView || lead.manual_smart_view || metadata.manualSmartView || metadata.manual_smart_view).toLowerCase();
+    const manualSmartView = MANUAL_SMART_VIEW_VALUES.has(requestedManualSmartView) ? requestedManualSmartView : "";
+    return { ...lead, pipelineStage, callDisposition: callStatus, interestLevel, priority, nextActionAt, leadScore: score, leadStatus, archivedAt, wonAt, lostAt, lostReason, lostNote, isFavorite, manualSmartView };
   }
 
   function isArchivedLead(lead = {}) {
@@ -105,7 +109,9 @@
 
   function matchesSmartView(lead, view = "all", now = new Date()) {
     const item = normalizeLead(lead);
+    if (view === "all") return true;
     if (view === "today") return needsActionToday(item, now);
+    if (item.manualSmartView && MANUAL_SMART_VIEW_VALUES.has(view)) return item.manualSmartView === view;
     if (view === "new") return item.pipelineStage === "new";
     if (view === "interested") return ["hot", "interested"].includes(item.interestLevel) && !isArchivedLead(item) && !isLostLead(item);
     if (view === "callback") return item.callDisposition === "callback";
@@ -184,5 +190,5 @@
     }
   }
 
-  return Object.freeze({ PIPELINE_STAGES, SMART_VIEWS, createFilterState, setFavoritesOnly, normalizeLead, isArchivedLead, isLostLead, isWonLead, needsActionToday, matchesSmartView, matchesFilters, smartViewCounts, kpiCounts, paginate, canToggleFavorite, toggleFavoriteOptimistically, dayKey });
+  return Object.freeze({ PIPELINE_STAGES, SMART_VIEWS, MANUAL_SMART_VIEWS, createFilterState, setFavoritesOnly, normalizeLead, isArchivedLead, isLostLead, isWonLead, needsActionToday, matchesSmartView, matchesFilters, smartViewCounts, kpiCounts, paginate, canToggleFavorite, toggleFavoriteOptimistically, dayKey });
 });

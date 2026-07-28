@@ -301,10 +301,11 @@
 .sales-lead-summary-card > .sales-premium-action-bar { order: 3; }
 .sales-lead-summary-card > .sales-premium-contact-list { order: 4; }
 .sales-lead-summary-card > .sales-lead-owner-assignment { order: 5; }
-.sales-lead-summary-card > .sales-pipeline-visual { order: 6; }
-.sales-lead-summary-card > .sales-next-action-card { order: 7; }
-.sales-lead-summary-card > .sales-premium-activity-card { order: 8; }
-.sales-lead-summary-card > .sales-detail-compact-list { order: 9; }
+.sales-lead-summary-card > .sales-lead-smart-view-assignment { order: 6; }
+.sales-lead-summary-card > .sales-pipeline-visual { order: 7; }
+.sales-lead-summary-card > .sales-next-action-card { order: 8; }
+.sales-lead-summary-card > .sales-premium-activity-card { order: 9; }
+.sales-lead-summary-card > .sales-detail-compact-list { order: 10; }
 
 .sales-google-business-card { border-radius: 10px; }
 .sales-google-business-cover {
@@ -341,6 +342,26 @@
 .sales-premium-contact-list span { display: block; overflow: hidden; color: #e6effc; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
 .sales-lead-owner-assignment { grid-template-columns: minmax(0, 1fr) auto; align-items: end; padding: .7rem; }
 .sales-lead-owner-assignment .admin-form-message { grid-column: 1 / -1; }
+.sales-lead-smart-view-assignment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .65rem;
+  align-items: end;
+  padding: .8rem;
+  border: 1px solid rgba(61, 126, 215, .48);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(20, 66, 127, .72), rgba(6, 27, 55, .9));
+}
+.sales-lead-smart-view-assignment > div,
+.sales-lead-smart-view-assignment .admin-form-message { grid-column: 1 / -1; }
+.sales-lead-smart-view-assignment > div { display: grid; gap: .15rem; }
+.sales-lead-smart-view-assignment > div span,
+.sales-lead-smart-view-assignment label span { color: #87a6ce; font-size: .6rem; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+.sales-lead-smart-view-assignment > div strong { color: #f1f7ff; font-size: .82rem; }
+.sales-lead-smart-view-assignment label { display: grid; gap: .35rem; }
+.sales-lead-smart-view-assignment select { width: 100%; min-height: 42px; border: 1px solid rgba(112, 157, 216, .34); border-radius: 8px; background: #061a35; color: #eef6ff; font: inherit; font-size: .72rem; font-weight: 750; }
+.sales-lead-smart-view-assignment .button { min-height: 42px; }
+.sales-lead-smart-view-assignment[data-current-view]:not([data-current-view="automatic"]) { border-color: rgba(46, 164, 255, .72); box-shadow: inset 3px 0 0 #2f8fff; }
 .sales-next-action-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .18rem .7rem; align-items: center; padding: .8rem; border: 1px solid rgba(61, 103, 158, .5); border-radius: 10px; background: linear-gradient(135deg, rgba(18, 52, 96, .85), rgba(8, 28, 55, .9)); }
 .sales-next-action-card > span { color: #8097b7; font-size: .6rem; font-weight: 800; text-transform: uppercase; }
 .sales-next-action-card > strong { grid-column: 1; color: #f0f6ff; font-size: .78rem; }
@@ -386,6 +407,7 @@
   .sales-premium-contact-list { grid-template-columns: 1fr; }
   .sales-premium-contact-list > div:last-child { grid-column: auto; }
   .sales-lead-owner-assignment { grid-template-columns: 1fr; }
+  .sales-lead-smart-view-assignment { grid-template-columns: 1fr; }
   .sales-next-action-card { grid-template-columns: 1fr; }
   .sales-next-action-card > .button { grid-column: 1; grid-row: auto; margin-top: .35rem; }
 }
@@ -497,6 +519,7 @@
 
 .sales-workspace-detail-column .sales-premium-contact-list > div,
 .sales-workspace-detail-column .sales-lead-owner-assignment,
+.sales-workspace-detail-column .sales-lead-smart-view-assignment,
 .sales-workspace-detail-column .sales-next-action-card,
 .sales-workspace-detail-column .sales-premium-activity-card,
 .sales-workspace-detail-column .sales-pipeline-visual {
@@ -510,6 +533,10 @@
 
 .sales-workspace-detail-column .sales-lead-owner-assignment {
   grid-column: 1;
+}
+
+.sales-workspace-detail-column .sales-lead-smart-view-assignment {
+  grid-column: 2;
 }
 
 .sales-workspace-detail-column .sales-next-action-card {
@@ -566,6 +593,7 @@
   .sales-premium-action-bar,
   .sales-premium-contact-list,
   .sales-lead-owner-assignment,
+  .sales-lead-smart-view-assignment,
   .sales-next-action-card,
   .sales-pipeline-visual,
   .sales-detail-compact-list

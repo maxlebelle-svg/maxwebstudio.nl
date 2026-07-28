@@ -26,6 +26,7 @@ const callDispositionByOutcome = new Map([
 ]);
 const interestLevels = new Set(["hot", "interested", "unsure", "not_interested"]);
 const leadPriorities = new Set(["high", "normal", "low"]);
+const manualSmartViews = new Set(["new", "interested", "callback", "voicemail", "not_interested", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"]);
 const assignableStaffRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
 const assignableProfileStatuses = new Set(["active", "invited", "pending"]);
 const allowedStatuses = new Set([
@@ -330,11 +331,17 @@ async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   if (payload.action === "assign") {
     return assignLead({ payload, existingLead, supabaseUrl, serviceRoleKey, admin, id });
   }
+  if (payload.action === "set_smart_view") {
+    return setLeadSmartView({ payload, existingLead, supabaseUrl, serviceRoleKey, admin, id });
+  }
   if (["call_started", "contact", "next_action", "complete_next_action", "win", "lose", "demo_requested", "appointment_scheduled"].includes(payload.action)) {
     return mutateSalesPipeline({ payload, existingLead, supabaseUrl, serviceRoleKey, admin, id });
   }
   if (leadAssignmentInput(payload)) {
     return jsonResponse(400, { success: false, error: "Gebruik de expliciete toewijzingsactie om de eigenaar te wijzigen." });
+  }
+  if (payload.metadata && typeof payload.metadata === "object" && (Object.prototype.hasOwnProperty.call(payload.metadata, "manualSmartView") || Object.prototype.hasOwnProperty.call(payload.metadata, "manual_smart_view"))) {
+    return jsonResponse(400, { success: false, error: "Gebruik de expliciete indelingsactie om het slimme vak te wijzigen." });
   }
   const modernRecord = leadPayload(payload, admin, { update: true, existingLead });
   if (modernRecord.metadata) {
@@ -353,6 +360,51 @@ async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   const lead = mapLead(rows[0] || { id, ...modernRecord });
   await insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId: lead.id, admin, eventType: "lead_updated", title: "Lead bijgewerkt", metadata: { status: lead.leadStatus } });
   return jsonResponse(200, { success: true, lead, updated: true });
+}
+
+async function setLeadSmartView({ payload = {}, existingLead = {}, supabaseUrl, serviceRoleKey, admin = {}, id }) {
+  const smartView = cleanText(payload.smartView || payload.smart_view).toLowerCase();
+  if (smartView && !manualSmartViews.has(smartView)) {
+    return jsonResponse(400, { success: false, error: "Kies een geldig slim vak." });
+  }
+  assertCanSetLeadSmartView(existingLead, admin);
+  const previous = cleanText(existingLead.metadata?.manualSmartView || existingLead.metadata?.manual_smart_view).toLowerCase();
+  const now = new Date().toISOString();
+  const metadata = {
+    ...(existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {}),
+    manualSmartView: smartView,
+    manualSmartViewUpdatedAt: now,
+    manualSmartViewUpdatedBy: cleanText(admin.id || admin.profileId || admin.email),
+    manualSmartViewUpdatedByEmail: cleanText(admin.email).toLowerCase(),
+  };
+  const rows = await updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: { metadata, updated_at: now } });
+  const lead = mapLead(rows[0] || { ...existingLead, id, metadata, updated_at: now });
+  await insertLeadTimelineEvent({
+    supabaseUrl,
+    serviceRoleKey,
+    leadId: id,
+    admin,
+    eventType: "lead_smart_view_changed",
+    title: smartView ? "Lead handmatig ingedeeld" : "Handmatige leadindeling verwijderd",
+    metadata: { previousSmartView: previous, smartView: smartView || "automatic" },
+  });
+  return jsonResponse(200, { success: true, lead, updated: true, smartView, automatic: !smartView });
+}
+
+function assertCanSetLeadSmartView(existingLead = {}, admin = {}) {
+  const role = normalizeRole(admin.role);
+  if (role === "super_admin") return true;
+  const lead = mapLead(existingLead);
+  const adminTokens = [admin.id, admin.profileId, admin.email]
+    .map((value) => cleanText(value).toLowerCase())
+    .filter(Boolean);
+  const ownerTokens = leadOwnerTokens(lead);
+  if (!ownerTokens.length || !ownerTokens.some((token) => adminTokens.includes(token))) {
+    const error = new Error("Je mag alleen je eigen toegewezen leads handmatig indelen.");
+    error.status = 403;
+    throw error;
+  }
+  return true;
 }
 
 async function bulkUpdateLeads({ payload = {}, supabaseUrl, serviceRoleKey, admin }) {
@@ -1813,6 +1865,7 @@ function mapLead(row = {}) {
     interestLevel: cleanText(row.interest_level || meta.interestLevel || meta.interest_level),
     priority: cleanText(row.priority || meta.priority),
     isFavorite: Boolean(row.is_favorite ?? meta.isFavorite ?? false),
+    manualSmartView: cleanText(meta.manualSmartView || meta.manual_smart_view).toLowerCase(),
     archivedAt: cleanText(row.archived_at || meta.archivedAt || meta.archived_at),
     source: cleanText(row.source || meta.source || "supabase-production"),
     notes: cleanText(row.notes || row.message),
@@ -2183,7 +2236,7 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-exports._test = { acquisitionChannels, callOutcomes, leadPayload, mapLead, operationalLeadGroup, readLeadRows, validateLeadAssignee };
+exports._test = { acquisitionChannels, callOutcomes, manualSmartViews, leadPayload, mapLead, operationalLeadGroup, readLeadRows, validateLeadAssignee, assertCanSetLeadSmartView };
 module.exports.__test = {
   findAssignableEmployee,
   sameLeadAssignment,

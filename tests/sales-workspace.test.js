@@ -104,6 +104,23 @@ test("slimme weergaven zijn overlappend en hebben live aantallen", () => {
   assert.equal(counts.voicemail, 1);
 });
 
+test("handmatige indeling zet een lead in precies het gekozen slimme vak", () => {
+  const lead = { pipelineStage: "new", interestLevel: "unsure", metadata: { manualSmartView: "demos" } };
+  assert.equal(model.normalizeLead(lead).manualSmartView, "demos");
+  assert.equal(model.matchesSmartView(lead, "all", now), true);
+  assert.equal(model.matchesSmartView(lead, "demos", now), true);
+  assert.equal(model.matchesSmartView(lead, "new", now), false);
+  assert.equal(model.matchesSmartView(lead, "interested", now), false);
+  assert.equal(model.matchesSmartView({ ...lead, metadata: { manualSmartView: "onbekend" } }, "new", now), true);
+});
+
+test("handmatig indeelbare vakken sluiten algemene en datumweergaven uit", () => {
+  const values = model.MANUAL_SMART_VIEWS.map(({ value }) => value);
+  assert(!values.includes("all"));
+  assert(!values.includes("today"));
+  ["new", "interested", "callback", "voicemail", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"].forEach((value) => assert(values.includes(value)));
+});
+
 test("combineerbare filters zoeken ook op plaats en branche", () => {
   assert.equal(model.matchesFilters(fixtures[0], { query: "breda", owner: "lisanne@example.test", priority: "high", industry: "zonne" }, now), true);
   assert.equal(model.matchesFilters(fixtures[0], { query: "breda", callDisposition: "voicemail" }, now), false);
@@ -185,6 +202,26 @@ test("favoriet schrijft alleen de genormaliseerde allowlistkolom en blijft na re
     () => leadsApi._test.leadPayload({ isFavorite: "true" }, { role: "admin" }, { update: true, existingLead: { metadata: {} } }),
     /Favorietstatus moet true of false zijn/,
   );
+});
+
+test("handmatige leadindeling heeft een eigen beveiligde API-actie", () => {
+  assert.match(apiSource, /payload\.action === "set_smart_view"/);
+  assert.match(apiSource, /assertCanSetLeadSmartView\(existingLead, admin\)/);
+  assert.match(apiSource, /Je mag alleen je eigen toegewezen leads handmatig indelen/);
+  assert.match(apiSource, /lead_smart_view_changed/);
+  assert.match(salesHtml, /id="sales-lead-smart-view-select"/);
+  assert.match(salesHtml, /id="sales-lead-smart-view-save"/);
+  assert.match(salesHtml, /data-leadfinder-action="classify"/);
+  assert.match(salesHtml, /action: "set_smart_view"/);
+});
+
+test("Super Admin mag iedere lead indelen en medewerkers alleen hun eigen toegewezen lead", () => {
+  const lead = { assigned_user_id: "22222222-2222-4222-8222-222222222222", assigned_user_email: "sales@example.test", metadata: {} };
+  assert.equal(leadsApi._test.assertCanSetLeadSmartView(lead, { role: "super_admin", id: "11111111-1111-4111-8111-111111111111" }), true);
+  assert.equal(leadsApi._test.assertCanSetLeadSmartView(lead, { role: "sales_partner", id: "22222222-2222-4222-8222-222222222222", email: "sales@example.test" }), true);
+  assert.throws(() => leadsApi._test.assertCanSetLeadSmartView(lead, { role: "sales_partner", id: "33333333-3333-4333-8333-333333333333", email: "ander@example.test" }), /alleen je eigen toegewezen leads/);
+  assert.throws(() => leadsApi._test.assertCanSetLeadSmartView(lead, { role: "admin", id: "33333333-3333-4333-8333-333333333333", email: "admin@example.test" }), /alleen je eigen toegewezen leads/);
+  assert.equal(leadsApi._test.mapLead({ metadata: { manualSmartView: "callback" } }).manualSmartView, "callback");
 });
 
 test("lijst, detail en favorietenfilter delen dezelfde status en veilige API-route", () => {

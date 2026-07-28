@@ -14,12 +14,12 @@
     <link rel="stylesheet" href="styles.css?v=20260707-sales-actions-demo" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css?v=20260709-briefing-system" />
     <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
-    <link rel="stylesheet" href="admin/styles/sales-workspace.css?v=20260715-sales-workspace" />
+    <link rel="stylesheet" href="admin/styles/sales-workspace.css?v=20260728-manual-smart-view" />
     <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
-    <script src="src/sales-workspace-model.js?v=20260715-favorites-filter"></script>
+    <script src="src/sales-workspace-model.js?v=20260728-manual-smart-view"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
@@ -411,6 +411,18 @@
                   </label>
                   <button class="button primary" id="sales-lead-owner-save" type="button">Medewerker opslaan</button>
                   <p class="admin-form-message" id="sales-lead-owner-message" role="status"></p>
+                </div>
+                <div class="sales-lead-smart-view-assignment" id="sales-lead-smart-view-assignment">
+                  <div>
+                    <span>Handmatige indeling</span>
+                    <strong>Zet deze lead in het juiste slimme vak</strong>
+                  </div>
+                  <label for="sales-lead-smart-view-select">
+                    <span>Slimme weergave</span>
+                    <select id="sales-lead-smart-view-select" aria-label="Lead handmatig indelen"></select>
+                  </label>
+                  <button class="button primary" id="sales-lead-smart-view-save" type="button">Indeling opslaan</button>
+                  <p class="admin-form-message" id="sales-lead-smart-view-message" role="status" aria-live="polite"></p>
                 </div>
                 <article class="sales-next-action-card" id="sales-next-action" aria-live="polite">
                   <span>Volgende stap</span><strong>Selecteer een lead</strong>
@@ -19520,6 +19532,10 @@
         ownerAssignmentSelect: document.getElementById("sales-lead-owner-select"),
         ownerAssignmentSave: document.getElementById("sales-lead-owner-save"),
         ownerAssignmentMessage: document.getElementById("sales-lead-owner-message"),
+        smartViewAssignment: document.getElementById("sales-lead-smart-view-assignment"),
+        smartViewSelect: document.getElementById("sales-lead-smart-view-select"),
+        smartViewSave: document.getElementById("sales-lead-smart-view-save"),
+        smartViewMessage: document.getElementById("sales-lead-smart-view-message"),
         contactList: document.getElementById("sales-lead-contact-list"),
         callScriptPanel: document.getElementById("leadfinder-call-script-panel"),
         makeDemoNow: document.getElementById("leadfinder-make-demo-now"),
@@ -20617,6 +20633,15 @@
         return String(role || "").toLowerCase() === "super_admin";
       }
 
+      function canManageLeadSmartView(lead = {}, context = getLeadfinderUserContext()) {
+        if (!lead?.id || !isProductionLead(lead)) return false;
+        if (String(context.role || "").toLowerCase() === "super_admin") return true;
+        const userTokens = [context.userId, context.profileId, context.email]
+          .map((value) => String(value || "").trim().toLowerCase())
+          .filter(Boolean);
+        return getLeadOwnerTokens(lead).some((token) => userTokens.includes(token));
+      }
+
       function getLeadOwnerTokens(lead = {}) {
         const meta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
         const assignmentTokens = [
@@ -20881,6 +20906,62 @@
         leadfinderElements.ownerAssignmentSelect.value = lead?.id ? employeeOptionFromValue(getLeadOwnerValue(lead))?.value || "" : "";
         if (leadfinderElements.ownerAssignmentSave) leadfinderElements.ownerAssignmentSave.disabled = !lead?.id;
         setLeadOwnerAssignmentMessage(lead?.id ? "" : "Selecteer eerst een lead.", "");
+      }
+
+      function setLeadSmartViewMessage(message = "", type = "") {
+        if (!leadfinderElements.smartViewMessage) return;
+        leadfinderElements.smartViewMessage.textContent = message;
+        leadfinderElements.smartViewMessage.className = `admin-form-message ${type}`;
+      }
+
+      function renderLeadSmartViewAssignment(lead) {
+        const model = window.MaxSalesWorkspaceModel;
+        const select = leadfinderElements.smartViewSelect;
+        const button = leadfinderElements.smartViewSave;
+        if (!leadfinderElements.smartViewAssignment || !select || !button || !model) return;
+        const current = model.normalizeLead(lead || {}).manualSmartView || "";
+        select.innerHTML = [
+          '<option value="">Automatisch bepalen</option>',
+          ...(model.MANUAL_SMART_VIEWS || []).map((view) => `<option value="${escapeHtml(view.value)}">${escapeHtml(view.label)}</option>`),
+        ].join("");
+        select.value = current;
+        const writable = canManageLeadSmartView(lead);
+        select.disabled = !writable;
+        button.disabled = !writable;
+        leadfinderElements.smartViewAssignment.dataset.currentView = current || "automatic";
+        const context = getLeadfinderUserContext();
+        if (!lead?.id) setLeadSmartViewMessage("Selecteer eerst een lead.", "");
+        else if (!isProductionLead(lead)) setLeadSmartViewMessage("Sla deze lead eerst centraal op voordat je hem indeelt.", "warning");
+        else if (!writable) setLeadSmartViewMessage("Alleen de Super Admin of de toegewezen medewerker kan deze indeling wijzigen.", "warning");
+        else if (current) setLeadSmartViewMessage(`Handmatig ingedeeld bij ${model.MANUAL_SMART_VIEWS.find((view) => view.value === current)?.label || current}.`, "success");
+        else setLeadSmartViewMessage(context.role === "super_admin" ? "Je kunt deze lead in ieder slim vak plaatsen." : "Je kunt je eigen toegewezen lead handmatig indelen.", "");
+      }
+
+      async function saveSelectedLeadSmartView() {
+        const lead = selectedLeadFinderLead();
+        const button = leadfinderElements.smartViewSave;
+        if (!lead || !canManageLeadSmartView(lead) || !button) {
+          setLeadSmartViewMessage("Je hebt geen rechten om deze lead in te delen.", "error");
+          return;
+        }
+        const smartView = leadfinderElements.smartViewSelect?.value || "";
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        button.textContent = "Opslaan…";
+        try {
+          const result = await leadApiRequest("PATCH", { id: lead.id, action: "set_smart_view", smartView }, { id: lead.id });
+          selectedLeadFinderId = result.lead?.id || lead.id;
+          await refreshLeads({ keepSelection: true });
+          const label = smartView ? window.MaxSalesWorkspaceModel?.MANUAL_SMART_VIEWS.find((view) => view.value === smartView)?.label || smartView : "Automatisch bepalen";
+          setLeadfinderMessage(`Leadindeling opgeslagen: ${label}.`, "success");
+          setLeadSmartViewMessage(smartView ? `Deze lead staat nu bij ${label}.` : "De slimme indeling wordt weer automatisch bepaald.", "success");
+        } catch (error) {
+          setLeadSmartViewMessage(error.message || "De leadindeling kon niet worden opgeslagen.", "error");
+        } finally {
+          button.removeAttribute("aria-busy");
+          button.textContent = "Indeling opslaan";
+          button.disabled = !canManageLeadSmartView(selectedLeadFinderLead());
+        }
       }
 
       async function saveLeadOwnerAssignmentForLead(lead, selectedValue, messageSetter = setLeadOwnerAssignmentMessage) {
@@ -23778,6 +23859,7 @@
 
                 <div class="lead-card-actions">
                   <button class="lead-icon-button lead-view-button" type="button" data-leadfinder-action="view" aria-label="Lead bekijken"><span aria-hidden="true">◉</span><strong>Bekijken</strong></button>
+                  <button class="lead-icon-button" type="button" data-leadfinder-action="classify" aria-label="Lead handmatig indelen"${canManageLeadSmartView(lead) ? "" : " disabled"}><span aria-hidden="true">⇄</span><strong>Indelen</strong></button>
                   <button class="lead-icon-button lead-preview-button" type="button" data-leadfinder-action="preview" aria-label="Maak preview voor lead"><span aria-hidden="true">▣</span><strong>Maak preview</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="task" aria-label="Opvolgtaak maken"><span aria-hidden="true">□</span><strong>Opvolgtaak</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="note" aria-label="Notitie toevoegen"><span aria-hidden="true">✎</span><strong>Notitie</strong></button>
@@ -23857,6 +23939,7 @@
         renderLeadBusinessPreview(lead);
         renderSalesPipelineVisual(lead);
         renderLeadOwnerAssignment(lead);
+        renderLeadSmartViewAssignment(lead);
         if (leadfinderElements.contactList) {
           renderLeadDetailRows(leadfinderElements.contactList, hasLead ? [
             ["Telefoon", lead.phone || "-"],
@@ -24595,6 +24678,18 @@
           button.disabled = false;
           button.removeAttribute("aria-busy");
           return;
+        } else if (button.dataset.leadfinderAction === "classify") {
+          if (!canManageLeadSmartView(lead)) {
+            setLeadfinderMessage("Alleen de Super Admin of de toegewezen medewerker kan deze lead indelen.", "error");
+            return;
+          }
+          openLeadfinderDetail(lead, { tab: "overview" });
+          window.requestAnimationFrame(() => {
+            leadfinderElements.smartViewSelect?.focus({ preventScroll: true });
+            leadfinderElements.smartViewAssignment?.scrollIntoView({ behavior: "smooth", block: "center" });
+          });
+          setLeadfinderMessage("Kies het juiste slimme vak en sla de indeling op.", "success");
+          return;
         } else if (button.dataset.leadfinderAction === "view") {
           setLeadfinderMessage("Lead geselecteerd", "success");
           openLeadfinderDetail(lead, { tab: "overview" });
@@ -24950,6 +25045,7 @@
           const lead = selectedLeadFinderLead();
           if (lead) toggleLeadFavorite(lead);
         });
+        leadfinderElements.smartViewSave?.addEventListener("click", saveSelectedLeadSmartView);
         leadfinderElements.list.addEventListener("keydown", (event) => {
           const row = event.target.closest("[data-leadfinder-id]");
           if (row && ["Enter", " "].includes(event.key)) {
