@@ -95,7 +95,10 @@ function verification(method, phone, name) {
   if (method === "PhoneNumber") {
     const number = normalizePhone(phone);
     if (!number) throw coded("SIGNER_PHONE_REQUIRED", 409, "Vul eerst een mobiel telefoonnummer met landcode in, bijvoorbeeld +31612345678.");
-    return { Type:"PhoneNumber", Number:number, SecureDownload:true };
+    // SecureDownload belongs to Signhost authentication methods, not to the
+    // PhoneNumber signature verification object. Sending it here makes the
+    // transaction creation request fail with HTTP 400.
+    return { Type:"PhoneNumber", Number:number };
   }
   if (method === "Consent") return { Type:"Consent" };
   return { Type:"Scribble", RequireHandsignature:true, ScribbleName:name, ScribbleNameFixed:true };

@@ -37,7 +37,7 @@ test("Signhost postbacks require both authorization and the documented checksum"
 test("SMS verification normalizes Dutch mobile numbers and rejects unsafe input", () => {
   assert.equal(signhost.normalizePhone("06 12 34 56 78"), "+31612345678");
   assert.equal(signhost.normalizePhone("+31 (0)6 1234 5678"), "+31612345678");
-  assert.deepEqual(signhost.verification("PhoneNumber", "+31612345678", "Test Partner"), { Type:"PhoneNumber", Number:"+31612345678", SecureDownload:true });
+  assert.deepEqual(signhost.verification("PhoneNumber", "+31612345678", "Test Partner"), { Type:"PhoneNumber", Number:"+31612345678" });
   assert.throws(() => signhost.verification("PhoneNumber", "06123", "Test Partner"), /mobiel telefoonnummer/i);
 });
 
