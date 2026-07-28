@@ -75,6 +75,10 @@
     {
       "manifest": "docs/release-readiness/food-v1-online-demo-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/food-v1-online-demo-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-v1-demo-cloud-service-role-acl-repair/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-v1-demo-cloud-service-role-acl-repair/FILESET.json"
     }
   ]
 }

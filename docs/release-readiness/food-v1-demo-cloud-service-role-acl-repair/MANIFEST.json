@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "food-v1-demo-cloud-service-role-acl-repair-2026-07-28",
+  "release": "Max Webstudio Food v1 Demo Cloud service-role ACL repair",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "targetProjectName": "max-webstudio-food-demo",
+  "targetProjectRef": "obprooubcbnfgouytvrw",
+  "targetOrganization": "Max Webstudio Demo",
+  "targetEnvironment": "food_demo",
+  "productionAllowed": false,
+  "stagingAllowed": false,
+  "sourceBranch": "codex/food-v1-silverado-pilot",
+  "sourceCommit": "e03c13288d03202839374ce1a349086a440aa75d",
+  "migrationCommit": "f7fc25f3",
+  "oneTimeExecution": true,
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260728211000_food_v1_service_role_order_acl_hardening.sql"
+  ],
+  "prerequisites": {
+    "migrationHistoryMustExactlyContain": [
+      "00000000000000",
+      "20260726200000",
+      "20260728160000",
+      "20260728161000",
+      "20260728162000",
+      "20260728163000",
+      "20260728210000"
+    ],
+    "foodTenants": 0,
+    "foodOrders": 0,
+    "authUsers": 0
+  },
+  "forbiddenTargets": {
+    "productionProjectRef": "yxxahurphdbblkuxoeje",
+    "stagingProjectRef": "xlxpuuycigeqhgxqtzni"
+  },
+  "permissions": {
+    "seedAllowed": false,
+    "authUserCreationAllowed": false,
+    "netlifyChangesAllowed": false,
+    "providerChangesAllowed": false,
+    "ordinarySupabaseDbPushAllowed": false,
+    "downMigrationAllowed": false
+  },
+  "authority": [
+    "docs/FOOD_V1_ARCHITECTURE.md",
+    "docs/FOOD_V1_ONLINE_DEMO_HARDENING.md",
+    "docs/release-readiness/food-v1-demo-cloud-service-role-acl-repair/EXECUTION_PLAN.md"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "food-v1-demo-cloud-service-role-acl-repair-2026-07-28",
+  "targetProjectRef": "obprooubcbnfgouytvrw",
+  "targetEnvironment": "food_demo",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260728211000_food_v1_service_role_order_acl_hardening.sql",
+      "bytes": 8900,
+      "sha256": "a0259edf1bc2a05442a2a17be31d14c6943565c1167a8a048cd0a779b557f0c4"
+    }
+  ]
+}
