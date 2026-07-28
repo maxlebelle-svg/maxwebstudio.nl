@@ -201,6 +201,10 @@ test("durable order rate limiting is HMAC-keyed, atomic, location-scoped and ser
   assert.match(migration, /request_count >= input_max_requests/);
   assert.match(migration, /force row level security/);
   assert.match(fixture, /rate limiter was not location scoped/);
+  assert.match(fixture, /rate limiter unexpectedly allowed a missing location/);
+  assert.match(fixture, /rate limiter did not isolate a different client hash/);
+  assert.match(fixture, /rate limiter did not isolate a different route\/client hash/);
+  assert.match(fixture, /rate limiter did not reset an expired window/);
 });
 
 test("idempotency replay and conflicting reuse remain database-enforced by Phase 1A", () => {

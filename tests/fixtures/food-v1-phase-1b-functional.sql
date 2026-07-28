@@ -43,6 +43,8 @@ $assert_confirmation$;
 do $assert_rate_limit$
 declare
   attempt integer;
+  allowed boolean;
+  current_count integer;
 begin
   for attempt in 1..8 loop
     if not public.food_consume_order_rate_limit_v1(
@@ -60,6 +62,36 @@ begin
     'fixture-isolation-restaurant-b', repeat('a',64), 8, 60
   ) then
     raise exception 'rate limiter was not location scoped';
+  end if;
+  if public.food_consume_order_rate_limit_v1(
+    'fixture-missing-location', repeat('d',64), 8, 60
+  ) then
+    raise exception 'rate limiter unexpectedly allowed a missing location';
+  end if;
+  if not public.food_consume_order_rate_limit_v1(
+    'fixture-silverado-emmeloord', repeat('b',64), 8, 60
+  ) then
+    raise exception 'rate limiter did not isolate a different client hash';
+  end if;
+  if not public.food_consume_order_rate_limit_v1(
+    'fixture-silverado-emmeloord', repeat('c',64), 8, 60
+  ) then
+    raise exception 'rate limiter did not isolate a different route/client hash';
+  end if;
+  update public.food_public_order_rate_limits
+  set window_started_at = pg_catalog.clock_timestamp() - interval '61 seconds',
+      request_count = 8
+  where location_id = 'f5000000-0000-4000-8000-000000000001'
+    and rate_key_hash = repeat('b',64);
+  allowed := public.food_consume_order_rate_limit_v1(
+    'fixture-silverado-emmeloord', repeat('b',64), 8, 60
+  );
+  select request_count into current_count
+  from public.food_public_order_rate_limits
+  where location_id = 'f5000000-0000-4000-8000-000000000001'
+    and rate_key_hash = repeat('b',64);
+  if not allowed or current_count <> 1 then
+    raise exception 'rate limiter did not reset an expired window';
   end if;
   begin
     perform public.food_consume_order_rate_limit_v1(
