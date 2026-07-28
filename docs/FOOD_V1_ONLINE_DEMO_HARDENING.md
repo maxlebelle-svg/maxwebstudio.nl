@@ -1,6 +1,6 @@
 # Food v1 Online Demo Hardening
 
-Status: lokaal bewezen; niet geprovisioned, niet gedeployed en niet voor remote uitvoering geautoriseerd.
+Status: Demo Cloud is afzonderlijk geprovisioned; nieuwe code en configuratiewijzigingen blijven altijd onder een aparte push- en deploypoort vallen.
 
 ## Doel en grens
 
@@ -36,6 +36,29 @@ De volgende routes krijgen `X-Robots-Tag: noindex, nofollow, noarchive, nosnippe
 - `/api/food/v1/*` en de equivalente Netlify Function-route.
 
 De twee HTML-entrypoints bevatten dezelfde robots-meta. Niet-Food-routes krijgen deze Food-regel niet. Robotsbeveiliging beperkt indexering maar vervangt nooit authenticatie of tenantautorisatie.
+
+## Routegebonden Food-login
+
+De correcte login-URL voor het restaurantdashboard is:
+
+```text
+/login.html?next=%2Fadmin%2Ffood
+```
+
+De login maakt een strikt onderscheid tussen platformbeheer en restaurantbeheer:
+
+- een bestaande platformrol doorloopt ongewijzigd de algemene adminpoort;
+- een actief Food-lid krijgt uitsluitend toegang tot de expliciete routes `/admin/food`, `/admin/food/orders`, `/admin/food/orders/<order-uuid>`, `/admin/food/menu` en `/admin/food/integrations`;
+- de Food-context wordt na authenticatie en na iedere page refresh opnieuw via `/api/food/v1/session/context` bepaald;
+- account, locatie, rol en capabilities komen uitsluitend uit de servercontext; queryparameters of client-side roleclaims kiezen geen tenant;
+- externe, protocol-relative en niet-geallowliste redirects worden geweigerd;
+- een Food-lidmaatschap maakt nooit een algemene Max Webstudio-adminsessie aan.
+
+Restaurantrollen blijven begrensd door de servermatrix. `manager` beheert orders en menu, `staff` en `kitchen_staff` volgen uitsluitend hun toegestane orderflow en `viewer` blijft read-only. Een gewone klant zonder actief Food-lidmaatschap krijgt geen Food-context. Platformadmins behouden hun bestaande algemene adminflow en ontvangen voor Food alleen de server-afgeleide tenantscopes.
+
+De centrale Supabase-sessie wordt na refresh hersteld, maar geldt nooit op zichzelf als autorisatie. Het dashboard hervraagt tijdens polling de Food-context; een verlopen sessie of ingetrokken membership stopt de polling en faalt veilig. Logout wist de centrale en afgeleide sessies en stopt eveneens de polling.
+
+Bekende beperking: deze routepoort verleent geen toegang tot instellingen buiten de huidige Food v1-routes en voegt geen reserveringen, betalingen of providerbeheer toe. Een lokale PASS autoriseert nog geen push of deployment.
 
 ## Online resetroute
 
