@@ -136,6 +136,71 @@ test("lead-owned ZIP is stored on the Demo Journey before customer conversion", 
   }
 });
 
+test("customer-only ZIP creates a durable Factory dossier before storing the preview", async () => {
+  const previousFetch = global.fetch;
+  const envKeys = ["APP_ENV", "SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"];
+  const previousEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+  const customerId = "6161a820-4131-4558-b365-ab2c0039401d";
+  const journeyId = "4fa7dc80-c46d-4b50-b9a2-3a78a62a0d39";
+  const versionId = "b4152eb2-c7e4-4a1f-8dd3-f91b65b6f03d";
+  const adminId = "9856f024-6714-43c9-b2f3-d4289dd4fba0";
+  const calls = [];
+  let storedJourney = null;
+  let storedVersion = null;
+  process.env.APP_ENV = "test";
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_ANON_KEY = "anon-key";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-key";
+  global.fetch = async (url, options = {}) => {
+    const href = String(url);
+    const method = options.method || "GET";
+    calls.push({ href, method, body: options.body });
+    const response = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) });
+    if (href.endsWith("/auth/v1/user")) return response({ id: adminId, email: "admin@example.test" });
+    if (href.includes("/rest/v1/profiles?")) return response([{ id: adminId, role: "admin", status: "active" }]);
+    if (href.includes("/rest/v1/demo_journeys?") && method === "GET") return response([]);
+    if (href.endsWith("/rest/v1/demo_journeys") && method === "POST") {
+      storedJourney = { ...JSON.parse(options.body), id: journeyId };
+      return response([storedJourney]);
+    }
+    if (href.includes("/rest/v1/customers?") && method === "GET") return response([{ id: customerId, company: "Quantumbouw", name: "Michel de Jong", email: "info@quantumbouw.nl", website: "https://quantumbouw.nl" }]);
+    if (href.includes("/rest/v1/website_preview_versions?") && method === "GET") return response([]);
+    if (href.endsWith("/rest/v1/website_preview_versions") && method === "POST") {
+      storedVersion = { ...JSON.parse(options.body), id: versionId };
+      return response([storedVersion]);
+    }
+    if (href.includes("/rest/v1/website_preview_versions?") && method === "PATCH") {
+      storedVersion = { ...storedVersion, ...JSON.parse(options.body) };
+      return response([storedVersion]);
+    }
+    if (href.includes("/rest/v1/customer_timeline_events")) return response([]);
+    throw new Error(`Unexpected request: ${method} ${href}`);
+  };
+
+  try {
+    const response = await manualPreviewRoute.handler({
+      httpMethod: "POST",
+      headers: { authorization: "Bearer admin-session" },
+      body: JSON.stringify({
+        customerId,
+        fileName: "quantumbouw.zip",
+        zipBase64: zip([["index.html", "<h1>Quantumbouw</h1>"]]).toString("base64"),
+      }),
+    });
+    const body = JSON.parse(response.body);
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.source, "manual_zip");
+    assert.equal(storedJourney.customer_id, customerId);
+    assert.equal(storedJourney.demo_status, "verkocht");
+    assert.equal(storedVersion.customer_id, customerId);
+    assert.equal(storedVersion.demo_journey_id, journeyId);
+    assert(calls.some((call) => call.href.endsWith("/rest/v1/demo_journeys") && call.method === "POST"));
+  } finally {
+    global.fetch = previousFetch;
+    for (const [key, value] of Object.entries(previousEnv)) value === undefined ? delete process.env[key] : process.env[key] = value;
+  }
+});
+
 test("the actual Fuellinq regression ZIP is accepted and has a root index", () => {
   const buffer = fs.readFileSync(path.join(__dirname, "../Website factory maxwebstudio.nl/fuellinq.com-website-factory.zip"));
   const result = _private.extractZip(buffer);

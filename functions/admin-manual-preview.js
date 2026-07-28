@@ -161,6 +161,30 @@ async function resolveUploadScope(context, { customerId = "", demoJourneyId = ""
     }
   }
 
+  if (!journey?.id && customerId) {
+    journey = await readOne(context, "demo_journeys", `select=*&customer_id=eq.${customerId}&order=updated_at.desc.nullslast&limit=1`);
+    if (!journey?.id) {
+      const customer = await readOne(context, "customers", `select=*&id=eq.${customerId}&limit=1`);
+      if (!customer?.id) throw zipError("customer_not_found", "Deze klant kon niet worden gevonden.", 404);
+      const now = new Date().toISOString();
+      const rows = await insert(context, "demo_journeys", {
+        customer_id: customerId,
+        business_name: text(payload.businessName || payload.business_name || payload.companyName || customer.company || customer.name),
+        contact_name: text(payload.contactName || payload.contact_name || customer.contact_name || customer.name),
+        email: text(payload.email || customer.email).toLowerCase(),
+        phone: text(payload.phone || customer.phone),
+        website_url: text(payload.websiteUrl || payload.website_url || customer.website_url || customer.website),
+        demo_status: "verkocht",
+        preview_package: {},
+        created_by: admin.id || null,
+        updated_by: admin.id || null,
+        created_at: now,
+        updated_at: now,
+      });
+      journey = rows[0] || null;
+    }
+  }
+
   const journeyCustomerId = uuid(journey?.customer_id);
   const journeyLeadId = uuid(journey?.lead_id);
   if (customerId && journeyCustomerId && customerId !== journeyCustomerId) throw zipError("customer_mismatch", "Deze leadwerkruimte hoort bij een andere klant.", 409);
