@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "release": "Max Webstudio Food v1 isolated online-demo bundle",
+  "status": "LOCAL_VALIDATION_ONLY",
+  "targetEnvironment": "food-demo",
+  "productionAllowed": false,
+  "stagingAllowed": false,
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "executionOrder": [
+    "supabase/migrations/00000000000000_authoritative_baseline.sql",
+    "supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql",
+    "supabase/migrations/20260728160000_food_v1_data_foundation.sql",
+    "supabase/migrations/20260728161000_food_v1_tenant_security.sql",
+    "supabase/migrations/20260728162000_food_v1_application_api_support.sql",
+    "supabase/migrations/20260728163000_food_v1_storefront_confirmation.sql",
+    "supabase/migrations/20260728210000_food_v1_online_demo_reset.sql"
+  ],
+  "seedArtifact": "supabase/demo/food-v1-online-demo-seed.sql",
+  "constraints": [
+    "Empty isolated Supabase project only",
+    "Explicit provisioning authorization required",
+    "APP_ENVIRONMENT must equal food_demo",
+    "No production or ordinary staging target"
+  ]
+}

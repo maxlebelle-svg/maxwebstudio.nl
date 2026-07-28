@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260728210000_food_v1_online_demo_reset.sql",
+      "bytes": 13150,
+      "sha256": "19842a24cacf2976d57693c5232c2f87cab49ef264bbf96d36ae49828471915b"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "release": "Max Webstudio Food v1 online-demo reset product migration",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260728210000_food_v1_online_demo_reset.sql"
+  ],
+  "authority": [
+    "docs/FOOD_V1_ARCHITECTURE.md",
+    "docs/FOOD_V1_ONLINE_DEMO_HARDENING.md"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

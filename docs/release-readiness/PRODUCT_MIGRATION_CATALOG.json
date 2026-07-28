@@ -71,6 +71,10 @@
     {
       "manifest": "docs/release-readiness/food-v1-phase-2-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/food-v1-phase-2-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-v1-online-demo-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-v1-online-demo-product-migrations/FILESET.json"
     }
   ]
 }
