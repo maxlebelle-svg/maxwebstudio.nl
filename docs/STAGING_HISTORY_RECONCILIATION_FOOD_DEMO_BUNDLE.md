@@ -1,12 +1,12 @@
 # Staging history reconciliation — Food Demo Bundle
 
 Datum: 29 juli 2026  
-Fase: read-only analyse  
+Fase: repositoryhistory hersteld; normale staging-dry-run nog uit te voeren
 Target: `maxwebstudio-test` / `xlxpuuycigeqhgxqtzni` / `eu-west-1` / `ACTIVE_HEALTHY`  
 Productie: `yxxahurphdbblkuxoeje`, uitgesloten  
 Silverado Food Demo Cloud: `obprooubcbnfgouytvrw`, uitgesloten en ongewijzigd
 
-Eindstatus: `STOPPED_TARGET_LOCKED_MIGRATION_SET_NOT_PROVEN`
+Tussenstatus: `RECONCILED_EXACT_BYTES_PENDING_TARGET_LOCKED_DRY_RUN`
 
 ## Kandidaatset
 
@@ -40,15 +40,15 @@ Beide migraties zijn forward-only schemawijzigingen zonder seed, Auth-aanroep, S
 | `20260714190000` | lead source sales attribution | alleen lokaal; sales-featurelijn |
 | `20260717143000` | retryable website build jobs | alleen lokaal; Website Factory-featurelijn |
 | `20260718110000` | public preview slugs | alleen lokaal; preview-featurelijn |
-| `20260718120000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
+| `20260718120000` | business event foundation | beide; lokale SQL byte-for-byte hersteld uit Git |
 | `20260718190000` | public preview publications | alleen lokaal; preview-featurelijn |
-| `20260718222000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
-| `20260719160000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
-| `20260719170000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
-| `20260719180000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
-| `20260719190000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
-| `20260720160000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
-| `20260720200000` | remote-only | alleen remote; staginghistorie, lokale SQL ontbreekt |
+| `20260718222000` | social event contracts | beide; lokale SQL byte-for-byte hersteld uit Git |
+| `20260719160000` | demo journey workflow | beide; lokale SQL byte-for-byte hersteld uit Git |
+| `20260719170000` | Website Factory core | beide; lokale SQL byte-for-byte hersteld uit Git |
+| `20260719180000` | Website Factory preview promotion | beide; lokale SQL byte-for-byte hersteld uit Git |
+| `20260719190000` | demo invitation delivery | beide; lokale SQL byte-for-byte hersteld uit Git |
+| `20260720160000` | lead event foundation | beide; lokale SQL byte-for-byte hersteld uit `original_verified` Git-blob |
+| `20260720200000` | transactional lead intake RPC | beide; lokale SQL byte-for-byte hersteld uit `original_verified` Git-blob |
 | `20260721010000` | harden role helper search paths | beide |
 | `20260721020000` | restrict policy helper execute ACL | beide |
 | `20260721030000` | restrict internal helper execute ACL | beide |
@@ -96,6 +96,25 @@ Beide migraties zijn forward-only schemawijzigingen zonder seed, Auth-aanroep, S
 | `20260729120000` | Factory Hub projects | kandidaat 1; alleen lokaal; object ontbreekt remote |
 | `20260729170000` | Food Demo Bundles | kandidaat 2; alleen lokaal; objecten ontbreken remote |
 
+## Autoritatief byteherstel
+
+Alle lokale branches, remote-trackingrefs, tags, reflogs, mergegeschiedenis en leesbare onbereikbare commitlijnen zijn onderzocht. De officiële GitHub-refs zijn vooraf ververst. Per timestamp is precies één inhoudelijke blobvariant gevonden. Er zijn geen concurrerende SQL-kandidaten met dezelfde versie aangetroffen.
+
+| Versie en exact bestand | Broncommit | Bronref | Git blob-ID | SHA-256 |
+| --- | --- | --- | --- | --- |
+| `20260718120000_business_event_foundation.sql` | `3824157c051fd5872ea6e85596bf076c41879fc6` | `origin/feature/social-studio-mvp` | `2c80d91b5bb2fa29c913477afff787aee29710bf` | `04ebd6bbf9ef5637ec590861d85c47f6a3d8cd08f5ac54e3bdf6935f54ffc6d8` |
+| `20260718222000_social_event_contracts.sql` | `ae51332ba057b8b51d051ba1494609a92050e51a` | `origin/feature/social-studio-mvp` | `89af525cd9a8439404c6e9754c1762d713f99399` | `d21fa1d94a11c90b9a803f9cf10e431c914fd5cd8c5a5ca05d254c39e9cbc5e9` |
+| `20260719160000_create_demo_journey_workflow.sql` | `f93c5aa1b2f990465c2a0ea2dea0f4185cdd2456` | `origin/codex/rc1-clean-migration-lineage` | `941efab009d3026c3089f6bad316422cd22897fe` | `e7ffcbd86cf666fef7a27ed3cb8013c67f86a1faede12fdb8c02e6fb9b316e5d` |
+| `20260719170000_create_website_factory_core.sql` | `cc39797bed618bfc50e7baf0f1ae15fa36a8490d` | `origin/codex/rc1-clean-migration-lineage` | `f6a7ba24501b06674911c42c1ce9a2b498b85329` | `217366e0b0612f05d150fac962ab2904bf0e90bc8f8c2d9672dca1cc8e21922e` |
+| `20260719180000_optimize_website_factory_preview_promotion.sql` | `54c322f07af39736f1c8f22a752ebc79b02fad45` | `origin/codex/rc1-clean-migration-lineage` | `97e74c905ab5183a09e0b2897d7d8726703869d4` | `e01ada75fef8bd163a21c55bab017c2b857d8dbf200061fb0e7588fb4cc91c7c` |
+| `20260719190000_create_demo_invitation_delivery_foundation.sql` | `5cbc68b54123c0996e512275240f8308d6975e44` | `origin/codex/rc1-clean-migration-lineage` | `ea315de5663d27a314d2931988fcd4e39f2a8477` | `c9915879208e38796331ce9713964eb16c6a089794fb95927b41a1c7ee293568` |
+| `20260720160000_lead_event_foundation.sql` | `07c9eb01cd55a38dfa229c1d220b125dad5bb678` | `codex/foundation-governance-baseline-v1` | `c44ce99ae25a19765c57292714dcdcf83f3d8aad` | `d0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba` |
+| `20260720200000_transactional_lead_intake_rpc.sql` | `07c9eb01cd55a38dfa229c1d220b125dad5bb678` | `codex/foundation-governance-baseline-v1` | `67c5357836962e57d1e1bf61e998fbe461d86ac0` | `40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370` |
+
+De eerste zes blobs komen uit de oorspronkelijke feature-/releasegeschiedenis en hun SHA-256-waarden zijn tevens vastgelegd in `docs/foundation-f0/BASELINE_INCLUSION_MATRIX.json` en `docs/foundation-f0/F0C_MIGRATION_SET_INVENTORY.json` als `verified_unchanged`. Voor de laatste twee legt `docs/foundation-f0/F0G_RECOVERED_BYTE_MANIFEST.json` vast dat de originele bestanden zonder wijziging zijn gekopieerd (`original_verified`, `copiedWithoutModification`) en exact dezelfde eerder gecertificeerde hashes behouden. De afzonderlijke Sprint-1A release-evidence bevestigt dat `20260720200000` vóór toepassing de enige veilige pending migratie was; deze informatie is uitsluitend als verificatie gebruikt, niet om SQL te reconstrueren.
+
+Read-only objectvergelijking sluit aan op de SQL: staging bevat de tabellen voor business events, demo journeys, Website Factory, previewversies, e-maillogs en lead-intake-idempotentie die door deze lijn worden gemaakt of uitgebreid. De Foundation F0-c/F0-g catalogi koppelen dezelfde functies, triggers, policies en kolomtoestand aan dezelfde onveranderde checksums. De actuele providerhistory bevat alle acht versies. De schema-exportpoging bleef read-only maar kon lokaal niet worden voltooid doordat Docker niet actief was; er is geen databasewijziging uitgevoerd.
+
 ## Read-only object- en databasis
 
 De providerinspectie toont onder meer:
@@ -129,6 +148,15 @@ Een toegestane uitvoering moet provider-supported, target-locked op `xlxpuuycige
 8. pas daarna push/deploy overwegen.
 
 Geen history repair, `--include-all`, tijdelijke bestandsverberging of SQL buiten het migratiesysteem is toegestaan.
+
+## Lokale controle-uitkomst
+
+- Git objectidentiteit: **8/8 PASS**; ieder hersteld bestand hashte terug naar exact het hierboven vermelde oorspronkelijke blob-ID.
+- Gerichte Food-/Foundation-/checksum-/negatieve migratiegovernance: **32/32 PASS**.
+- Brede historische Foundation-set: **59/63 PASS**. De vier falende assertions zijn oude F0-d/F0-f-contracten die expliciet vereisen dat deze teruggevonden historische bestanden afwezig blijven. Dat uitgangspunt is door deze geautoriseerde history-reconciliation bewust achterhaald; de historische tests zijn niet aangepast omdat de toegestane reconciliationcommit uitsluitend de acht SQL-bestanden en dit bewijsrapport mag bevatten.
+- `git diff --check`: uit te voeren direct vóór de reconciliationcommit.
+
+De vier historische assertions signaleren geen SQL-byteafwijking: de checksum- en blobcontroles zijn volledig groen. Ze worden transparant als governancevervolgwerk vastgelegd en niet stilzwijgend herschreven binnen deze beperkte commit.
 
 ## Provider dry-run en NO-GO
 
