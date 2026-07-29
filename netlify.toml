@@ -103,6 +103,11 @@
   status = 200
 
 [[redirects]]
+  from = "/internal/factory-gate-readiness"
+  to = "/.netlify/functions/admin-factory-gate-readiness-check"
+  status = 200
+
+[[redirects]]
   from = "/food/:storefrontSlug"
   to = "/food.html?storefront=:storefrontSlug"
   status = 200
