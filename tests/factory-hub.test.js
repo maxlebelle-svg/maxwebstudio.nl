@@ -37,6 +37,9 @@ test("Factory Hub UI is relationship-bound and never promises automatic publicat
   assert.match(html, /publiceert nooit automatisch/);
   assert.match(ui, /relationshipType/);
   assert.match(ui, /factoryProjectId/);
+  assert.match(ui, /openFoodDemo/);
+  assert.match(ui, /QR-code naar de mobiele Food-demo/);
+  assert.equal(getFactoryBlueprint("food-pickup-v1").launchPath, "admin-demo-sites.html");
   assert.match(migration, /factory_type in \('website','webshop','food'\)/);
   assert.match(migration, /revoke all on table public\.factory_projects from anon, authenticated/);
   assert.match(migration, /grant all on table public\.factory_projects to service_role/);

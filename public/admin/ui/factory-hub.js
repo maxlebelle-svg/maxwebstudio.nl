@@ -7,7 +7,7 @@
   const fallbackBlueprints = [
     { key: "website-service-v1", factoryType: "website", version: 1, name: "Website voor dienstverleners", shortName: "Website Factory", description: "Van klantbriefing naar merk, content, preview, feedback en livegang.", reference: "De bestaande Max Webstudio Website Factory", modules: ["Merk & huisstijl", "Pagina-opbouw", "Content & SEO", "Preview & feedback", "Domein & livegang"], launchPath: "admin-website-factory.html", accent: "#3b82f6" },
     { key: "webshop-commerce-v1", factoryType: "webshop", version: 1, name: "Webshop basisformule", shortName: "Webshop Factory", description: "Een herhaalbare commerce-opzet voor assortiment, checkout en beheer.", reference: "Website Factory met commerce-briefing", modules: ["Merk & storefront", "Productcatalogus", "Winkelmand & checkout", "Betaling & verzending", "Orders & beheer"], launchPath: "admin-website-factory.html", accent: "#a855f7" },
-    { key: "food-pickup-v1", factoryType: "food", version: 1, name: "Food bestellen & afhalen", shortName: "Food Factory", description: "Het bewezen Silverado-concept als herhaalbare restaurantformule.", reference: "Silverado Roti Shop, Emmeloord", modules: ["Restaurantbranding", "Menukaart", "Afhalen & openingstijden", "Bestellingen & keuken", "Betaling & integraties"], launchPath: "admin-food.html", accent: "#22c55e" },
+    { key: "food-pickup-v1", factoryType: "food", version: 1, name: "Food bestellen & afhalen", shortName: "Food Factory", description: "Het bewezen Silverado-concept als herhaalbare restaurantformule.", reference: "Silverado Roti Shop, Emmeloord", modules: ["Restaurantbranding", "Menukaart", "Afhalen & openingstijden", "Bestellingen & keuken", "Betaling & integraties"], launchPath: "admin-demo-sites.html", accent: "#22c55e" },
   ];
   const state = { relationship: null, blueprints: fallbackBlueprints, projects: [], selectedBlueprint: "", loading: false };
   const nodes = {};
@@ -66,22 +66,26 @@
     nodes.projects.innerHTML = state.projects.map((project) => {
       const blueprint = state.blueprints.find((item) => item.key === project.blueprint_key) || {};
       const path = launchUrl(project, blueprint);
-      return `<article class="factory-project">
+      const foodQr = project.factory_type === "food" ? `<div class="factory-project-qr"><small>Bestelomgeving</small><a href="https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord" target="_blank" rel="noopener" aria-label="Open mobiele Food-demo"><img src="/assets/food/silverado/silverado-demo-qr.svg" alt="QR-code naar de mobiele Food-demo"></a><span>Scan de demo</span></div>` : "";
+      const actionLabel = project.factory_type === "food" ? "Food-demo openen" : "Productie openen";
+      return `<article class="factory-project" data-has-qr="${project.factory_type === "food"}">
         <div><small>${escapeHtml(blueprint.shortName || project.factory_type)}</small><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(project.configuration?.industry || "Branche nog invullen")}</p></div>
         <div><small>Status</small><span class="factory-status-pill" data-tone="${projectTone(project.status)}">${escapeHtml(statusLabels[project.status] || project.status)}</span></div>
+        ${foodQr}
         <div><small>Herhaalbaar recept</small><strong>${escapeHtml(blueprint.name || project.blueprint_key)}</strong><p>Versie ${escapeHtml(project.blueprint_version)}</p></div>
-        <div class="factory-project-actions"><a class="button primary" href="${escapeHtml(path)}">Productie openen</a><button class="button secondary" type="button" data-project-ready="${escapeHtml(project.id)}" ${project.status !== "intake" ? "hidden" : ""}>Intake gereed</button></div>
+        <div class="factory-project-actions"><a class="button primary" href="${escapeHtml(path)}">${actionLabel}</a><button class="button secondary" type="button" data-project-ready="${escapeHtml(project.id)}" ${project.status !== "intake" ? "hidden" : ""}>Intake gereed</button></div>
       </article>`;
     }).join("");
   }
 
   function launchUrl(project, blueprint) {
     const identity = relationshipIdentity();
-    const path = blueprint.launchPath || (project.factory_type === "food" ? "admin-food.html" : "admin-website-factory.html");
+    const path = blueprint.launchPath || (project.factory_type === "food" ? "admin-demo-sites.html" : "admin-website-factory.html");
     const url = new URL(path, globalScope.location.origin);
     if (identity) { url.searchParams.set("relationshipType", identity.type); url.searchParams.set("relationshipId", identity.id); url.searchParams.set(identity.type === "lead" ? "leadId" : "customerId", identity.id); }
     url.searchParams.set("factoryProjectId", project.id);
     url.searchParams.set("factoryType", project.factory_type);
+    if (project.factory_type === "food") url.searchParams.set("openFoodDemo", "1");
     return `${url.pathname.replace(/^\//, "")}${url.search}`;
   }
 

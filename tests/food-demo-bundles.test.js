@@ -73,7 +73,7 @@ test("Food bundle listings fail closed to the active relationship", () => {
   assert.match(handler, /const relation = validateRelationship\(query\)/);
   assert.match(handler, /relationship_type: `eq\.\$\{relation\.type\}`/);
   assert.match(handler, /relationship_id: `eq\.\$\{relation\.id\}`/);
-  assert.ok(ui.includes("try{await load(relationship);}"));
+  assert.ok(ui.includes("try{await load(relationship);"));
   assert.ok(ui.includes("subscribeToRelationshipChanges(r=>load(r)"));
   assert.doesNotMatch(ui, /page==="admin-demo-sites\.html"\?null/);
 });
@@ -84,6 +84,8 @@ test("admin UX separates Food bundles from regular demos and never sends on open
   assert.match(ui, /Het openen van dit venster verstuurt niets/);
   assert.match(ui, /Testmail versturen/);
   assert.match(ui, /Uitnodiging intrekken/);
+  assert.match(ui, /query\.get\("openFoodDemo"\)==="1"/);
+  assert.match(ui, /b\.factoryProjectId===factoryProjectId/);
   assert.match(ui, /function openModal\(bundle\)\{state\.active=bundle;const root=ensureModal\(\);root\.hidden=false/);
   assert.match(css, /@media\(max-width:640px\)/);
   assert.match(css, /\.food-demo-dialog-actions\{position:static;display:grid;grid-template-columns:1fr/);

@@ -35,7 +35,7 @@ const FACTORY_BLUEPRINTS = Object.freeze([
     reference: "Silverado Roti Shop, Emmeloord",
     modules: Object.freeze(["Restaurantbranding", "Menukaart", "Afhalen & openingstijden", "Bestellingen & keuken", "Betaling & integraties"]),
     stages: Object.freeze(["intake", "menu", "storefront", "operations", "launch"]),
-    launchPath: "admin-food.html",
+    launchPath: "admin-demo-sites.html",
     accent: "#22c55e",
   }),
 ]);
