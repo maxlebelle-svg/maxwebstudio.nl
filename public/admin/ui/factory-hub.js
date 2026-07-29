@@ -59,6 +59,29 @@
   }
 
   function projectTone(status) { return status === "live" ? "success" : status === "review" || status === "in_production" ? "info" : status === "paused" ? "warning" : "neutral"; }
+  function gateTone(status) { return status === "passed" ? "success" : status === "failed" ? "danger" : status === "expired" ? "warning" : "neutral"; }
+  function renderProductionGate(project) {
+    const gate = project.productionGate || { available: false, progress: 0, checks: [], counts: { blocking: 0 } };
+    if (!gate.available) return `<section class="factory-production-gate is-unavailable"><header><div><small>Production Gate</small><strong>Nog niet geactiveerd</strong></div><span class="factory-status-pill" data-tone="warning">Livegang geblokkeerd</span></header><p>De centrale gate-database moet eerst gecontroleerd worden geactiveerd. Dit dossier kan niet live worden gezet.</p></section>`;
+    const checks = Array.isArray(gate.checks) ? gate.checks : [];
+    const groups = [...new Set(checks.map((item) => item.groupKey))];
+    const groupCards = groups.map((group) => {
+      const rows = checks.filter((item) => item.groupKey === group);
+      const passed = rows.filter((item) => item.effectiveStatus === "passed").length;
+      const tone = passed === rows.length ? "success" : rows.some((item) => item.effectiveStatus === "failed") ? "danger" : rows.some((item) => item.effectiveStatus === "expired") ? "warning" : "neutral";
+      return `<span class="factory-gate-group" data-tone="${tone}"><b>${escapeHtml(group.replaceAll("_", " "))}</b><small>${passed}/${rows.length}</small></span>`;
+    }).join("");
+    const checkRows = checks.map((item) => `<li data-tone="${gateTone(item.effectiveStatus)}"><span aria-hidden="true">${item.effectiveStatus === "passed" ? "✓" : item.effectiveStatus === "failed" ? "×" : item.effectiveStatus === "expired" ? "!" : "·"}</span><div><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.reason || item.sourceLabel)}</small></div></li>`).join("");
+    const override = gate.releaseMode === "override" && gate.override ? `<div class="factory-gate-override"><strong>LIVE VIA UITZONDERING</strong><span>Reden: ${escapeHtml(gate.override.reason)}</span><small>Openstaande risico's: ${escapeHtml((gate.override.risks || []).join(" · "))}</small></div>` : "";
+    const liveLabel = gate.releaseMode === "override" ? "Live zetten via uitzondering" : "Definitief live zetten";
+    return `<section class="factory-production-gate" data-release-mode="${escapeHtml(gate.releaseMode)}">
+      <header><div><small>Centrale Production Gate</small><strong>${escapeHtml(gate.progress)}% bewezen</strong></div><span class="factory-status-pill" data-tone="${gate.canGoLive ? gate.releaseMode === "override" ? "warning" : "success" : "warning"}">${gate.canGoLive ? gate.releaseMode === "override" ? "Uitzondering actief" : "Livegang gereed" : `${escapeHtml(gate.counts?.blocking || 0)} blokkades`}</span></header>
+      <div class="factory-gate-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${escapeHtml(gate.progress)}"><span style="width:${escapeHtml(gate.progress)}%"></span></div>
+      <div class="factory-gate-groups">${groupCards}</div>${override}
+      <details><summary>Alle verplichte controles bekijken</summary><ul>${checkRows}</ul></details>
+      <div class="factory-gate-actions"><button class="button secondary" type="button" data-production-preflight="${escapeHtml(project.id)}">Controles herijken</button><button class="button primary" type="button" data-production-live="${escapeHtml(project.id)}" ${gate.canGoLive ? "" : "disabled"}>${liveLabel}</button></div>
+    </section>`;
+  }
   function renderProjects() {
     if (!relationshipIdentity()) { nodes.projects.innerHTML = `<div class="factory-empty"><strong>Nog geen relatie geselecteerd</strong><span>Na selectie verschijnen hier alle Website-, Webshop- en Food-dossiers.</span></div>`; return; }
     if (state.loading) { nodes.projects.innerHTML = `<div class="factory-loading-card">Factory-dossiers laden…</div>`; return; }
@@ -74,6 +97,7 @@
         ${foodQr}
         <div><small>Herhaalbaar recept</small><strong>${escapeHtml(blueprint.name || project.blueprint_key)}</strong><p>Versie ${escapeHtml(project.blueprint_version)}</p></div>
         <div class="factory-project-actions"><a class="button primary" href="${escapeHtml(path)}">${actionLabel}</a><button class="button secondary" type="button" data-project-ready="${escapeHtml(project.id)}" ${project.status !== "intake" ? "hidden" : ""}>Intake gereed</button></div>
+        ${renderProductionGate(project)}
       </article>`;
     }).join("");
   }
@@ -161,6 +185,22 @@
     catch (error) { button.disabled = false; button.textContent = error.message; }
   }
 
+  async function runGateAction(id, action, button) {
+    button.disabled = true;
+    const original = button.textContent;
+    button.textContent = action === "go_live" ? "Livegang controleren…" : "Herijken…";
+    try {
+      const payload = await request("POST", { action, projectId: id });
+      const index = state.projects.findIndex((project) => project.id === id);
+      if (index >= 0) state.projects[index] = { ...state.projects[index], ...(payload.project || {}), productionGate: payload.productionGate || state.projects[index].productionGate };
+      renderProjects();
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = error.message;
+      globalScope.setTimeout(() => { button.textContent = original; }, 3500);
+    }
+  }
+
   function init() {
     Object.assign(nodes, {
       context: document.getElementById("factory-context"), newButton: document.getElementById("factory-new-project"), blueprints: document.getElementById("factory-blueprints"), projects: document.getElementById("factory-projects"), projectsIntro: document.getElementById("factory-projects-intro"), storage: document.getElementById("factory-storage-status"), dialog: document.getElementById("factory-dialog"), form: document.getElementById("factory-form"), typeOptions: document.getElementById("factory-type-options"), recipe: document.getElementById("factory-recipe-preview"), message: document.getElementById("factory-form-message"), submit: document.getElementById("factory-submit"),
@@ -173,7 +213,14 @@
     nodes.form.addEventListener("submit", submit);
     nodes.dialog.querySelector(".factory-dialog-close").addEventListener("click", closeDialog);
     nodes.dialog.querySelector(".factory-dialog-cancel").addEventListener("click", closeDialog);
-    nodes.projects.addEventListener("click", (event) => { const button = event.target.closest("[data-project-ready]"); if (button) markReady(button.dataset.projectReady, button); });
+    nodes.projects.addEventListener("click", (event) => {
+      const ready = event.target.closest("[data-project-ready]");
+      const preflight = event.target.closest("[data-production-preflight]");
+      const live = event.target.closest("[data-production-live]");
+      if (ready) markReady(ready.dataset.projectReady, ready);
+      else if (preflight) runGateAction(preflight.dataset.productionPreflight, "preflight", preflight);
+      else if (live) runGateAction(live.dataset.productionLive, "go_live", live);
+    });
     globalScope.ActiveRelationship?.subscribeToRelationshipChanges?.(() => load());
     load();
   }

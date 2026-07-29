@@ -1,0 +1,9 @@
+{
+  "environment": "staging",
+  "supabaseProjectRef": "xlxpuuycigeqhgxqtzni",
+  "netlifySiteId": "67b2b8af-83fc-4c61-9cd8-2f78842b7615",
+  "netlifySiteName": "maxwebstudio-staging",
+  "approvedReleaseBranch": "codex/factory-hub-staging-certification",
+  "observedConfiguredBranchBeforeLocalHardening": "codex/partner-onboarding-v1-staging-ready",
+  "configurationChangeAuthorized": false
+}
