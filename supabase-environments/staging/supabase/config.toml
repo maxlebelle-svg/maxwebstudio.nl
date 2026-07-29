@@ -1,0 +1,13 @@
+# Permanent, governed Supabase workdir for maxwebstudio-test only.
+project_id = "xlxpuuycigeqhgxqtzni"
+
+[db]
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []

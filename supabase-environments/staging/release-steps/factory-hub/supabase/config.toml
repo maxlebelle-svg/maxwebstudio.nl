@@ -1,0 +1,13 @@
+# Permanent first execution step: applied staging history plus Factory Hub only.
+project_id = "xlxpuuycigeqhgxqtzni"
+
+[db]
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []

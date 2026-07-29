@@ -1,0 +1,674 @@
+{
+  "schemaVersion": 1,
+  "environment": "staging",
+  "projectName": "maxwebstudio-test",
+  "targetProjectRef": "xlxpuuycigeqhgxqtzni",
+  "forbiddenProjectRefs": [
+    "yxxahurphdbblkuxoeje",
+    "obprooubcbnfgouytvrw"
+  ],
+  "cliVersionCertified": "2.108.0",
+  "officialWorkdirSupport": "--workdir",
+  "remoteHistoryObservedAt": "2026-07-29T14:10:29.259Z",
+  "generalMigrationRoot": "supabase/migrations",
+  "generalMigrationRootFingerprint": "90544baa57b6c99e3fd65411432f1f861e1de079bc99fc0172ad338d51cbfa39",
+  "canonicalWorkdir": "supabase-environments/staging",
+  "factoryStepWorkdir": "supabase-environments/staging/release-steps/factory-hub",
+  "counts": {
+    "applied": 32,
+    "pending": 2,
+    "excluded": 38,
+    "providerBlockingOlderExcluded": 31,
+    "laterFeatureLineExcluded": 7
+  },
+  "applied": [
+    {
+      "version": "20260710160200",
+      "filename": "20260710160200_central_lead_lifecycle_deduplication.sql",
+      "sha256": "e3fc8186847eb74ca8d25b6cb5b9604292e85b473184e7bc4f52f43f45a21639",
+      "sourceCommit": "2df32d5319e19884da500207ce1644b6e1543a42",
+      "blobId": "d5c4988a589abd8467436952979f704eac7cb4ca",
+      "sourcePath": "supabase/migrations/20260710160200_central_lead_lifecycle_deduplication.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260710170500",
+      "filename": "20260710170500_sales_assignment_calling_follow_up_pipeline.sql",
+      "sha256": "1ce97e82f1fc60a44a9854f3b30d86aa53611ff90a8eb6664276c112104d2268",
+      "sourceCommit": "f9707c206f9f3746c541b7d47756e5c4f0c3f2e9",
+      "blobId": "ee0701f584503f39a0cc3a2059bfaa6c3c7b33d2",
+      "sourcePath": "supabase/migrations/20260710170500_sales_assignment_calling_follow_up_pipeline.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260711133000",
+      "filename": "20260711133000_preview_publication_portal_review.sql",
+      "sha256": "5e6f6a1a684a4487d7cedfb17e7c52c68fe6265415497dc755e1d73bbb3466f7",
+      "sourceCommit": "41bd35967f0708a074e8b6fcfbac0327967c5a41",
+      "blobId": "3de4c24b078be514803e2b95a635683890f5a9f4",
+      "sourcePath": "supabase/migrations/20260711133000_preview_publication_portal_review.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260712123000",
+      "filename": "20260712123000_relationship_asset_library.sql",
+      "sha256": "c7081e8b4c36cd0f7545120e42b16266b7357b2040f4968dedd6cae51f60b596",
+      "sourceCommit": "4169244945e06ab6adcdd163cb4c4ab161dcb244",
+      "blobId": "b4b73249e9e7e58eec74528bd4f9ccc2f7e70795",
+      "sourcePath": "supabase/migrations/20260712123000_relationship_asset_library.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260712170000",
+      "filename": "20260712170000_relationship_asset_policy_hardening.sql",
+      "sha256": "ec2b791a911302c1b3e31112f5dcfbff4ccc6827e4f376eb78b11f1a4da10ebf",
+      "sourceCommit": "cf68b33a6ddd08fa84c059619d4db368a5de39c9",
+      "blobId": "2f45b96c32fd75cee8c5c13564b8fb26c5fdeced",
+      "sourcePath": "supabase/migrations/20260712170000_relationship_asset_policy_hardening.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260718120000",
+      "filename": "20260718120000_business_event_foundation.sql",
+      "sha256": "04ebd6bbf9ef5637ec590861d85c47f6a3d8cd08f5ac54e3bdf6935f54ffc6d8",
+      "sourceCommit": "3824157c051fd5872ea6e85596bf076c41879fc6",
+      "blobId": "2c80d91b5bb2fa29c913477afff787aee29710bf",
+      "sourcePath": "supabase/migrations/20260718120000_business_event_foundation.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260718222000",
+      "filename": "20260718222000_social_event_contracts.sql",
+      "sha256": "d21fa1d94a11c90b9a803f9cf10e431c914fd5cd8c5a5ca05d254c39e9cbc5e9",
+      "sourceCommit": "ae51332ba057b8b51d051ba1494609a92050e51a",
+      "blobId": "89af525cd9a8439404c6e9754c1762d713f99399",
+      "sourcePath": "supabase/migrations/20260718222000_social_event_contracts.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260719160000",
+      "filename": "20260719160000_create_demo_journey_workflow.sql",
+      "sha256": "e7ffcbd86cf666fef7a27ed3cb8013c67f86a1faede12fdb8c02e6fb9b316e5d",
+      "sourceCommit": "f93c5aa1b2f990465c2a0ea2dea0f4185cdd2456",
+      "blobId": "941efab009d3026c3089f6bad316422cd22897fe",
+      "sourcePath": "supabase/migrations/20260719160000_create_demo_journey_workflow.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260719170000",
+      "filename": "20260719170000_create_website_factory_core.sql",
+      "sha256": "217366e0b0612f05d150fac962ab2904bf0e90bc8f8c2d9672dca1cc8e21922e",
+      "sourceCommit": "cc39797bed618bfc50e7baf0f1ae15fa36a8490d",
+      "blobId": "f6a7ba24501b06674911c42c1ce9a2b498b85329",
+      "sourcePath": "supabase/migrations/20260719170000_create_website_factory_core.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260719180000",
+      "filename": "20260719180000_optimize_website_factory_preview_promotion.sql",
+      "sha256": "e01ada75fef8bd163a21c55bab017c2b857d8dbf200061fb0e7588fb4cc91c7c",
+      "sourceCommit": "54c322f07af39736f1c8f22a752ebc79b02fad45",
+      "blobId": "97e74c905ab5183a09e0b2897d7d8726703869d4",
+      "sourcePath": "supabase/migrations/20260719180000_optimize_website_factory_preview_promotion.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260719190000",
+      "filename": "20260719190000_create_demo_invitation_delivery_foundation.sql",
+      "sha256": "c9915879208e38796331ce9713964eb16c6a089794fb95927b41a1c7ee293568",
+      "sourceCommit": "5cbc68b54123c0996e512275240f8308d6975e44",
+      "blobId": "ea315de5663d27a314d2931988fcd4e39f2a8477",
+      "sourcePath": "supabase/migrations/20260719190000_create_demo_invitation_delivery_foundation.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260720160000",
+      "filename": "20260720160000_lead_event_foundation.sql",
+      "sha256": "d0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba",
+      "sourceCommit": "07c9eb01cd55a38dfa229c1d220b125dad5bb678",
+      "blobId": "c44ce99ae25a19765c57292714dcdcf83f3d8aad",
+      "sourcePath": "docs/foundation-f0/evidence/recovered-migrations/20260720160000_lead_event_foundation.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260720200000",
+      "filename": "20260720200000_transactional_lead_intake_rpc.sql",
+      "sha256": "40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370",
+      "sourceCommit": "07c9eb01cd55a38dfa229c1d220b125dad5bb678",
+      "blobId": "67c5357836962e57d1e1bf61e998fbe461d86ac0",
+      "sourcePath": "docs/foundation-f0/evidence/recovered-migrations/20260720200000_transactional_lead_intake_rpc.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260721010000",
+      "filename": "20260721010000_harden_role_helper_search_paths.sql",
+      "sha256": "fd787e93077783963d87879d6f9fba32395949fe572ef94609101293c91af966",
+      "sourceCommit": "07c9eb01cd55a38dfa229c1d220b125dad5bb678",
+      "blobId": "d56106d7021361d66e6d1d44648d465cba96b2c4",
+      "sourcePath": "supabase/migrations/20260721010000_harden_role_helper_search_paths.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260721020000",
+      "filename": "20260721020000_restrict_policy_helper_execute_acl.sql",
+      "sha256": "c75f1796e52d8c2bd8a06994cb692c72f9f794adbb93d76cee4ccedd6f01e570",
+      "sourceCommit": "07c9eb01cd55a38dfa229c1d220b125dad5bb678",
+      "blobId": "f429f5e8bda339f8e0bcf380f2823f09b54807b9",
+      "sourcePath": "supabase/migrations/20260721020000_restrict_policy_helper_execute_acl.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260721030000",
+      "filename": "20260721030000_restrict_internal_helper_execute_acl.sql",
+      "sha256": "83a428e28401c63a0b8e2bffc9ba4a6aca54d1fe159556ee9f674b129cf64bad",
+      "sourceCommit": "07c9eb01cd55a38dfa229c1d220b125dad5bb678",
+      "blobId": "cb345fb3dce2356cfab9a1ad9b4819dda70e2602",
+      "sourcePath": "supabase/migrations/20260721030000_restrict_internal_helper_execute_acl.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260721040000",
+      "filename": "20260721040000_lead_intake_abuse_control.sql",
+      "sha256": "9e6747d25c8e98b637c8bb6500e381dfeeacc605dd830b422a1a68ecea35415a",
+      "sourceCommit": "1da026be7edc6258a3ed6762c9bf3d9ceba89078",
+      "blobId": "f5d0541ea14df2443b379b6c30e57b1484448fbf",
+      "sourcePath": "supabase/migrations/20260721040000_lead_intake_abuse_control.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260721050000",
+      "filename": "20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "sha256": "a733d0eefb976524bc69b06487f440310641f19d101cb21b3f9fb2ff58e2819a",
+      "sourceCommit": "b1a7895bd74ced06484b9b5e4c3094648d56aae4",
+      "blobId": "9ef9b5fe15668ef30c15347b6172f65cf5ed0845",
+      "sourcePath": "supabase/migrations/20260721050000_p0_staging_smoke_nonce_replay_protection.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260722125000",
+      "filename": "20260722125000_p0_correct_production_poststate.sql",
+      "sha256": "d53ec05f68c00880f0ae4361ad6ce204a85fdea2272d6538f014073c2f6e2b7c",
+      "sourceCommit": "07c9eb01cd55a38dfa229c1d220b125dad5bb678",
+      "blobId": "fd50af345ef5e0b6187f84e6b040ef2b6a0bfaf8",
+      "sourcePath": "supabase/migrations/20260722125000_p0_correct_production_poststate.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260722126000",
+      "filename": "20260722126000_p0_correct_production_leads_policies.sql",
+      "sha256": "6b3fe51dfe37cd68acc97b3bf9e134cc7b4d25f272a573db40d3d5704929e3cf",
+      "sourceCommit": "07c9eb01cd55a38dfa229c1d220b125dad5bb678",
+      "blobId": "57a4e8f31af78e7b3c5a02a92b1346bb87078c50",
+      "sourcePath": "supabase/migrations/20260722126000_p0_correct_production_leads_policies.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260724110000",
+      "filename": "20260724110000_bridge_preview_publication_portal_review.sql",
+      "sha256": "22628ef185d4f78a8dd96eefd9aee68022e2010f9f5143c7d13df0be4ea6fa50",
+      "sourceCommit": "cc504b79324bedf525c51390c0515c63be376e1e",
+      "blobId": "8f0037e392c3f4f4e627a8ef19c91e7db7f56feb",
+      "sourcePath": "supabase/migrations/20260724110000_bridge_preview_publication_portal_review.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260724120000",
+      "filename": "20260724120000_cp_a_portal_trust_chain.sql",
+      "sha256": "a418a8b05b03879f572c0ebd5862acd2ce36d3eae8e35db6aefbd5fa7c7586c2",
+      "sourceCommit": "5adb120833f9acf277cf1d2df9252ad46d398d95",
+      "blobId": "dd33b3beb5ac648f8f3200486316c2c017cb03cd",
+      "sourcePath": "supabase/migrations/20260724120000_cp_a_portal_trust_chain.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260724130000",
+      "filename": "20260724130000_repair_preview_quality_report_schema_drift.sql",
+      "sha256": "8acaf3f1f3678f71411155b61d9111d4a559cf8ffc6ab36b19b2e47860bfab71",
+      "sourceCommit": "cd3c87fb3bf9aaa9530216dc841b1ff5486caf38",
+      "blobId": "98372ddce6a77b56aef7da65d2db924f800ee5be",
+      "sourcePath": "supabase/migrations/20260724130000_repair_preview_quality_report_schema_drift.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260726200000",
+      "filename": "20260726200000_partner_profile_role_status_foundation.sql",
+      "sha256": "049f511b70b440733e0f5f00bb0b7fb5b2c184e9eb0fd8ff8fd637dc84d1fbb3",
+      "sourceCommit": "915d6cef39aab8ee7ae1dc249eb8b77eec307009",
+      "blobId": "b18ad1ccc236328095b4e61899a5434346654739",
+      "sourcePath": "supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260726201000",
+      "filename": "20260726201000_partner_onboarding_gate_foundation.sql",
+      "sha256": "9d40311b0b524f4a5d7a991f7ca1797aecefcfbcc1210fabf1ff724d5a760142",
+      "sourceCommit": "22cbe0c176c7b563f132e9edd4554abe435593b2",
+      "blobId": "81be8c09a56c2279086785fc752b3b63fcdb8f3d",
+      "sourcePath": "supabase/migrations/20260726201000_partner_onboarding_gate_foundation.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260726202000",
+      "filename": "20260726202000_partner_training_content_v1.sql",
+      "sha256": "93cd4659e12125b888236f35b3aba2fe3536e39a1ca8bc23c1c16184aeffaf35",
+      "sourceCommit": "22cbe0c176c7b563f132e9edd4554abe435593b2",
+      "blobId": "af84c1e1c6533ab0be4e4d76280a142f3b871b53",
+      "sourcePath": "supabase/migrations/20260726202000_partner_training_content_v1.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260726203000",
+      "filename": "20260726203000_partner_assessment_certification.sql",
+      "sha256": "bbc41f47e566027bdcc5260c5e3b0e79433fca857437901f7383bf24f7f14af6",
+      "sourceCommit": "22cbe0c176c7b563f132e9edd4554abe435593b2",
+      "blobId": "2d5285a91d759e2aa43cd14ed081c93862c758b4",
+      "sourcePath": "supabase/migrations/20260726203000_partner_assessment_certification.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260726204000",
+      "filename": "20260726204000_partner_canonical_commission.sql",
+      "sha256": "875ca6e6e4d7610a8d6d11f5d00b764019c3b20c5dec815c5459633299ceb79b",
+      "sourceCommit": "22cbe0c176c7b563f132e9edd4554abe435593b2",
+      "blobId": "fca1afa543f7201be86540289ed55016ddf883ff",
+      "sourcePath": "supabase/migrations/20260726204000_partner_canonical_commission.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260726205000",
+      "filename": "20260726205000_partner_certification_activation_control.sql",
+      "sha256": "173a28ec8c4049184bf55467fb718e7f7afcb6f94800f56794e8003b65a25caf",
+      "sourceCommit": "22cbe0c176c7b563f132e9edd4554abe435593b2",
+      "blobId": "132f352f2fba20797bd90589f54ecd3aa43b4772",
+      "sourcePath": "supabase/migrations/20260726205000_partner_certification_activation_control.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260726210000",
+      "filename": "20260726210000_staff_zzp_dossier_foundation.sql",
+      "sha256": "753d3a2b2c0579b4f93eaa33001ce94a7ec076ce73586dba5a240b86ad8881f6",
+      "sourceCommit": "8d0463ca71d17d6ab330b5d121e80ec1f7893c01",
+      "blobId": "49d7a06c01df1cb66f64950ef680ac661ece0895",
+      "sourcePath": "supabase/migrations/20260726210000_staff_zzp_dossier_foundation.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260727090000",
+      "filename": "20260727090000_staff_signhost_foundation.sql",
+      "sha256": "d863ec16221b3a5cc88f1618159aa73988aef1302d637bed906eb4eb961dcd0f",
+      "sourceCommit": "7f6efdc25afe0fe64f1d87b8e3a9f5f3112bfd68",
+      "blobId": "68126ea7506df4f61934d2a5543bb5ee41ff363a",
+      "sourcePath": "supabase/migrations/20260727090000_staff_signhost_foundation.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260727120000",
+      "filename": "20260727120000_signhost_smoke_test.sql",
+      "sha256": "f4b9d4e243206eace89bf10ab59a3f75ed62c4384089d5981dc84455c43659ad",
+      "sourceCommit": "c2262208907bd5ab27a68e7a3b71fb27c889bd68",
+      "blobId": "82f16ab69852b1262ab72fc432bcefa1d28fa05a",
+      "sourcePath": "supabase/migrations/20260727120000_signhost_smoke_test.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    }
+  ],
+  "pending": [
+    {
+      "version": "20260729120000",
+      "filename": "20260729120000_factory_hub_projects.sql",
+      "sha256": "070243fb04f11a2828950e64074684332ac4549666ae37a0324ea000bdc11638",
+      "sourceCommit": "5e252e6ec1af3d3790bd6069692f3e13907e5431",
+      "blobId": "899db217d151cddd4be5a1537e4a7b906177f70c",
+      "sourcePath": "supabase/migrations/20260729120000_factory_hub_projects.sql",
+      "remoteStatus": "pending",
+      "classification": "pending"
+    },
+    {
+      "version": "20260729170000",
+      "filename": "20260729170000_food_demo_bundles.sql",
+      "sha256": "010c01ffc9c2ac2cd01d85196a93c27d2a8cf5dde5ac5d629350ef7a620b56e2",
+      "sourceCommit": "5312d927fde5518f7e0be4f3a636386b65e617ab",
+      "blobId": "feca2163a07f18dbe5d454f4a22d608caefc61b3",
+      "sourcePath": "supabase/migrations/20260729170000_food_demo_bundles.sql",
+      "remoteStatus": "pending",
+      "classification": "pending"
+    }
+  ],
+  "excluded": [
+    {
+      "version": "00000000000000",
+      "filename": "00000000000000_authoritative_baseline.sql",
+      "featureLine": "bootstrap baseline",
+      "reason": "not registered in existing staging history",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260713173000",
+      "filename": "20260713173000_customer_journey_automation_foundations.sql",
+      "featureLine": "journey automation",
+      "reason": "feature line intentionally absent from staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260713190000",
+      "filename": "20260713190000_enable_feedback_received_test_outbox.sql",
+      "featureLine": "test outbox",
+      "reason": "test-only automation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260713200000",
+      "filename": "20260713200000_enable_preview_approved_test_outbox.sql",
+      "featureLine": "test outbox",
+      "reason": "test-only automation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260713200100",
+      "filename": "20260713200100_enable_preview_approved_test_outbox_idempotency_verification.sql",
+      "featureLine": "test outbox",
+      "reason": "test-only verification line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260713210000",
+      "filename": "20260713210000_enable_payment_paid_test_outbox.sql",
+      "featureLine": "test outbox",
+      "reason": "test-only automation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260713220000",
+      "filename": "20260713220000_enable_website_live_test_outbox.sql",
+      "featureLine": "test outbox",
+      "reason": "test-only automation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260714120000",
+      "filename": "20260714120000_reconcile_production_lead_lifecycle.sql",
+      "featureLine": "production reconciliation",
+      "reason": "production-only reconciliation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260714173000",
+      "filename": "20260714173000_lead_demo_account_invitations.sql",
+      "featureLine": "legacy invitation",
+      "reason": "legacy feature line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260714190000",
+      "filename": "20260714190000_lead_source_sales_attribution.sql",
+      "featureLine": "sales attribution",
+      "reason": "sales feature line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260717143000",
+      "filename": "20260717143000_allow_retryable_website_build_jobs.sql",
+      "featureLine": "Website Factory retry",
+      "reason": "feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260718110000",
+      "filename": "20260718110000_public_preview_slugs.sql",
+      "featureLine": "public previews",
+      "reason": "preview feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260718190000",
+      "filename": "20260718190000_public_preview_publications.sql",
+      "featureLine": "public previews",
+      "reason": "preview feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722120000",
+      "filename": "20260722120000_p0_reconcile_business_events.sql",
+      "featureLine": "P0 reconciliation",
+      "reason": "alternative reconciliation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722121000",
+      "filename": "20260722121000_p0_reconcile_transactional_lead_intake.sql",
+      "featureLine": "P0 reconciliation",
+      "reason": "alternative reconciliation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722122000",
+      "filename": "20260722122000_p0_reconcile_security_hardening.sql",
+      "featureLine": "P0 reconciliation",
+      "reason": "alternative reconciliation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722123000",
+      "filename": "20260722123000_p0_reconcile_lead_intake_abuse_control.sql",
+      "featureLine": "P0 reconciliation",
+      "reason": "alternative reconciliation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722124000",
+      "filename": "20260722124000_p0_harden_sales_manager_lead_policy.sql",
+      "featureLine": "P0 reconciliation",
+      "reason": "alternative reconciliation line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722130000",
+      "filename": "20260722130000_p0_recover_business_events.sql",
+      "featureLine": "P0 recovery",
+      "reason": "alternative recovery line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722131000",
+      "filename": "20260722131000_p0_recover_transactional_lead_intake.sql",
+      "featureLine": "P0 recovery",
+      "reason": "alternative recovery line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722132000",
+      "filename": "20260722132000_p0_recover_security_hardening.sql",
+      "featureLine": "P0 recovery",
+      "reason": "alternative recovery line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722133000",
+      "filename": "20260722133000_p0_recover_lead_intake_abuse_control.sql",
+      "featureLine": "P0 recovery",
+      "reason": "alternative recovery line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722134000",
+      "filename": "20260722134000_p0_remove_verified_staging_smoke_objects.sql",
+      "featureLine": "P0 cleanup",
+      "reason": "alternative cleanup line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722135000",
+      "filename": "20260722135000_p0_recover_sales_manager_lead_policy.sql",
+      "featureLine": "P0 recovery",
+      "reason": "alternative recovery line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260722136000",
+      "filename": "20260722136000_p0_email_logs_additive_compatibility.sql",
+      "featureLine": "mail governance",
+      "reason": "separate compatibility line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260724105000",
+      "filename": "20260724105000_cp_a_production_canonical_prerequisites.sql",
+      "featureLine": "CP-A production prerequisite",
+      "reason": "production-only prerequisite",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260726100000",
+      "filename": "20260726100000_dca_0_token_safe_invitation_foundation.sql",
+      "featureLine": "DCA",
+      "reason": "DCA feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260726130000",
+      "filename": "20260726130000_dca_1_personal_start_resolver.sql",
+      "featureLine": "DCA",
+      "reason": "DCA feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260726150000",
+      "filename": "20260726150000_dca_1_fragment_token_exchange_v1.sql",
+      "featureLine": "DCA",
+      "reason": "DCA feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260726190000",
+      "filename": "20260726190000_cx2_magic_link_account_activation.sql",
+      "featureLine": "CX2",
+      "reason": "CX2 feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260726193000",
+      "filename": "20260726193000_cx2_callback_success_recovery.sql",
+      "featureLine": "CX2",
+      "reason": "CX2 feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": true
+    },
+    {
+      "version": "20260728134000",
+      "filename": "20260728134000_partner_existing_user_onboarding_activation.sql",
+      "featureLine": "partner activation",
+      "reason": "later partner feature line not registered on staging",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false
+    },
+    {
+      "version": "20260728160000",
+      "filename": "20260728160000_food_v1_data_foundation.sql",
+      "featureLine": "Food v1 demo cloud",
+      "reason": "separate Food Demo Cloud project line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false
+    },
+    {
+      "version": "20260728161000",
+      "filename": "20260728161000_food_v1_tenant_security.sql",
+      "featureLine": "Food v1 demo cloud",
+      "reason": "separate Food Demo Cloud project line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false
+    },
+    {
+      "version": "20260728162000",
+      "filename": "20260728162000_food_v1_application_api_support.sql",
+      "featureLine": "Food v1 demo cloud",
+      "reason": "separate Food Demo Cloud project line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false
+    },
+    {
+      "version": "20260728163000",
+      "filename": "20260728163000_food_v1_storefront_confirmation.sql",
+      "featureLine": "Food v1 demo cloud",
+      "reason": "separate Food Demo Cloud project line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false
+    },
+    {
+      "version": "20260728210000",
+      "filename": "20260728210000_food_v1_online_demo_reset.sql",
+      "featureLine": "Food v1 demo cloud",
+      "reason": "separate Food Demo Cloud project line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false
+    },
+    {
+      "version": "20260728211000",
+      "filename": "20260728211000_food_v1_service_role_order_acl_hardening.sql",
+      "featureLine": "Food v1 demo cloud",
+      "reason": "separate Food Demo Cloud project line",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false
+    }
+  ]
+}
