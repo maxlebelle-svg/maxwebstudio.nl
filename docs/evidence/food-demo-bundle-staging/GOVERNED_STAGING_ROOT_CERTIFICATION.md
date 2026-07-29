@@ -177,7 +177,7 @@ Final staging deploy:
 
 - site: `maxwebstudio-staging` (`67b2b8af-83fc-4c61-9cd8-2f78842b7615`);
 - deploy: `6a6a177837f3062094c07498`;
-- branch/local/remote HEAD: `fd6b608579c97964487cc172b3bdf74e3edef8dd`;
+- deployed application code commit: `fd6b608579c97964487cc172b3bdf74e3edef8dd` (the later branch commits only update this evidence document);
 - focused Food bundle regression after both fixes: **9/9 PASS**;
 - exactly one internal testmail action was executed after the isolation and mobile PASS; the server returned a successful dispatch and advanced the controlled bundle to `Verzonden`;
 - no customer mail, Silverado mail, production deploy or production database action was executed.
