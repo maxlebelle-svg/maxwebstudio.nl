@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/00000000000000_authoritative_baseline.sql",
+      "bytes": 216966,
+      "sha256": "1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315"
+    },
+    {
+      "path": "supabase/migrations/20260726200000_partner_profile_role_status_foundation.sql",
+      "bytes": 7924,
+      "sha256": "049f511b70b440733e0f5f00bb0b7fb5b2c184e9eb0fd8ff8fd637dc84d1fbb3"
+    },
+    {
+      "path": "supabase/migrations/20260728160000_food_v1_data_foundation.sql",
+      "bytes": 18584,
+      "sha256": "9bcb252d2e3e136251b9bf2200aa9c314ae7807712735d9bfeff4d6e69c8cbdf"
+    },
+    {
+      "path": "supabase/migrations/20260728161000_food_v1_tenant_security.sql",
+      "bytes": 36451,
+      "sha256": "e9511b6a527ce4876287b3070215b2e2376fdb5f8f48a918e81dbf650fb0d3fe"
+    },
+    {
+      "path": "supabase/migrations/20260728162000_food_v1_application_api_support.sql",
+      "bytes": 5872,
+      "sha256": "bb158c7c424105fa5af78b11f7b314ddf5c48560ff5573dfebcdb89afffc34c0"
+    },
+    {
+      "path": "supabase/migrations/20260728163000_food_v1_storefront_confirmation.sql",
+      "bytes": 2635,
+      "sha256": "4b1deb237cf8fa86890e5ea58c33ad65aac441d6ac60e4a37e9885fae3bea6ac"
+    },
+    {
+      "path": "supabase/migrations/20260728210000_food_v1_online_demo_reset.sql",
+      "bytes": 13150,
+      "sha256": "19842a24cacf2976d57693c5232c2f87cab49ef264bbf96d36ae49828471915b"
+    }
+  ],
+  "seedFiles": [
+    {
+      "path": "supabase/demo/food-v1-online-demo-seed.sql",
+      "bytes": 14263,
+      "sha256": "4bfee04827feae7fb5660621d2c8ed909a52cf05bc64eed9f61f80dbaf0f471a"
+    }
+  ]
+}

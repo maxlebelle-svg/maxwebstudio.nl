@@ -1,0 +1,21 @@
+{
+  "releaseUnit": "food-v1-silverado-demo-content",
+  "targetEnvironment": "food_demo",
+  "targetProjectRef": "obprooubcbnfgouytvrw",
+  "targetStorefrontSlug": "silverado-roti-shop-emmeloord",
+  "executionOrder": [
+    "supabase/demo/food-v1-silverado-demo-content.sql"
+  ],
+  "expectedActiveProducts": 8,
+  "expectedRetiredProducts": 2,
+  "productionAllowed": false,
+  "stagingAllowed": false,
+  "schemaChangesAllowed": false,
+  "migrationHistoryChangesAllowed": false,
+  "authUserCreationAllowed": false,
+  "seedOtherTenantsAllowed": false,
+  "orderingFlagChangesAllowed": false,
+  "netlifyChangesAllowed": false,
+  "providerChangesAllowed": false,
+  "remoteExecutionAuthorizedByThisManifest": false
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "release": "Max Webstudio Food v1 Phase 1A product migrations",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260728160000_food_v1_data_foundation.sql",
+    "supabase/migrations/20260728161000_food_v1_tenant_security.sql"
+  ],
+  "authority": [
+    "docs/FOOD_V1_ARCHITECTURE.md",
+    "docs/FOOD_V1_PHASE_0_DISCOVERY.md"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

@@ -59,6 +59,26 @@
     {
       "manifest": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-v1-phase-1a-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-v1-phase-1a-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-v1-phase-1b-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-v1-phase-1b-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-v1-phase-2-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-v1-phase-2-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-v1-online-demo-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-v1-online-demo-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-v1-demo-cloud-service-role-acl-repair/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-v1-demo-cloud-service-role-acl-repair/FILESET.json"
     }
   ]
 }

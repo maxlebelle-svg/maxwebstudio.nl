@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260728163000_food_v1_storefront_confirmation.sql",
+      "bytes": 2635,
+      "sha256": "4b1deb237cf8fa86890e5ea58c33ad65aac441d6ac60e4a37e9885fae3bea6ac"
+    }
+  ]
+}

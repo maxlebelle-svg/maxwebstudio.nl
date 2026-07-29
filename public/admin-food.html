@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="nl" data-food-dashboard-state="loading">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+    <meta name="theme-color" content="#071b15" />
+    <title>Food dashboard | Max Webstudio</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/admin/food/dashboard.css" />
+    <script type="module" src="/admin/food/dashboard-bootstrap.js?v=20260729-food-route-gate"></script>
+  </head>
+  <body data-admin-sidebar-exception="standalone">
+    <a class="food-skip" href="#food-main">Ga naar de inhoud</a>
+    <div class="food-dashboard-shell">
+      <aside class="food-side" aria-label="Food-navigatie">
+        <a class="food-product" href="/admin/food" aria-label="Food dashboard">
+          <span class="food-product-mark" data-product-mark>F</span>
+          <span><strong data-product-title>Max Webstudio</strong><small data-product-subtitle>Food</small></span>
+        </a>
+        <div class="food-location-card">
+          <span>Actieve locatie</span>
+          <span class="food-location-mark" data-location-mark hidden></span>
+          <strong class="food-location-wordmark" data-location-wordmark hidden><span data-location-logo-text></span><span data-location-logo-suffix></span></strong>
+          <strong data-location-name>Restaurant laden…</strong>
+          <small data-location-role>Bevoegdheid controleren</small>
+          <select data-scope-select aria-label="Restaurantlocatie" hidden></select>
+        </div>
+        <nav class="food-nav">
+          <a href="/admin/food" data-route="dashboard"><span aria-hidden="true">⌂</span>Overzicht</a>
+          <a href="/admin/food/orders" data-route="orders"><span aria-hidden="true">▤</span>Bestellingen<strong data-new-nav-count hidden>0</strong></a>
+          <a href="/admin/food/menu" data-route="menu"><span aria-hidden="true">≡</span>Menukaart</a>
+          <a href="/admin/food/integrations" data-route="integrations"><span aria-hidden="true">◇</span>Integraties</a>
+        </nav>
+        <div class="food-side-status">
+          <span class="food-live-dot"></span><div><strong>Automatisch verversen</strong><small data-polling-label>Starten…</small></div>
+        </div>
+        <button class="food-signout" type="button" data-signout>Uitloggen</button>
+      </aside>
+
+      <main id="food-main" class="food-main">
+        <header class="food-topbar">
+          <div><p data-breadcrumb>Food / Overzicht</p><h1 data-page-title>Restaurantdashboard</h1></div>
+          <div class="food-topbar-actions">
+            <span class="food-updated" data-last-updated>Nog niet ververst</span>
+            <button class="food-button food-button-secondary" type="button" data-refresh>Verversen</button>
+            <a class="food-button food-button-primary" data-storefront-link target="_blank" rel="noopener">Open storefront</a>
+          </div>
+        </header>
+
+        <section class="food-state food-loading" data-loading role="status" aria-live="polite">
+          <span></span><div><strong>Food-dashboard laden…</strong><p>Sessie, restaurant en actuele orders worden veilig gecontroleerd.</p></div>
+        </section>
+        <section class="food-state food-error" data-error hidden role="alert">
+          <span aria-hidden="true">!</span><div><strong data-error-title>Dashboard niet beschikbaar</strong><p data-error-message>Probeer het opnieuw.</p><button class="food-button food-button-secondary" type="button" data-retry>Opnieuw proberen</button></div>
+        </section>
+
+        <div data-app hidden>
+          <section data-view="dashboard">
+            <div class="food-welcome">
+              <div><p class="food-kicker">Vandaag in de zaak</p><h2 data-welcome-title>Goed overzicht. Snel handelen.</h2><p>Bestellingen, voortgang en menu vanuit één beveiligde Food-omgeving.</p></div>
+              <div class="food-new-callout" data-new-callout hidden><span data-new-count>0</span><div><strong>Nieuwe bestelling</strong><small>Klaar om te accepteren</small></div></div>
+            </div>
+            <div class="food-metrics" aria-label="Restaurantstatistieken">
+              <article><span>Nieuw</span><strong data-metric-pending>0</strong><small>Wacht op acceptatie</small></article>
+              <article><span>In bereiding</span><strong data-metric-preparing>0</strong><small>Actieve keukenorders</small></article>
+              <article><span>Gereed</span><strong data-metric-ready>0</strong><small>Klaar voor afhalen</small></article>
+              <article><span>Afgerond vandaag</span><strong data-metric-completed>0</strong><small>Voltooide orders</small></article>
+              <article class="food-revenue"><span>Omzetindicatie vandaag</span><strong data-metric-revenue>€ 0,00</strong><small>Serverbedrag van afgeronde orders</small></article>
+            </div>
+            <section class="food-panel food-demo-reset-panel" data-demo-reset-panel hidden>
+              <header>
+                <div><p class="food-kicker">Alleen online demo</p><h2>Demo veilig herstellen</h2></div>
+                <button class="food-button food-button-secondary" type="button" data-demo-reset-open>Demo herstellen</button>
+              </header>
+              <p class="food-panel-intro">Verwijdert uitsluitend synthetische demo-orders en zet de vaste menuprijzen en beschikbaarheid terug. Accounts, rollen en restaurantinstellingen blijven behouden.</p>
+            </section>
+            <section class="food-panel">
+              <header><div><p class="food-kicker">Live orderstroom</p><h2>Recente bestellingen</h2></div><a href="/admin/food/orders" data-route-link="orders">Alle bestellingen</a></header>
+              <div class="food-order-list" data-recent-orders></div>
+              <div class="food-empty" data-recent-empty hidden><strong>Nog geen bestellingen</strong><p>Een nieuwe afhaalbestelling verschijnt hier automatisch.</p></div>
+            </section>
+          </section>
+
+          <section data-view="orders" hidden>
+            <section class="food-panel">
+              <header><div><p class="food-kicker">Orderbeheer</p><h2>Bestellingen</h2></div><span class="food-result-count" data-order-count>0 resultaten</span></header>
+              <div class="food-filterbar" role="group" aria-label="Filter bestellingen">
+                <button type="button" data-order-filter="all" aria-pressed="true">Alle</button>
+                <button type="button" data-order-filter="pending">Nieuw</button>
+                <button type="button" data-order-filter="accepted">Geaccepteerd</button>
+                <button type="button" data-order-filter="preparing">In bereiding</button>
+                <button type="button" data-order-filter="ready">Gereed</button>
+                <button type="button" data-order-filter="completed">Afgerond</button>
+                <button type="button" data-order-filter="cancelled">Geannuleerd</button>
+              </div>
+              <div class="food-order-list" data-orders></div>
+              <div class="food-empty" data-orders-empty hidden><strong>Geen orders in deze selectie</strong><p>Kies een ander filter of ververs het overzicht.</p></div>
+            </section>
+          </section>
+
+          <section data-view="menu" hidden>
+            <section class="food-panel">
+              <header><div><p class="food-kicker">Actuele kaart</p><h2>Menukaart beheren</h2></div><span class="food-permission" data-menu-permission></span></header>
+              <p class="food-panel-intro">Wijzig uitsluitend prijs en beschikbaarheid. De storefront gebruikt na verversen dezelfde actuele Food API.</p>
+              <div class="food-menu-groups" data-menu-groups></div>
+              <div class="food-empty" data-menu-empty hidden><strong>Nog geen menukaart</strong><p>Er zijn voor deze locatie geen beheerbare menu-items gevonden.</p></div>
+            </section>
+          </section>
+
+          <section data-view="integrations" hidden>
+            <div class="food-integrations-intro">
+              <div><p class="food-kicker">Groeimogelijkheden</p><h2 data-integrations-title>Alles klaar voor de volgende stap</h2><p data-integrations-intro>Verbind later betalingen, vindbaarheid, advertenties en klantcontact. Alleen aantoonbaar werkende koppelingen krijgen de status verbonden.</p></div>
+              <span>0 van 6 verbonden</span>
+            </div>
+            <div class="food-integration-grid" aria-label="Beschikbare Food-integraties">
+              <article class="food-integration-card" data-integration="mollie" data-integration-state="onboarding">
+                <header><span>M</span><div><h3>Mollie</h3><p>Online betalingen</p></div></header>
+                <strong>Onboarding vereist</strong><p>Testbetaling en betaalstatus worden pas geactiveerd nadat een afzonderlijke sandboxcontrole is geslaagd.</p>
+              </article>
+              <article class="food-integration-card" data-integration="google-business" data-integration-state="disconnected">
+                <header><span>G</span><div><h3>Google Business Profile</h3><p>Openingstijden en zichtbaarheid</p></div></header>
+                <strong>Niet verbonden</strong><p>Publicatie naar Google vereist toestemming en een gecontroleerd bedrijfsprofiel.</p>
+              </article>
+              <article class="food-integration-card" data-integration="google-ads" data-integration-state="planned">
+                <header><span>G</span><div><h3>Google Ads</h3><p>Lokale campagnes</p></div></header>
+                <strong>Binnenkort beschikbaar</strong><p>Campagnes worden pas getoond wanneer accounttoegang, budget en conversiemeting zijn bevestigd.</p>
+              </article>
+              <article class="food-integration-card" data-integration="meta" data-integration-state="planned">
+                <header><span>◎</span><div><h3>Meta</h3><p>Instagram en Facebook</p></div></header>
+                <strong>Binnenkort beschikbaar</strong><p>Geen advertentieaccount, pixel of socialprofiel is momenteel gekoppeld.</p>
+              </article>
+              <article class="food-integration-card" data-integration="whatsapp" data-integration-state="disconnected">
+                <header><span>W</span><div><h3>WhatsApp Business</h3><p>Klantcontact en orderupdates</p></div></header>
+                <strong>Niet verbonden</strong><p>Berichten worden niet verstuurd totdat nummerverificatie en toestemming zijn afgerond.</p>
+              </article>
+              <article class="food-integration-card" data-integration="thuisbezorgd" data-integration-state="research">
+                <header><span>T</span><div><h3>Thuisbezorgd</h3><p>Extern bestelkanaal</p></div></header>
+                <strong>Haalbaarheid onderzoeken</strong><p>Beschikbaarheid hangt af van technische toegang en contractuele voorwaarden.</p>
+              </article>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="food-drawer-overlay" data-detail-overlay hidden></div>
+    <aside class="food-drawer" data-detail-drawer role="dialog" aria-modal="true" aria-labelledby="food-detail-title" hidden>
+      <header><div><p class="food-kicker">Besteldetail</p><h2 id="food-detail-title" data-detail-title>Bestelling</h2></div><button type="button" data-detail-close aria-label="Besteldetail sluiten">×</button></header>
+      <div class="food-detail-body" data-detail-body></div>
+    </aside>
+    <dialog class="food-reset-dialog" data-demo-reset-dialog aria-labelledby="food-reset-title">
+      <form method="dialog" data-demo-reset-form>
+        <p class="food-kicker">Beveiligde demofunctie</p>
+        <h2 id="food-reset-title">Demo herstellen?</h2>
+        <p>Alleen de bestellingen van deze allowlisted demorestauranttenant worden verwijderd. Typ ter bevestiging:</p>
+        <code data-demo-reset-phrase></code>
+        <label for="food-reset-confirmation">Bevestiging</label>
+        <input id="food-reset-confirmation" data-demo-reset-input autocomplete="off" spellcheck="false" />
+        <p data-demo-reset-message role="status" aria-live="polite"></p>
+        <div class="food-reset-actions">
+          <button class="food-button food-button-secondary" type="button" data-demo-reset-cancel>Annuleren</button>
+          <button class="food-button food-button-primary" type="submit" data-demo-reset-confirm disabled>Herstel demo</button>
+        </div>
+      </form>
+    </dialog>
+    <div class="food-toast" data-toast hidden role="status" aria-live="polite"></div>
+  </body>
+</html>

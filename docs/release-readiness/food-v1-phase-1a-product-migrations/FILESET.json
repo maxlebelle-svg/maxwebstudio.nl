@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260728160000_food_v1_data_foundation.sql",
+      "bytes": 18584,
+      "sha256": "9bcb252d2e3e136251b9bf2200aa9c314ae7807712735d9bfeff4d6e69c8cbdf"
+    },
+    {
+      "path": "supabase/migrations/20260728161000_food_v1_tenant_security.sql",
+      "bytes": 36451,
+      "sha256": "e9511b6a527ce4876287b3070215b2e2376fdb5f8f48a918e81dbf650fb0d3fe"
+    }
+  ]
+}

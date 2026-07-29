@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Bekijk het menu en plaats veilig een afhaalbestelling." />
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+    <meta name="theme-color" content="#123f2f" />
+    <title>Bestellen | Max Webstudio Food</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/food/storefront.css" />
+    <script src="/food/storefront.js" defer></script>
+  </head>
+  <body class="food-page is-loading">
+    <a class="skip-link" href="#menu">Ga direct naar het menu</a>
+    <div class="pilot-ribbon" data-pilot-ribbon>Pilotomgeving · restaurantgegevens worden vóór livegang bevestigd</div>
+
+    <header class="food-header" data-header>
+      <a class="food-brand" href="#top" data-brand-link aria-label="Terug naar boven">
+        <span class="food-brand-mark" data-brand-mark aria-hidden="true">F</span>
+        <span class="food-brand-copy">
+          <strong class="food-brand-wordmark" data-brand-wordmark hidden><span data-brand-logo-text></span><span data-brand-logo-suffix></span></strong>
+          <strong data-brand-fallback data-storefront-name>Restaurant</strong>
+          <small data-brand-strapline>Afhalen via Max Webstudio Food</small>
+        </span>
+      </a>
+      <div class="food-header-actions">
+        <span class="opening-chip" data-opening-chip>Openingstijden laden…</span>
+        <button class="cart-trigger" type="button" data-cart-open aria-haspopup="dialog" aria-controls="food-cart">
+          <span>Mandje</span><strong data-cart-count>0</strong>
+        </button>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="food-hero" data-hero>
+        <div class="food-hero-overlay"></div>
+        <div class="food-hero-content">
+          <p class="food-eyebrow"><span data-opening-dot></span><span data-opening-label>Restaurant laden…</span></p>
+          <h1 data-hero-title>Even geduld, het menu wordt geladen.</h1>
+          <p data-hero-intro>We halen de actuele restaurant- en menu-informatie veilig op.</p>
+          <div class="food-hero-actions">
+            <a class="food-button food-button-primary" href="#menu">Bekijk het menu</a>
+            <a class="food-button food-button-ghost" data-phone-link hidden>Bel het restaurant</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="service-bar" aria-label="Bestelinformatie">
+        <article><span aria-hidden="true">↗</span><div><strong>Alleen afhalen</strong><small>Geen bezorgadres of betaling nodig</small></div></article>
+        <article><span aria-hidden="true">✓</span><div><strong>Prijs door de server</strong><small>Het definitieve totaal volgt na bestellen</small></div></article>
+        <article><span aria-hidden="true">⌁</span><div><strong data-location-name>Locatie laden…</strong><small data-location-address>Adres wordt opgehaald</small></div></article>
+      </section>
+
+      <section class="food-gallery" data-gallery-section hidden aria-labelledby="gallery-title">
+        <div class="food-gallery-heading">
+          <div><p class="section-kicker" data-gallery-kicker>Uit de keuken</p><h2 id="gallery-title" data-gallery-title>Favorieten</h2></div>
+          <p data-gallery-intro>Een visuele voorproef van de gerechten.</p>
+        </div>
+        <div class="food-gallery-grid" data-gallery-grid></div>
+      </section>
+
+      <section class="menu-section" id="menu" aria-labelledby="menu-title">
+        <div class="section-heading">
+          <div><p class="section-kicker">Vers uit de Food API</p><h2 id="menu-title">Waar heb je trek in?</h2></div>
+          <p>Prijzen zijn actueel bij het laden van het menu. Je bestelling wordt bij verzenden opnieuw gecontroleerd.</p>
+        </div>
+
+        <div class="menu-loading" data-menu-loading role="status" aria-live="polite">
+          <span></span><span></span><span></span><p>Het actuele menu wordt geladen…</p>
+        </div>
+
+        <section class="food-error" data-load-error hidden aria-labelledby="load-error-title">
+          <span aria-hidden="true">!</span>
+          <h2 id="load-error-title">Dit menu kan nu niet worden geopend.</h2>
+          <p data-load-error-message>Probeer het over een moment opnieuw.</p>
+          <button class="food-button food-button-dark" type="button" data-retry-load>Opnieuw proberen</button>
+        </section>
+
+        <div class="category-nav" data-category-nav role="navigation" aria-label="Menucategorieën" hidden></div>
+        <div class="menu-groups" data-menu-groups></div>
+        <p class="menu-disclaimer" data-menu-disclaimer hidden>
+          Dit is pilotinhoud. Gerechten, ingrediënten en allergeneninformatie moeten vóór livegang door het restaurant worden bevestigd.
+        </p>
+      </section>
+
+      <section class="restaurant-info" aria-labelledby="restaurant-info-title">
+        <div>
+          <p class="section-kicker">Afhalen</p>
+          <h2 id="restaurant-info-title" data-info-name>Restaurant</h2>
+          <p data-info-intro>Restaurantinformatie wordt geladen.</p>
+        </div>
+        <div class="restaurant-info-grid">
+          <article><small>Adres</small><strong data-info-address>Wordt geladen…</strong></article>
+          <article><small>Opening</small><strong data-info-opening>Wordt geladen…</strong><span>De server bepaalt of bestellen beschikbaar is.</span></article>
+          <article><small>Contact</small><strong><a data-info-phone>Wordt geladen…</a></strong></article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="food-footer">
+      <div><strong data-footer-name>Restaurant</strong><span>Publieke Food v1-pilot</span></div>
+      <p>Bestellen, menu en bevestiging lopen via één beveiligde Max Webstudio Food API.</p>
+    </footer>
+
+    <button class="sticky-cart" type="button" data-sticky-cart data-cart-open aria-haspopup="dialog" aria-controls="food-cart" hidden>
+      <span><strong data-sticky-count>0 items</strong><small>Bekijk je bestelling</small></span>
+      <strong data-sticky-total>€ 0,00</strong>
+    </button>
+
+    <dialog class="cart-dialog" id="food-cart" data-cart-dialog aria-labelledby="cart-title">
+      <div class="dialog-shell">
+        <header class="dialog-header">
+          <div><p class="section-kicker">Jouw afhaalbestelling</p><h2 id="cart-title">Winkelmandje</h2></div>
+          <button class="icon-button" type="button" data-cart-close aria-label="Winkelmandje sluiten">×</button>
+        </header>
+
+        <section data-cart-step>
+          <div class="cart-empty" data-cart-empty>
+            <span aria-hidden="true">＋</span><h3>Je mandje is nog leeg</h3><p>Kies een gerecht uit het menu om te beginnen.</p>
+          </div>
+          <div class="cart-lines" data-cart-lines></div>
+          <div class="cart-totals" data-cart-totals hidden>
+            <div><span>Verwacht subtotaal</span><strong data-cart-total>€ 0,00</strong></div>
+            <p>Indicatie op basis van het geladen menu. De server berekent en bevestigt het definitieve bedrag.</p>
+            <div class="ordering-message" data-ordering-message hidden role="status"></div>
+            <button class="food-button food-button-primary food-button-wide" type="button" data-checkout-open>Verder met afhalen</button>
+          </div>
+        </section>
+
+        <section data-checkout-step hidden>
+          <button class="back-button" type="button" data-checkout-back>← Terug naar mandje</button>
+          <div class="checkout-heading"><h3>Wie haalt de bestelling op?</h3><p>Alleen pickup is beschikbaar in deze pilot.</p></div>
+          <form class="checkout-form" data-checkout-form novalidate>
+            <label>Naam<span>Verplicht</span><input name="name" autocomplete="name" maxlength="120" required /></label>
+            <label>Telefoon<span>Verplicht</span><input name="phone" type="tel" autocomplete="tel" minlength="6" maxlength="32" required /></label>
+            <label>E-mail<span>Optioneel</span><input name="email" type="email" autocomplete="email" maxlength="254" /></label>
+            <label>Gewenst afhaalmoment<span>Optioneel</span><input name="pickup_at" type="datetime-local" /></label>
+            <label>Opmerking<span>Optioneel, maximaal 1000 tekens</span><textarea name="note" rows="3" maxlength="1000"></textarea></label>
+            <div class="checkout-summary"><span>Server bevestigt het totaal</span><strong data-checkout-total>€ 0,00</strong></div>
+            <p class="form-message" data-checkout-message role="status" aria-live="polite"></p>
+            <button class="food-button food-button-primary food-button-wide" type="submit" data-order-submit>Bestelling bevestigen</button>
+            <p class="checkout-legal">Je plaatst een afhaalbestelling zonder online betaling. Het restaurant ontvangt uitsluitend de ingevulde bestelgegevens.</p>
+          </form>
+        </section>
+
+        <section class="confirmation" data-confirmation-step hidden aria-labelledby="confirmation-title">
+          <span class="confirmation-check" aria-hidden="true">✓</span>
+          <p class="section-kicker">Bestelling ontvangen</p>
+          <h2 id="confirmation-title">Bedankt voor je bestelling.</h2>
+          <p data-confirmation-followup>Het restaurant kan nu met je bestelling aan de slag.</p>
+          <dl class="confirmation-meta">
+            <div><dt>Referentie</dt><dd data-confirmation-reference></dd></div>
+            <div><dt>Status</dt><dd data-confirmation-status></dd></div>
+            <div><dt>Afhalen bij</dt><dd data-confirmation-storefront></dd></div>
+          </dl>
+          <div class="confirmation-lines" data-confirmation-lines></div>
+          <div class="confirmation-total"><span>Definitief totaal</span><strong data-confirmation-total></strong></div>
+          <button class="food-button food-button-dark food-button-wide" type="button" data-confirmation-close>Sluiten</button>
+        </section>
+      </div>
+    </dialog>
+
+    <div class="food-toast" data-toast role="status" aria-live="polite" hidden></div>
+    <noscript><p class="noscript-message">JavaScript is nodig om het actuele menu en de bestelstroom te gebruiken.</p></noscript>
+  </body>
+</html>

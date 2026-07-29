@@ -1,0 +1,75 @@
+{
+  "storefront": {
+    "slug": "silverado-roti-shop-emmeloord",
+    "name": "Silverado Roti Shop",
+    "timezone": "Europe/Amsterdam",
+    "phone": "06 38975574",
+    "address": {
+      "street": "Houttuinen",
+      "house_number": "166",
+      "postal_code": "8301 XP",
+      "city": "Emmeloord",
+      "country_code": "NL"
+    },
+    "country_code": "NL",
+    "currency": "EUR",
+    "fulfilment": { "pickup": true },
+    "intro": "Surinaamse gerechten voor afhalen in Emmeloord. Dit is realistische pilotinhoud die vóór livegang samen met Silverado wordt bevestigd.",
+    "branding": {
+      "logo_url": null,
+      "logo_text": "Silverado",
+      "logo_suffix": "🇸🇷",
+      "hero_image_url": "/assets/demo-images/demo-hero-horeca.jpg"
+    },
+    "opening": {
+      "status": "open",
+      "label": "Nu open voor afhalen",
+      "weekly": {
+        "monday": [{ "open": "15:00", "close": "19:00" }],
+        "tuesday": [{ "open": "15:00", "close": "19:00" }],
+        "wednesday": [{ "open": "15:00", "close": "19:00" }],
+        "thursday": [{ "open": "15:00", "close": "19:00" }],
+        "friday": [{ "open": "15:00", "close": "19:00" }],
+        "saturday": [],
+        "sunday": []
+      }
+    },
+    "ordering": { "enabled": true, "reason": null }
+  },
+  "menu": {
+    "name": "Pilot afhaalmenu",
+    "published_at": "2026-07-28T12:00:00.000Z",
+    "currency": "EUR",
+    "tax_included": true,
+    "categories": [
+      {
+        "category_ref": "21000000-0000-4000-8000-000000000001",
+        "name": "Roti",
+        "items": [
+          { "item_ref": "22000000-0000-4000-8000-000000000001", "name": "Roti kipfilet", "description": "Kipfilet in kruidige saus met aardappel, groente en rotiplaat.", "price_minor": 1250, "tax_rate_basis_points": 900, "available": true, "image_url": null },
+          { "item_ref": "22000000-0000-4000-8000-000000000002", "name": "Roti kip", "description": "Kip met aardappel, groente en rotiplaat.", "price_minor": 1150, "tax_rate_basis_points": 900, "available": true, "image_url": null },
+          { "item_ref": "22000000-0000-4000-8000-000000000003", "name": "Rotirol kip", "description": "Handzame rotirol gevuld met kip, aardappel en groente.", "price_minor": 850, "tax_rate_basis_points": 900, "available": true, "image_url": null },
+          { "item_ref": "22000000-0000-4000-8000-000000000004", "name": "Roti vegetarisch", "description": "Pilotgerecht met aardappel en verschillende groenten.", "price_minor": 1050, "tax_rate_basis_points": 900, "available": true, "image_url": null }
+        ]
+      },
+      {
+        "category_ref": "21000000-0000-4000-8000-000000000002",
+        "name": "Nasi & bami",
+        "items": [
+          { "item_ref": "22000000-0000-4000-8000-000000000005", "name": "Nasi kip", "description": "Surinaamse nasi met kip en groente.", "price_minor": 1150, "tax_rate_basis_points": 900, "available": true, "image_url": null },
+          { "item_ref": "22000000-0000-4000-8000-000000000006", "name": "Nasi moksi", "description": "Surinaamse nasi met een gevarieerde vleessamenstelling; inhoud wordt nog bevestigd.", "price_minor": 1300, "tax_rate_basis_points": 900, "available": true, "image_url": null },
+          { "item_ref": "22000000-0000-4000-8000-000000000007", "name": "Bami kip", "description": "Surinaamse bami met kip en groente.", "price_minor": 1150, "tax_rate_basis_points": 900, "available": true, "image_url": null }
+        ]
+      },
+      {
+        "category_ref": "21000000-0000-4000-8000-000000000003",
+        "name": "Extra's",
+        "items": [
+          { "item_ref": "22000000-0000-4000-8000-000000000008", "name": "Rotiplaat", "description": "Een extra rotiplaat bij je maaltijd.", "price_minor": 300, "tax_rate_basis_points": 900, "available": true, "image_url": null },
+          { "item_ref": "22000000-0000-4000-8000-000000000009", "name": "Krokante snack", "description": "Krokante pilotsnack; definitieve samenstelling wordt nog bevestigd.", "price_minor": 250, "tax_rate_basis_points": 900, "available": true, "image_url": null },
+          { "item_ref": "22000000-0000-4000-8000-000000000010", "name": "Huisgemaakte sambal", "description": "Kleine portie pittige sambal naast je bestelling.", "price_minor": 100, "tax_rate_basis_points": 900, "available": true, "image_url": null }
+        ]
+      }
+    ]
+  }
+}
