@@ -264,11 +264,13 @@
     nodes.infoOpening.textContent = profile.opening?.label || "Openingstijden worden nog bevestigd";
     nodes.footerName.textContent = profile.name;
 
-    const status = ["open", "closed", "unknown"].includes(profile.opening?.status) ? profile.opening.status : "unknown";
+    const demoOrdering = profile.ordering?.demo_mode === true;
+    const status = demoOrdering ? "open" : (["open", "closed", "unknown"].includes(profile.opening?.status) ? profile.opening.status : "unknown");
+    const openingLabel = demoOrdering ? "Demo bestellen actief" : (profile.opening?.label || "Opening onbekend");
     nodes.openingChip.dataset.status = status;
-    nodes.openingChip.textContent = profile.opening?.label || "Opening onbekend";
+    nodes.openingChip.textContent = openingLabel;
     nodes.openingLabel.parentElement.dataset.status = status;
-    nodes.openingLabel.textContent = profile.opening?.label || "Opening onbekend";
+    nodes.openingLabel.textContent = openingLabel;
 
     if (profile.phone) {
       const href = `tel:${String(profile.phone).replace(/[^+\d]/g, "")}`;

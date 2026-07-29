@@ -151,7 +151,8 @@
       const logoText = String(branding.logo_text || baseLogoText).trim();
       const logoUrl = safeImageUrl(branding.logo_url);
       nodes.productTitle.textContent = presentationBranding.dashboard_title || logoText || "Max Webstudio";
-      nodes.productSubtitle.textContent = presentationBranding.dashboard_subtitle || "Food";
+      const productSubtitle = presentationBranding.dashboard_subtitle || "Food";
+      nodes.productSubtitle.textContent = state.context?.demo_mode === true ? `${productSubtitle} · Demo` : productSubtitle;
       nodes.productMark.replaceChildren();
       if (logoUrl) { const image = el("img"); image.src = logoUrl; image.alt = ""; nodes.productMark.append(image); nodes.productMark.classList.add("is-image"); }
       else { nodes.productMark.textContent = "F"; nodes.productMark.classList.remove("is-image"); }
@@ -184,6 +185,7 @@
     function orderCard(order) {
       const button = el("button", `food-order-card${order.status === "pending" ? " is-new" : ""}`); button.type = "button"; button.dataset.orderId = order.id; button.setAttribute("aria-label", `Open bestelling ${orderReference(order)}`);
       const ref = el("div", "food-order-ref"); ref.append(el("strong", "", `#${orderReference(order)}`), el("small", "", orderTime(order.created_at)));
+      if (state.context?.demo_mode === true) ref.append(el("em", "food-demo-order-badge", "Demo/test"));
       const status = el("div", "food-order-cell"); status.append(el("span", "", "Status"), el("strong", `food-status ${order.status}`, statusLabel(order.status)));
       const fulfilment = el("div", "food-order-cell"); fulfilment.append(el("span", "", "Type"), el("strong", "", order.fulfilment_type === "pickup" ? "Afhalen" : "Onbekend"));
       const total = el("div", "food-order-cell"); total.append(el("span", "", "Totaal"), el("strong", "", formatMoney(order.total_minor, order.currency)));

@@ -110,6 +110,27 @@ test("enabled reset still fails without an authenticated session", async () => {
   });
 });
 
+test("demo ordering override is fail-closed, environment-bound and allowlisted", async () => {
+  await withEnv({ APP_ENVIRONMENT: undefined, FOOD_DEMO_ORDERING_OVERRIDE_ENABLED: undefined, FOOD_DEMO_RESET_ALLOWLIST: DEMO_ACCOUNT }, async () => {
+    assert.equal(_private.demoOrderingOverrideAllowed(DEMO_ACCOUNT, DEMO_SLUG), false);
+  });
+  await withEnv({ APP_ENVIRONMENT: "staging", FOOD_DEMO_ORDERING_OVERRIDE_ENABLED: "true", FOOD_DEMO_RESET_ALLOWLIST: DEMO_ACCOUNT }, async () => {
+    assert.equal(_private.demoOrderingOverrideAllowed(DEMO_ACCOUNT, DEMO_SLUG), false);
+  });
+  await withEnv({ APP_ENVIRONMENT: "food_demo", FOOD_DEMO_ORDERING_OVERRIDE_ENABLED: "true", FOOD_DEMO_RESET_ALLOWLIST: DEMO_ACCOUNT }, async () => {
+    assert.equal(_private.demoOrderingOverrideAllowed(DEMO_ACCOUNT, DEMO_SLUG), true);
+    assert.equal(_private.demoOrderingOverrideAllowed("d4000000-0000-4000-8000-000000000002", "synthetic-isolation-restaurant"), false);
+  });
+});
+
+test("live demo UI labels ordering and dashboard orders explicitly as demo/test", () => {
+  assert.match(apiSource, /demo_mode: demoOrderingOverride/);
+  assert.match(apiSource, /demo_mode: demoResetEnabled\(\)/);
+  assert.match(fs.readFileSync(path.join(root, "public/food/storefront.js"), "utf8"), /Demo bestellen actief/);
+  assert.match(dashboardJs, /Demo\/test/);
+  assert.match(dashboardJs, /Food beheer.*Demo|productSubtitle.*Demo/);
+});
+
 test("server allowlist rejects a different tenant before any database mutation", async () => {
   await withEnv({ APP_ENVIRONMENT: "food_demo", FOOD_DEMO_RESET_ENABLED: "true", FOOD_DEMO_RESET_ALLOWLIST: DEMO_ACCOUNT }, async () => {
     const result = await handler(resetEvent("d4000000-0000-4000-8000-000000000002", "synthetic-isolation-restaurant"));

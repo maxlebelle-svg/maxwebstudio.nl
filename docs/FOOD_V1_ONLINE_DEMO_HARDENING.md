@@ -25,6 +25,14 @@ Veilige standaarden:
 - een ontbrekende, onbekende of gewone stagingwaarde van `APP_ENVIRONMENT` blokkeert reset;
 - browsercode leest of bepaalt geen van deze servervariabelen.
 
+Een verkoopdemonstratie buiten de echte openingstijden mag uitsluitend via de
+afzonderlijke `FOOD_DEMO_ORDERING_OVERRIDE_ENABLED=true`-poort. Die poort werkt
+alleen bij `APP_ENVIRONMENT=food_demo` en alleen voor een restaurant dat ook in
+`FOOD_DEMO_RESET_ALLOWLIST` staat. De echte openingstijden blijven ongewijzigd
+en zichtbaar; de storefront toont in plaats van een onjuiste openstatus
+expliciet `Demo bestellen actief`. Zonder alle drie voorwaarden blijft de
+normale openingstijd server-side leidend.
+
 De provisioningstap moet daarnaast `FOOD_RATE_LIMIT_SECRET` als afzonderlijk serversecret instellen voordat publieke bestellingen bewust worden geactiveerd. Geen secret staat in de repository.
 
 ## Routes en indexering

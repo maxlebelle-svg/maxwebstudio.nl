@@ -31,6 +31,13 @@ function demoResetTargetAllowed(accountId, storefrontSlug) {
   return allowlist.has(accountId) || allowlist.has(storefrontSlug);
 }
 
+function demoOrderingOverrideAllowed(accountId, storefrontSlug) {
+  if (process.env.APP_ENVIRONMENT !== "food_demo"
+      || process.env.FOOD_DEMO_ORDERING_OVERRIDE_ENABLED !== "true") return false;
+  const allowlist = demoResetAllowlist();
+  return allowlist.has(accountId) || allowlist.has(storefrontSlug);
+}
+
 class ApiError extends Error {
   constructor(status, code, publicMessage) {
     super(code);
@@ -249,6 +256,7 @@ async function storefront(slug) {
   const { location, account } = await publicLocation(slug);
   const published = publicConfiguration(location.configuration);
   const opening = openingState(published, location.timezone || account.timezone);
+  const demoOrderingOverride = demoOrderingOverrideAllowed(account.id, location.slug);
   const pickup = await serviceRpc("food_has_capability", {
     target_food_account_id: account.id, target_location_id: location.id, target_capability_key: "ordering.pickup",
   });
@@ -278,12 +286,13 @@ async function storefront(slug) {
     ordering: {
       enabled: pickup === true
         && String(process.env.FOOD_PUBLIC_ORDERING_ENABLED || "").toLowerCase() === "true"
-        && opening.status !== "closed",
+        && (opening.status !== "closed" || demoOrderingOverride),
+      demo_mode: demoOrderingOverride,
       reason: pickup !== true
         ? "pickup_unavailable"
         : String(process.env.FOOD_PUBLIC_ORDERING_ENABLED || "").toLowerCase() !== "true"
           ? "pilot_disabled"
-          : opening.status === "closed" ? "storefront_closed" : null,
+          : opening.status === "closed" && !demoOrderingOverride ? "storefront_closed" : null,
     },
   };
 }
@@ -382,7 +391,9 @@ async function createOrder(event, slug) {
   const rateKey = publicClientKey(event, slug);
   const { location, account } = await publicLocation(slug);
   const opening = openingState(publicConfiguration(location.configuration), location.timezone || account.timezone);
-  if (opening.status === "closed") throw new ApiError(409, "STOREFRONT_CLOSED", "Dit restaurant is momenteel gesloten voor bestellingen.");
+  if (opening.status === "closed" && !demoOrderingOverrideAllowed(account.id, location.slug)) {
+    throw new ApiError(409, "STOREFRONT_CLOSED", "Dit restaurant is momenteel gesloten voor bestellingen.");
+  }
   const allowed = await serviceRpc("food_consume_order_rate_limit_v1", {
     input_location_slug: slug,
     input_rate_key_hash: rateKey,
@@ -521,7 +532,7 @@ async function sessionContext(event) {
   }));
   const visibleScopes = scopes.filter(Boolean);
   if (!visibleScopes.length) throw new ApiError(403, "FORBIDDEN", "Deze handeling is niet toegestaan.");
-  return { platform_role: profile.role, scopes: visibleScopes };
+  return { platform_role: profile.role, demo_mode: demoResetEnabled(), scopes: visibleScopes };
 }
 
 function membershipFor(context, locationId, roles) {
@@ -763,6 +774,7 @@ module.exports = {
   handler,
   _private: {
     ApiError,
+    demoOrderingOverrideAllowed,
     demoResetAllowlist,
     demoResetEnabled,
     demoResetTargetAllowed,
