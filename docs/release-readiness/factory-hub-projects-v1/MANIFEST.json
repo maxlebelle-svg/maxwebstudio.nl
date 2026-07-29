@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "factory-hub-projects-v1-2026-07-29",
+  "release": "Max Webstudio Factory Hub project dossiers v1",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "targetEnvironment": "maxwebstudio_admin",
+  "productionAllowed": false,
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260729120000_factory_hub_projects.sql"
+  ],
+  "safety": {
+    "createsCustomerProducts": false,
+    "publishesWebsites": false,
+    "createsFoodTenants": false,
+    "downMigrationAllowed": false
+  }
+}

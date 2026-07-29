@@ -56,6 +56,7 @@
     ["invoices", "Open Facturen", "Facturen en betalingen", "admin-facturen.html", "Facturen", "Page"],
     ["quotes", "Open Offertes", "Offertes en proposal flow", "admin-offertes.html", "Facturen", "Page"],
     ["websites", "Open Websites", "Website Operations Center", "admin-websites.html", "Websites", "Page"],
+    ["factory-hub", "Open Factory Hub", "Website, Webshop en Food formules", "admin-factories.html", "Production", "Page"],
     ["website-factory", "Open Website Factory", "AI website builds en previews", "admin-website-factory.html", "Websites", "Page"],
     ["seo-studio", "Open SEO Studio", "SEO scans en content", "admin-seo-studio.html", "AI", "Page"],
     ["qa-scanner", "Open QA Scanner", "Website quality scans", "admin-website-qa-scanner.html", "AI", "Page"],

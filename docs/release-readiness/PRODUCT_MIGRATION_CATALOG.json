@@ -79,6 +79,10 @@
     {
       "manifest": "docs/release-readiness/food-v1-demo-cloud-service-role-acl-repair/MANIFEST.json",
       "fileset": "docs/release-readiness/food-v1-demo-cloud-service-role-acl-repair/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/factory-hub-projects-v1/MANIFEST.json",
+      "fileset": "docs/release-readiness/factory-hub-projects-v1/FILESET.json"
     }
   ]
 }

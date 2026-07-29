@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "factory-hub-projects-v1-2026-07-29",
+  "targetEnvironment": "maxwebstudio_admin",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260729120000_factory_hub_projects.sql",
+      "bytes": 2175,
+      "sha256": "070243fb04f11a2828950e64074684332ac4549666ae37a0324ea000bdc11638"
+    }
+  ]
+}
