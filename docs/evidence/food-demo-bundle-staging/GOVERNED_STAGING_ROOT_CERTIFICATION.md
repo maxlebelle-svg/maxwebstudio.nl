@@ -161,6 +161,27 @@ Silverado remained frozen at:
 - Active deploy: `6a699e15ccf9a2902dd27606`.
 - Evidence commit: `3d0a222df0376a99aaa07d26442fe2b86b8ed91c`.
 
+## Interactive staging certification
+
+The deployed admin flow was exercised against `https://maxwebstudio-staging.netlify.app` with the controlled `CP-A TEST ADMIN` account. Runtime validation created and reopened Factory project `57647c61-a933-4bb6-80ab-7d979df8af4e` for controlled customer A, verified the two-link Food presentation, QR code, reachable storefront and safe dashboard login route, and confirmed that live customer sending remains disabled on staging.
+
+The initial isolation check exposed that Demo Sites loaded all admin-readable Food bundles when customer B was active. This was corrected fail-closed at both boundaries:
+
+- commit `8d1271e2d8b44c77cf4c23685916fa6bf2ad76e4` requires the active relationship in both the UI request and server-side list endpoint;
+- customer B subsequently returned no Food bundles and could no longer see customer A's bundle;
+- customer A continued to see exactly its own bundle.
+
+The 390×844 visual check then exposed overlapping footer actions and inherited low-contrast modal text. Commit `fd6b608579c97964487cc172b3bdf74e3edef8dd` added explicit dialog contrast and a single-column, non-sticky mobile action layout. The repeat visual check passed, after which the viewport was reset to desktop.
+
+Final staging deploy:
+
+- site: `maxwebstudio-staging` (`67b2b8af-83fc-4c61-9cd8-2f78842b7615`);
+- deploy: `6a6a177837f3062094c07498`;
+- branch/local/remote HEAD: `fd6b608579c97964487cc172b3bdf74e3edef8dd`;
+- focused Food bundle regression after both fixes: **9/9 PASS**;
+- exactly one internal testmail action was executed after the isolation and mobile PASS; the server returned a successful dispatch and advanced the controlled bundle to `Verzonden`;
+- no customer mail, Silverado mail, production deploy or production database action was executed.
+
 ## Rollback position
 
 These are forward-only additive schema migrations. A rollback must therefore be a separately reviewed compensating migration; migration history must never be repaired or rewritten. Before application data exists, the smallest database compensation is to revoke access and remove only the five newly introduced, empty tables and their owned functions/triggers in dependency order. Once application data exists, preserve it and disable application entry points first. Application deployment can independently be rolled back to the previously proven staging deploy.
