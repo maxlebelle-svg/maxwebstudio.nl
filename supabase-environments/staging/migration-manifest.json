@@ -11,15 +11,15 @@
   "officialWorkdirSupport": "--workdir",
   "remoteHistoryObservedAt": "2026-07-29T14:10:29.259Z",
   "generalMigrationRoot": "supabase/migrations",
-  "generalMigrationRootFingerprint": "90544baa57b6c99e3fd65411432f1f861e1de079bc99fc0172ad338d51cbfa39",
+  "generalMigrationRootFingerprint": "8853ac5c93dc3333d8e687a152426cfdc22ba502344dd5b7e684aba799026a2a",
   "canonicalWorkdir": "supabase-environments/staging",
   "factoryStepWorkdir": "supabase-environments/staging/release-steps/factory-hub",
   "counts": {
     "applied": 32,
     "pending": 2,
-    "excluded": 38,
+    "excluded": 39,
     "providerBlockingOlderExcluded": 31,
-    "laterFeatureLineExcluded": 7
+    "laterFeatureLineExcluded": 8
   },
   "applied": [
     {
@@ -669,6 +669,18 @@
       "reason": "separate Food Demo Cloud project line",
       "classification": "excluded_from_staging_lineage",
       "providerBlockingOlderMigration": false
+    },
+    {
+      "version": "20260729180000",
+      "filename": "20260729180000_food_demo_bundle_service_role_acl_repair.sql",
+      "featureLine": "Food Demo Bundle ACL repair",
+      "reason": "local repair is not admitted to the frozen staging execution line without a separate staging authorization",
+      "classification": "excluded_from_staging_lineage",
+      "providerBlockingOlderMigration": false,
+      "sourceCommit": "ae9e3e9fb46c83343df68f90336b09b5299057c8",
+      "blobId": "f02effe601585971b29c615c2636637115c16794",
+      "sourcePath": "supabase/migrations/20260729180000_food_demo_bundle_service_role_acl_repair.sql",
+      "sha256": "737bfc5f3d8e519fdddb4baeee010941a712c7dc90841c0c053617847b5a8f5e"
     }
   ]
 }

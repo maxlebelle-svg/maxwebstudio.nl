@@ -31,9 +31,9 @@ export function validateGovernedStagingRoot(repositoryRoot) {
   assert.deepEqual(manifest.counts, {
     applied: 32,
     pending: 2,
-    excluded: 38,
+    excluded: 39,
     providerBlockingOlderExcluded: 31,
-    laterFeatureLineExcluded: 7
+    laterFeatureLineExcluded: 8
   });
 
   for (const config of [path.join(stagingRoot, 'supabase/config.toml'), path.join(factoryRoot, 'supabase/config.toml')]) {

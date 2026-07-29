@@ -89,11 +89,15 @@ test('14 Factory step contains all 32 applied files byte-identically', () => {
   for (const entry of manifest.applied) assert.equal(fs.readFileSync(path.join(factory, entry.filename)).equals(fs.readFileSync(path.join(canonical, entry.filename))), true, entry.filename);
 });
 
-test('15 manifest explicitly excludes every non-staging non-candidate migration', () => assert.equal(manifest.excluded.length, 38));
+test('15 manifest explicitly excludes every non-staging non-candidate migration', () => assert.equal(manifest.excluded.length, 39));
 
-test('16 excluded set distinguishes 31 older blockers from seven later feature migrations', () => {
+test('16 excluded set distinguishes 31 older blockers from eight later feature migrations', () => {
   assert.equal(manifest.excluded.filter((entry) => entry.providerBlockingOlderMigration).length, 31);
-  assert.equal(manifest.excluded.filter((entry) => !entry.providerBlockingOlderMigration).length, 7);
+  assert.equal(manifest.excluded.filter((entry) => !entry.providerBlockingOlderMigration).length, 8);
+  const repair = manifest.excluded.find((entry) => entry.version === '20260729180000');
+  assert.equal(repair.sourceCommit, 'ae9e3e9fb46c83343df68f90336b09b5299057c8');
+  assert.equal(repair.sha256, '737bfc5f3d8e519fdddb4baeee010941a712c7dc90841c0c053617847b5a8f5e');
+  assert.match(repair.reason, /not admitted.*separate staging authorization/);
 });
 
 test('17 no excluded migration exists in either execution root', () => {
