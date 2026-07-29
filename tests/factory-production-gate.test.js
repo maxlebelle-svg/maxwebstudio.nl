@@ -10,8 +10,10 @@ const root = path.resolve(__dirname, "..");
 const project = {
   id: "d9428888-122b-4f2c-9291-31bdf2f21f25", relationship_type: "customer", relationship_id: "ca000000-0000-4000-8000-000000000101",
   factory_type: "food", blueprint_key: "food-pickup-v1", blueprint_version: 1, updated_at: "2026-07-29T18:00:00.000Z", configuration: {},
+  gate_generation: 7, gate_generation_id: "70000000-0000-4000-8000-000000000007",
 };
 const actor = { profileId: "20000000-0000-4000-8000-000000000001", authUserId: "10000000-0000-4000-8000-000000000001", role: "admin" };
+const bound = (row) => ({ ...row, project_generation: project.gate_generation, project_generation_id: project.gate_generation_id, project_generation_fingerprint: "f".repeat(64) });
 
 test("Food Gate has fifteen allowlisted suppliers and consciously blocking production sources", () => {
   const checks = definitionsFor(project);
@@ -42,7 +44,7 @@ test("Gate remains blocked for missing, not-configured, failed and expired suppl
   const reports = definitionsFor(project).map((item) => normalizeSupplierResult(project, item.key, item.provider, { status: "missing", blockingError: "Missing" }, now));
   reports[0] = normalizeSupplierResult(project, definitionsFor(project)[0].key, definitionsFor(project)[0].provider, { status: "not_configured", blockingError: "Not configured" }, now);
   reports[1] = normalizeSupplierResult(project, definitionsFor(project)[1].key, definitionsFor(project)[1].provider, { status: "failed", blockingError: "Failed" }, now);
-  const summary = summarizeGate(project, reports, [], now);
+  const summary = summarizeGate(project, reports.map(bound), [], now);
   assert.equal(summary.canGoLive, false);
   assert.equal(summary.progress, 0);
   assert.equal(summary.counts.blocking, 15);
@@ -52,8 +54,8 @@ test("only newest append-only supplier result determines current state and TTL e
   const definition = definitionsFor(project)[0];
   const oldMissing = normalizeSupplierResult(project, definition.key, definition.provider, { status: "missing", blockingError: "Old missing" }, new Date("2026-07-29T18:00:00Z"));
   const latestPass = normalizeSupplierResult(project, definition.key, definition.provider, { status: "passed", trustedSnapshot: { id: 1 }, evidence: { summary: "Trusted", artifactRef: "db://trusted/1", observedAt: "2026-07-29T19:00:00Z" } }, new Date("2026-07-29T19:00:00Z"));
-  assert.equal(summarizeGate(project, [oldMissing, latestPass], [], new Date("2026-07-29T20:00:00Z")).checks[0].effectiveStatus, "passed");
-  assert.equal(summarizeGate(project, [oldMissing, latestPass], [], new Date("2026-07-31T20:00:00Z")).checks[0].effectiveStatus, "expired");
+  assert.equal(summarizeGate(project, [bound(oldMissing), bound(latestPass)], [], new Date("2026-07-29T20:00:00Z")).checks[0].effectiveStatus, "passed");
+  assert.equal(summarizeGate(project, [bound(oldMissing), bound(latestPass)], [], new Date("2026-07-31T20:00:00Z")).checks[0].effectiveStatus, "expired");
 });
 
 test("real suppliers read canonical sources and leave absent sources blocking", async () => {
@@ -72,10 +74,12 @@ test("real suppliers read canonical sources and leave absent sources blocking", 
   for (const key of ["menu_opening_hours","domain_mapping","dns_verified","ssl_active","business_email_preserved","mollie_connected","legal_set","internal_approval","customer_approval"]) assert.notEqual(byKey.get(key).status, "passed", key);
 });
 
-test("override is visible and never paints missing checks green", () => {
+test("override is visible and cannot replace unbound or missing checks", () => {
   const override = { id: "override-1", status: "active", reason: "Bewuste tijdelijke live-uitzondering", open_risks: ["SSL nog in uitgifte"], created_by: "profile-1", created_at: "2026-07-29T18:00:00Z" };
   const summary = summarizeGate(project, [], [override], new Date("2026-07-29T19:00:00Z"));
-  assert.equal(summary.releaseMode, "override");
+  assert.equal(summary.releaseMode, "blocked");
+  assert.equal(summary.bindingComplete, false);
+  assert.equal(summary.canGoLive, false);
   assert.equal(summary.progress, 0);
   assert.equal(summary.counts.blocking, 15);
 });
@@ -83,6 +87,7 @@ test("override is visible and never paints missing checks green", () => {
 test("schema, server and UI enforce suppliers, append-only evidence and database preflight", () => {
   const sqlPath = path.join(root, "docs/release-readiness/factory-production-gate-v1/20260729200000_factory_production_gate.sql");
   const sql = fs.readFileSync(sqlPath, "utf8");
+  const hardening = fs.readFileSync(path.join(root, "docs/release-readiness/factory-production-gate-v1/20260730120000_harden_factory_gate_generation_and_audit.sql"), "utf8");
   const handler = fs.readFileSync(path.join(root, "functions/admin-factory-projects.js"), "utf8");
   const suppliers = fs.readFileSync(path.join(root, "functions/_factory-production-gate-suppliers.js"), "utf8");
   const ui = fs.readFileSync(path.join(root, "public/admin/ui/factory-hub.js"), "utf8");
@@ -90,6 +95,13 @@ test("schema, server and UI enforce suppliers, append-only evidence and database
   assert.match(sql, /factory_customer_approvals_no_update/);
   assert.match(sql, /factory_projects_block_ungated_live/);
   assert.match(sql, /superadmin_required_for_override/);
+  assert.match(hardening, /factory_begin_gate_generation_v1/);
+  assert.match(hardening, /factory_store_gate_checks_v1/);
+  assert.match(hardening, /stale_or_unbound_gate_evidence/);
+  assert.match(hardening, /project_generation_fingerprint/);
+  assert.match(hardening, /previousStatus/);
+  assert.match(hardening, /newStatus/);
+  assert.match(hardening, /revoke insert on public\.factory_gate_checks from service_role/);
   assert.match(handler, /CALLER_EVIDENCE_REJECTED/);
   assert.doesNotMatch(handler, /normalizeReport/);
   assert.match(handler, /collectSupplierResults/);
@@ -102,6 +114,8 @@ test("release fileset checksum stays exact", () => {
   const sqlPath = path.join(root, "docs/release-readiness/factory-production-gate-v1/20260729200000_factory_production_gate.sql");
   const fileset = JSON.parse(fs.readFileSync(path.join(root, "docs/release-readiness/factory-production-gate-v1/FILESET.json"), "utf8"));
   assert.equal(crypto.createHash("sha256").update(fs.readFileSync(sqlPath)).digest("hex"), fileset.files[0].sha256);
+  const hardeningPath = path.join(root, "docs/release-readiness/factory-production-gate-v1/20260730120000_harden_factory_gate_generation_and_audit.sql");
+  assert.equal(crypto.createHash("sha256").update(fs.readFileSync(hardeningPath)).digest("hex"), fileset.files[1].sha256);
 });
 
 test("local PostgreSQL validator is isolated and covers direct SQL and RPC attacks", () => {
@@ -113,4 +127,18 @@ test("local PostgreSQL validator is isolated and covers direct SQL and RPC attac
   assert.match(fixture, /caller-supplied evidence insert unexpectedly allowed/);
   assert.match(fixture, /cross-tenant customer approval unexpectedly allowed/);
   assert.match(fixture, /LIVE VIA UITZONDERING audit missing/);
+  const generationFixture = fs.readFileSync(path.join(root, "tests/fixtures/factory-production-gate-generation-functional.sql"), "utf8");
+  assert.match(generationFixture, /current caller timestamp rescued stale generation/);
+  assert.match(generationFixture, /override replaced unbound technical truth/);
+  assert.match(generationFixture, /live authorization replay emitted/);
+});
+
+test("unbound historical evidence fails closed even when every result says passed", () => {
+  const rows = definitionsFor(project).map((item) => normalizeSupplierResult(project, item.key, item.provider, {
+    status: "passed", trustedSnapshot: { proven: true }, evidence: { summary: "Trusted", artifactRef: `db://trusted/${item.key}`, observedAt: "2026-07-30T12:00:00Z" },
+  }, new Date("2026-07-30T12:00:00Z")));
+  const summary = summarizeGate(project, rows, [], new Date("2026-07-30T12:01:00Z"));
+  assert.equal(summary.bindingComplete, false);
+  assert.equal(summary.canGoLive, false);
+  assert.equal(summary.counts.blocking, 15);
 });

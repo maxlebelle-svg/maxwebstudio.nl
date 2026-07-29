@@ -41,12 +41,12 @@ case $action in
     verify_target_lock $canonical_workdir
     exec supabase --workdir $canonical_workdir db push --linked --dry-run
     ;;
-  apply-production-gate)
-    [[ $# -eq 1 ]] || fail "apply-production-gate accepts no extra arguments"
+  apply-gate-hardening)
+    [[ $# -eq 1 ]] || fail "apply-gate-hardening accepts no extra arguments"
     verify_target_lock $canonical_workdir
     exec supabase --workdir $canonical_workdir migration up --linked
     ;;
   *)
-    fail "allowed actions: list, dry-run, apply-production-gate"
+    fail "allowed actions: list, dry-run, apply-gate-hardening"
     ;;
 esac

@@ -9,13 +9,13 @@
   ],
   "cliVersionCertified": "2.108.0",
   "officialWorkdirSupport": "--workdir",
-  "remoteHistoryObservedAt": "2026-07-29T18:50:00.000Z",
+  "remoteHistoryObservedAt": "2026-07-30T00:00:00.000Z",
   "generalMigrationRoot": "supabase/migrations",
   "generalMigrationRootFingerprint": "8853ac5c93dc3333d8e687a152426cfdc22ba502344dd5b7e684aba799026a2a",
   "canonicalWorkdir": "supabase-environments/staging",
   "factoryStepWorkdir": "supabase-environments/staging/release-steps/factory-hub",
   "counts": {
-    "applied": 35,
+    "applied": 36,
     "pending": 1,
     "excluded": 38,
     "providerBlockingOlderExcluded": 31,
@@ -371,9 +371,7 @@
       "sourcePath": "supabase/migrations/20260729180000_food_demo_bundle_service_role_acl_repair.sql",
       "remoteStatus": "applied",
       "classification": "applied"
-    }
-  ],
-  "pending": [
+    },
     {
       "version": "20260729200000",
       "filename": "20260729200000_factory_production_gate.sql",
@@ -381,6 +379,17 @@
       "sourceCommit": "e33428cdb61efe54356ae7f76986d623f556d685",
       "blobId": "99eb874aa33bccddf68321154947ae653d87dd4e",
       "sourcePath": "docs/release-readiness/factory-production-gate-v1/20260729200000_factory_production_gate.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    }
+  ],
+  "pending": [
+    {
+      "version": "20260730120000",
+      "filename": "20260730120000_harden_factory_gate_generation_and_audit.sql",
+      "sha256": "22fa7f5f39a74e662134c825eb2feff3313f0c281d99107add7c9ca0173819ea",
+      "blobId": "db99d2549a29b31d87d2c116e524d22783c928e6",
+      "sourcePath": "docs/release-readiness/factory-production-gate-v1/20260730120000_harden_factory_gate_generation_and_audit.sql",
       "remoteStatus": "pending",
       "classification": "pending"
     }

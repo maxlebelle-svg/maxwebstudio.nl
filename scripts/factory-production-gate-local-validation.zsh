@@ -34,9 +34,16 @@ done
 gate_result=$($gate_pg_bin/psql -h $gate_socket -d $gate_database -v ON_ERROR_STOP=1 -AtX -f $gate_root/tests/fixtures/factory-production-gate-functional.sql)
 [[ $gate_result == *PASS_FACTORY_PRODUCTION_GATE_FUNCTIONAL* ]] || { print -u2 -- $gate_result; exit 1; }
 
+$gate_pg_bin/psql -h $gate_socket -d $gate_database -v ON_ERROR_STOP=1 \
+  -f $gate_root/docs/release-readiness/factory-production-gate-v1/20260730120000_harden_factory_gate_generation_and_audit.sql >/dev/null
+gate_hardening_result=$($gate_pg_bin/psql -h $gate_socket -d $gate_database -v ON_ERROR_STOP=1 -AtX \
+  -f $gate_root/tests/fixtures/factory-production-gate-generation-functional.sql)
+[[ $gate_hardening_result == *PASS_FACTORY_GATE_GENERATION_AND_AUDIT_FUNCTIONAL* ]] || { print -u2 -- $gate_hardening_result; exit 1; }
+
 print -r -- "status=PASS_FACTORY_PRODUCTION_GATE_LOCAL_VALIDATION"
 print -r -- "database=isolated Unix-socket-only PostgreSQL cluster"
 print -r -- "direct_live_and_caller_evidence=denied"
 print -r -- "roles_overrides_audit_invalidation=passed"
+print -r -- "project_generation_binding_and_replay=passed"
 print -r -- "tenant_scope=passed"
 print -r -- "production_contact=false"

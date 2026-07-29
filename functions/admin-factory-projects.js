@@ -36,7 +36,7 @@ async function listProjects(event) {
   const query = event.queryStringParameters || {};
   const relationship = relationshipFrom(query, true);
   const params = new URLSearchParams({
-    select: "id,relationship_type,relationship_id,factory_type,blueprint_key,blueprint_version,name,status,configuration,created_by,created_at,updated_at",
+    select: "id,relationship_type,relationship_id,factory_type,blueprint_key,blueprint_version,name,status,configuration,created_by,created_at,updated_at,gate_generation,gate_generation_id,gate_generation_started_at",
     order: "updated_at.desc",
     limit: "100",
   });
@@ -125,35 +125,64 @@ function rejectCallerEvidence(body) {
 
 async function refreshChecks(project, admin) {
   assertAdminRole(admin, ["super_admin", "admin"], "Alleen een actieve admin kan de vertrouwde bewijsleveranciers uitvoeren.");
+  const generation = await beginGateGeneration(project, admin, false);
+  const boundProject = projectWithGeneration(project, generation);
   const rows = await collectSupplierResults(project, admin, supplierAdapters());
-  await storeSupplierResults(project, rows, admin);
-  return json(200, { success: true, productionGate: await gateForProject(project, true) });
+  await storeSupplierResults(project, rows, admin, generation);
+  return json(200, { success: true, productionGate: await gateForProject(boundProject, true) });
 }
 
 async function runPreflight(project, admin, authorizeLive) {
   assertAdminRole(admin, ["super_admin", "admin"], "Alleen een actieve admin kan de Production Gate uitvoeren.");
-  await auditGate(project.id, "preflight_requested", admin, { authorizeLive });
+  const generation = await beginGateGeneration(project, admin, authorizeLive);
+  const boundProject = projectWithGeneration(project, generation);
   const rows = await collectSupplierResults(project, admin, supplierAdapters());
-  await storeSupplierResults(project, rows, admin);
-  const gate = await gateForProject(project, true);
+  await storeSupplierResults(project, rows, admin, generation);
+  const gate = await gateForProject(boundProject, true);
   const eventType = gate.canGoLive ? "preflight_passed" : authorizeLive ? "live_attempt_blocked" : "preflight_blocked";
-  await auditGate(project.id, eventType, admin, { strictCanGoLive: gate.strictCanGoLive, releaseMode: gate.releaseMode, blockingKeys: gate.blockingKeys });
+  const transition = gate.canGoLive
+    ? { reason: "all_required_checks_passed", previousStatus: "preflight_running", newStatus: "preflight_passed" }
+    : { reason: "required_checks_blocking", previousStatus: "preflight_running", newStatus: "blocked" };
+  await auditGate(project.id, eventType, admin, { ...transition, strictCanGoLive: gate.strictCanGoLive, releaseMode: gate.releaseMode, blockingKeys: gate.blockingKeys });
   if (!gate.canGoLive) {
     if (authorizeLive) throw clientError(409, "PRODUCTION_GATE_BLOCKED", `Livegang is geblokkeerd door ${gate.counts.blocking} verplichte controle${gate.counts.blocking === 1 ? "" : "s"}.`);
     return json(200, { success: true, productionGate: gate });
   }
   if (!authorizeLive) return json(200, { success: true, productionGate: gate });
-  const authorization = await supabaseRpc("factory_authorize_live_v1", { input_project_id: project.id, input_actor_profile_id: admin.profileId, input_request_id: crypto.randomUUID(), input_expected_project_updated_at: project.updated_at });
+  const authorization = await supabaseRpc("factory_authorize_live_v1", { input_project_id: project.id, input_actor_profile_id: admin.profileId, input_request_id: crypto.randomUUID(), input_expected_project_updated_at: generation.projectUpdatedAt || project.updated_at });
   if (!authorization?.authorized) throw clientError(409, "PRODUCTION_GATE_BLOCKED", "De databasepreflight heeft livegang geblokkeerd.");
   return json(200, { success: true, project: authorization.project || project, productionGate: gate, liveAuthorized: true, releaseMode: authorization.releaseMode });
 }
 
-async function storeSupplierResults(project, reports, admin) {
-  await gateSupabase("factory_gate_checks", new URLSearchParams(), {
-    method: "POST",
-    body: reports.map((report) => ({ id: crypto.randomUUID(), factory_project_id: project.id, ...report, checked_by: UUID.test(admin?.profileId || "") ? admin.profileId : null })),
+async function beginGateGeneration(project, admin, authorizeLive) {
+  const result = await supabaseRpc("factory_begin_gate_generation_v1", {
+    input_project_id: project.id,
+    input_actor_profile_id: admin.profileId,
+    input_request_id: crypto.randomUUID(),
+    input_authorize_live: Boolean(authorizeLive),
   });
-  for (const report of reports) await auditGate(project.id, "check_reported", admin, { checkKey: report.check_key, provider: report.source, status: report.status, evidenceHash: report.evidence_hash }, report.check_key);
+  if (!result?.started || !UUID.test(result.generationId || "")) throw clientError(409, "PRODUCTION_GATE_BLOCKED", "De database kon geen verse Production Gate-generatie starten.");
+  return result;
+}
+
+function projectWithGeneration(project, generation) {
+  return {
+    ...project,
+    gate_generation: generation.projectGeneration,
+    gate_generation_id: generation.generationId,
+    updated_at: generation.projectUpdatedAt || project.updated_at,
+  };
+}
+
+async function storeSupplierResults(project, reports, admin, generation) {
+  const checks = reports.map(({ checked_at: _checkedAt, expires_at: _expiresAt, ...report }) => report);
+  await supabaseRpc("factory_store_gate_checks_v1", {
+    input_project_id: project.id,
+    input_actor_profile_id: admin.profileId,
+    input_request_id: crypto.randomUUID(),
+    input_generation_id: generation.generationId,
+    input_checks: checks,
+  });
 }
 
 async function recordInternalApproval(project, body, admin) {
@@ -163,8 +192,8 @@ async function recordInternalApproval(project, body, admin) {
   const statementVersion = "factory_internal_approval_nl_v1";
   const row = { id: crypto.randomUUID(), factory_project_id: project.id, attestation_type: "internal_approval", status: "active", statement_version: statementVersion, statement_hash: crypto.createHash("sha256").update(statement).digest("hex"), created_by: admin.profileId };
   const created = await gateSupabase("factory_gate_attestations", new URLSearchParams({ select: "*" }), { method: "POST", body: [row], prefer: "return=representation" });
-  await auditGate(project.id, "attestation_created", admin, { attestationId: created?.[0]?.id || row.id, attestationType: "internal_approval", statementVersion });
-  return json(201, { success: true, productionGate: await gateForProject(project, true) });
+  await auditGate(project.id, "attestation_created", admin, { reason: "internal_approval_recorded", previousStatus: "missing", newStatus: "active", attestationId: created?.[0]?.id || row.id, attestationType: "internal_approval", statementVersion });
+  return json(201, { success: true, productionGate: await gateForProject(await projectById(project.id), true) });
 }
 
 async function createOverride(project, body, admin) {
@@ -182,7 +211,7 @@ async function createOverride(project, body, admin) {
   const rows = await gateSupabase("factory_gate_overrides", new URLSearchParams({ select: "*" }), {
     method: "POST", body: [{ id: crypto.randomUUID(), factory_project_id: project.id, status: "active", reason, open_risks: risks, created_by: admin.profileId, expires_at: expiresAt?.toISOString() || null }], prefer: "return=representation",
   });
-  await auditGate(project.id, "override_created", admin, { overrideId: rows?.[0]?.id || null, reason, openRisks: risks });
+  await auditGate(project.id, "override_created", admin, { overrideId: rows?.[0]?.id || null, reason, previousStatus: "absent", newStatus: "active", openRisks: risks });
   return json(201, { success: true, override: rows?.[0] || null, productionGate: await gateForProject(project, true) });
 }
 
@@ -195,7 +224,7 @@ async function revokeOverride(project, body, admin) {
     method: "PATCH", body: { status: "revoked", revoked_by: admin.profileId, revoked_at: new Date().toISOString(), revoke_reason: reason }, prefer: "return=representation",
   });
   if (!rows?.length) throw clientError(404, "OVERRIDE_NOT_FOUND", "Actieve uitzondering niet gevonden.");
-  await auditGate(project.id, "override_revoked", admin, { overrideId: id, reason });
+  await auditGate(project.id, "override_revoked", admin, { overrideId: id, reason, previousStatus: "active", newStatus: "revoked" });
   return json(200, { success: true, productionGate: await gateForProject(project, true) });
 }
 

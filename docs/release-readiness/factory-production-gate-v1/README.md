@@ -1,6 +1,6 @@
 # Factory Production Gate v1
 
-Status: lokaal gehardend en functioneel getest; niet gemigreerd, niet gedeployed en niet geactiveerd.
+Status: basis actief op staging; forward-only generatie- en audithardening lokaal functioneel getest en uitsluitend kandidaat voor staging.
 
 ## Doel
 
@@ -12,8 +12,12 @@ Deze kandidaat maakt Factory-livegang fail-closed. Een percentage is uitsluitend
 - De openbare adminactie `report_check` is verwijderd en wordt expliciet geweigerd.
 - Callers kunnen geen status, bron, fingerprint, bewijs of vervaldatum kiezen.
 - Iedere preflight voert alle leveranciers opnieuw uit en schrijft een nieuwe append-only meetreeks.
+- Iedere nieuwe meetreeks krijgt een monotone, database-uitgegeven projectgeneratie en een database-afgeleide bindingsfingerprint.
+- Historisch bewijs zonder projectgeneratie blijft onveranderd maar kan geen livegang meer autoriseren.
+- Een relevante dossierwijziging trekt de actieve generatie database-side in; een caller-timestamp kan oud bewijs niet herstellen.
 - `not_configured`, `missing`, `failed` en `expired` blijven blokkerend.
 - `factory_gate_events` is append-only voor controles, preflights, blokkades, uitzonderingen en liveautorisaties.
+- Nieuwe transitie-events vereisen database-side actor, reden, vorige status, nieuwe status, tijd en projectcontext.
 - `factory_gate_overrides` vereist een actieve superadmin en verandert nooit een controle in PASS.
 - `factory_customer_approvals` is een canonieke, onveranderlijke klantgoedkeuring die alleen de aan het dossier gekoppelde klant kan vastleggen.
 

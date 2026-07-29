@@ -79,19 +79,23 @@ function normalizeSupplierResult(project, checkKey, provider, result, now = new 
 }
 
 function summarizeGate(project, storedChecks = [], storedOverrides = [], now = new Date()) {
-  const newest = newestChecks(storedChecks);
+  const newest = newestChecks(storedChecks, project);
   const checks = definitionsFor(project).map((item) => hydrateCheck(item, newest.get(item.key), now));
   const blocking = checks.filter((item) => item.required && item.effectiveStatus !== "passed");
   const passed = checks.filter((item) => item.effectiveStatus === "passed");
   const failed = checks.filter((item) => item.effectiveStatus === "failed");
   const expired = checks.filter((item) => item.effectiveStatus === "expired");
   const override = activeOverride(storedOverrides, now);
+  const bindingComplete = Boolean(project?.gate_generation_id)
+    && checks.length > 0
+    && checks.every((item) => item.projectGenerationBound === true);
   const strictCanGoLive = blocking.length === 0;
   return {
-    version: 1,
-    canGoLive: strictCanGoLive || Boolean(override),
-    strictCanGoLive,
-    releaseMode: override && !strictCanGoLive ? "override" : strictCanGoLive ? "standard" : "blocked",
+    version: 2,
+    bindingComplete,
+    canGoLive: bindingComplete && (strictCanGoLive || Boolean(override)),
+    strictCanGoLive: bindingComplete && strictCanGoLive,
+    releaseMode: bindingComplete && override && !strictCanGoLive ? "override" : bindingComplete && strictCanGoLive ? "standard" : "blocked",
     progress: checks.length ? Math.round((passed.length / checks.length) * 100) : 0,
     counts: { total: checks.length, passed: passed.length, blocking: blocking.length, failed: failed.length, expired: expired.length },
     checks,
@@ -100,8 +104,13 @@ function summarizeGate(project, storedChecks = [], storedOverrides = [], now = n
   };
 }
 
-function newestChecks(rows) {
-  const ordered = [...(Array.isArray(rows) ? rows : [])].sort((a, b) => new Date(b.checked_at || 0) - new Date(a.checked_at || 0));
+function newestChecks(rows, project) {
+  if (!project?.gate_generation_id) return new Map();
+  const ordered = [...(Array.isArray(rows) ? rows : [])]
+    .filter((row) => row.project_generation_id === project.gate_generation_id
+      && Number(row.project_generation) === Number(project.gate_generation)
+      && /^[0-9a-f]{64}$/.test(String(row.project_generation_fingerprint || "")))
+    .sort((a, b) => new Date(b.checked_at || 0) - new Date(a.checked_at || 0));
   const result = new Map();
   for (const row of ordered) if (!result.has(row.check_key)) result.set(row.check_key, row);
   return result;
@@ -127,6 +136,7 @@ function hydrateCheck(checkDefinition, stored, now) {
     checkedAt: stored?.checked_at || null,
     expiresAt: stored?.expires_at || null,
     fingerprint: stored?.input_fingerprint || null,
+    projectGenerationBound: Boolean(stored),
     evidence: safeEvidence(stored?.evidence),
   };
 }

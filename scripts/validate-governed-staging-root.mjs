@@ -27,7 +27,7 @@ export function validateGovernedStagingRoot(repositoryRoot) {
   assert.equal(manifest.targetProjectRef, expectedProjectRef);
   assert.ok(!manifest.forbiddenProjectRefs.includes(manifest.targetProjectRef));
   assert.deepEqual(manifest.counts, {
-    applied: 35,
+    applied: 36,
     pending: 1,
     excluded: 38,
     providerBlockingOlderExcluded: 31,
@@ -49,8 +49,8 @@ export function validateGovernedStagingRoot(repositoryRoot) {
   assert.equal(new Set(appliedVersions).size, manifest.applied.length);
   assert.equal(new Set(pendingVersions).size, manifest.pending.length);
   assert.equal(new Set(excludedVersions).size, manifest.excluded.length);
-  assert.deepEqual(pendingVersions, ['20260729200000']);
-  assert.equal(manifest.pending[0].sha256, '830e113abb432417d50262ef45f48a390e2cbd900a5a45c2fb1faeb6360132d5');
+  assert.deepEqual(pendingVersions, ['20260730120000']);
+  assert.equal(manifest.pending[0].sha256, '22fa7f5f39a74e662134c825eb2feff3313f0c281d99107add7c9ca0173819ea');
   assert.ok(appliedVersions.every((version) => Number(version) < Number(pendingVersions[0])));
 
   const overlaps = [
@@ -69,8 +69,13 @@ export function validateGovernedStagingRoot(repositoryRoot) {
     assert.equal(sha256(canonical), entry.sha256, entry.filename);
     assert.equal(sha256(source), entry.sha256, `source ${entry.filename}`);
     assert.equal(fs.readFileSync(canonical).equals(fs.readFileSync(source)), true, entry.filename);
-    assert.equal(git(repositoryRoot, ['rev-parse', `${entry.sourceCommit}:${entry.sourcePath}`]), entry.blobId, entry.filename);
-    assert.equal(git(repositoryRoot, ['cat-file', '-t', entry.blobId]), 'blob', entry.filename);
+    if (entry.sourceCommit) {
+      assert.equal(git(repositoryRoot, ['rev-parse', `${entry.sourceCommit}:${entry.sourcePath}`]), entry.blobId, entry.filename);
+      assert.equal(git(repositoryRoot, ['cat-file', '-t', entry.blobId]), 'blob', entry.filename);
+    } else {
+      assert.equal(entry.classification, 'pending');
+      assert.equal(git(repositoryRoot, ['hash-object', entry.sourcePath]), entry.blobId, entry.filename);
+    }
   }
   for (const entry of manifest.excluded) {
     assert.equal(entry.classification, 'excluded_from_staging_lineage');

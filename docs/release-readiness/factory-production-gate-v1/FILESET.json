@@ -9,6 +9,11 @@
       "order": 1,
       "filename": "20260729200000_factory_production_gate.sql",
       "sha256": "830e113abb432417d50262ef45f48a390e2cbd900a5a45c2fb1faeb6360132d5"
+    },
+    {
+      "order": 2,
+      "filename": "20260730120000_harden_factory_gate_generation_and_audit.sql",
+      "sha256": "22fa7f5f39a74e662134c825eb2feff3313f0c281d99107add7c9ca0173819ea"
     }
   ]
 }

@@ -18,8 +18,8 @@ test("validator certifies the reconciled static staging root", async () => {
   const { validateGovernedStagingRoot } = await import(path.join(root, "scripts/validate-governed-staging-root.mjs"));
   const result = validateGovernedStagingRoot(root);
   assert.equal(result.status, "PASS_GOVERNED_STAGING_ROOT_STATIC");
-  assert.equal(result.applied, 35);
-  assert.deepEqual(result.pending, ["20260729200000"]);
+  assert.equal(result.applied, 36);
+  assert.deepEqual(result.pending, ["20260730120000"]);
 });
 
 test("manifest is locked to maxwebstudio-test and forbids production plus Silverado", () => {
@@ -28,11 +28,11 @@ test("manifest is locked to maxwebstudio-test and forbids production plus Silver
   assert.equal(fs.readFileSync(path.join(staging, "target-project-ref"), "utf8").trim(), manifest.targetProjectRef);
 });
 
-test("manifest records exactly the 35 evidenced remote-applied versions", () => {
-  assert.equal(manifest.applied.length, 35);
-  assert.equal(new Set(manifest.applied.map((item) => item.version)).size, 35);
+test("manifest records exactly the 36 evidenced remote-applied versions", () => {
+  assert.equal(manifest.applied.length, 36);
+  assert.equal(new Set(manifest.applied.map((item) => item.version)).size, 36);
   assert(manifest.applied.every((item) => item.remoteStatus === "applied" && item.classification === "applied"));
-  assert.deepEqual(manifest.applied.slice(-3).map((item) => item.version), ["20260729120000", "20260729170000", "20260729180000"]);
+  assert.deepEqual(manifest.applied.slice(-4).map((item) => item.version), ["20260729120000", "20260729170000", "20260729180000", "20260729200000"]);
 });
 
 test("Factory Hub, Food Demo Bundle and ACL repair checksums remain exact", () => {
@@ -44,17 +44,17 @@ test("Factory Hub, Food Demo Bundle and ACL repair checksums remain exact", () =
   for (const [version, checksum] of expected) assert.equal(manifest.applied.find((item) => item.version === version).sha256, checksum);
 });
 
-test("Production Gate is chronologically next and the only pending candidate", () => {
-  assert.deepEqual(manifest.pending.map((item) => item.version), ["20260729200000"]);
-  assert.equal(manifest.pending[0].filename, "20260729200000_factory_production_gate.sql");
-  assert.equal(manifest.pending[0].sha256, "830e113abb432417d50262ef45f48a390e2cbd900a5a45c2fb1faeb6360132d5");
-  assert(manifest.applied.every((item) => Number(item.version) < 20260729200000));
+test("Gate hardening is chronologically next and the only pending candidate", () => {
+  assert.deepEqual(manifest.pending.map((item) => item.version), ["20260730120000"]);
+  assert.equal(manifest.pending[0].filename, "20260730120000_harden_factory_gate_generation_and_audit.sql");
+  assert.equal(manifest.pending[0].sha256, "22fa7f5f39a74e662134c825eb2feff3313f0c281d99107add7c9ca0173819ea");
+  assert(manifest.applied.every((item) => Number(item.version) < 20260730120000));
 });
 
-test("canonical root contains all 35 applied migrations plus only Production Gate", () => {
+test("canonical root contains all 36 applied migrations plus only Gate hardening", () => {
   const expected = [...manifest.applied, ...manifest.pending].map((item) => item.filename).sort();
   assert.deepEqual(sql(canonical), expected);
-  assert.equal(expected.length, 36);
+  assert.equal(expected.length, 37);
 });
 
 test("every canonical byte matches checksum, source path and committed Git blob", () => {
@@ -63,7 +63,8 @@ test("every canonical byte matches checksum, source path and committed Git blob"
     const sourceFile = path.join(root, entry.sourcePath);
     assert.equal(sha(canonicalFile), entry.sha256, entry.filename);
     assert.equal(fs.readFileSync(canonicalFile).equals(fs.readFileSync(sourceFile)), true, entry.filename);
-    assert.equal(execFileSync("git", ["rev-parse", `${entry.sourceCommit}:${entry.sourcePath}`], { cwd: root, encoding: "utf8" }).trim(), entry.blobId, entry.filename);
+    if (entry.sourceCommit) assert.equal(execFileSync("git", ["rev-parse", `${entry.sourceCommit}:${entry.sourcePath}`], { cwd: root, encoding: "utf8" }).trim(), entry.blobId, entry.filename);
+    else assert.equal(execFileSync("git", ["hash-object", entry.sourcePath], { cwd: root, encoding: "utf8" }).trim(), entry.blobId, entry.filename);
   }
 });
 
@@ -112,9 +113,9 @@ test("runner refuses include-all, repair, reset and arbitrary db-push", () => {
   }
 });
 
-test("runner exposes only list, dry-run and the exact Production Gate apply action", () => {
+test("runner exposes only list, dry-run and the exact Gate hardening apply action", () => {
   const source = fs.readFileSync(path.join(staging, "run.zsh"), "utf8");
-  assert.match(source, /apply-production-gate/);
+  assert.match(source, /apply-gate-hardening/);
   assert.doesNotMatch(source, /apply-factory|apply-food|migration repair|db reset/);
   assert.match(source, /migration up --linked/);
 });
