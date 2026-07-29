@@ -43,6 +43,19 @@
           <button class="button secondary" type="button" data-select-relationship>Relatie kiezen</button>
         </section>
 
+        <section class="factory-certification-card" id="factory-staging-certification" aria-labelledby="factory-certification-title" hidden>
+          <div>
+            <p class="section-kicker">Alleen staging · Super Admin</p>
+            <h2 id="factory-certification-title">Stagingcertificering</h2>
+            <p>Voert één beveiligde, read-only controle uit. Er worden geen gegevens gewijzigd.</p>
+          </div>
+          <div class="factory-certification-action">
+            <button class="button primary" id="factory-certification-button" type="button" disabled>Production Gate controleren</button>
+            <p id="factory-certification-status" role="status" aria-live="polite">Gereed voor één controle.</p>
+            <ul id="factory-certification-results" aria-label="Veilige controleresultaten" hidden></ul>
+          </div>
+        </section>
+
         <section class="factory-hub-section" aria-labelledby="factory-lines-title">
           <div class="admin-section-heading">
             <div><p class="section-kicker">Productielijnen</p><h2 id="factory-lines-title">Kies het juiste recept</h2><p>Elke blueprint bewaart dezelfde kernstructuur, maar krijgt eigen klantgegevens, merk, inhoud en modules.</p></div>

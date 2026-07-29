@@ -2,6 +2,11 @@
   "use strict";
 
   const endpoint = "/.netlify/functions/admin-factory-projects";
+  const certificationEndpoint = "/internal/factory-gate-readiness";
+  const certificationHost = "maxwebstudio-staging.netlify.app";
+  const certificationResources = new Set(["factory_gate_checks", "factory_gate_overrides"]);
+  const certificationCategories = new Set(["reachable", "permission_denied", "resource_missing", "authentication_failed", "request_invalid", "network_failure", "unknown_safe_error"]);
+  const certificationPostgrestCodes = new Set(["PGRST205", "PGRST301", "PGRST302", "42P01", "42501", "28000", "28P01"]);
   const icons = { website: "W", webshop: "S", food: "F" };
   const statusLabels = { intake: "Intake", ready: "Klaar voor productie", in_production: "In productie", review: "Review", live: "Live", paused: "Gepauzeerd", archived: "Gearchiveerd" };
   const fallbackBlueprints = [
@@ -22,6 +27,80 @@
     return type && id ? { type, id } : null;
   }
   function relationshipName() { return state.relationship?.companyName || state.relationship?.name || "Geselecteerde relatie"; }
+
+  function safeCertificationResult(item) {
+    if (!item || !certificationResources.has(item.resource) || !certificationCategories.has(item.category)) return null;
+    const httpStatus = item.httpStatus === null || Number.isInteger(item.httpStatus) && item.httpStatus >= 100 && item.httpStatus <= 599 ? item.httpStatus : null;
+    if (item.serviceRoleConfigured !== true || item.stagingTargetConfirmed !== true) return null;
+    const postgrestCode = certificationPostgrestCodes.has(item.postgrestCode) ? item.postgrestCode : null;
+    return { resource: item.resource, category: item.category, httpStatus, postgrestCode };
+  }
+
+  function createStagingCertification(options = {}) {
+    const scope = options.scope || globalScope;
+    const section = options.section;
+    const button = options.button;
+    const status = options.status;
+    const results = options.results;
+    const session = (options.readSession || readSession)();
+    const hostname = String(options.hostname ?? scope.location?.hostname ?? "");
+    const role = String(session.role || "").trim().toLowerCase();
+    const accessToken = String(session.accessToken || session.access_token || "").trim();
+    const eligible = hostname === certificationHost && role === "super_admin" && Boolean(accessToken);
+    let started = false;
+
+    section.hidden = !eligible;
+    button.disabled = !eligible;
+    if (!eligible) return { eligible, run: async () => undefined, hasStarted: () => started };
+
+    const showUnexpected = () => {
+      status.textContent = "Onverwachte veilige foutclassificatie.";
+      results.hidden = true;
+      results.replaceChildren();
+    };
+
+    async function run() {
+      if (started || button.disabled) return;
+      started = true;
+      button.disabled = true;
+      status.textContent = "Bezig met de beveiligde controle…";
+      results.hidden = true;
+      results.replaceChildren();
+
+      try {
+        const response = await (options.fetchImpl || scope.fetch.bind(scope))(certificationEndpoint, {
+          method: "GET",
+          headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          status.textContent = [401, 403, 404].includes(response.status)
+            ? `Veilig geweigerd (HTTP ${response.status}).`
+            : "Onverwachte veilige foutclassificatie.";
+          return;
+        }
+        const payload = await response.json().catch(() => null);
+        const safeResults = Array.isArray(payload?.results) ? payload.results.map(safeCertificationResult).filter(Boolean) : [];
+        if (!payload || safeResults.length !== 2 || safeResults.some((item, index) => item.resource !== ["factory_gate_checks", "factory_gate_overrides"][index])) {
+          showUnexpected();
+          return;
+        }
+        status.textContent = "Controle geslaagd.";
+        safeResults.forEach((item) => {
+          const row = (options.createElement || document.createElement.bind(document))("li");
+          row.textContent = `${item.resource}: ${item.category}${item.httpStatus === null ? "" : ` · HTTP ${item.httpStatus}`}${item.postgrestCode ? ` · ${item.postgrestCode}` : ""}`;
+          results.append(row);
+        });
+        results.hidden = false;
+      } catch {
+        status.textContent = "Netwerkrequest vóór verzending geblokkeerd.";
+      }
+    }
+
+    button.addEventListener("click", run);
+    return { eligible, run, hasStarted: () => started };
+  }
 
   async function request(method = "GET", body) {
     const identity = relationshipIdentity();
@@ -205,6 +284,12 @@
     Object.assign(nodes, {
       context: document.getElementById("factory-context"), newButton: document.getElementById("factory-new-project"), blueprints: document.getElementById("factory-blueprints"), projects: document.getElementById("factory-projects"), projectsIntro: document.getElementById("factory-projects-intro"), storage: document.getElementById("factory-storage-status"), dialog: document.getElementById("factory-dialog"), form: document.getElementById("factory-form"), typeOptions: document.getElementById("factory-type-options"), recipe: document.getElementById("factory-recipe-preview"), message: document.getElementById("factory-form-message"), submit: document.getElementById("factory-submit"),
     });
+    createStagingCertification({
+      section: document.getElementById("factory-staging-certification"),
+      button: document.getElementById("factory-certification-button"),
+      status: document.getElementById("factory-certification-status"),
+      results: document.getElementById("factory-certification-results"),
+    });
     nodes.newButton.addEventListener("click", () => openDialog());
     nodes.context.querySelector("[data-select-relationship]").addEventListener("click", () => globalScope.MaxCommand?.open?.(""));
     nodes.blueprints.addEventListener("click", (event) => { const button = event.target.closest("[data-start-blueprint]"); if (button) openDialog(button.dataset.startBlueprint); });
@@ -225,7 +310,7 @@
     load();
   }
 
-  const exported = { launchUrl, projectTone, statusLabels };
+  const exported = { launchUrl, projectTone, statusLabels, createStagingCertification, safeCertificationResult, certificationEndpoint, certificationHost };
   if (typeof module !== "undefined" && module.exports) module.exports = exported;
   if (typeof document !== "undefined") { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init(); }
 })(typeof window !== "undefined" ? window : globalThis);
