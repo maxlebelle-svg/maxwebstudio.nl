@@ -84,10 +84,15 @@ test("admin UX separates Food bundles from regular demos and never sends on open
   assert.match(ui, /Het openen van dit venster verstuurt niets/);
   assert.match(ui, /Testmail versturen/);
   assert.match(ui, /Uitnodiging intrekken/);
+  assert.match(ui, /Bestelomgeving openen/);
+  assert.match(ui, /Naar dashboardlogin/);
+  assert.match(ui, /Waarom eerst inloggen\?/);
   assert.match(ui, /query\.get\("openFoodDemo"\)==="1"/);
   assert.match(ui, /b\.factoryProjectId===factoryProjectId/);
   assert.match(ui, /function openModal\(bundle\)\{state\.active=bundle;const root=ensureModal\(\);root\.hidden=false/);
   assert.match(css, /@media\(max-width:640px\)/);
   assert.match(css, /\.food-demo-dialog-actions\{position:static;display:grid;grid-template-columns:1fr/);
   assert.match(css, /\.food-demo-dialog\{[^}]*color:#14251d/);
+  assert.match(css, /\.food-demo-card-body\{[^}]*color:#14251d/);
+  assert.match(css, /\.food-demo-route-grid\{display:grid;grid-template-columns:repeat\(2/);
 });
