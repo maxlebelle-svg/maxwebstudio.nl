@@ -11,6 +11,8 @@ const migration = fs.readFileSync(migrationPath, "utf8");
 const api = fs.readFileSync(path.join(root, "functions/_food-api.js"), "utf8");
 const validation = fs.readFileSync(path.join(root, "scripts/food-v1-service-role-acl-repair-local-validation.zsh"), "utf8");
 const fixture = fs.readFileSync(path.join(root, "tests/fixtures/food-v1-service-role-acl-repair-functional.sql"), "utf8");
+const demoRepairName = "20260729180000_food_demo_bundle_service_role_acl_repair.sql";
+const demoRepair = fs.readFileSync(path.join(root, "supabase/migrations", demoRepairName), "utf8");
 
 const originalChecksums = new Map([
   ["00000000000000_authoritative_baseline.sql", "1f5c2d03fad7e0b81ac82a00fef73ddbfbc85728e7f11684bdc89aed72bb9315"],
@@ -70,8 +72,14 @@ test("schema-wide default privileges remain untouched and future Food migrations
     const sql = fs.readFileSync(path.join(root, "supabase/migrations", name), "utf8");
     const createdTables = [...sql.matchAll(/create table(?: if not exists)? public\.((?:food|restaurant)_\w+|menus|menu_categories|menu_items)\s*\(/gi)];
     for (const [, table] of createdTables) {
-      assert.match(sql, new RegExp(`revoke[\\s\\S]*on table[\\s\\S]*public\\.${table}[\\s\\S]*from[\\s\\S]*service_role`, "i"), `${name}:${table}`);
+      const sameFileRepair = new RegExp(`revoke[\\s\\S]*on table[\\s\\S]*public\\.${table}[\\s\\S]*from[\\s\\S]*service_role`, "i").test(sql);
+      const laterExplicitRepair = name < demoRepairName
+        && new RegExp(`revoke all privileges on table[\\s\\S]*public\\.${table}[\\s\\S]*from public, anon, authenticated, service_role`, "i").test(demoRepair);
+      assert.ok(sameFileRepair || laterExplicitRepair, `${name}:${table} requires a same-file or explicit later forward repair`);
     }
+  }
+  for (const table of ["food_demo_bundles", "food_demo_bundle_dispatches", "food_demo_bundle_events", "food_demo_bundle_rate_limits"]) {
+    assert.match(demoRepair, new RegExp(`public\\.${table}`));
   }
 });
 

@@ -1,4 +1,3 @@
-const crypto = require("node:crypto");
 const { verifyAdmin } = require("./_admin-auth");
 const { sendTrackedEmail } = require("./services/resendMailService");
 const { buildFoodDemoBundleMail } = require("./services/foodDemoBundleTemplate");
@@ -20,7 +19,6 @@ function createHandler(deps = {}) {
   const verify = deps.verifyAdmin || verifyAdmin;
   const fetchImpl = deps.fetchImpl || global.fetch;
   const sendMail = deps.sendMail || sendTrackedEmail;
-  const now = deps.now || (() => new Date());
   return async (event) => {
     if (!["GET", "POST"].includes(event.httpMethod)) return json(405, { success: false, code: "METHOD_NOT_ALLOWED", error: "Deze methode is niet toegestaan." });
     const auth = await verify(event, json, { module: "food_demo_bundles", action: event.httpMethod === "GET" ? "read" : "write", allowedRoles: WRITE_ROLES, allowedStatuses: ["active"], disableLegacyToken: true });
@@ -31,10 +29,10 @@ function createHandler(deps = {}) {
       if (event.httpMethod === "GET") return await handleGet(event, auth.admin, config, fetchImpl);
       const input = parseBody(event);
       const action = clean(input.action).toLowerCase();
-      if (action === "create" || action === "update") return await upsertBundle(input, auth.admin, config, fetchImpl, now);
-      if (["test", "send", "resend"].includes(action)) return await dispatchBundle(action, input, auth.admin, config, fetchImpl, sendMail, now);
-      if (action === "revoke") return await revokeBundle(input, auth.admin, config, fetchImpl, now);
-      if (action === "check_links") return await checkLinks(input, auth.admin, config, fetchImpl, now);
+      if (action === "create" || action === "update") return await upsertBundle(input, auth.admin, config, fetchImpl);
+      if (["test", "send", "resend"].includes(action)) return await dispatchBundle(action, input, auth.admin, config, fetchImpl, sendMail);
+      if (action === "revoke") return await revokeBundle(input, auth.admin, config, fetchImpl);
+      if (action === "check_links") return await checkLinks(input, auth.admin, config, fetchImpl);
       throw httpError(400, "ACTION_INVALID", "Kies een geldige Food-demoactie.");
     } catch (error) {
       const status = Number(error.statusCode) || 500;
@@ -47,12 +45,8 @@ function createHandler(deps = {}) {
 async function handleGet(event, admin, config, fetchImpl) {
   const query = event.queryStringParameters || {};
   const relation = validateRelationship(query);
-  const params = {
-    select: "*", order: "updated_at.desc", limit: "100",
-    relationship_type: `eq.${relation.type}`, relationship_id: `eq.${relation.id}`,
-  };
-  if (query.bundleId) { if (!UUID.test(query.bundleId)) throw httpError(400, "BUNDLE_INVALID", "De Food-demo is ongeldig."); params.id = `eq.${query.bundleId}`; }
-  const rows = await rest(fetchImpl, config, "food_demo_bundles", params);
+  if (query.bundleId && !UUID.test(query.bundleId)) throw httpError(400, "BUNDLE_INVALID", "De Food-demo is ongeldig.");
+  const rows = await readBundles(fetchImpl, config, admin, relation, query.bundleId || null);
   const allowed = [];
   for (const bundle of rows || []) {
     assertBundleUrls(bundle);
@@ -62,13 +56,12 @@ async function handleGet(event, admin, config, fetchImpl) {
   return json(200, { success: true, bundles: allowed, blueprints: Object.values(BLUEPRINTS), presentationSteps: presentationSteps(), capabilities: { canTestMail: config.nonProduction && EMAIL.test(config.testEmail), canLiveSend: config.production && config.liveSendEnabled } });
 }
 
-async function upsertBundle(input, admin, config, fetchImpl, now) {
+async function upsertBundle(input, admin, config, fetchImpl) {
   const relationship = validateRelationship(input);
   const relation = await assertOwnership(fetchImpl, config, admin, relationship.type, relationship.id, true);
   const blueprint = BLUEPRINTS[clean(input.blueprintKey) || "silverado-food-v1"];
   if (!blueprint) throw httpError(400, "BLUEPRINT_INVALID", "Deze Food-demo-blueprint is niet toegestaan.");
   if (input.factoryProjectId) await assertFactoryProject(fetchImpl, config, input.factoryProjectId, relationship);
-  const timestamp = now().toISOString();
   const row = {
     relationship_type: relationship.type, relationship_id: relationship.id,
     lead_id: relationship.type === "lead" ? relationship.id : null, customer_id: relationship.type === "customer" ? relationship.id : null,
@@ -76,24 +69,16 @@ async function upsertBundle(input, admin, config, fetchImpl, now) {
     demo_type: "food", display_name: validName(input.displayName || relation.company_name || relation.company || relation.name || blueprint.name),
     blueprint_key: blueprint.key, blueprint_version: blueprint.version,
     storefront_url: blueprint.storefrontUrl, dashboard_url: blueprint.dashboardUrl, dashboard_deeplink: blueprint.dashboardDeeplink, qr_asset_url: blueprint.qrAssetUrl,
-    recipient_email: EMAIL.test(clean(relation.email).toLowerCase()) ? clean(relation.email).toLowerCase() : null,
-    created_by: UUID.test(clean(admin.profileId)) ? admin.profileId : null, updated_at: timestamp,
-    metadata: { runtimeFrozen: true, pickupOnly: true, realPayment: false, selfServiceAccountProven: false },
   };
-  const existing = await rest(fetchImpl, config, "food_demo_bundles", { select: "id,created_by,created_at", relationship_type: `eq.${relationship.type}`, relationship_id: `eq.${relationship.id}`, blueprint_key: `eq.${blueprint.key}`, limit: "1" });
-  let saved;
-  if (existing?.[0]?.id) {
-    delete row.created_by;
-    saved = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${existing[0].id}`, select: "*" }, { method: "PATCH", body: row, prefer: "return=representation" });
-  } else {
-    saved = await rest(fetchImpl, config, "food_demo_bundles", { select: "*" }, { method: "POST", body: [{ id: crypto.randomUUID(), ...row, invitation_status: "ready", created_at: timestamp }], prefer: "return=representation" });
-  }
-  const bundle = saved?.[0];
-  await audit(fetchImpl, config, bundle.id, existing?.[0] ? "bundle_updated" : "bundle_created", admin, null, { blueprintKey: blueprint.key });
-  return json(existing?.[0] ? 200 : 201, { success: true, bundle: sanitizeBundle(bundle), mailPreview: mailPreview(bundle, relation) });
+  const existing = (await readBundles(fetchImpl, config, admin, relationship)).find((item) => item.blueprint_key === blueprint.key);
+  const bundle = firstRow(await bundleRpc(fetchImpl, config, "food_demo_bundle_upsert_v1", {
+    ...actorRpcInput(admin), input_relationship_type: relationship.type, input_relationship_id: relationship.id,
+    input_factory_project_id: row.factory_project_id, input_display_name: row.display_name, input_blueprint_key: blueprint.key,
+  }));
+  return json(existing ? 200 : 201, { success: true, bundle: sanitizeBundle(bundle), mailPreview: mailPreview(bundle, relation) });
 }
 
-async function dispatchBundle(action, input, admin, config, fetchImpl, sendMail, now) {
+async function dispatchBundle(action, input, admin, config, fetchImpl, sendMail) {
   const bundle = await loadOwnedBundle(fetchImpl, config, admin, input.bundleId);
   if (bundle.revoked_at && action !== "resend") throw httpError(409, "BUNDLE_REVOKED", "Deze uitnodiging is ingetrokken. Kies bewust voor opnieuw versturen.");
   const relation = await assertOwnership(fetchImpl, config, admin, bundle.relationship_type, bundle.relationship_id, true);
@@ -101,8 +86,6 @@ async function dispatchBundle(action, input, admin, config, fetchImpl, sendMail,
   if (actionKey.length < 16 || actionKey.length > 160) throw httpError(400, "ACTION_KEY_INVALID", "De actiebeveiliging ontbreekt.");
   const recipient = resolveRecipient(action, relation, config);
   assertDispatchEnvironment(action, config);
-  const allowed = await rpc(fetchImpl, config, "consume_food_demo_bundle_rate_limit", { input_actor_profile_id: admin.profileId, input_action_scope: action, input_max_attempts: action === "test" ? 8 : 5 });
-  if (allowed !== true) throw httpError(429, "RATE_LIMITED", "Wacht even voordat u opnieuw een demo verstuurt.");
   const reservation = await reserveDispatch(fetchImpl, config, bundle, action, actionKey, admin, recipient.kind);
   if (reservation.duplicate) return json(200, { success: true, duplicate: true, sent: reservation.row.status === "sent", bundle: sanitizeBundle(bundle), message: "Deze verzendactie was al verwerkt." });
   const mail = mailPreview(bundle, relation);
@@ -113,31 +96,30 @@ async function dispatchBundle(action, input, admin, config, fetchImpl, sendMail,
     idempotencyKey: `food.demo.bundle:${bundle.id}:${actionKey}`, metadata: { bundleId: bundle.id, blueprintKey: bundle.blueprint_key, recipientKind: recipient.kind },
   });
   const sent = Boolean(result?.sent && result?.id);
-  const timestamp = now().toISOString();
-  await rest(fetchImpl, config, "food_demo_bundle_dispatches", { id: `eq.${reservation.row.id}` }, { method: "PATCH", body: { status: sent ? "sent" : "failed", provider_message_id: sent ? clean(result.id) : null, error_code: sent ? null : clean(result?.errorCode || "provider_send_failed"), completed_at: timestamp } });
-  const patch = sent ? { invitation_status: "sent", last_sent_at: timestamp, revoked_at: null, updated_at: timestamp } : { invitation_status: "send_failed", updated_at: timestamp };
-  const updated = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${bundle.id}`, select: "*" }, { method: "PATCH", body: patch, prefer: "return=representation" });
-  await audit(fetchImpl, config, bundle.id, sent ? `${action}_sent` : `${action}_failed`, admin, actionKey, { recipientKind: recipient.kind, errorCode: sent ? null : clean(result?.errorCode || "provider_send_failed") });
+  const updated = firstRow(await bundleRpc(fetchImpl, config, "food_demo_bundle_complete_dispatch_v1", {
+    ...actorRpcInput(admin), input_bundle_id: bundle.id, input_dispatch_id: reservation.row.id,
+    input_action_type: action, input_action_key: actionKey, input_sent: sent,
+    input_provider_message_id: sent ? clean(result.id) : null, input_error_code: sent ? null : clean(result?.errorCode || "provider_send_failed"),
+  }));
   if (!sent) throw httpError(502, "EMAIL_SEND_FAILED", "De uitnodiging is niet verzonden; veilig opnieuw proberen is mogelijk.");
-  return json(200, { success: true, sent: true, recipientKind: recipient.kind, bundle: sanitizeBundle(updated?.[0]), message: action === "test" ? "Testmail is verzonden naar het gecontroleerde interne adres." : "De Food-demo is verzonden." });
+  return json(200, { success: true, sent: true, recipientKind: recipient.kind, bundle: sanitizeBundle(updated), message: action === "test" ? "Testmail is verzonden naar het gecontroleerde interne adres." : "De Food-demo is verzonden." });
 }
 
-async function revokeBundle(input, admin, config, fetchImpl, now) {
+async function revokeBundle(input, admin, config, fetchImpl) {
   const bundle = await loadOwnedBundle(fetchImpl, config, admin, input.bundleId);
   const actionKey = clean(input.actionKey); if (actionKey.length < 16) throw httpError(400, "ACTION_KEY_INVALID", "De actiebeveiliging ontbreekt.");
-  const timestamp = now().toISOString();
-  const rows = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${bundle.id}`, select: "*" }, { method: "PATCH", body: { invitation_status: "revoked", revoked_at: timestamp, updated_at: timestamp }, prefer: "return=representation" });
-  await audit(fetchImpl, config, bundle.id, "invitation_revoked", admin, actionKey, {});
-  return json(200, { success: true, bundle: sanitizeBundle(rows?.[0]), message: "De uitnodiging is ingetrokken. De audit- en demo-gegevens zijn behouden." });
+  const row = firstRow(await bundleRpc(fetchImpl, config, "food_demo_bundle_revoke_v1", { ...actorRpcInput(admin), input_bundle_id: bundle.id, input_action_key: actionKey }));
+  return json(200, { success: true, bundle: sanitizeBundle(row), message: "De uitnodiging is ingetrokken. De audit- en demo-gegevens zijn behouden." });
 }
 
-async function checkLinks(input, admin, config, fetchImpl, now) {
+async function checkLinks(input, admin, config, fetchImpl) {
   const bundle = await loadOwnedBundle(fetchImpl, config, admin, input.bundleId);
   const [storefront, dashboard] = await Promise.all([probe(bundle.storefront_url, fetchImpl), probe(bundle.dashboard_deeplink, fetchImpl)]);
-  const timestamp = now().toISOString();
-  const rows = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${bundle.id}`, select: "*" }, { method: "PATCH", body: { storefront_status: storefront ? "reachable" : "unreachable", dashboard_status: dashboard ? "reachable" : "unreachable", updated_at: timestamp }, prefer: "return=representation" });
-  await audit(fetchImpl, config, bundle.id, "links_checked", admin, clean(input.actionKey) || null, { storefrontReachable: storefront, dashboardReachable: dashboard });
-  return json(200, { success: true, bundle: sanitizeBundle(rows?.[0]) });
+  const row = firstRow(await bundleRpc(fetchImpl, config, "food_demo_bundle_update_links_v1", {
+    ...actorRpcInput(admin), input_bundle_id: bundle.id, input_storefront_status: storefront ? "reachable" : "unreachable",
+    input_dashboard_status: dashboard ? "reachable" : "unreachable", input_action_key: clean(input.actionKey) || null,
+  }));
+  return json(200, { success: true, bundle: sanitizeBundle(row) });
 }
 
 async function assertOwnership(fetchImpl, config, admin, type, id, required) {
@@ -152,10 +134,12 @@ async function assertOwnership(fetchImpl, config, admin, type, id, required) {
   if (required) throw httpError(403, "RELATIONSHIP_FORBIDDEN", "U mag voor deze relatie geen Food-demo beheren."); return null;
 }
 
-async function loadOwnedBundle(fetchImpl, config, admin, id) { if (!UUID.test(clean(id))) throw httpError(400,"BUNDLE_INVALID","De Food-demo is ongeldig."); const rows=await rest(fetchImpl,config,"food_demo_bundles",{select:"*",id:`eq.${id}`,limit:"1"}); const b=rows?.[0]; if(!b) throw httpError(404,"BUNDLE_NOT_FOUND","De Food-demo bestaat niet meer."); assertBundleUrls(b); await assertOwnership(fetchImpl,config,admin,b.relationship_type,b.relationship_id,true); return b; }
+async function loadOwnedBundle(fetchImpl, config, admin, id) { if (!UUID.test(clean(id))) throw httpError(400,"BUNDLE_INVALID","De Food-demo is ongeldig."); const rows=await readBundles(fetchImpl,config,admin,null,id); const b=rows?.[0]; if(!b) throw httpError(404,"BUNDLE_NOT_FOUND","De Food-demo bestaat niet meer."); assertBundleUrls(b); await assertOwnership(fetchImpl,config,admin,b.relationship_type,b.relationship_id,true); return b; }
 async function assertFactoryProject(fetchImpl, config, id, relation) { if(!UUID.test(clean(id))) throw httpError(400,"FACTORY_PROJECT_INVALID","Het Factory-dossier is ongeldig."); const rows=await rest(fetchImpl,config,"factory_projects",{select:"id,relationship_type,relationship_id,factory_type",id:`eq.${id}`,limit:"1"}); const p=rows?.[0]; if(!p||p.relationship_type!==relation.type||p.relationship_id!==relation.id||p.factory_type!=="food") throw httpError(409,"FACTORY_PROJECT_MISMATCH","Het Factory-dossier hoort niet bij deze Food-relatie."); }
-async function reserveDispatch(fetchImpl, config, bundle, action, actionKey, admin, recipientKind) { const existing=await rest(fetchImpl,config,"food_demo_bundle_dispatches",{select:"*",bundle_id:`eq.${bundle.id}`,action_key:`eq.${actionKey}`,limit:"1"}); if(existing?.[0]) return {duplicate:true,row:existing[0]}; const rows=await rest(fetchImpl,config,"food_demo_bundle_dispatches",{select:"*"},{method:"POST",body:[{id:crypto.randomUUID(),bundle_id:bundle.id,action_type:action,action_key:actionKey,recipient_kind:recipientKind,requested_by:UUID.test(clean(admin.profileId))?admin.profileId:null}],prefer:"return=representation"}); return {duplicate:false,row:rows?.[0]}; }
-async function audit(fetchImpl, config, bundleId, eventType, admin, actionKey, metadata) { try { await rest(fetchImpl,config,"food_demo_bundle_events",{},{method:"POST",body:[{bundle_id:bundleId,event_type:eventType,action_key:actionKey||null,actor_profile_id:UUID.test(clean(admin.profileId))?admin.profileId:null,metadata:metadata||{}}]}); } catch(error) { if(error.code!=="REST_CONFLICT") throw error; } }
+async function reserveDispatch(fetchImpl, config, bundle, action, actionKey, admin, recipientKind) { const row=firstRow(await bundleRpc(fetchImpl,config,"food_demo_bundle_reserve_dispatch_v1",{...actorRpcInput(admin),input_bundle_id:bundle.id,input_action_type:action,input_action_key:actionKey,input_recipient_kind:recipientKind,input_max_attempts:action==="test"?8:5})); return {duplicate:Boolean(row?.duplicate),row}; }
+async function readBundles(fetchImpl,config,admin,relation,bundleId=null){const data=await bundleRpc(fetchImpl,config,"food_demo_bundle_read_v1",{...actorRpcInput(admin),input_relationship_type:relation?.type||null,input_relationship_id:relation?.id||null,input_bundle_id:bundleId||null});return Array.isArray(data)?data:data?[data]:[];}
+function actorRpcInput(admin){if(!UUID.test(clean(admin?.profileId))||!UUID.test(clean(admin?.id)))throw httpError(403,"ACTOR_INVALID","De actieve beheerder kon niet veilig worden vastgesteld.");return {input_actor_profile_id:admin.profileId,input_actor_auth_user_id:admin.id};}
+function firstRow(value){return Array.isArray(value)?value[0]:value;}
 
 function validateRelationship(input={}) { const type=clean(input.relationshipType).toLowerCase(); const id=clean(input.relationshipId); if(!["lead","customer"].includes(type)||!UUID.test(id)) throw httpError(400,"RELATIONSHIP_INVALID","Kies één geldige lead of klant."); return {type,id}; }
 function assertBundleUrls(bundle={}) { const blueprint=BLUEPRINTS[clean(bundle.blueprint_key)]; if(!blueprint||clean(bundle.storefront_url)!==blueprint.storefrontUrl||clean(bundle.dashboard_url)!==blueprint.dashboardUrl||clean(bundle.dashboard_deeplink)!==blueprint.dashboardDeeplink||clean(bundle.qr_asset_url)!==blueprint.qrAssetUrl) throw httpError(409,"BUNDLE_LINK_MISMATCH","De Food-demolinks wijken af van de gecontroleerde blueprint."); const dashboard=new URL(bundle.dashboard_deeplink); if(dashboard.protocol!=="https:"||dashboard.hostname!=="max-webstudio-food-demo.netlify.app"||dashboard.pathname!=="/login.html"||dashboard.searchParams.get("next")!=="/admin/food") throw httpError(409,"DASHBOARD_DEEPLINK_INVALID","De dashboardloginroute is niet veilig."); return true; }
@@ -168,9 +152,9 @@ function presentationSteps(){return ["Dashboard vooraf veilig openen en inloggen
 async function probe(url,fetchImpl){try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),5000);const res=await fetchImpl(url,{method:"HEAD",redirect:"follow",signal:controller.signal});clearTimeout(timer);return res.ok||[301,302,303,307,308,401,403].includes(res.status);}catch{return false;}}
 function runtimeConfig(env){const values=[env.APP_ENV,env.APP_ENVIRONMENT,env.CONTEXT,env.NETLIFY_ENV].map(v=>clean(v).toLowerCase());const production=values.some(v=>["production","prod"].includes(v));return {url:clean(env.SUPABASE_URL).replace(/\/$/,""),key:clean(env.SUPABASE_SERVICE_ROLE_KEY),siteUrl:clean(env.SITE_URL),fromEmail:clean(env.RESEND_FROM_EMAIL||env.EMAIL_FROM),replyTo:clean(env.RESEND_REPLY_TO||env.EMAIL_REPLY_TO),testEmail:clean(env.FOOD_DEMO_INTERNAL_TEST_EMAIL).toLowerCase(),production,nonProduction:!production&&values.some(v=>["test","staging","deploy-preview","branch-deploy"].includes(v)),liveSendEnabled:clean(env.FOOD_DEMO_BUNDLE_EMAIL_ENABLED).toLowerCase()==="true",get ready(){return Boolean(this.url&&this.key);}};}
 async function rest(fetchImpl,config,table,params={},options={}){const q=new URLSearchParams(params);const res=await fetchImpl(`${config.url}/rest/v1/${table}?${q}`,{method:options.method||"GET",headers:{apikey:config.key,Authorization:`Bearer ${config.key}`,Accept:"application/json",...(options.body!==undefined?{"Content-Type":"application/json"}:{}),...(options.prefer?{Prefer:options.prefer}:{})},...(options.body!==undefined?{body:JSON.stringify(options.body)}:{})});const data=await res.json().catch(()=>null);if(!res.ok){const e=httpError(res.status===409?409:res.status>=500?503:400,res.status===409?"REST_CONFLICT":"STORAGE_REJECTED","De Food-demo-opslag weigerde de aanvraag.");throw e;}return data;}
-async function rpc(fetchImpl,config,name,body){const res=await fetchImpl(`${config.url}/rest/v1/rpc/${name}`,{method:"POST",headers:{apikey:config.key,Authorization:`Bearer ${config.key}`,"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await res.json().catch(()=>null);if(!res.ok)throw httpError(503,"RATE_LIMIT_UNAVAILABLE","Verzenden is tijdelijk geblokkeerd omdat de limietcontrole niet beschikbaar is.");return data;}
+async function bundleRpc(fetchImpl,config,name,body){const res=await fetchImpl(`${config.url}/rest/v1/rpc/${name}`,{method:"POST",headers:{apikey:config.key,Authorization:`Bearer ${config.key}`,Accept:"application/json","Content-Type":"application/json"},body:JSON.stringify(body)});const data=await res.json().catch(()=>null);if(res.ok)return data;const code=clean(data?.code);if(code==="42501")throw httpError(403,"RELATIONSHIP_FORBIDDEN","U mag voor deze relatie geen Food-demo beheren.");if(code==="P0002")throw httpError(404,"BUNDLE_NOT_FOUND","De Food-demo bestaat niet meer.");if(code==="P0001")throw httpError(429,"RATE_LIMITED","Wacht even voordat u opnieuw een demo verstuurt.");if(["22023","23514","55000"].includes(code))throw httpError(409,"BUNDLE_STATE_REJECTED","De Food-demoactie past niet bij de huidige veilige status.");throw httpError(503,"BUNDLE_RPC_UNAVAILABLE","De beveiligde Food-demo-opslag is tijdelijk niet beschikbaar.");}
 function parseBody(event){const raw=event.isBase64Encoded?Buffer.from(event.body||"","base64").toString("utf8"):String(event.body||"");if(!raw||Buffer.byteLength(raw)>32768)throw httpError(400,"BODY_INVALID","De aanvraag is leeg of te groot.");try{return JSON.parse(raw);}catch{throw httpError(400,"JSON_INVALID","De aanvraag bevat geen geldige gegevens.");}}
 function clean(value){return String(value||"").trim();} function httpError(statusCode,code,message){return Object.assign(new Error(message),{statusCode,code});} function json(statusCode,body){return {statusCode,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store, max-age=0","X-Content-Type-Options":"nosniff"},body:JSON.stringify(body)};}
 
 exports.handler=createHandler();
-exports._private={assertBundleUrls,assertDispatchEnvironment,buildFoodDemoBundleMail,createHandler,mailPreview,presentationSteps,runtimeConfig,sanitizeBundle,validateRelationship};
+exports._private={actorRpcInput,assertBundleUrls,assertDispatchEnvironment,buildFoodDemoBundleMail,bundleRpc,createHandler,mailPreview,presentationSteps,runtimeConfig,sanitizeBundle,validateRelationship};

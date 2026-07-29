@@ -63,16 +63,28 @@ test("database foundation is additive, tenant-linked, rate-limited and append-on
 test("server is authoritative for blueprint URLs, recipient and idempotent dispatch", () => {
   assert.match(handler, /BLUEPRINTS = Object\.freeze/);
   assert.match(handler, /resolveRecipient\(action, relation, config\)/);
-  assert.match(handler, /food_demo_bundle_dispatches/);
+  for (const rpc of [
+    "food_demo_bundle_read_v1",
+    "food_demo_bundle_upsert_v1",
+    "food_demo_bundle_update_links_v1",
+    "food_demo_bundle_reserve_dispatch_v1",
+    "food_demo_bundle_complete_dispatch_v1",
+    "food_demo_bundle_revoke_v1",
+  ]) assert.match(handler, new RegExp(rpc));
+  assert.match(handler, /function actorRpcInput\(admin\)/);
   assert.match(handler, /disableLegacyToken: true/);
   assert.match(handler, /RELATIONSHIP_FORBIDDEN/);
+  assert.doesNotMatch(handler, /rest\([^\n]+["']food_demo_bundle(?:s|_dispatches|_events|_rate_limits)["']/);
+  assert.doesNotMatch(handler, /\/rest\/v1\/food_demo_bundle(?:s|_dispatches|_events|_rate_limits)/);
   assert.doesNotMatch(handler, /[?&](password|access_token|refresh_token|service_role_key)=/i);
 });
 
 test("Food bundle listings fail closed to the active relationship", () => {
   assert.match(handler, /const relation = validateRelationship\(query\)/);
-  assert.match(handler, /relationship_type: `eq\.\$\{relation\.type\}`/);
-  assert.match(handler, /relationship_id: `eq\.\$\{relation\.id\}`/);
+  assert.match(handler, /input_relationship_type:relation\?\.type\|\|null/);
+  assert.match(handler, /input_relationship_id:relation\?\.id\|\|null/);
+  assert.match(handler, /input_actor_profile_id:admin\.profileId/);
+  assert.match(handler, /input_actor_auth_user_id:admin\.id/);
   assert.ok(ui.includes("try{await load(relationship);"));
   assert.ok(ui.includes("subscribeToRelationshipChanges(r=>load(r)"));
   assert.doesNotMatch(ui, /page==="admin-demo-sites\.html"\?null/);
