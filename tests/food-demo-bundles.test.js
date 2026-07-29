@@ -9,6 +9,7 @@ const root = path.resolve(__dirname, "..");
 const migration = fs.readFileSync(path.join(root, "supabase/migrations/20260729170000_food_demo_bundles.sql"), "utf8");
 const handler = fs.readFileSync(path.join(root, "functions/admin-food-demo-bundles.js"), "utf8");
 const ui = fs.readFileSync(path.join(root, "public/admin/ui/food-demo-bundles.js"), "utf8");
+const css = fs.readFileSync(path.join(root, "public/admin/styles/food-demo-bundles.css"), "utf8");
 
 test("Silverado mail has exact subject, both safe links, QR and honest constraints", () => {
   const mail = buildFoodDemoBundleMail({
@@ -84,4 +85,7 @@ test("admin UX separates Food bundles from regular demos and never sends on open
   assert.match(ui, /Testmail versturen/);
   assert.match(ui, /Uitnodiging intrekken/);
   assert.match(ui, /function openModal\(bundle\)\{state\.active=bundle;const root=ensureModal\(\);root\.hidden=false/);
+  assert.match(css, /@media\(max-width:640px\)/);
+  assert.match(css, /\.food-demo-dialog-actions\{position:static;display:grid;grid-template-columns:1fr/);
+  assert.match(css, /\.food-demo-dialog\{[^}]*color:#14251d/);
 });
