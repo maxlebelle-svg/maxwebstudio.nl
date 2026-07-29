@@ -1,0 +1,176 @@
+const crypto = require("node:crypto");
+const { verifyAdmin } = require("./_admin-auth");
+const { sendTrackedEmail } = require("./services/resendMailService");
+const { buildFoodDemoBundleMail } = require("./services/foodDemoBundleTemplate");
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const WRITE_ROLES = ["super_admin", "admin", "sales_manager", "sales_partner"];
+const BLUEPRINTS = Object.freeze({
+  "silverado-food-v1": Object.freeze({
+    key: "silverado-food-v1", version: 1, name: "Silverado Roti Shop",
+    storefrontUrl: "https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord",
+    dashboardUrl: "https://max-webstudio-food-demo.netlify.app/admin/food",
+    dashboardDeeplink: "https://max-webstudio-food-demo.netlify.app/login.html?next=%2Fadmin%2Ffood",
+    qrAssetUrl: "/assets/food/silverado/silverado-demo-qr.svg",
+  }),
+});
+
+function createHandler(deps = {}) {
+  const verify = deps.verifyAdmin || verifyAdmin;
+  const fetchImpl = deps.fetchImpl || global.fetch;
+  const sendMail = deps.sendMail || sendTrackedEmail;
+  const now = deps.now || (() => new Date());
+  return async (event) => {
+    if (!["GET", "POST"].includes(event.httpMethod)) return json(405, { success: false, code: "METHOD_NOT_ALLOWED", error: "Deze methode is niet toegestaan." });
+    const auth = await verify(event, json, { module: "food_demo_bundles", action: event.httpMethod === "GET" ? "read" : "write", allowedRoles: WRITE_ROLES, allowedStatuses: ["active"], disableLegacyToken: true });
+    if (!auth.success) return auth.response;
+    try {
+      const config = runtimeConfig(process.env);
+      if (!config.ready) throw httpError(503, "BUNDLE_STORAGE_UNAVAILABLE", "Food-demo-opslag is niet geconfigureerd.");
+      if (event.httpMethod === "GET") return await handleGet(event, auth.admin, config, fetchImpl);
+      const input = parseBody(event);
+      const action = clean(input.action).toLowerCase();
+      if (action === "create" || action === "update") return await upsertBundle(input, auth.admin, config, fetchImpl, now);
+      if (["test", "send", "resend"].includes(action)) return await dispatchBundle(action, input, auth.admin, config, fetchImpl, sendMail, now);
+      if (action === "revoke") return await revokeBundle(input, auth.admin, config, fetchImpl, now);
+      if (action === "check_links") return await checkLinks(input, auth.admin, config, fetchImpl, now);
+      throw httpError(400, "ACTION_INVALID", "Kies een geldige Food-demoactie.");
+    } catch (error) {
+      const status = Number(error.statusCode) || 500;
+      console.error("Food demo bundle request failed", { code: error.code || "BUNDLE_ERROR", status });
+      return json(status, { success: false, code: error.code || "BUNDLE_ERROR", error: status >= 500 ? "De Food-demoactie kon niet veilig worden verwerkt." : error.message });
+    }
+  };
+}
+
+async function handleGet(event, admin, config, fetchImpl) {
+  const query = event.queryStringParameters || {};
+  const params = { select: "*", order: "updated_at.desc", limit: "100" };
+  if (query.bundleId) { if (!UUID.test(query.bundleId)) throw httpError(400, "BUNDLE_INVALID", "De Food-demo is ongeldig."); params.id = `eq.${query.bundleId}`; }
+  if (query.relationshipType || query.relationshipId) {
+    const relation = validateRelationship(query);
+    params.relationship_type = `eq.${relation.type}`; params.relationship_id = `eq.${relation.id}`;
+  }
+  const rows = await rest(fetchImpl, config, "food_demo_bundles", params);
+  const allowed = [];
+  for (const bundle of rows || []) {
+    assertBundleUrls(bundle);
+    const relation = await assertOwnership(fetchImpl, config, admin, bundle.relationship_type, bundle.relationship_id, false);
+    if (relation) allowed.push({ ...sanitizeBundle(bundle), mailPreview: mailPreview(bundle, relation) });
+  }
+  return json(200, { success: true, bundles: allowed, blueprints: Object.values(BLUEPRINTS), presentationSteps: presentationSteps(), capabilities: { canTestMail: config.nonProduction && EMAIL.test(config.testEmail), canLiveSend: config.production && config.liveSendEnabled } });
+}
+
+async function upsertBundle(input, admin, config, fetchImpl, now) {
+  const relationship = validateRelationship(input);
+  const relation = await assertOwnership(fetchImpl, config, admin, relationship.type, relationship.id, true);
+  const blueprint = BLUEPRINTS[clean(input.blueprintKey) || "silverado-food-v1"];
+  if (!blueprint) throw httpError(400, "BLUEPRINT_INVALID", "Deze Food-demo-blueprint is niet toegestaan.");
+  if (input.factoryProjectId) await assertFactoryProject(fetchImpl, config, input.factoryProjectId, relationship);
+  const timestamp = now().toISOString();
+  const row = {
+    relationship_type: relationship.type, relationship_id: relationship.id,
+    lead_id: relationship.type === "lead" ? relationship.id : null, customer_id: relationship.type === "customer" ? relationship.id : null,
+    factory_project_id: UUID.test(clean(input.factoryProjectId)) ? clean(input.factoryProjectId) : null,
+    demo_type: "food", display_name: validName(input.displayName || relation.company_name || relation.company || relation.name || blueprint.name),
+    blueprint_key: blueprint.key, blueprint_version: blueprint.version,
+    storefront_url: blueprint.storefrontUrl, dashboard_url: blueprint.dashboardUrl, dashboard_deeplink: blueprint.dashboardDeeplink, qr_asset_url: blueprint.qrAssetUrl,
+    recipient_email: EMAIL.test(clean(relation.email).toLowerCase()) ? clean(relation.email).toLowerCase() : null,
+    created_by: UUID.test(clean(admin.profileId)) ? admin.profileId : null, updated_at: timestamp,
+    metadata: { runtimeFrozen: true, pickupOnly: true, realPayment: false, selfServiceAccountProven: false },
+  };
+  const existing = await rest(fetchImpl, config, "food_demo_bundles", { select: "id,created_by,created_at", relationship_type: `eq.${relationship.type}`, relationship_id: `eq.${relationship.id}`, blueprint_key: `eq.${blueprint.key}`, limit: "1" });
+  let saved;
+  if (existing?.[0]?.id) {
+    delete row.created_by;
+    saved = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${existing[0].id}`, select: "*" }, { method: "PATCH", body: row, prefer: "return=representation" });
+  } else {
+    saved = await rest(fetchImpl, config, "food_demo_bundles", { select: "*" }, { method: "POST", body: [{ id: crypto.randomUUID(), ...row, invitation_status: "ready", created_at: timestamp }], prefer: "return=representation" });
+  }
+  const bundle = saved?.[0];
+  await audit(fetchImpl, config, bundle.id, existing?.[0] ? "bundle_updated" : "bundle_created", admin, null, { blueprintKey: blueprint.key });
+  return json(existing?.[0] ? 200 : 201, { success: true, bundle: sanitizeBundle(bundle), mailPreview: mailPreview(bundle, relation) });
+}
+
+async function dispatchBundle(action, input, admin, config, fetchImpl, sendMail, now) {
+  const bundle = await loadOwnedBundle(fetchImpl, config, admin, input.bundleId);
+  if (bundle.revoked_at && action !== "resend") throw httpError(409, "BUNDLE_REVOKED", "Deze uitnodiging is ingetrokken. Kies bewust voor opnieuw versturen.");
+  const relation = await assertOwnership(fetchImpl, config, admin, bundle.relationship_type, bundle.relationship_id, true);
+  const actionKey = clean(input.actionKey);
+  if (actionKey.length < 16 || actionKey.length > 160) throw httpError(400, "ACTION_KEY_INVALID", "De actiebeveiliging ontbreekt.");
+  const recipient = resolveRecipient(action, relation, config);
+  assertDispatchEnvironment(action, config);
+  const allowed = await rpc(fetchImpl, config, "consume_food_demo_bundle_rate_limit", { input_actor_profile_id: admin.profileId, input_action_scope: action, input_max_attempts: action === "test" ? 8 : 5 });
+  if (allowed !== true) throw httpError(429, "RATE_LIMITED", "Wacht even voordat u opnieuw een demo verstuurt.");
+  const reservation = await reserveDispatch(fetchImpl, config, bundle, action, actionKey, admin, recipient.kind);
+  if (reservation.duplicate) return json(200, { success: true, duplicate: true, sent: reservation.row.status === "sent", bundle: sanitizeBundle(bundle), message: "Deze verzendactie was al verwerkt." });
+  const mail = mailPreview(bundle, relation);
+  const result = await sendMail({
+    to: recipient.email, from: config.fromEmail || undefined, replyTo: config.replyTo || undefined,
+    subject: mail.subject, html: mail.html, text: mail.text, templateKey: "food_demo_bundle", templateName: "Food Demo Bundle",
+    leadId: bundle.lead_id, customerId: bundle.customer_id, triggeredBy: "admin_food_demo_bundle",
+    idempotencyKey: `food.demo.bundle:${bundle.id}:${actionKey}`, metadata: { bundleId: bundle.id, blueprintKey: bundle.blueprint_key, recipientKind: recipient.kind },
+  });
+  const sent = Boolean(result?.sent && result?.id);
+  const timestamp = now().toISOString();
+  await rest(fetchImpl, config, "food_demo_bundle_dispatches", { id: `eq.${reservation.row.id}` }, { method: "PATCH", body: { status: sent ? "sent" : "failed", provider_message_id: sent ? clean(result.id) : null, error_code: sent ? null : clean(result?.errorCode || "provider_send_failed"), completed_at: timestamp } });
+  const patch = sent ? { invitation_status: "sent", last_sent_at: timestamp, revoked_at: null, updated_at: timestamp } : { invitation_status: "send_failed", updated_at: timestamp };
+  const updated = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${bundle.id}`, select: "*" }, { method: "PATCH", body: patch, prefer: "return=representation" });
+  await audit(fetchImpl, config, bundle.id, sent ? `${action}_sent` : `${action}_failed`, admin, actionKey, { recipientKind: recipient.kind, errorCode: sent ? null : clean(result?.errorCode || "provider_send_failed") });
+  if (!sent) throw httpError(502, "EMAIL_SEND_FAILED", "De uitnodiging is niet verzonden; veilig opnieuw proberen is mogelijk.");
+  return json(200, { success: true, sent: true, recipientKind: recipient.kind, bundle: sanitizeBundle(updated?.[0]), message: action === "test" ? "Testmail is verzonden naar het gecontroleerde interne adres." : "De Food-demo is verzonden." });
+}
+
+async function revokeBundle(input, admin, config, fetchImpl, now) {
+  const bundle = await loadOwnedBundle(fetchImpl, config, admin, input.bundleId);
+  const actionKey = clean(input.actionKey); if (actionKey.length < 16) throw httpError(400, "ACTION_KEY_INVALID", "De actiebeveiliging ontbreekt.");
+  const timestamp = now().toISOString();
+  const rows = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${bundle.id}`, select: "*" }, { method: "PATCH", body: { invitation_status: "revoked", revoked_at: timestamp, updated_at: timestamp }, prefer: "return=representation" });
+  await audit(fetchImpl, config, bundle.id, "invitation_revoked", admin, actionKey, {});
+  return json(200, { success: true, bundle: sanitizeBundle(rows?.[0]), message: "De uitnodiging is ingetrokken. De audit- en demo-gegevens zijn behouden." });
+}
+
+async function checkLinks(input, admin, config, fetchImpl, now) {
+  const bundle = await loadOwnedBundle(fetchImpl, config, admin, input.bundleId);
+  const [storefront, dashboard] = await Promise.all([probe(bundle.storefront_url, fetchImpl), probe(bundle.dashboard_deeplink, fetchImpl)]);
+  const timestamp = now().toISOString();
+  const rows = await rest(fetchImpl, config, "food_demo_bundles", { id: `eq.${bundle.id}`, select: "*" }, { method: "PATCH", body: { storefront_status: storefront ? "reachable" : "unreachable", dashboard_status: dashboard ? "reachable" : "unreachable", updated_at: timestamp }, prefer: "return=representation" });
+  await audit(fetchImpl, config, bundle.id, "links_checked", admin, clean(input.actionKey) || null, { storefrontReachable: storefront, dashboardReachable: dashboard });
+  return json(200, { success: true, bundle: sanitizeBundle(rows?.[0]) });
+}
+
+async function assertOwnership(fetchImpl, config, admin, type, id, required) {
+  const table = type === "lead" ? "leads" : "customers";
+  const rows = await rest(fetchImpl, config, table, { select: "*", id: `eq.${id}`, limit: "1" });
+  const row = rows?.[0]; if (!row) { if (required) throw httpError(404, "RELATIONSHIP_NOT_FOUND", "De gekoppelde lead of klant bestaat niet meer."); return null; }
+  const role = clean(admin.role).toLowerCase().replace(/[\s-]+/g, "_");
+  if (["super_admin", "admin", "sales_manager"].includes(role)) return row;
+  const m = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  const owners = [row.assigned_user_id,row.owner_auth_user_id,row.owner_profile_id,row.owner_id,row.assigned_to,m.assignedUserId,m.assigned_user_id,m.ownerAuthUserId,m.owner_profile_id].map(clean).filter(Boolean);
+  if (role === "sales_partner" && (owners.includes(clean(admin.id)) || owners.includes(clean(admin.profileId)))) return row;
+  if (required) throw httpError(403, "RELATIONSHIP_FORBIDDEN", "U mag voor deze relatie geen Food-demo beheren."); return null;
+}
+
+async function loadOwnedBundle(fetchImpl, config, admin, id) { if (!UUID.test(clean(id))) throw httpError(400,"BUNDLE_INVALID","De Food-demo is ongeldig."); const rows=await rest(fetchImpl,config,"food_demo_bundles",{select:"*",id:`eq.${id}`,limit:"1"}); const b=rows?.[0]; if(!b) throw httpError(404,"BUNDLE_NOT_FOUND","De Food-demo bestaat niet meer."); assertBundleUrls(b); await assertOwnership(fetchImpl,config,admin,b.relationship_type,b.relationship_id,true); return b; }
+async function assertFactoryProject(fetchImpl, config, id, relation) { if(!UUID.test(clean(id))) throw httpError(400,"FACTORY_PROJECT_INVALID","Het Factory-dossier is ongeldig."); const rows=await rest(fetchImpl,config,"factory_projects",{select:"id,relationship_type,relationship_id,factory_type",id:`eq.${id}`,limit:"1"}); const p=rows?.[0]; if(!p||p.relationship_type!==relation.type||p.relationship_id!==relation.id||p.factory_type!=="food") throw httpError(409,"FACTORY_PROJECT_MISMATCH","Het Factory-dossier hoort niet bij deze Food-relatie."); }
+async function reserveDispatch(fetchImpl, config, bundle, action, actionKey, admin, recipientKind) { const existing=await rest(fetchImpl,config,"food_demo_bundle_dispatches",{select:"*",bundle_id:`eq.${bundle.id}`,action_key:`eq.${actionKey}`,limit:"1"}); if(existing?.[0]) return {duplicate:true,row:existing[0]}; const rows=await rest(fetchImpl,config,"food_demo_bundle_dispatches",{select:"*"},{method:"POST",body:[{id:crypto.randomUUID(),bundle_id:bundle.id,action_type:action,action_key:actionKey,recipient_kind:recipientKind,requested_by:UUID.test(clean(admin.profileId))?admin.profileId:null}],prefer:"return=representation"}); return {duplicate:false,row:rows?.[0]}; }
+async function audit(fetchImpl, config, bundleId, eventType, admin, actionKey, metadata) { try { await rest(fetchImpl,config,"food_demo_bundle_events",{},{method:"POST",body:[{bundle_id:bundleId,event_type:eventType,action_key:actionKey||null,actor_profile_id:UUID.test(clean(admin.profileId))?admin.profileId:null,metadata:metadata||{}}]}); } catch(error) { if(error.code!=="REST_CONFLICT") throw error; } }
+
+function validateRelationship(input={}) { const type=clean(input.relationshipType).toLowerCase(); const id=clean(input.relationshipId); if(!["lead","customer"].includes(type)||!UUID.test(id)) throw httpError(400,"RELATIONSHIP_INVALID","Kies één geldige lead of klant."); return {type,id}; }
+function assertBundleUrls(bundle={}) { const blueprint=BLUEPRINTS[clean(bundle.blueprint_key)]; if(!blueprint||clean(bundle.storefront_url)!==blueprint.storefrontUrl||clean(bundle.dashboard_url)!==blueprint.dashboardUrl||clean(bundle.dashboard_deeplink)!==blueprint.dashboardDeeplink||clean(bundle.qr_asset_url)!==blueprint.qrAssetUrl) throw httpError(409,"BUNDLE_LINK_MISMATCH","De Food-demolinks wijken af van de gecontroleerde blueprint."); const dashboard=new URL(bundle.dashboard_deeplink); if(dashboard.protocol!=="https:"||dashboard.hostname!=="max-webstudio-food-demo.netlify.app"||dashboard.pathname!=="/login.html"||dashboard.searchParams.get("next")!=="/admin/food") throw httpError(409,"DASHBOARD_DEEPLINK_INVALID","De dashboardloginroute is niet veilig."); return true; }
+function resolveRecipient(action, relation, config) { if(action==="test"){ if(!EMAIL.test(config.testEmail)) throw httpError(503,"TEST_RECIPIENT_UNAVAILABLE","Het gecontroleerde interne testadres ontbreekt."); return {email:config.testEmail,kind:"internal_test"}; } const email=clean(relation.email).toLowerCase(); if(!EMAIL.test(email)) throw httpError(422,"RELATIONSHIP_EMAIL_INVALID","De relatie heeft geen geldig e-mailadres."); return {email,kind:"relationship"}; }
+function assertDispatchEnvironment(action, config) { if(action==="test"){ if(!config.nonProduction) throw httpError(403,"TESTMAIL_PRODUCTION_FORBIDDEN","Testmail is alleen in een gecontroleerde niet-productieomgeving toegestaan."); return; } if(!config.production||!config.liveSendEnabled) throw httpError(403,"LIVE_SEND_GATE_CLOSED","Definitief versturen is pas toegestaan na de afzonderlijke productievrijgave."); }
+function mailPreview(bundle, relation) { const origin=new URL(bundle.storefront_url).origin; return buildFoodDemoBundleMail({ contactName:relation.contact_name||relation.name,restaurantName:bundle.display_name,storefrontUrl:bundle.storefront_url,dashboardUrl:bundle.dashboard_deeplink,qrUrl:`${origin}${bundle.qr_asset_url}`,blueprintKey:bundle.blueprint_key }); }
+function validName(value) { const v=clean(value); if(v.length<2||v.length>160||/[<>\u0000-\u001f]/.test(v)) throw httpError(400,"NAME_INVALID","De restaurantnaam is ongeldig."); return v; }
+function sanitizeBundle(b={}) { return { id:b.id,relationshipType:b.relationship_type,relationshipId:b.relationship_id,leadId:b.lead_id,customerId:b.customer_id,factoryProjectId:b.factory_project_id,demoType:b.demo_type,displayName:b.display_name,blueprintKey:b.blueprint_key,blueprintVersion:b.blueprint_version,storefrontUrl:b.storefront_url,dashboardUrl:b.dashboard_url,dashboardDeeplink:b.dashboard_deeplink,qrAssetUrl:b.qr_asset_url,storefrontStatus:b.storefront_status,dashboardStatus:b.dashboard_status,invitationStatus:b.invitation_status,recipientEmail:b.recipient_email,createdAt:b.created_at,lastSentAt:b.last_sent_at,revokedAt:b.revoked_at,expiresAt:b.expires_at,metadata:b.metadata||{} }; }
+function presentationSteps(){return ["Dashboard vooraf veilig openen en inloggen.","Storefront op telefoon openen via QR-code.","Product toevoegen en winkelwagen tonen.","Afhalen kiezen; bezorgen is niet beschikbaar.","Testbestelling plaatsen; er vindt geen echte betaling plaats.","Bestelling in dashboard zien, accepteren en naar preparing en ready zetten.","Alleen de gevalideerde reset-/opruimprocedure uitvoeren."];}
+async function probe(url,fetchImpl){try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),5000);const res=await fetchImpl(url,{method:"HEAD",redirect:"follow",signal:controller.signal});clearTimeout(timer);return res.ok||[301,302,303,307,308,401,403].includes(res.status);}catch{return false;}}
+function runtimeConfig(env){const values=[env.APP_ENV,env.APP_ENVIRONMENT,env.CONTEXT,env.NETLIFY_ENV].map(v=>clean(v).toLowerCase());const production=values.some(v=>["production","prod"].includes(v));return {url:clean(env.SUPABASE_URL).replace(/\/$/,""),key:clean(env.SUPABASE_SERVICE_ROLE_KEY),siteUrl:clean(env.SITE_URL),fromEmail:clean(env.RESEND_FROM_EMAIL||env.EMAIL_FROM),replyTo:clean(env.RESEND_REPLY_TO||env.EMAIL_REPLY_TO),testEmail:clean(env.FOOD_DEMO_INTERNAL_TEST_EMAIL).toLowerCase(),production,nonProduction:!production&&values.some(v=>["test","staging","deploy-preview","branch-deploy"].includes(v)),liveSendEnabled:clean(env.FOOD_DEMO_BUNDLE_EMAIL_ENABLED).toLowerCase()==="true",get ready(){return Boolean(this.url&&this.key);}};}
+async function rest(fetchImpl,config,table,params={},options={}){const q=new URLSearchParams(params);const res=await fetchImpl(`${config.url}/rest/v1/${table}?${q}`,{method:options.method||"GET",headers:{apikey:config.key,Authorization:`Bearer ${config.key}`,Accept:"application/json",...(options.body!==undefined?{"Content-Type":"application/json"}:{}),...(options.prefer?{Prefer:options.prefer}:{})},...(options.body!==undefined?{body:JSON.stringify(options.body)}:{})});const data=await res.json().catch(()=>null);if(!res.ok){const e=httpError(res.status===409?409:res.status>=500?503:400,res.status===409?"REST_CONFLICT":"STORAGE_REJECTED","De Food-demo-opslag weigerde de aanvraag.");throw e;}return data;}
+async function rpc(fetchImpl,config,name,body){const res=await fetchImpl(`${config.url}/rest/v1/rpc/${name}`,{method:"POST",headers:{apikey:config.key,Authorization:`Bearer ${config.key}`,"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await res.json().catch(()=>null);if(!res.ok)throw httpError(503,"RATE_LIMIT_UNAVAILABLE","Verzenden is tijdelijk geblokkeerd omdat de limietcontrole niet beschikbaar is.");return data;}
+function parseBody(event){const raw=event.isBase64Encoded?Buffer.from(event.body||"","base64").toString("utf8"):String(event.body||"");if(!raw||Buffer.byteLength(raw)>32768)throw httpError(400,"BODY_INVALID","De aanvraag is leeg of te groot.");try{return JSON.parse(raw);}catch{throw httpError(400,"JSON_INVALID","De aanvraag bevat geen geldige gegevens.");}}
+function clean(value){return String(value||"").trim();} function httpError(statusCode,code,message){return Object.assign(new Error(message),{statusCode,code});} function json(statusCode,body){return {statusCode,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store, max-age=0","X-Content-Type-Options":"nosniff"},body:JSON.stringify(body)};}
+
+exports.handler=createHandler();
+exports._private={assertBundleUrls,assertDispatchEnvironment,buildFoodDemoBundleMail,createHandler,mailPreview,presentationSteps,runtimeConfig,sanitizeBundle,validateRelationship};

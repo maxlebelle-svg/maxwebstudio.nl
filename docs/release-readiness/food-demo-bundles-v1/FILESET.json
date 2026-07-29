@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "food-demo-bundles-v1-2026-07-29",
+  "targetEnvironment": "maxwebstudio_admin_staging",
+  "targetProjectRef": "xlxpuuycigeqhgxqtzni",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260729170000_food_demo_bundles.sql",
+      "bytes": 7845,
+      "sha256": "010c01ffc9c2ac2cd01d85196a93c27d2a8cf5dde5ac5d629350ef7a620b56e2"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "food-demo-bundles-v1-2026-07-29",
+  "release": "Max Webstudio Food Demo Bundles v1",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "targetEnvironment": "maxwebstudio_admin_staging",
+  "targetProjectRef": "xlxpuuycigeqhgxqtzni",
+  "productionAllowed": false,
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "prerequisiteRelease": "factory-hub-projects-v1-2026-07-29",
+  "migrationCount": 1,
+  "executionOrder": ["supabase/migrations/20260729170000_food_demo_bundles.sql"],
+  "safety": {
+    "changesSilveradoRuntime": false,
+    "createsFoodTenants": false,
+    "sendsEmail": false,
+    "changesExistingWebsiteDemos": false,
+    "downMigrationAllowed": false
+  }
+}

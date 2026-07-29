@@ -83,6 +83,10 @@
     {
       "manifest": "docs/release-readiness/factory-hub-projects-v1/MANIFEST.json",
       "fileset": "docs/release-readiness/factory-hub-projects-v1/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/food-demo-bundles-v1/MANIFEST.json",
+      "fileset": "docs/release-readiness/food-demo-bundles-v1/FILESET.json"
     }
   ]
 }
