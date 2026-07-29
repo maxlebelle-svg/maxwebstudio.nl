@@ -4,7 +4,6 @@ set -euo pipefail
 readonly runner_dir=${0:A:h}
 readonly expected_ref='xlxpuuycigeqhgxqtzni'
 readonly canonical_workdir=$runner_dir
-readonly factory_workdir=$runner_dir/release-steps/factory-hub
 
 fail() {
   print -u2 -- "governed staging migration root: $1"
@@ -42,17 +41,12 @@ case $action in
     verify_target_lock $canonical_workdir
     exec supabase --workdir $canonical_workdir db push --linked --dry-run
     ;;
-  apply-factory)
-    [[ $# -eq 1 ]] || fail "apply-factory accepts no extra arguments"
-    verify_target_lock $factory_workdir
-    exec supabase --workdir $factory_workdir migration up --linked
-    ;;
-  apply-food)
-    [[ $# -eq 1 ]] || fail "apply-food accepts no extra arguments"
+  apply-production-gate)
+    [[ $# -eq 1 ]] || fail "apply-production-gate accepts no extra arguments"
     verify_target_lock $canonical_workdir
     exec supabase --workdir $canonical_workdir migration up --linked
     ;;
   *)
-    fail "allowed actions: list, dry-run, apply-factory, apply-food"
+    fail "allowed actions: list, dry-run, apply-production-gate"
     ;;
 esac

@@ -9,17 +9,17 @@
   ],
   "cliVersionCertified": "2.108.0",
   "officialWorkdirSupport": "--workdir",
-  "remoteHistoryObservedAt": "2026-07-29T14:10:29.259Z",
+  "remoteHistoryObservedAt": "2026-07-29T18:50:00.000Z",
   "generalMigrationRoot": "supabase/migrations",
   "generalMigrationRootFingerprint": "8853ac5c93dc3333d8e687a152426cfdc22ba502344dd5b7e684aba799026a2a",
   "canonicalWorkdir": "supabase-environments/staging",
   "factoryStepWorkdir": "supabase-environments/staging/release-steps/factory-hub",
   "counts": {
-    "applied": 32,
-    "pending": 2,
-    "excluded": 39,
+    "applied": 35,
+    "pending": 1,
+    "excluded": 38,
     "providerBlockingOlderExcluded": 31,
-    "laterFeatureLineExcluded": 8
+    "laterFeatureLineExcluded": 7
   },
   "applied": [
     {
@@ -341,9 +341,7 @@
       "sourcePath": "supabase/migrations/20260727120000_signhost_smoke_test.sql",
       "remoteStatus": "applied",
       "classification": "applied"
-    }
-  ],
-  "pending": [
+    },
     {
       "version": "20260729120000",
       "filename": "20260729120000_factory_hub_projects.sql",
@@ -351,8 +349,8 @@
       "sourceCommit": "5e252e6ec1af3d3790bd6069692f3e13907e5431",
       "blobId": "899db217d151cddd4be5a1537e4a7b906177f70c",
       "sourcePath": "supabase/migrations/20260729120000_factory_hub_projects.sql",
-      "remoteStatus": "pending",
-      "classification": "pending"
+      "remoteStatus": "applied",
+      "classification": "applied"
     },
     {
       "version": "20260729170000",
@@ -361,6 +359,28 @@
       "sourceCommit": "5312d927fde5518f7e0be4f3a636386b65e617ab",
       "blobId": "feca2163a07f18dbe5d454f4a22d608caefc61b3",
       "sourcePath": "supabase/migrations/20260729170000_food_demo_bundles.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    },
+    {
+      "version": "20260729180000",
+      "filename": "20260729180000_food_demo_bundle_service_role_acl_repair.sql",
+      "sha256": "737bfc5f3d8e519fdddb4baeee010941a712c7dc90841c0c053617847b5a8f5e",
+      "sourceCommit": "ae9e3e9fb46c83343df68f90336b09b5299057c8",
+      "blobId": "f02effe601585971b29c615c2636637115c16794",
+      "sourcePath": "supabase/migrations/20260729180000_food_demo_bundle_service_role_acl_repair.sql",
+      "remoteStatus": "applied",
+      "classification": "applied"
+    }
+  ],
+  "pending": [
+    {
+      "version": "20260729200000",
+      "filename": "20260729200000_factory_production_gate.sql",
+      "sha256": "830e113abb432417d50262ef45f48a390e2cbd900a5a45c2fb1faeb6360132d5",
+      "sourceCommit": "e33428cdb61efe54356ae7f76986d623f556d685",
+      "blobId": "99eb874aa33bccddf68321154947ae653d87dd4e",
+      "sourcePath": "docs/release-readiness/factory-production-gate-v1/20260729200000_factory_production_gate.sql",
       "remoteStatus": "pending",
       "classification": "pending"
     }
@@ -669,18 +689,6 @@
       "reason": "separate Food Demo Cloud project line",
       "classification": "excluded_from_staging_lineage",
       "providerBlockingOlderMigration": false
-    },
-    {
-      "version": "20260729180000",
-      "filename": "20260729180000_food_demo_bundle_service_role_acl_repair.sql",
-      "featureLine": "Food Demo Bundle ACL repair",
-      "reason": "local repair is not admitted to the frozen staging execution line without a separate staging authorization",
-      "classification": "excluded_from_staging_lineage",
-      "providerBlockingOlderMigration": false,
-      "sourceCommit": "ae9e3e9fb46c83343df68f90336b09b5299057c8",
-      "blobId": "f02effe601585971b29c615c2636637115c16794",
-      "sourcePath": "supabase/migrations/20260729180000_food_demo_bundle_service_role_acl_repair.sql",
-      "sha256": "737bfc5f3d8e519fdddb4baeee010941a712c7dc90841c0c053617847b5a8f5e"
     }
   ]
 }
