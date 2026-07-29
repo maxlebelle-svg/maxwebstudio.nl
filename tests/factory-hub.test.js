@@ -32,6 +32,7 @@ test("Factory Hub validates relationship scope and bounded configuration", () =>
 test("Factory Hub UI is relationship-bound and never promises automatic publication", () => {
   const html = read("public/admin-factories.html");
   const ui = read("public/admin/ui/factory-hub.js");
+  const css = read("public/admin/styles/factory-hub.css");
   const migration = read("supabase/migrations/20260729120000_factory_hub_projects.sql");
   assert.match(html, /Website-, Webshop- en Food-dossiers/);
   assert.match(html, /publiceert nooit automatisch/);
@@ -40,6 +41,8 @@ test("Factory Hub UI is relationship-bound and never promises automatic publicat
   assert.match(ui, /openFoodDemo/);
   assert.match(ui, /QR-code naar de mobiele Food-demo/);
   assert.equal(getFactoryBlueprint("food-pickup-v1").launchPath, "admin-demo-sites.html");
+  assert.match(css, /@media\(max-width:1250px\).*factory-project\[data-has-qr="true"\]/);
+  assert.match(css, /factory-project-actions\{grid-column:1\/-1/);
   assert.match(migration, /factory_type in \('website','webshop','food'\)/);
   assert.match(migration, /revoke all on table public\.factory_projects from anon, authenticated/);
   assert.match(migration, /grant all on table public\.factory_projects to service_role/);

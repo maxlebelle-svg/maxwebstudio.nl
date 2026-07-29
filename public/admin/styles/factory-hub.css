@@ -64,5 +64,6 @@
 .factory-recipe-preview h3, .factory-recipe-preview p { margin:0; }
 .factory-recipe-preview p { color:#9fb0c8; font-size:13px; }
 .factory-form-message { min-height:20px; margin:0; color:#fca5a5; font-size:13px; }
-@media(max-width:980px){.factory-blueprint-grid{grid-template-columns:1fr}.factory-blueprint-card{min-height:0}.factory-project{grid-template-columns:1fr 1fr}.factory-project-actions{justify-content:flex-start}.factory-hub-hero{grid-template-columns:1fr}}
+@media(max-width:1250px){.factory-project,.factory-project[data-has-qr="true"]{grid-template-columns:minmax(0,1fr) minmax(180px,.55fr)}.factory-project-actions{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:980px){.factory-blueprint-grid{grid-template-columns:1fr}.factory-blueprint-card{min-height:0}.factory-hub-hero{grid-template-columns:1fr}}
 @media(max-width:650px){.factory-context-card,.factory-dialog header,.factory-dialog footer{align-items:stretch;flex-direction:column}.factory-project,.factory-form-grid,.factory-type-options{grid-template-columns:1fr}.factory-dialog footer .button{width:100%}}
