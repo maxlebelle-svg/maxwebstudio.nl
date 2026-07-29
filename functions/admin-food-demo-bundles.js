@@ -46,12 +46,12 @@ function createHandler(deps = {}) {
 
 async function handleGet(event, admin, config, fetchImpl) {
   const query = event.queryStringParameters || {};
-  const params = { select: "*", order: "updated_at.desc", limit: "100" };
+  const relation = validateRelationship(query);
+  const params = {
+    select: "*", order: "updated_at.desc", limit: "100",
+    relationship_type: `eq.${relation.type}`, relationship_id: `eq.${relation.id}`,
+  };
   if (query.bundleId) { if (!UUID.test(query.bundleId)) throw httpError(400, "BUNDLE_INVALID", "De Food-demo is ongeldig."); params.id = `eq.${query.bundleId}`; }
-  if (query.relationshipType || query.relationshipId) {
-    const relation = validateRelationship(query);
-    params.relationship_type = `eq.${relation.type}`; params.relationship_id = `eq.${relation.id}`;
-  }
   const rows = await rest(fetchImpl, config, "food_demo_bundles", params);
   const allowed = [];
   for (const bundle of rows || []) {

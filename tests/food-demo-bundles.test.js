@@ -68,6 +68,15 @@ test("server is authoritative for blueprint URLs, recipient and idempotent dispa
   assert.doesNotMatch(handler, /[?&](password|access_token|refresh_token|service_role_key)=/i);
 });
 
+test("Food bundle listings fail closed to the active relationship", () => {
+  assert.match(handler, /const relation = validateRelationship\(query\)/);
+  assert.match(handler, /relationship_type: `eq\.\$\{relation\.type\}`/);
+  assert.match(handler, /relationship_id: `eq\.\$\{relation\.id\}`/);
+  assert.ok(ui.includes("try{await load(relationship);}"));
+  assert.ok(ui.includes("subscribeToRelationshipChanges(r=>load(r)"));
+  assert.doesNotMatch(ui, /page==="admin-demo-sites\.html"\?null/);
+});
+
 test("admin UX separates Food bundles from regular demos and never sends on open", () => {
   assert.match(ui, /Food Demo Bundles/);
   assert.match(ui, /Demo versturen/);
