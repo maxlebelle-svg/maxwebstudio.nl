@@ -15,7 +15,8 @@ function stagingEnv(overrides = {}) {
     SUPABASE_ANON_KEY: "test-only-anon-key",
     SUPABASE_SERVICE_ROLE_KEY: SECRET,
     SITE_ID: "67b2b8af-83fc-4c61-9cd8-2f78842b7615",
-    BRANCH: "codex/factory-hub-staging-certification",
+    SITE_NAME: "maxwebstudio-staging",
+    URL: "https://maxwebstudio-staging.netlify.app",
     CONTEXT: "production",
     ...overrides,
   };
@@ -83,11 +84,19 @@ test("anon, admin and developer are refused while active super_admin is admitted
   assert.equal(calls.length, 4);
 });
 
-test("production host, wrong site, branch or Supabase target fail before authentication", async () => {
+test("missing or conflicting runtime identity fails before authentication or Gate probes", async () => {
   for (const setup of [
+    { request: event(), env: stagingEnv({ SITE_ID: "", NETLIFY_SITE_ID: "67b2b8af-83fc-4c61-9cd8-2f78842b7615" }) },
     { request: event({ headers: { host: "maxwebstudio.nl" } }), env: stagingEnv() },
+    { request: event({ headers: { host: "maxwebstudio-staging.netlify.app.evil.example" } }), env: stagingEnv() },
+    { request: event({ headers: { host: "maxwebstudio-staging.netlify.app:443" } }), env: stagingEnv() },
     { request: event(), env: stagingEnv({ SITE_ID: "production-site" }) },
-    { request: event(), env: stagingEnv({ BRANCH: "main" }) },
+    { request: event(), env: stagingEnv({ SITE_NAME: "" }) },
+    { request: event(), env: stagingEnv({ SITE_NAME: "maxwebstudio" }) },
+    { request: event(), env: stagingEnv({ URL: "" }) },
+    { request: event(), env: stagingEnv({ URL: "https://maxwebstudio.nl" }) },
+    { request: event(), env: stagingEnv({ URL: "https://maxwebstudio-staging.netlify.app.evil.example" }) },
+    { request: event(), env: stagingEnv({ SUPABASE_URL: "" }) },
     { request: event(), env: stagingEnv({ SUPABASE_URL: "https://production.supabase.co" }) },
   ]) {
     process.env = { ...ORIGINAL_ENV, ...setup.env };
@@ -97,6 +106,26 @@ test("production host, wrong site, branch or Supabase target fail before authent
     assert.equal(result.statusCode, 404);
     assert.equal(called, false);
   }
+});
+
+test("BRANCH and HEAD are neither required nor authorizing runtime evidence", async () => {
+  for (const overrides of [
+    { BRANCH: undefined, HEAD: undefined },
+    { BRANCH: "main", HEAD: "production" },
+  ]) {
+    process.env = { ...ORIGINAL_ENV, ...stagingEnv(overrides) };
+    const calls = authenticatedFetch("super_admin", [response(200), response(200)]);
+    const result = await diagnostic.handler(event());
+    assert.equal(result.statusCode, 200);
+    assert.equal(calls.length, 4);
+  }
+
+  process.env = { ...ORIGINAL_ENV, ...stagingEnv({ SITE_NAME: "maxwebstudio", BRANCH: "codex/factory-hub-staging-certification", HEAD: "codex/factory-hub-staging-certification" }) };
+  let called = false;
+  global.fetch = async () => { called = true; return response(500); };
+  const denied = await diagnostic.handler(event());
+  assert.equal(denied.statusCode, 404);
+  assert.equal(called, false);
 });
 
 test("only the two allowlisted resources receive separate read-only limit=0 requests", async () => {

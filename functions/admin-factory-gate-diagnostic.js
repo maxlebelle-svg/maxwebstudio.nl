@@ -1,9 +1,10 @@
 const { verifyAdmin } = require("./_admin-auth");
 
 const STAGING_SITE_ID = "67b2b8af-83fc-4c61-9cd8-2f78842b7615";
+const STAGING_SITE_NAME = "maxwebstudio-staging";
 const STAGING_HOST = "maxwebstudio-staging.netlify.app";
+const STAGING_ORIGIN = `https://${STAGING_HOST}`;
 const STAGING_SUPABASE_ORIGIN = "https://xlxpuuycigeqhgxqtzni.supabase.co";
-const STAGING_BRANCH = "codex/factory-hub-staging-certification";
 const RESOURCES = Object.freeze(["factory_gate_checks", "factory_gate_overrides"]);
 const SAFE_POSTGREST_CODES = new Set(["PGRST205", "PGRST301", "PGRST302", "42P01", "42501", "28000", "28P01"]);
 
@@ -74,14 +75,28 @@ function classify(status, code, ok) {
 }
 
 function isConfirmedStagingTarget(event, env) {
-  const host = String(event?.headers?.["x-forwarded-host"] || event?.headers?.["X-Forwarded-Host"] || event?.headers?.host || event?.headers?.Host || "")
-    .split(",")[0].trim().toLowerCase();
-  const siteId = String(env.SITE_ID || env.NETLIFY_SITE_ID || "").trim();
-  const branch = String(env.BRANCH || env.HEAD || "").trim();
+  const host = normalizedRequestHost(event?.headers?.["x-forwarded-host"] || event?.headers?.["X-Forwarded-Host"] || event?.headers?.host || event?.headers?.Host);
+  const siteId = String(env.SITE_ID || "").trim();
+  const siteName = String(env.SITE_NAME || "").trim();
+  const siteOrigin = normalizedOrigin(env.URL);
   return host === STAGING_HOST
     && siteId === STAGING_SITE_ID
-    && branch === STAGING_BRANCH
+    && siteName === STAGING_SITE_NAME
+    && siteOrigin === STAGING_ORIGIN
     && normalizedOrigin(env.SUPABASE_URL) === STAGING_SUPABASE_ORIGIN;
+}
+
+function normalizedRequestHost(value) {
+  const raw = String(value || "").split(",")[0].trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(`https://${raw}`);
+    if (url.protocol !== "https:" || url.username || url.password || url.port || url.pathname !== "/" || url.search || url.hash) return "";
+    if (raw.toLowerCase() !== url.hostname.toLowerCase()) return "";
+    return url.hostname.toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 function normalizedOrigin(value) {
@@ -107,4 +122,4 @@ function json(statusCode, body) {
   };
 }
 
-exports._private = { RESOURCES, classify, isConfirmedStagingTarget, normalizedOrigin, probeResource };
+exports._private = { RESOURCES, classify, isConfirmedStagingTarget, normalizedOrigin, normalizedRequestHost, probeResource };
