@@ -1,6 +1,6 @@
 # Food Demo Bundle — implementation and release report
 
-Status: `STOPPED_STAGING_MIGRATION_HISTORY_DIVERGENCE`
+Status: `STOPPED_TARGET_LOCKED_MIGRATION_SET_NOT_PROVEN`
 
 ## Implemented locally
 
@@ -29,6 +29,8 @@ Status: `STOPPED_STAGING_MIGRATION_HISTORY_DIVERGENCE`
 Provider metadata independently confirmed project `xlxpuuycigeqhgxqtzni` as `maxwebstudio-test`, region `eu-west-1`, status `ACTIVE_HEALTHY`; `.env.staging` points to this ref and to `https://maxwebstudio-staging.netlify.app`. The separate Silverado project `obprooubcbnfgouytvrw` was confirmed as `max-webstudio-food-demo` and remained untouched.
 
 No deploy, migration or mail was executed. The staging/test migration history diverges materially from the local governed history: it contains remote-only versions and many local-only versions, including the Factory Hub prerequisite. Applying a normal database push would therefore exceed the allowlisted fileset and fail the migration-consistency gate. A target-locked reconciliation/certification of that history is required before the two additive migrations may be applied.
+
+De normale provider-dry-run stopte read-only omdat acht remote historyversies lokaal ontbreken: `20260718120000`, `20260718222000`, `20260719160000`, `20260719170000`, `20260719180000`, `20260719190000`, `20260720160000` en `20260720200000`. Er is geen repair of pull uitgevoerd. De volledige matrix en kleinste veilige structurele oplossing staan in `docs/STAGING_HISTORY_RECONCILIATION_FOOD_DEMO_BUNDLE.md`.
 
 `FOOD_DEMO_INTERNAL_TEST_EMAIL` is not configured in the available staging environment. Consequently the internal testmail gate remains closed even after database reconciliation; an explicit controlled Max Webstudio address must be configured server-side before that one test send.
 
