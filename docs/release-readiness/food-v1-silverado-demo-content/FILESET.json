@@ -1,0 +1,9 @@
+{
+  "files": [
+    {
+      "path": "supabase/demo/food-v1-silverado-demo-content.sql",
+      "bytes": 6134,
+      "sha256": "264ffeff27b54e313ae21994b92dcbfb3b336fd336a2b45af40b2857c35ed45f"
+    }
+  ]
+}

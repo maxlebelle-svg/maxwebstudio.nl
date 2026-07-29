@@ -22,13 +22,19 @@
     "integrations_intro": "Koppel later betalingen, Google, advertenties en klantcontact vanuit dezelfde vertrouwde omgeving."
   },
   "menu_images": {
+    "roti kip filet met groenten en ei": "/assets/food/silverado/hero-roti.jpg",
     "roti kipfilet": "/assets/food/silverado/hero-roti.jpg",
     "roti kip": "/assets/food/silverado/roti-drumsticks.jpg",
     "rotirol kip": "/assets/food/silverado/roti-roll.jpg",
     "roti rol": "/assets/food/silverado/roti-roll.jpg",
+    "roti drumsticks": "/assets/food/silverado/roti-drumsticks.jpg",
+    "nasi kippenbout": "/assets/food/silverado/nasi-moksi.jpg",
     "nasi kip": "/assets/food/silverado/nasi-moksi.jpg",
+    "nasi moksi (mix)": "/assets/food/silverado/nasi-moksi.jpg",
     "nasi moksi": "/assets/food/silverado/nasi-moksi.jpg",
     "bami kip": "/assets/food/silverado/bami-moksi.jpg",
+    "bami kippen bout": "/assets/food/silverado/bami-moksi.jpg",
+    "bami moksi (mix)": "/assets/food/silverado/bami-moksi.jpg",
     "bami moksi": "/assets/food/silverado/bami-moksi.jpg",
     "krokante snack": "/assets/food/silverado/loempias-5.jpg",
     "loempia's 5 stuks": "/assets/food/silverado/loempias-5.jpg"
