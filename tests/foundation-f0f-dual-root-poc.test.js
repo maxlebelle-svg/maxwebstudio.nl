@@ -111,11 +111,22 @@ test('no product common fixture remains and no repair or pull command exists in 
   assert.doesNotMatch(runner,/migration\s+repair|db\s+pull/);
 });
 
-test('cutover remains evidence-blocked and missing lineage was not reconstructed', () => {
+test('recovered lineage is checksum-proven, staging-applied and never re-executed', () => {
   const status = read('F0F_CUTOVER_STATUS.md');
   assert.match(status,/technically_proven_but_evidence_blocked/);
-  for (const version of ['20260720160000','20260720200000']) {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root,'supabase-environments/staging/migration-manifest.json'),'utf8'));
+  const expected = new Map([
+    ['20260720160000','d0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba'],
+    ['20260720200000','40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370']
+  ]);
+  for (const [version, checksum] of expected) {
     assert.match(status,new RegExp(version));
-    assert.equal(fs.readdirSync(path.join(root,'supabase/migrations')).some((x) => x.startsWith(version)),false);
+    const entry = manifest.applied.find((candidate) => candidate.version === version);
+    assert.ok(entry, version);
+    assert.equal(entry.sha256, checksum);
+    assert.equal(entry.remoteStatus, 'applied');
+    assert.equal(entry.classification, 'applied');
+    assert.equal(fs.readFileSync(path.join(root,'supabase-environments/staging/supabase/migrations',entry.filename)).equals(fs.readFileSync(path.join(root,'supabase/migrations',entry.filename))),true);
   }
+  assert.doesNotMatch(fs.readFileSync(path.join(root,'supabase-environments/staging/run.zsh'),'utf8'),/migration repair|--include-all\s/);
 });

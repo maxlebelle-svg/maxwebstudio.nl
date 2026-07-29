@@ -10,6 +10,7 @@ const read = (name) => fs.readFileSync(path.join(docs, name), 'utf8');
 const decision = JSON.parse(read('F0D_DECISION_MATRIX.json'));
 const inventory = JSON.parse(read('F0C_MIGRATION_SET_INVENTORY.json'));
 const reconciliation = JSON.parse(read('FOUNDATION_GOVERNANCE_MAIN_RECONCILIATION_V1.json'));
+const stagingManifest = JSON.parse(fs.readFileSync(path.join(root, 'supabase-environments/staging/migration-manifest.json'), 'utf8'));
 const digest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
 const requiredDocs = [
@@ -53,12 +54,22 @@ test('cutoverpoint is explicit and remains blocked on named gates', () => {
   for (const token of ['20260719190000','20260720160000','20260720200000','20260721000000','Status: **BLOCKED**','kolomcatalogus','Supabase CLI']) assert.ok(proposal.toLowerCase().includes(token.toLowerCase()), token);
 });
 
-test('missing remote migrations were not reconstructed or marked applied', () => {
+test('recovered remote migrations have proven bytes and are not re-registered remotely', () => {
   const history = read('F0D_MIGRATION_HISTORY_STRATEGY.md');
   assert.match(history, /niet.*als applied geregistreerd/i);
   assert.match(history, /geen remote.*migration repair/i);
-  for (const name of ['20260720160000_lead_event_foundation.sql','20260720200000_transactional_lead_intake_rpc.sql']) {
-    assert.equal(fs.existsSync(path.join(root, 'supabase/migrations', name)), false);
+  const expected = new Map([
+    ['20260720160000_lead_event_foundation.sql', 'd0252a9ed2062da2cdd499030afea01a3b3ac734402568176ed48d4fe434e6ba'],
+    ['20260720200000_transactional_lead_intake_rpc.sql', '40397c9d45e2c7dfef7c702837999630343f7fb033fa408119509483c29c6370']
+  ]);
+  for (const [name, checksum] of expected) {
+    assert.equal(digest(fs.readFileSync(path.join(root, 'supabase/migrations', name))), checksum);
+    const staged = stagingManifest.applied.find((entry) => entry.filename === name);
+    assert.ok(staged, name);
+    assert.equal(staged.classification, 'applied');
+    assert.equal(staged.remoteStatus, 'applied');
+    assert.equal(staged.sha256, checksum);
+    assert.match(staged.sourceCommit, /^[a-f0-9]{40}$/);
   }
   assert.equal(decision.migrationHistoryRepairPerformed, false);
 });
@@ -66,7 +77,10 @@ test('missing remote migrations were not reconstructed or marked applied', () =>
 test('F0-d created no reconciliation identity; every later migration remains separately attributable', async () => {
   assert.equal(decision.reconciliationSqlCreated, false);
   const actual = fs.readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort();
-  const expected = reconciliation.preCutoverProductionLineage.map((x) => x.filename).sort();
+  const stagingHistoryAdditions = stagingManifest.applied
+    .filter((entry) => entry.version >= '20260718120000' && entry.version <= '20260720200000')
+    .map((entry) => entry.filename);
+  const expected = [...reconciliation.preCutoverProductionLineage.map((x) => x.filename), ...stagingHistoryAdditions].sort();
   assert.deepEqual(actual.filter((name) => name < reconciliation.cutoverVersion), expected);
   for (const entry of reconciliation.preCutoverProductionLineage) {
     assert.equal(digest(fs.readFileSync(path.join(root, 'supabase/migrations', entry.filename))), entry.sha256, entry.filename);
@@ -135,7 +149,8 @@ test('baseline and all available migration checksums remain unchanged', () => {
     }
     assert.equal(digest(fs.readFileSync(localPath)), migration.sha256, migration.filename);
   }
-  assert.deepEqual([...retired].sort(), inventory.migrations.filter((x) => x.localPresence === 'working_tree' && !fs.existsSync(path.join(root, 'supabase/migrations', x.filename))).map((x) => x.filename).sort());
+  const stillAbsentRetired = [...retired].filter((filename) => !fs.existsSync(path.join(root, 'supabase/migrations', filename))).sort();
+  assert.deepEqual(stillAbsentRetired, inventory.migrations.filter((x) => x.localPresence === 'working_tree' && !fs.existsSync(path.join(root, 'supabase/migrations', x.filename))).map((x) => x.filename).sort());
 });
 
 test('ADR and design report preserve the no-write/no-deploy boundary', () => {
