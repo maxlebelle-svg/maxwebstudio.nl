@@ -1,6 +1,10 @@
 # Silverado live-demo
 
-Status: functioneel bevroren zodra de drie online demonstratieruns en de eindreset groen zijn vastgelegd.
+Status: functioneel bevroren op 29 juli 2026 na drie volledig groene online demonstratieruns en een schone eindreset.
+
+- Gevalideerde runtimecommit: `7622d884f822fabe68198c9bc9fccdbaf5924b6c`
+- Actieve Netlify-deploy: `6a699e15ccf9a2902dd27606`
+- Bewijs: `docs/FOOD_V1_SILVERADO_LIVE_DEMO_EVIDENCE.md`
 
 ## Openen
 
