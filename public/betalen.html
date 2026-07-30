@@ -210,78 +210,11 @@
 
     <script>
       const VAT_RATE = 0.21;
-      const productCatalog = {
-        logo_design: p("Logo laten ontwerpen", "Branding", 295, 0, false, "Professioneel basislogo met bestanden voor website, socials en drukwerk."),
-        brand_identity: p("Complete huisstijl", "Branding", 0, 0, true, "Prijs en scope worden persoonlijk bevestigd."),
-        social_profile_set: p("Socialmedia-profielset", "Branding", 145, 0, false, "Profiel- en omslagbeelden voor social kanalen."),
-        email_signature: p("E-mailhandtekening", "Branding", 95, 0, false, "Zakelijke e-mailhandtekening in je huisstijl."),
-        business_card_design: p("Visitekaartje-ontwerp", "Branding", 95, 0, false, "Drukklaar ontwerp, exclusief drukwerkkosten."),
-        domain_registration: p("Nieuwe domeinnaam registreren", "Domein en e-mail", 0, 0, true, "Beschikbaarheid wordt eerst gecontroleerd."),
-        domain_transfer: p("Bestaand domein verhuizen", "Domein en e-mail", 0, 0, true, "We begeleiden de technische verhuizing."),
-        business_mailbox: p("Zakelijke mailbox", "Domein en e-mail", 0, 9.95, false, "Mailbox op je eigen domein."),
-        extra_mailbox: p("Extra mailbox", "Domein en e-mail", 0, 7.95, false, "Vereist zakelijke mailbox.", ["business_mailbox"]),
-        dns_email_setup: p("DNS- en e-mailconfiguratie", "Domein en e-mail", 95, 0, false, "Technische inrichting van DNS en e-mail."),
-        phone_085_number: p("Zakelijk 085-nummer", "Telefonie", 0, 14.95, true, "Beschikbaarheidscontrole en persoonlijke bevestiging."),
-        phone_extra_user: p("Extra gebruiker", "Telefonie", 0, 7.95, false, "Vereist zakelijk 085-nummer.", ["phone_085_number"]),
-        phone_setup: p("Installatie of configuratie", "Telefonie", 95, 0, false, "Vereist zakelijk 085-nummer.", ["phone_085_number"]),
-        extra_page: p("Extra pagina", "Website-uitbreidingen", 95, 0, false, "Alleen bij een websitepakket.", ["starter_site", "business_website", "premium_growth"]),
-        webshop: p("Webshop", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
-        booking_module: p("Boekingsmodule", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
-        payment_module: p("Betaalmodule", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
-        multilingual_site: p("Meertalige website", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
-        external_integration: p("Koppeling met externe software", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
-        extra_form: p("Extra formulier", "Website-uitbreidingen", 145, 0, false, "Alleen bij een websitepakket.", ["starter_site", "business_website", "premium_growth"]),
-        customer_portal: p("Klantenportaal", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
-        custom_feature: p("Maatwerkfunctie", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
-        seo_starter: p("SEO-startpakket", "Marketing", 195, 0, false, "Basisoptimalisatie en vindbaarheidscheck."),
-        monthly_seo: p("Maandelijkse SEO", "Marketing", 0, 249, false, "Doorlopende SEO-verbeteringen."),
-        google_business_profile: p("Google Bedrijfsprofiel", "Marketing", 149, 0, false, "Optimalisatie van je bedrijfsprofiel."),
-        google_ads_setup: p("Google Ads-inrichting", "Marketing", 0, 0, true, "Exclusief mediabudget."),
-        social_setup: p("Socialmedia-inrichting", "Marketing", 195, 0, false, "Basisinrichting social kanalen."),
-        monthly_content: p("Maandelijkse contentservice", "Marketing", 0, 0, true, "Scope wordt persoonlijk bevestigd."),
-        web_copy: p("Webteksten", "Content", 195, 0, false, "SEO-teksten of herschrijven van bestaande teksten."),
-        photography: p("Fotografie", "Content", 0, 0, true, "Vanafprijs na afstemming."),
-        company_video: p("Bedrijfsvideo", "Content", 0, 0, true, "Offerte op maat."),
-        product_photos: p("Productfoto's", "Content", 0, 0, true, "Offerte op maat."),
-        blog_article: p("Blogartikel", "Content", 145, 0, false, "Professioneel blogartikel."),
-        hosting: p("Hosting", "Onderhoud en abonnementen", 0, 19.95, false, "Hosting voor je website."),
-        monitoring: p("Technische monitoring", "Onderhoud en abonnementen", 0, 15, false, "Extra monitoring en rapportage."),
-        monthly_change_hours: p("Maandelijkse wijzigingsuren", "Onderhoud en abonnementen", 0, 0, true, "Bundel op maat."),
-        custom_request: p("Ik heb een andere wens", "Maatwerk", 0, 0, true, "Wordt opgeslagen als aanvraag."),
-      };
-      const transparentStartingPrices = {
-        brand_identity: ["Vanaf €895,00 ex. btw", "Logo-uitwerking, kleuren, typografie, stijlelementen en compacte huisstijlhandleiding. Definitieve prijs na afstemming van toepassingen en omvang."],
-        domain_registration: ["Vanaf €49,00 ex. btw", "Beschikbaarheidscheck, registratie en basiskoppeling. Jaarlijkse registratie- en verlengingskosten kunnen per domein verschillen."],
-        domain_transfer: ["Vanaf €95,00 ex. btw", "Technische verhuizing en basiscontrole. Complex DNS- of e-mailherstel wordt apart afgestemd."],
-        phone_085_number: ["Vanaf €19,95 p/m ex. btw", "Eén zakelijk nummer en basisgebruiker. Beschikbaarheid wordt vooraf gecontroleerd. Installatie of configuratie wordt apart gerekend."],
-        webshop: ["Vanaf €1.995,00 ex. btw", "Basiswebshop met producten, winkelmand, checkout en standaard betaalintegratie. Definitieve prijs is afhankelijk van producten, verzending, betaalmethoden en koppelingen."],
-        booking_module: ["Vanaf €495,00 ex. btw", "Afhankelijk van agenda’s, locaties, medewerkers, betalingen en automatische berichten."],
-        payment_module: ["Vanaf €395,00 ex. btw", "Standaard betaalflow met één betaalprovider. Extra betaalmethoden of maatwerk worden apart afgestemd."],
-        multilingual_site: ["Vanaf €295,00 per extra taal ex. btw", "Technische inrichting per extra taal. Vertalingen zijn niet inbegrepen."],
-        external_integration: ["Vanaf €495,00 ex. btw", "Eenvoudige standaard API- of webhookkoppeling. Definitieve prijs is afhankelijk van de externe software en documentatie."],
-        customer_portal: ["Vanaf €1.495,00 ex. btw", "Basis klantomgeving met veilige login en afgeschermde gegevens. Rollen, documenten, betalingen en koppelingen worden apart afgestemd."],
-        custom_feature: ["Vanaf €395,00 ex. btw", "Voor een kleine, duidelijk afgebakende maatwerkfunctie. Definitieve prijs na functionele inventarisatie."],
-        google_ads_setup: ["Vanaf €395,00 ex. btw", "Accountstructuur, conversiemeting en één campagne. Mediabudget is niet inbegrepen."],
-        monthly_content: ["Vanaf €495,00 p/m ex. btw", "Planning, teksten en vormgeving voor een compact maandelijks contentpakket. Aantal kanalen, berichten en video’s wordt persoonlijk afgestemd."],
-        photography: ["Vanaf €495,00 ex. btw", "Korte bedrijfsshoot op één locatie, inclusief basisselectie en nabewerking. Reis-, locatie- en studiokosten kunnen apart gelden."],
-        company_video: ["Vanaf €1.250,00 ex. btw", "Korte bedrijfsfilm met opname en montage. Definitieve prijs afhankelijk van draaiduur, locaties en productieniveau."],
-        product_photos: ["Vanaf €395,00 ex. btw", "Kleine serie eenvoudige productfoto’s. Studio, modellen, styling en complexe nabewerking worden apart afgestemd."],
-        monthly_change_hours: ["Vanaf €195,00 p/m ex. btw", "Bundel vanaf twee gereserveerde wijzigingsuren per maand. Grotere bundels worden persoonlijk afgestemd."],
-        custom_request: ["Persoonlijke prijsindicatie", "Beschrijf je wens. Je ontvangt een persoonlijke prijsindicatie na beoordeling."],
-      };
-      Object.entries(transparentStartingPrices).forEach(([id, [priceLabel, description]]) => {
-        Object.assign(productCatalog[id], { priceLabel, description });
-      });
-      const websiteCatalog = {
-        starter_site: { name: "Starter Site", price: 495, deposit: 150 },
-        business_website: { name: "Business Website", price: 995, deposit: 300 },
-        premium_growth: { name: "Premium Growth", price: 1750, deposit: 500 },
-      };
-      const careCatalog = {
-        care_basic: { name: "Basis onderhoud", monthly: 19.95 },
-        care_plus: { name: "Plus onderhoud", monthly: 49 },
-        care_growth: { name: "Groei onderhoud", monthly: 99 },
-      };
+      const websiteIds = ["starter_site", "business_website", "premium_growth"];
+      const careIds = ["care_basic", "care_plus", "care_growth"];
+      let productCatalog = {};
+      let websiteCatalog = {};
+      let careCatalog = {};
       const form = document.querySelector("#payment-form");
       const submitButton = document.querySelector(".payment-submit");
       const message = document.querySelector("#payment-message");
@@ -294,6 +227,51 @@
       function p(name, category, price, monthly, manual, description, dependencies = []) {
         return { name, category, price, monthly, manual, description, dependencies };
       }
+
+      async function loadCanonicalCatalog() {
+        const response = await fetch("/api/commercial-catalog", { headers: { Accept: "application/json" } });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success || !Array.isArray(data.catalog?.products)) throw new Error("De actuele prijscatalogus kon niet veilig worden geladen.");
+        const products = Object.fromEntries(data.catalog.products.map((item) => [item.id, item]));
+        websiteCatalog = Object.fromEntries(websiteIds.map((id) => [id, websiteView(products[id])]));
+        careCatalog = Object.fromEntries(careIds.map((id) => [id, careView(products[id])]));
+        productCatalog = Object.fromEntries(data.catalog.products
+          .filter((item) => !websiteIds.includes(item.id) && !careIds.includes(item.id))
+          .map((item) => [item.id, addOnView(item)]));
+      }
+
+      function websiteView(item) {
+        if (!item) throw new Error("Websitepakket ontbreekt in de catalogus.");
+        return { name: item.name, price: cents(oneTime(item)?.amountExVatCents), deposit: cents(item.fixedDepositExVatCents) };
+      }
+
+      function careView(item) {
+        if (!item) throw new Error("Onderhoudspakket ontbreekt in de catalogus.");
+        return { name: item.name, monthly: cents(recurring(item)?.amountExVatCents) };
+      }
+
+      function addOnView(item) {
+        const once = oneTime(item);
+        const monthly = recurring(item);
+        const manual = item.classification !== "fixed";
+        return {
+          ...p(item.name, categoryLabel(item.category), cents(once?.amountExVatCents), cents(monthly?.amountExVatCents), manual, item.description, item.dependencies || []),
+          priceLabel: manualPriceLabel(item, once, monthly),
+        };
+      }
+
+      function manualPriceLabel(item, once, monthly) {
+        if (item.classification === "on_request") return "Op aanvraag";
+        const labels = [];
+        if (once?.startingAmountExVatCents != null) labels.push(`Vanaf ${format(cents(once.startingAmountExVatCents))} ex. btw`);
+        if (monthly?.startingAmountExVatCents != null) labels.push(`Vanaf ${format(cents(monthly.startingAmountExVatCents))} p/m ex. btw`);
+        return labels.join(" + ") || "Persoonlijk te bevestigen";
+      }
+
+      function oneTime(item) { return item?.components?.find((component) => component.type === "one_time"); }
+      function recurring(item) { return item?.components?.find((component) => component.type === "recurring"); }
+      function cents(value) { return Number.isInteger(value) ? value / 100 : 0; }
+      function categoryLabel(value) { return ({ branding: "Branding", domain_email: "Domein en e-mail", telephony: "Telefonie", website_expansion: "Website-uitbreidingen", marketing: "Marketing", content: "Content", care: "Onderhoud en abonnementen", custom: "Maatwerk" })[value] || "Overig"; }
 
       function getOrderId() {
         const existing = sessionStorage.getItem(orderStorageKey);
@@ -514,9 +492,19 @@
         }
       });
 
-      renderProducts();
-      initializeFromUrl();
-      updateSummary();
+      async function bootstrap() {
+        try {
+          await loadCanonicalCatalog();
+          renderProducts();
+          initializeFromUrl();
+          updateSummary();
+        } catch (error) {
+          message.textContent = error.message || "De checkout is tijdelijk niet beschikbaar.";
+          submitButton.disabled = true;
+          productOptions.innerHTML = '<p class="payment-message">De actuele prijscatalogus kon niet worden geladen. Probeer het later opnieuw.</p>';
+        }
+      }
+      bootstrap();
     </script>
   </body>
 </html>

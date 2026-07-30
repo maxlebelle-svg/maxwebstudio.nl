@@ -63,6 +63,10 @@
     {
       "manifest": "docs/release-readiness/factory-production-gate-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/factory-production-gate-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-b-commercial-foundation/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-b-commercial-foundation/FILESET.json"
     }
   ]
 }

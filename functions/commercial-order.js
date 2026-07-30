@@ -11,23 +11,17 @@ const {
   euroToMollieValue,
   withVatCents,
 } = require("./product-catalog");
+const {
+  LEGACY_PACKAGE_CATALOG,
+  LEGACY_OPTION_CATALOG,
+  calculateLegacyDepositExVat,
+} = require("./_legacy-commercial-order");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const TERMS_VERSION = "algemene-voorwaarden-2026-07";
-const PACKAGE_CATALOG = {
-  starter: { label: "Starter Website", price: 950 },
-  business: { label: "Business Website", price: 1750 },
-  premium: { label: "Premium Website", price: 2950 },
-  maatwerk: { label: "Maatwerk Website", price: 4500 },
-};
-const OPTION_CATALOG = {
-  seo: { label: "SEO basispakket", price: 350 },
-  copy: { label: "Copywriting", price: 450 },
-  logo: { label: "Logo opfrissen", price: 300 },
-  rush: { label: "Spoedoplevering", price: 600 },
-  maintenance: { label: "Onderhoud eerste maand", price: 95 },
-};
+const PACKAGE_CATALOG = LEGACY_PACKAGE_CATALOG;
+const OPTION_CATALOG = LEGACY_OPTION_CATALOG;
 
 exports.handler = async (event) => {
   try {
@@ -222,7 +216,7 @@ function validatePayload(payload = {}, event = {}) {
 }
 
 function calculateTotals(input) {
-  const productRows = Array.isArray(input.products) ? input.products.map(productToInvoiceRow) : [];
+  const productRows = Array.isArray(input.products) ? input.products.flatMap(productToInvoiceRows) : [];
   const optionRows = input.products?.length
     ? [
       ...productRows.filter((item) => item.price || item.monthlyPrice || item.manualConfirmation),
@@ -240,7 +234,7 @@ function calculateTotals(input) {
   const total = round(subtotal + vat);
   const depositEx = input.products?.length
     ? directOneTime.reduce((sum, item) => sum + amount(item.depositPrice || item.price), 0)
-    : round(total * 0.5 / 1.21);
+    : calculateLegacyDepositExVat(total);
   const depositIncl = round(depositEx * 1.21);
   const paymentAmount = input.paymentChoice === "full" ? total : Math.min(depositIncl, total);
   const monthlySubtotal = round(recurringRows.reduce((sum, item) => sum + amount(item.monthlyPrice), 0));
@@ -565,18 +559,36 @@ function normalizeManualRequests(payload, products) {
   return requests;
 }
 
-function productToInvoiceRow(product) {
-  return {
-    label: product.name,
-    price: centsToEuro(product.priceExVatCents + (product.setupExVatCents || 0)),
-    depositPrice: centsToEuro(product.depositExVatCents || product.priceExVatCents || 0),
-    monthlyPrice: centsToEuro(product.monthlyExVatCents || 0),
-    priceInclVat: centsToEuro(withVatCents(product.priceExVatCents || 0, product.vatRate)),
-    monthlyInclVat: centsToEuro(withVatCents(product.monthlyExVatCents || 0, product.vatRate)),
-    manualConfirmation: Boolean(product.manualConfirmation),
-    category: product.category,
-    code: product.code,
-  };
+function productToInvoiceRows(product) {
+  const common = { category: product.category, code: product.code };
+  if (product.manualConfirmation) return [{ ...common, label: product.name, price: 0, monthlyPrice: 0, manualConfirmation: true }];
+  const rows = [];
+  if (product.priceExVatCents || product.setupExVatCents || product.depositExVatCents) {
+    const priceCents = product.priceExVatCents + (product.setupExVatCents || 0);
+    rows.push({
+      ...common,
+      label: product.monthlyExVatCents ? `${product.name} · setup` : product.name,
+      price: centsToEuro(priceCents),
+      depositPrice: centsToEuro(product.depositExVatCents || priceCents),
+      monthlyPrice: 0,
+      priceInclVat: centsToEuro(withVatCents(priceCents, product.vatRate)),
+      monthlyInclVat: 0,
+      manualConfirmation: false,
+    });
+  }
+  if (product.monthlyExVatCents) {
+    rows.push({
+      ...common,
+      label: product.priceExVatCents ? `${product.name} · per maand` : product.name,
+      price: 0,
+      depositPrice: 0,
+      monthlyPrice: centsToEuro(product.monthlyExVatCents),
+      priceInclVat: 0,
+      monthlyInclVat: centsToEuro(withVatCents(product.monthlyExVatCents, product.vatRate)),
+      manualConfirmation: false,
+    });
+  }
+  return rows;
 }
 
 function throwValidation(message) {
