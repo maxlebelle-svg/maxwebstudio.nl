@@ -53,6 +53,27 @@
       </div>
     </div>
     <dialog class="mail-preview-dialog" id="mail-preview"><div class="dialog-toolbar"><div><span>Exacte serverweergave</span><strong id="preview-subject"></strong></div><button type="button" id="close-preview" aria-label="Voorbeeld sluiten">×</button></div><iframe id="preview-frame" title="Voorbeeld van de definitieve e-mail" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe><div class="manual-fallback"><label for="manual-mail-text">Handmatige fallback<textarea id="manual-mail-text" readonly></textarea></label><button class="button secondary" id="copy-manual-mail" type="button">Mailtekst kopiëren</button></div></dialog>
+    <dialog class="definitive-send-dialog" id="definitive-send-dialog" role="dialog" aria-modal="true" aria-labelledby="definitive-send-title" aria-describedby="definitive-send-warning">
+      <div class="dialog-toolbar"><div><span>Laatste controle</span><h2 id="definitive-send-title">Voorstel definitief verzenden?</h2></div><button type="button" id="close-definitive-send" aria-label="Verzending annuleren">×</button></div>
+      <div class="definitive-send-content">
+        <p class="definitive-staging-warning" id="definitive-staging-warning"><strong>STAGINGTEST</strong> Deze mail mag uitsluitend naar de beheerde stagingtestontvanger worden verstuurd.</p>
+        <dl class="definitive-send-summary">
+          <div><dt>Relatie / bedrijf</dt><dd id="confirm-company">—</dd></div>
+          <div><dt>Ontvanger</dt><dd id="confirm-recipient">—</dd></div>
+          <div><dt>Gekoppelde demo</dt><dd id="confirm-demo">—</dd></div>
+          <div><dt>Websitepakket</dt><dd id="confirm-website">—</dd></div>
+          <div><dt>Onderhoud</dt><dd id="confirm-care">—</dd></div>
+          <div><dt>Eenmalig totaal excl. btw</dt><dd id="confirm-once">—</dd></div>
+          <div><dt>Per maand excl. btw</dt><dd id="confirm-monthly">—</dd></div>
+          <div><dt id="confirm-payment-label">Te betalen</dt><dd id="confirm-payment">—</dd></div>
+          <div><dt>Geldig tot en met</dt><dd id="confirm-valid-until">—</dd></div>
+        </dl>
+        <p class="definitive-send-warning" id="definitive-send-warning">Na bevestiging wordt er werkelijk één e-mail verstuurd. Er wordt geen contract, betaling, factuur, abonnement of onboarding gestart.</p>
+        <label class="definitive-check"><input id="definitive-send-check" type="checkbox" /> <span>Ik heb ontvanger, prijzen en demo gecontroleerd</span></label>
+        <p class="definitive-send-result" id="definitive-send-result" role="status" aria-live="polite"></p>
+      </div>
+      <div class="definitive-send-actions"><button class="button secondary" id="cancel-definitive-send" type="button">Annuleren</button><button class="button primary" id="confirm-definitive-send" type="button" disabled>Definitief verzenden</button></div>
+    </dialog>
       </div>
     </main>
     <script type="module" src="src/offer-composer.js"></script>

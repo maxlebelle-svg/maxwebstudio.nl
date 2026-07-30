@@ -12,7 +12,10 @@ const interest = require("../functions/commercial-offer-interest")._private;
 const migration = read("supabase/migrations/20260730223000_commercial_offer_phase_d1_mail.sql");
 const browser = read("public/src/offer-composer.js");
 const html = read("public/admin-offer-composer.html");
+const css = read("public/src/offer-composer.css");
+const interestPage = read("public/voorstel-interesse.html");
 const legacy = read("public/admin-nieuwe-opdracht.html");
+const corePromise = import("../public/src/offer-composer-core.mjs");
 
 const snapshot = offerService.buildOfferVersion({
   paymentChoice: "fixed_deposit",
@@ -68,7 +71,7 @@ test("staging mail is unmistakably labelled and interest page displays validity"
   const interestPage = read("public/voorstel-interesse.html");
   assert.match(interestPage, /Geldigheid controleren/);
   assert.match(interestPage, /validUntil/);
-  assert.match(read("functions/commercial-offer-interest.js"), /commercial_offer_versions\?select=snapshot/);
+  assert.match(read("functions/commercial-offer-interest.js"), /commercial_offer_versions\?select=offer_id,snapshot/);
 });
 
 test("test mail is clearly labelled and cannot contain a customer interest token", () => {
@@ -156,4 +159,126 @@ test("manual fallback is generated from the same exact server mail", () => {
   assert.match(read("functions/admin-commercial-offers.js"), /manualFallback: \{ subject: mail\.subject/);
   assert.match(html, /id="manual-mail-text"/);
   assert.match(browser, /navigator\.clipboard\.writeText\(elements\.manualMailText\.value\)/);
+});
+
+test("modal 1: native browser prompts are completely absent", () => {
+  assert.doesNotMatch(browser, /window\.(?:confirm|alert|prompt)|\b(?:confirm|alert|prompt)\s*\(/);
+});
+
+test("modal 2: in-app dialog opens with deterministic accessible semantics", () => {
+  assert.match(html, /id="definitive-send-dialog"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="definitive-send-title"/);
+  assert.match(html, /Voorstel definitief verzenden\?/);
+  assert.match(browser, /definitiveSendDialog\.showModal\(\)/);
+});
+
+test("modal 3: exact immutable offer details are selected for display", async () => {
+  const { definitiveConfirmationDetails } = await corePromise;
+  const details = definitiveConfirmationDetails({ relationship: base.relationship, demo: { name: "Silverado" }, snapshot });
+  assert.equal(details.companyName, "Silverado");
+  assert.equal(details.demoName, "Silverado");
+  assert.equal(details.websiteName, "Business Website");
+  assert.equal(details.careName, "Care Basic");
+  assert.equal(details.oneTimeExVatCents, 99500);
+  assert.equal(details.recurringExVatCents, 1995);
+  assert.equal(details.dueNowExVatCents, 30000);
+  assert.equal(details.validUntil, snapshot.validUntil);
+});
+
+test("modal 4: customer email is masked rather than rendered raw", async () => {
+  const { maskEmail } = await corePromise;
+  const masked = maskEmail("silverado@example.test");
+  assert.match(masked, /^s[•]+@e[•]+\.test$/);
+  assert.doesNotMatch(masked, /silverado|example/);
+  assert.match(browser, /details\.maskedEmail/);
+});
+
+test("modal 5: staging warning is explicit and definitive staging subject is labelled", () => {
+  assert.match(html, /STAGINGTEST[^<]*<\/strong> Deze mail mag uitsluitend naar de beheerde stagingtestontvanger/);
+  const mail = buildCommercialOfferMail({ ...base, mode: "definitive", staging: true, interestUrl: "https://maxwebstudio-staging.netlify.app/voorstel-interesse.html#token=safe_token_value_12345678901234567890123456789012" });
+  assert.match(mail.subject, /^\[STAGING TEST\]/);
+});
+
+test("modal 6: explicit verification checkbox gates the send button", () => {
+  assert.match(html, /id="definitive-send-check"[^>]*type="checkbox"/);
+  assert.match(html, /id="confirm-definitive-send"[^>]*disabled/);
+  assert.match(browser, /!elements\.definitiveSendCheck\.checked \|\| state\.definitiveRequestPending \|\| state\.definitiveRequestLocked/);
+});
+
+test("modal 7: cancel closes without invoking the mail request", () => {
+  assert.match(browser, /cancelDefinitiveSend\.addEventListener\('click', closeDefinitiveSendDialog\)/);
+  const closeBody = browser.match(/function closeDefinitiveSendDialog\(\) \{([\s\S]*?)\n\}/)?.[1] || "";
+  assert.doesNotMatch(closeBody, /request\(|definitive_send/);
+});
+
+test("modal 8: Escape is intercepted and cannot close during an active send", () => {
+  assert.match(browser, /addEventListener\('cancel', \(event\) => \{/);
+  assert.match(browser, /event\.preventDefault\(\)/);
+  assert.match(browser, /if \(!state\.definitiveRequestPending\) closeDefinitiveSendDialog\(\)/);
+});
+
+test("modal 9: focus moves into the dialog and returns to the trigger", () => {
+  assert.match(browser, /definitiveSendCheck\.focus\(\)/);
+  assert.match(browser, /trigger\?\.focus\(\)/);
+  assert.match(browser, /state\.definitiveTrigger\?\.focus\(\)/);
+});
+
+test("modal 10: keyboard focus is trapped from first through last control", () => {
+  assert.match(browser, /trapDefinitiveDialogFocus/);
+  assert.match(browser, /event\.key !== 'Tab'/);
+  assert.match(browser, /event\.shiftKey && document\.activeElement === first/);
+  assert.match(browser, /document\.activeElement === last/);
+});
+
+test("modal 11: synchronous pending guard makes double click a single request", () => {
+  assert.match(browser, /if \(state\.definitiveRequestPending[^\n]+return;/);
+  assert.match(browser, /state\.definitiveRequestPending = true;/);
+  assert.match(browser, /actionKey: state\.definitiveActionKey/);
+  assert.match(migration, /commercial_offer_mail_dispatch_idempotency unique/);
+});
+
+test("modal 12: frontend modal does not replace authoritative server validation", () => {
+  const server = read("functions/admin-commercial-offers.js");
+  for (const evidence of ["assertPhaseD1Enabled", "assertRelationshipAccess", "offerExpiry", "DEMO_RELATIONSHIP_MISMATCH", "OFFER_NOT_SEND_READY"]) assert.match(server, new RegExp(evidence));
+  assert.match(server, /commercial_reserve_offer_dispatch_v1/);
+});
+
+test("modal 13: expired offers remain blocked server-side", () => {
+  assert.throws(() => endpoint.offerExpiry({ validUntil: "2020-01-01" }), /verlopen/i);
+  assert.match(read("functions/admin-commercial-offers.js"), /const snapshotExpiry = offerExpiry\(context\.version\.snapshot\)/);
+});
+
+test("modal 14: definitive send still requires successful test-mail evidence", () => {
+  assert.match(migration, /Successful test mail evidence is required/);
+  assert.match(browser, /previewed && tested/);
+});
+
+test("modal 15: wrong relationship or demo linkage stays fail-closed", () => {
+  const server = read("functions/admin-commercial-offers.js");
+  assert.match(server, /assertRelationshipAccess\(actor, offer\.relationship_type, relationshipRow\)/);
+  assert.match(server, /if \(!ownership\[0\]\) throw problem\(409, "DEMO_RELATIONSHIP_MISMATCH"/);
+});
+
+test("modal 16: 390px mobile layout has bounded width and no horizontal overflow", () => {
+  assert.match(css, /@media\(max-width:520px\)\{\.definitive-send-dialog\{width:calc\(100% - 16px\);max-height:calc\(100dvh - 16px\)\}/);
+  assert.match(css, /\.definitive-send-summary\{grid-template-columns:1fr\}/);
+  assert.match(css, /overflow-wrap:anywhere/);
+});
+
+test("modal 17: desktop dialog remains centered, bounded and scrollable", () => {
+  assert.match(css, /\.definitive-send-dialog\{width:min\(720px,calc\(100% - 30px\)\);max-height:calc\(100dvh - 30px\)/);
+  assert.match(css, /overflow:auto/);
+  assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+});
+
+test("interest inspection exposes useful offer facts without internal identifiers", () => {
+  const details = interest.publicOfferDetails(snapshot, { company_name: "Silverado", email: "secret@example.test" }, { business_name: "Silverado demo" }, snapshot.validUntil);
+  assert.equal(details.companyName, "Silverado");
+  assert.equal(details.demoName, "Silverado demo");
+  assert.equal(details.oneTimeExVatCents, 99500);
+  assert.equal(details.recurringExVatCents, 1995);
+  assert.equal(details.dueNowExVatCents, 30000);
+  assert.equal("id" in details, false);
+  assert.equal("email" in details, false);
+  assert.match(interestPage, /data\.companyName/);
+  assert.doesNotMatch(interestPage, /offerVersionId|relationshipId|dispatchId/);
 });

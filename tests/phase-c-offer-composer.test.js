@@ -156,7 +156,8 @@ test("20 test mail starts disabled and is guarded by server evidence", () => {
 
 test("21 definitive send starts disabled and requires preview plus successful test", () => {
   assert.match(html, /id="definitive-send"[^>]*disabled/);
-  assert.match(browser, /elements\.definitiveSend\.addEventListener\('click', sendDefinitiveMail\)/);
+  assert.match(browser, /elements\.definitiveSend\.addEventListener\('click', openDefinitiveSendDialog\)/);
+  assert.match(browser, /elements\.confirmDefinitiveSend\.addEventListener\('click', sendDefinitiveMail\)/);
   assert.match(browser, /previewed && tested/);
   assert.match(endpoint, /crypto\.randomBytes\(32\)/);
   assert.match(endpoint, /PHASE_B_TRANSITION_BLOCKED/);

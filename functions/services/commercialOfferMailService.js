@@ -22,7 +22,7 @@ function buildCommercialOfferMail(input = {}) {
   if (isExpired(validUntil)) throw invalid("OFFER_EXPIRED", "De aanbodversie is verlopen en kan niet worden verzonden.");
   if (!test && !preview && !interestUrl) throw invalid("INTEREST_LINK_REQUIRED", "De veilige interesselink ontbreekt.");
 
-  const prefix = staging ? (test ? "[STAGING TEST] " : "[STAGING] ") : test ? "[TEST] " : "";
+  const prefix = staging ? "[STAGING TEST] " : test ? "[TEST] " : "";
   const subject = `${prefix}Jouw demo en voorstel van Max Webstudio`;
   const lineRows = snapshot.lines.map((line) => {
     const interval = line.componentType === "recurring" ? " per maand" : " eenmalig";

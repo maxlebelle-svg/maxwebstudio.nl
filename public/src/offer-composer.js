@@ -4,6 +4,7 @@ import {
   composerUrl,
   composerReadiness,
   documentsForSave,
+  definitiveConfirmationDetails,
   money,
   parseComposerContext,
   parseEuroToCents,
@@ -32,10 +33,14 @@ const state = {
   calculating: false,
   dirty: false,
   lastPreview: null,
+  definitiveRequestPending: false,
+  definitiveRequestLocked: false,
+  definitiveActionKey: '',
+  definitiveTrigger: null,
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -97,10 +102,19 @@ function bindEvents() {
   elements.revokeVersion.addEventListener('click', () => transition('revoked'));
   elements.openPreview.addEventListener('click', openPreview);
   elements.testMail.addEventListener('click', sendTestMail);
-  elements.definitiveSend.addEventListener('click', sendDefinitiveMail);
+  elements.definitiveSend.addEventListener('click', openDefinitiveSendDialog);
   elements.copyManualMail.addEventListener('click', copyManualMail);
   elements.closePreview.addEventListener('click', () => elements.mailPreview.close());
   elements.mailPreview.addEventListener('click', (event) => { if (event.target === elements.mailPreview) elements.mailPreview.close(); });
+  elements.definitiveSendCheck.addEventListener('change', updateDefinitiveConfirmation);
+  elements.confirmDefinitiveSend.addEventListener('click', sendDefinitiveMail);
+  elements.cancelDefinitiveSend.addEventListener('click', closeDefinitiveSendDialog);
+  elements.closeDefinitiveSend.addEventListener('click', closeDefinitiveSendDialog);
+  elements.definitiveSendDialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    if (!state.definitiveRequestPending) closeDefinitiveSendDialog();
+  });
+  elements.definitiveSendDialog.addEventListener('keydown', trapDefinitiveDialogFocus);
 }
 
 function hydrateExistingOffer() {
@@ -357,16 +371,88 @@ async function sendTestMail() {
   finally { renderPreviewAvailability(); }
 }
 
+function openDefinitiveSendDialog() {
+  if (elements.definitiveSend.disabled || state.definitiveRequestPending) return;
+  const demo = (state.data.demos || []).find((item) => item.id === state.selectedDemoId) || {};
+  const details = definitiveConfirmationDetails({ relationship: state.data.relationship, demo, snapshot: state.snapshot });
+  elements.confirmCompany.textContent = details.companyName;
+  elements.confirmRecipient.textContent = details.maskedEmail;
+  elements.confirmDemo.textContent = details.demoName;
+  elements.confirmWebsite.textContent = details.websiteName;
+  elements.confirmCare.textContent = details.careName;
+  elements.confirmOnce.textContent = money(details.oneTimeExVatCents);
+  elements.confirmMonthly.textContent = money(details.recurringExVatCents, { monthly: true });
+  elements.confirmPaymentLabel.textContent = details.paymentLabel;
+  elements.confirmPayment.textContent = money(details.dueNowExVatCents);
+  elements.confirmValidUntil.textContent = formatDateOnly(details.validUntil);
+  elements.definitiveSendCheck.checked = false;
+  elements.definitiveSendResult.textContent = '';
+  elements.confirmDefinitiveSend.textContent = 'Definitief verzenden';
+  state.definitiveRequestLocked = false;
+  state.definitiveActionKey = actionKey('definitive-send');
+  state.definitiveTrigger = elements.definitiveSend;
+  updateDefinitiveConfirmation();
+  elements.definitiveSendDialog.showModal();
+  elements.definitiveSendCheck.focus();
+}
+
+function closeDefinitiveSendDialog() {
+  if (state.definitiveRequestPending || !elements.definitiveSendDialog.open) return;
+  elements.definitiveSendDialog.close();
+  const trigger = state.definitiveTrigger;
+  state.definitiveTrigger = null;
+  trigger?.focus();
+}
+
+function updateDefinitiveConfirmation() {
+  elements.confirmDefinitiveSend.disabled = !elements.definitiveSendCheck.checked || state.definitiveRequestPending || state.definitiveRequestLocked;
+}
+
+function trapDefinitiveDialogFocus(event) {
+  if (event.key !== 'Tab' || state.definitiveRequestPending) return;
+  const focusable = [...elements.definitiveSendDialog.querySelectorAll('button:not([disabled]),input:not([disabled])')].filter((item) => !item.hidden);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
+
 async function sendDefinitiveMail() {
-  if (elements.definitiveSend.disabled) return;
-  if (!window.confirm(`Definitief verzenden naar ${state.data.relationship.email}? Dit verstuurt alleen de demo, het voorstel en een niet-bindende interesseknop.`)) return;
-  elements.definitiveSend.disabled = true;
+  if (state.definitiveRequestPending || state.definitiveRequestLocked || !elements.definitiveSendCheck.checked || elements.confirmDefinitiveSend.disabled) return;
+  state.definitiveRequestPending = true;
+  elements.definitiveSendDialog.setAttribute('aria-busy', 'true');
+  elements.confirmDefinitiveSend.disabled = true;
+  elements.cancelDefinitiveSend.disabled = true;
+  elements.closeDefinitiveSend.disabled = true;
+  elements.confirmDefinitiveSend.textContent = 'Veilig verzenden…';
+  elements.definitiveSendResult.textContent = 'De server controleert de actuele status en verstuurt maximaal één e-mail…';
   try {
-    await request('POST', { action: 'definitive_send', offerVersionId: state.currentVersionId, actionKey: actionKey('definitive-send') });
+    await request('POST', { action: 'definitive_send', offerVersionId: state.currentVersionId, actionKey: state.definitiveActionKey });
     await reloadContext();
+    elements.definitiveSendResult.textContent = 'Verzending bevestigd.';
+    elements.definitiveSendDialog.close();
+    state.definitiveTrigger?.focus();
+    state.definitiveTrigger = null;
     showMessage('De definitieve demomail is één keer verzonden. Er is geen contract, betaling of onboarding gestart.', 'success');
-  } catch (error) { showMessage(error.message, 'error'); }
-  finally { renderPreviewAvailability(); }
+  } catch (error) {
+    try { await reloadContext(); } catch { /* De oorspronkelijke fout blijft leidend. */ }
+    const hasDispatch = Boolean(currentVersion()?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive'));
+    const ambiguous = error.status >= 500 || error.code === 'DISPATCH_ALREADY_RESERVED' || hasDispatch;
+    state.definitiveRequestLocked = ambiguous;
+    elements.definitiveSendResult.textContent = ambiguous
+      ? 'De verzendstatus is opnieuw gecontroleerd. Uit veiligheid wordt deze actie niet blind herhaald; controleer eerst de auditstatus.'
+      : error.message;
+    showMessage(error.message, 'error');
+  } finally {
+    state.definitiveRequestPending = false;
+    elements.definitiveSendDialog.removeAttribute('aria-busy');
+    elements.cancelDefinitiveSend.disabled = false;
+    elements.closeDefinitiveSend.disabled = false;
+    elements.confirmDefinitiveSend.textContent = state.definitiveRequestLocked ? 'Auditcontrole vereist' : 'Definitief verzenden';
+    updateDefinitiveConfirmation();
+    renderPreviewAvailability();
+  }
 }
 
 async function copyManualMail() {
@@ -391,6 +477,7 @@ function categoryLabel(value) { return ({ branding: 'Branding', domain_email: 'D
 function centsInput(value) { return `${Math.floor(Number(value) / 100)},${String(Number(value) % 100).padStart(2, '0')}`; }
 function setSequence(element, complete, blocked) { element.classList.toggle('complete', complete); element.classList.toggle('blocked', !complete && blocked); element.classList.toggle('active', !complete && !blocked); }
 function formatDate(value) { const date = new Date(value || ''); return Number.isNaN(date.getTime()) ? value || '—' : date.toLocaleString('nl-NL'); }
+function formatDateOnly(value) { const date = new Date(`${value || ''}T12:00:00Z`); return Number.isNaN(date.getTime()) ? value || '—' : new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date); }
 function actionKey(action) { return `composer:${action}:${crypto.randomUUID()}`; }
 function setText(key, value) { elements[key].textContent = value || '—'; }
 function camel(value) { return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); }
@@ -402,7 +489,7 @@ async function request(method, body, query = {}) {
   if (method === 'GET') for (const [key, value] of Object.entries(query)) if (value && key !== 'valid') url.searchParams.set(key, value);
   const response = await fetch(url, { method, headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) throw new Error(data.error || `De serveractie mislukte (${response.status}).`);
+  if (!response.ok || data.success === false) throw Object.assign(new Error(data.error || `De serveractie mislukte (${response.status}).`), { status: response.status, code: data.code || 'REQUEST_FAILED' });
   return data;
 }
 

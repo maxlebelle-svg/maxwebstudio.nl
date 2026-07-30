@@ -36,6 +36,34 @@ export function money(cents, options = {}) {
   return `${new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(Number(cents) / 100)}${suffix}`;
 }
 
+export function maskEmail(value) {
+  const [local = '', domain = ''] = clean(value).toLowerCase().split('@');
+  if (!local || !domain) return 'Geen geldig e-mailadres';
+  const parts = domain.split('.');
+  const name = parts.shift() || '';
+  const suffix = parts.join('.');
+  const hidden = (part) => `${part.slice(0, 1)}${'•'.repeat(Math.max(3, Math.min(8, part.length - 1)))}`;
+  return `${hidden(local)}@${hidden(name)}${suffix ? `.${suffix}` : ''}`;
+}
+
+export function definitiveConfirmationDetails({ relationship = {}, demo = {}, snapshot = {} } = {}) {
+  const lines = Array.isArray(snapshot.lines) ? snapshot.lines : [];
+  const website = lines.find((line) => ['starter_site', 'business_website', 'premium_growth'].includes(line.productId));
+  const care = lines.find((line) => ['care_basic', 'care_plus', 'care_growth'].includes(line.productId));
+  return {
+    companyName: clean(relationship.companyName) || '—',
+    maskedEmail: maskEmail(relationship.email),
+    demoName: clean(demo.name) || '—',
+    websiteName: clean(website?.productName) || 'Geen websitepakket',
+    careName: clean(care?.productName) || 'Geen onderhoud',
+    oneTimeExVatCents: Number(snapshot.oneTimeExVatCents || 0),
+    recurringExVatCents: Number(snapshot.recurringExVatCents || 0),
+    dueNowExVatCents: Number(snapshot.dueNowExVatCents || 0),
+    paymentLabel: snapshot.paymentChoice === 'full' ? 'Volledig betaalbedrag excl. btw' : 'Vaste aanbetaling excl. btw',
+    validUntil: clean(snapshot.validUntil),
+  };
+}
+
 export function catalogGroups(catalog = {}) {
   const products = Array.isArray(catalog.products) ? catalog.products : [];
   return {
