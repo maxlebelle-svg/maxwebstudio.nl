@@ -23379,7 +23379,10 @@
             savedDemo.websiteUrl,
             preview,
           ].join(" ").toLowerCase();
-          return identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop"));
+          const knownSilveradoPreview = identity.includes("/preview/emmerloord-rotishop")
+            || identity.includes("/preview/emmeloord-rotishop");
+          return knownSilveradoPreview
+            || (identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop")));
         }
 
         function demoPreviewHtml(preview = "", thumbnail = "", demoName = "demo-site", linkHref = "") {
