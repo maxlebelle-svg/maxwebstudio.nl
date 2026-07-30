@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "release": "Factory Hub and Factory Production Gate product migrations",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260729120000_factory_hub_projects.sql",
+    "supabase/migrations/20260729200000_factory_production_gate.sql",
+    "supabase/migrations/20260730120000_harden_factory_gate_generation_and_audit.sql"
+  ],
+  "authority": [
+    "functions/admin-factory-projects.js",
+    "functions/_factory-production-gate.js",
+    "tests/factory-production-gate.test.js"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

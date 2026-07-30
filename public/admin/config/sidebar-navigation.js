@@ -63,6 +63,7 @@
       id: "production",
       label: "Production",
       items: Object.freeze([
+        item("factory-hub", "Factory Hub", "admin-factories.html", "layout", { badge: "factoryProjects", statusTone: "purple", relationshipTypes: ["lead", "customer"], permission: permission("websites", "update", roleGroups.production) }),
         item("website-factory", "Website Factory", "admin-website-factory.html", "wand", { badge: "websiteFactory", statusTone: "success", workspaceRequired: true, permission: permission("websites", "update", roleGroups.production) }),
         item("website-qa", "Website QA Scanner", "admin-website-qa-scanner.html", "scan-search", { permission: permission("websites", "view", roleGroups.production), secondary: true }),
         item("demo-sites", "Demo Sites", "admin-demo-sites.html", "monitor", { badge: "demoSites", statusTone: "info", workspaceRequired: true, permission: permission("demo", "view") }),

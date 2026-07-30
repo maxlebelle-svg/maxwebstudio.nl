@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCAL_CANDIDATE_VALIDATED",
+  "baseCommit": "c51b28222471e78a8ecb1cf38f08d3067328568d",
+  "branch": "codex/factory-production-gate-release",
+  "plannedCommitMessage": "Release isolated Factory Production Gate",
+  "scope": {
+    "runtime": [
+      "functions/_factory-blueprints.js",
+      "functions/_factory-production-gate.js",
+      "functions/_factory-production-gate-suppliers.js",
+      "functions/admin-factory-projects.js"
+    ],
+    "adminUi": [
+      "public/admin-factories.html",
+      "public/admin/styles/factory-hub.css",
+      "public/admin/ui/factory-hub.js",
+      "public/admin/config/sidebar-navigation.js"
+    ],
+    "migrations": [
+      "supabase/migrations/20260729120000_factory_hub_projects.sql",
+      "supabase/migrations/20260729200000_factory_production_gate.sql",
+      "supabase/migrations/20260730120000_harden_factory_gate_generation_and_audit.sql"
+    ],
+    "tests": [
+      "scripts/factory-production-gate-local-validation.zsh",
+      "tests/factory-hub.test.js",
+      "tests/factory-production-gate.test.js",
+      "tests/factory-production-gate-release-scope.test.js",
+      "tests/fixtures/factory-production-gate-functional.sql",
+      "tests/fixtures/factory-production-gate-generation-functional.sql",
+      "tests/admin-sidebar-dashboard-pilot.test.js",
+      "tests/helpers/admin-page-inventory.js"
+    ],
+    "releaseMetadata": [
+      "docs/release-readiness/PRODUCT_MIGRATION_CATALOG.json",
+      "docs/release-readiness/factory-production-gate-product-migrations/MANIFEST.json",
+      "docs/release-readiness/factory-production-gate-product-migrations/FILESET.json",
+      "docs/release-readiness/FACTORY_PRODUCTION_GATE_RELEASE_MANIFEST.json"
+    ],
+    "routing": [],
+    "deletedFiles": [],
+    "unexpectedFiles": []
+  },
+  "excluded": [
+    "Food Factory runtime and migrations",
+    "Silverado and Demo Cloud",
+    "temporary staging diagnostics and rewrites",
+    "staging certification controls and evidence",
+    "customer fixtures and customer data"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}
