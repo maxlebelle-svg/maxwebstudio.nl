@@ -49,8 +49,13 @@ test("QR-code en expliciete klantmailactie zijn aanwezig", () => {
   assert.match(qr, /viewBox="0 0 45 45"/);
   assert.match(html, /qrAssetUrl: "\/assets\/food\/silverado\/silverado-demo-qr\.svg"/);
   assert.match(html, /data-food-demo-email/);
+  assert.match(html, /data-food-demo-email-input/);
+  assert.match(html, /type="email"[^>]+placeholder="naam@bedrijf\.nl"/);
   assert.match(html, />Naar klant mailen/);
+  assert.match(html, />Complete demo versturen</);
+  assert.match(html, /alleen voor deze verzending gebruikt en niet bij de relatie opgeslagen/);
   assert.match(html, /action: "share_silverado_food_demo_email"/);
+  assert.match(html, /recipientEmail: email/);
   assert.match(html, /De mail bevat de voorkant, het restaurantportaal en de QR-code/);
 });
 

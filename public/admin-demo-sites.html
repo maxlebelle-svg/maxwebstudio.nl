@@ -23398,7 +23398,7 @@
 
         function silveradoFoodPresentationHtml(record = {}, preview = "", thumbnail = "", demoName = "demo-site", factoryHref = "") {
           if (!isSilveradoFoodDemo(record, preview)) return demoPreviewHtml(preview, thumbnail, demoName, factoryHref);
-          const canEmailDemo = Boolean(recordRelationship(record) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recordEmail(record)));
+          const canEmailDemo = Boolean(recordRelationship(record));
           return `<div class="demo-food-presentation-stack" data-food-demo-presentation>
             <section class="demo-food-preview-block" aria-labelledby="food-customer-preview-${escapeHtml(record.id)}">
               <div class="demo-food-preview-heading">
@@ -23604,6 +23604,8 @@
             publicPreviewUrl: context.publicPreviewUrl,
           }) : "";
           const publicLabel = context.published ? "Publiek beschikbaar" : "Publiceer eerst een demo";
+          const foodDemo = isSilveradoFoodDemo(record, context.publicPreviewUrl || previewResolution.previewUrl || "");
+          const knownEmail = recordEmail(record);
           const emailBlocked = !context.published || !context.hasEmail;
           const shareNote = !context.published
             ? "Publiceer exact deze geselecteerde versie eerst vanuit Website Factory."
@@ -23621,9 +23623,25 @@
             : !previewApproved
               ? "Keur de demo eerst definitief goed. Daarna wordt uitnodigen direct beschikbaar."
               : invitation.warning || context.blockedReason || "De bestaande uitnodiging wordt veilig hergebruikt.";
-          return `
-            <section class="demo-commercial-panel" aria-label="Demo delen en klantportaal">
-              <div class="demo-commercial-share">
+          const sharePanel = foodDemo
+            ? `<div class="demo-commercial-share is-food-demo">
+                <div class="demo-commercial-heading"><div><strong>Complete demo versturen</strong><span>Stuur de klantweergave, het restaurantportaal en de QR-code samen.</span></div><mark class="${context.published ? "is-ready" : ""}">${escapeHtml(publicLabel)}</mark></div>
+                <label class="demo-share-email-field" for="demo-share-email-${escapeHtml(record.id)}">
+                  <span>E-mailadres ontvanger</span>
+                  <div class="demo-share-email-control">
+                    <input id="demo-share-email-${escapeHtml(record.id)}" type="email" inputmode="email" autocomplete="email" placeholder="naam@bedrijf.nl" value="${escapeHtml(knownEmail)}" data-food-demo-email-input="${escapeHtml(record.id)}" required />
+                    <button class="button primary" type="button" data-food-demo-email="${escapeHtml(record.id)}"${context.published && recordRelationship(record) ? "" : " disabled"}>Demo mailen <span aria-hidden="true">✉</span></button>
+                  </div>
+                  <small>Dit adres wordt alleen voor deze verzending gebruikt en niet bij de relatie opgeslagen.</small>
+                </label>
+                <div class="demo-share-actions is-secondary">
+                  ${whatsappUrl ? `<a class="button secondary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener" data-demo-share-whatsapp="${escapeHtml(record.id)}">WhatsApp</a>` : `<button class="button secondary" type="button" disabled>WhatsApp</button>`}
+                  <button class="button secondary" type="button" data-demo-commercial-copy="${escapeHtml(context.publicPreviewUrl)}"${context.published ? "" : " disabled"}>Link kopiëren</button>
+                  ${context.published ? `<a class="button secondary" href="${escapeHtml(context.publicPreviewUrl)}" target="_blank" rel="noopener">Preview openen</a>` : `<button class="button secondary" type="button" disabled>Preview openen</button>`}
+                </div>
+                <p class="demo-commercial-note">De e-mail bevat beide demonstratielinks en een scanbare QR-code voor de klantkant.</p>
+              </div>`
+            : `<div class="demo-commercial-share">
                 <div class="demo-commercial-heading"><div><strong>Demo delen</strong><span>Zonder login, account of statuswijziging.</span></div><mark class="${context.published ? "is-ready" : ""}">${escapeHtml(publicLabel)}</mark></div>
                 <div class="demo-share-actions">
                   ${whatsappUrl ? `<a class="button secondary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener" data-demo-share-whatsapp="${escapeHtml(record.id)}">WhatsApp</a>` : `<button class="button secondary" type="button" disabled>WhatsApp</button>`}
@@ -23632,7 +23650,10 @@
                   ${context.published ? `<a class="button secondary" href="${escapeHtml(context.publicPreviewUrl)}" target="_blank" rel="noopener">Preview openen</a>` : `<button class="button secondary" type="button" disabled>Preview openen</button>`}
                 </div>
                 <p class="demo-commercial-note${context.published ? "" : " is-warning"}">${escapeHtml(shareNote)}</p>
-              </div>
+              </div>`;
+          return `
+            <section class="demo-commercial-panel" aria-label="Demo delen en klantportaal">
+              ${sharePanel}
               <div class="demo-commercial-portal">
                 <div class="demo-commercial-heading"><div><strong>Klantportaal</strong><span>Account, feedback en expliciete goedkeuring.</span></div><mark class="${["sent", "activated"].includes(invitation.status) ? "is-ready" : ""}">${escapeHtml(invitation.status === "activated" ? "Account actief" : invitation.status === "sent" ? "Uitgenodigd" : invitation.status === "planned" ? "In wachtrij" : "Niet uitgenodigd")}</mark></div>
                 ${approvalGate}
@@ -24112,9 +24133,13 @@
 
         async function shareSilveradoFoodDemoByEmail(record = {}) {
           const relationship = recordRelationship(record);
-          const email = recordEmail(record);
+          const emailInput = document.getElementById(`demo-share-email-${record.id}`);
+          const email = String(emailInput?.value || recordEmail(record) || "").trim().toLowerCase();
           if (!relationship || !record?.id) throw new Error("Deze restaurant-demo kon niet eenduidig aan een relatie worden gekoppeld.");
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Deze relatie heeft geen geldig e-mailadres.");
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            emailInput?.focus();
+            throw new Error("Vul eerst een geldig e-mailadres in.");
+          }
           if (!window.confirm(`De complete restaurant-demo nu mailen naar ${email}?\n\nDe mail bevat de voorkant, het restaurantportaal en de QR-code.`)) return;
           setMessage("Restaurant-demo per e-mail versturen...", "info");
           const data = await postJson(endpoints.publication, {
@@ -24122,6 +24147,7 @@
             relationshipType: relationship.type,
             relationshipId: relationship.id,
             demoJourneyId: record.id,
+            recipientEmail: email,
             actionKey: uniqueActionKey(),
           });
           setMessage(data.email?.sent ? `Restaurant-demo verzonden naar ${data.email.to || email}.` : "De restaurant-demo-e-mail is verwerkt.", data.email?.sent ? "success" : "warning");

@@ -255,9 +255,11 @@ async function shareSilveradoFoodDemoEmail(context, payload = {}) {
     ? "id,company_name,contact_name,email,status,lead_status"
     : "id,name,company,email,status,portal_status";
   const recipient = await readSingle(context, table, `select=${select}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
-  const email = cleanText(recipient?.email).toLowerCase();
+  const storedEmail = cleanText(recipient?.email).toLowerCase();
+  const requestedEmail = cleanText(payload.recipientEmail || payload.recipient_email).toLowerCase();
+  const email = requestedEmail || storedEmail;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw previewError("FOOD_DEMO_SHARE_EMAIL_INVALID", "Deze relatie heeft geen geldig e-mailadres.", 422);
+    throw previewError("FOOD_DEMO_SHARE_EMAIL_INVALID", "Vul een geldig e-mailadres voor deze verzending in.", 422);
   }
 
   const mail = buildFoodDemoShareMail({
@@ -285,6 +287,7 @@ async function shareSilveradoFoodDemoEmail(context, payload = {}) {
       demoJourneyId,
       demoKey: "silverado_roti_shop_emmeloord",
       source: "demo_sites",
+      recipientSource: requestedEmail ? "manual" : "relationship",
     },
   });
   if (!result?.sent) throw previewError("FOOD_DEMO_EMAIL_FAILED", cleanText(result?.warning) || "De restaurant-demo kon niet per e-mail worden verzonden.", 502);
@@ -300,7 +303,7 @@ async function shareSilveradoFoodDemoEmail(context, payload = {}) {
     actorName: cleanText(context.admin?.email || "Max CRM"),
     actorRole: cleanText(context.admin?.role || "admin"),
     severity: "success",
-    metadata: { dedupeKey: `food-demo-email:${actionKey}`, channel: "email", demoKey: "silverado_roti_shop_emmeloord" },
+    metadata: { dedupeKey: `food-demo-email:${actionKey}`, channel: "email", demoKey: "silverado_roti_shop_emmeloord", recipientSource: requestedEmail ? "manual" : "relationship" },
   });
   return jsonResponse(200, {
     success: true,

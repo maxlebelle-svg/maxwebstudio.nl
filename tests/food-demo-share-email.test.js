@@ -46,6 +46,7 @@ async function run(options = {}) {
       relationshipId: IDS.lead,
       demoJourneyId: IDS.journey,
       actionKey: IDS.action,
+      recipientEmail: options.recipientEmail,
       storefrontUrl: "https://attacker.example/storefront",
       restaurantPortalUrl: "https://attacker.example/admin",
     });
@@ -85,6 +86,15 @@ test("mailactie gebruikt alleen server-side toegestane Silverado-links", async (
   assert.doesNotMatch(state.mailCalls[0].html, /attacker\.example/);
 });
 
+test("handmatig e-mailadres geldt alleen als ontvanger van deze verzending", async () => {
+  const state = await run({ email: "", recipientEmail: "Handmatig@Example.test" });
+  assert.equal(state.error, null);
+  assert.equal(state.mailCalls.length, 1);
+  assert.equal(state.mailCalls[0].to, "handmatig@example.test");
+  assert.equal(state.mailCalls[0].metadata.recipientSource, "manual");
+  assert.equal(state.calls.filter((call) => call.method !== "GET").length, 0);
+});
+
 test("mailactie stopt fail-closed bij verkeerde relatie, demo of e-mail", async () => {
   const relationship = await run({ wrongRelationship: true });
   assert.equal(relationship.error.code, "FOOD_DEMO_RELATIONSHIP_MISMATCH");
@@ -97,4 +107,8 @@ test("mailactie stopt fail-closed bij verkeerde relatie, demo of e-mail", async 
   const recipient = await run({ email: "" });
   assert.equal(recipient.error.code, "FOOD_DEMO_SHARE_EMAIL_INVALID");
   assert.equal(recipient.mailCalls.length, 0);
+
+  const invalidManualRecipient = await run({ email: "stored@example.test", recipientEmail: "geen-adres" });
+  assert.equal(invalidManualRecipient.error.code, "FOOD_DEMO_SHARE_EMAIL_INVALID");
+  assert.equal(invalidManualRecipient.mailCalls.length, 0);
 });
