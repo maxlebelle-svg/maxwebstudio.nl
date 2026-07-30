@@ -201,6 +201,17 @@ test("27 endpoint enforces active admin roles and protected route permissions", 
   assert.match(routes, /resource:\s*"quotes",\s*action:\s*"create"/);
 });
 
+test("27b Composer is a shared Commerce module and safely waits for relationship context", () => {
+  assert.match(html, /data-shared-admin-sidebar="true"/);
+  assert.match(html, /id="admin-sidebar-root"/);
+  for (const asset of ["admin-sidebar-system.css", "admin/config/sidebar-navigation.js", "admin/components/admin-sidebar.js", "admin/ui/admin-sidebar-dashboard-pilot.js"]) assert.match(html, new RegExp(asset.replaceAll("/", "\\/")));
+  assert.doesNotMatch(html, /data-admin-sidebar-exception="standalone"/);
+  assert.match(browser, /waitForRelationship/);
+  assert.match(browser, /maxwebstudio:relationship-change/);
+  const commerce = require("../public/admin/config/sidebar-navigation.js").ADMIN_SIDEBAR_NAVIGATION.find((section) => section.id === "commerce");
+  assert.deepEqual(commerce.items.map((item) => item.label), ["Nieuwe Opdracht", "Voorstel maken", "Offertes", "Facturen", "Abonnementen"]);
+});
+
 test("28 tenant and relationship isolation applies to reads and linked resources", async () => {
   assert.throws(() => endpointPrivate.assertRelationshipAccess({ ...actor, role: "sales", id: "44444444-4444-4444-8444-444444444444" }, "lead", { assigned_user_id: "55555555-5555-4555-8555-555555555555" }), /geen voorstel/i);
   assert.doesNotThrow(() => endpointPrivate.assertRelationshipAccess({ ...actor, role: "sales", id: "44444444-4444-4444-8444-444444444444" }, "customer", { metadata: { assignedUserId: "44444444-4444-4444-8444-444444444444" } }));

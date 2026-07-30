@@ -2,6 +2,7 @@ import { getAdminAccessToken } from './services/adminAuthBridgeService.js';
 import {
   buildMailPreview,
   catalogGroups,
+  composerUrl,
   composerReadiness,
   documentsForSave,
   money,
@@ -40,7 +41,7 @@ const elements = Object.fromEntries([
 let calculationTimer = 0;
 
 async function init() {
-  if (!routeContext.valid) return fatal('Open de composer vanuit een geldige lead, klant, demo of Factory-dossier.');
+  if (!routeContext.valid) return waitForRelationship();
   bindEvents();
   try {
     state.data = await request('GET', null, routeContext);
@@ -52,6 +53,26 @@ async function init() {
   } catch (error) {
     fatal(error.message || 'De Voorstel Composer kon niet veilig worden geladen.');
   }
+}
+
+function waitForRelationship() {
+  showMessage('Selecteer links in de actieve werkruimte eerst een lead of klant. Daarna opent de Composer automatisch met de juiste relatie.', 'warning');
+  elements.catalogVersion.textContent = 'Wacht op relatie';
+  elements.composerApp.setAttribute('aria-busy', 'false');
+  elements.composerApp.querySelectorAll('button,input,select,textarea').forEach((item) => { item.disabled = true; });
+  let navigating = false;
+  const openRelationship = (relationship) => {
+    if (navigating || !relationship) return;
+    const relationshipType = relationship.relationshipType || relationship.entityType;
+    const relationshipId = relationship.relationshipId || (relationshipType === 'lead' ? relationship.leadId : relationship.customerId);
+    const target = composerUrl({ relationshipType, relationshipId, source: 'sidebar' });
+    if (!target) return;
+    navigating = true;
+    window.location.assign(target);
+  };
+  window.addEventListener('maxwebstudio:relationship-change', (event) => openRelationship(event.detail?.relationship));
+  window.addEventListener('maxwebstudio:relationship-ready', (event) => openRelationship(event.detail?.relationship));
+  openRelationship(window.ActiveRelationship?.getActiveRelationship?.());
 }
 
 function bindEvents() {

@@ -7,16 +7,25 @@
     <title>Voorstel Composer | Max Webstudio</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
     <link rel="stylesheet" href="src/offer-composer.css" />
     <style>.offer-composer-page .choice-card > strong { color: var(--oc-text); }</style>
+    <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
+    <script src="admin/config/sidebar-navigation.js" defer></script>
+    <script src="admin/components/admin-sidebar.js" defer></script>
+    <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
     <script type="module" src="src/admin-route-guard.js"></script>
   </head>
-  <body class="offer-composer-page" data-admin-sidebar-exception="standalone">
+  <body class="admin-body offer-composer-page" data-shared-admin-sidebar="true">
+    <main class="admin-crm-shell">
+      <div id="admin-sidebar-root" aria-live="polite"></div>
+      <div class="admin-crm-main">
     <header class="composer-topbar">
       <a class="composer-brand" href="admin-offertes.html" aria-label="Terug naar offertes"><img src="max-webstudio-logo-mark.svg" alt="" /><span>Max Webstudio</span></a>
       <div><span class="composer-status" id="composer-status">Concept niet opgeslagen</span><a class="button secondary" href="admin-offertes.html">Sluiten</a></div>
     </header>
-    <main class="composer-shell" id="composer-app" aria-busy="true">
+    <div class="composer-shell" id="composer-app" aria-busy="true">
       <header class="composer-hero">
         <div><p class="eyebrow">Interne beheeromgeving · Fase C</p><h1>Nieuw voorstel maken</h1><p>Stel een controleerbaar voorstel samen. Prijzen en totalen worden uitsluitend server-side bepaald.</p></div>
         <div class="composer-version"><span>Catalogus</span><strong id="catalog-version">Laden…</strong><small id="catalog-checksum"></small></div>
@@ -42,8 +51,10 @@
           <section class="send-sequence"><h2>Vaste verzendvolgorde</h2><ol><li class="active"><span>1</span><div><strong>Voorbeeld bekijken</strong><small>Lokaal beschikbaar</small></div></li><li class="blocked"><span>2</span><div><strong>Testmail naar mijzelf</strong><small>Wordt aangesloten in Fase D</small></div></li><li class="blocked"><span>3</span><div><strong>Definitief verzenden</strong><small>Volledig geblokkeerd</small></div></li></ol><button class="button primary" id="open-preview" type="button" disabled>Voorbeeld bekijken</button><button class="button secondary" id="test-mail" type="button" disabled>Testmail naar mijzelf</button><button class="button secondary" id="definitive-send" type="button" disabled>Definitief verzenden</button><p>Er worden geen e-mails, akkoordtokens of providertransacties gemaakt.</p></section>
         </aside>
       </div>
-    </main>
+    </div>
     <dialog class="mail-preview-dialog" id="mail-preview"><div class="dialog-toolbar"><div><span>Lokale voorbeeldweergave</span><strong id="preview-subject"></strong></div><button type="button" id="close-preview" aria-label="Voorbeeld sluiten">×</button></div><div class="email-canvas"><header><img src="max-webstudio-logo-full.svg" alt="Max Webstudio" /><span>Persoonlijk voorstel</span></header><main><p id="preview-greeting"></p><h2>Je demo en persoonlijke voorstel staan klaar.</h2><p>Bekijk de demo op je computer of open de mobiele versie op je telefoon.</p><div class="preview-demo-actions"><a id="preview-desktop" aria-disabled="true">Demo op computer bekijken</a><div class="qr-placeholder" id="preview-qr"><span>QR</span><small>Lokale placeholder</small></div><a id="preview-mobile" aria-disabled="true">Mobiele demo openen</a></div><div class="preview-offer" id="preview-offer"></div><a class="email-button secondary">Offerte en overeenkomst bekijken</a><a class="email-button primary">Ja, ik wil deze website</a><p class="preview-validity" id="preview-validity"></p></main><footer>Vragen? Neem contact op via <a href="mailto:info@maxwebstudio.nl">info@maxwebstudio.nl</a>.</footer></div></dialog>
+      </div>
+    </main>
     <script type="module" src="src/offer-composer.js"></script>
   </body>
 </html>

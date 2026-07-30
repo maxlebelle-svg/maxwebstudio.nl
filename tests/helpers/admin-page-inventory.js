@@ -18,6 +18,7 @@ const NORMAL_ADMIN_PAGES = Object.freeze({
   "admin-max-brain.html": ["brain-customers", "brain-recommendations-count"],
   "admin-nieuwe-opdracht.html": ["commercial-order-form", "summary-total"],
   "admin-notification-center.html": ["notification-filters", "activity-feed"],
+  "admin-offer-composer.html": ["composer-app", "relationship-card"],
   "admin-offertes.html": ["quote-list"],
   "admin-onboarding.html": ["metric-active-onboardings", "new-onboarding-top"],
   "admin-platform-health.html": ["health-summary", "health-refresh"],
@@ -51,6 +52,7 @@ const ACTIVE_ROUTE_IDS = Object.freeze({
   "admin-max-brain.html": "max-brain",
   "admin-nieuwe-opdracht.html": "new-assignment",
   "admin-notification-center.html": "notifications",
+  "admin-offer-composer.html": "offer-composer",
   "admin-offertes.html": "quotes",
   "admin-onboarding.html": "customer-onboarding",
   "admin-platform-health.html": "platform-health",
@@ -67,7 +69,6 @@ const ACTIVE_ROUTE_IDS = Object.freeze({
 const STANDALONE_ADMIN_PAGES = Object.freeze([
   "admin-brand-center-lab.html",
   "admin-logo-studio.html",
-  "admin-offer-composer.html",
   "admin-partners.html",
   "admin-relatie-workspace.html",
 ]);

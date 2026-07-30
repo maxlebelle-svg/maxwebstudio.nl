@@ -65,6 +65,7 @@ test("shared hierarchy retains every central navigation destination without dupl
   const sections = pilot.pilotNavigation(navigation.ADMIN_SIDEBAR_NAVIGATION);
   assert.deepEqual(sections[0].items.map((item) => item.label), ["Leads", "Agenda", "Lead Generator"]);
   assert.deepEqual(sections[2].items.map((item) => item.label), ["Factory Hub", "Website Factory", "Website QA Scanner", "Demo Sites", "AI Content Library", "Asset Manager", "SEO Studio", "Social Media Studio", "Brand Center", "Domein Center", "Klant Onboarding", "Roadmap / Takenbord", "Websites", "Projecten"]);
+  assert.deepEqual(sections[3].items.map((item) => item.label), ["Nieuwe Opdracht", "Voorstel maken", "Offertes", "Facturen", "Abonnementen"]);
   assert.equal(sections.flatMap((section) => section.items).length, navigation.ADMIN_SIDEBAR_NAVIGATION.flatMap((section) => section.items).length);
 });
 
