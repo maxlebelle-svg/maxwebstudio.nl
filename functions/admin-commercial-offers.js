@@ -6,6 +6,7 @@ const { buildCommercialOfferMail } = require("./services/commercialOfferMailServ
 const { sendTrackedEmail } = require("./services/resendMailService");
 const { adminCatalog } = require("./_commercial-catalog");
 const { DOCUMENTS, validateReadyDocuments } = require("./services/commercialDocumentRegistry");
+const { normalizeValidityDate, expiryIso, isExpired } = require("./services/commercialOfferValidityService");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const WRITE_ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "sales"];
@@ -159,7 +160,7 @@ async function previewMail(input, actor, config) {
   assertPhaseD1Enabled();
   const offerVersionId = uuid(input.offerVersionId, "De aanbodversie is ongeldig.");
   const context = await loadMailContext(offerVersionId, actor, config);
-  const mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: "preview" });
+  const mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: "preview", staging: true });
   const evidence = await rpc(config, "commercial_record_offer_preview_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
@@ -179,6 +180,7 @@ async function dispatchMail(kind, input, actor, config) {
   const offerVersionId = uuid(input.offerVersionId, "De aanbodversie is ongeldig.");
   const actionKey = boundedKey(input.actionKey);
   const context = await loadMailContext(offerVersionId, actor, config, { allowSent: kind === "definitive" });
+  const snapshotExpiry = offerExpiry(context.version.snapshot);
   const recipient = kind === "test" ? actor.email : context.relationship.email;
   if (!validEmail(recipient)) throw problem(409, kind === "test" ? "ADMIN_EMAIL_INVALID" : "CUSTOMER_EMAIL_REQUIRED", kind === "test" ? "Het geverifieerde beheerderse-mailadres ontbreekt." : "De klant heeft geen geldig e-mailadres.");
   let rawToken = "";
@@ -188,7 +190,7 @@ async function dispatchMail(kind, input, actor, config) {
   if (kind === "definitive") {
     rawToken = crypto.randomBytes(32).toString("base64url");
     tokenHash = sha256(rawToken);
-    tokenExpiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+    tokenExpiresAt = snapshotExpiry;
     interestUrl = `${siteUrl()}/voorstel-interesse.html#token=${encodeURIComponent(rawToken)}`;
   }
   const reservation = await rpc(config, "commercial_reserve_offer_dispatch_v1", {
@@ -207,7 +209,7 @@ async function dispatchMail(kind, input, actor, config) {
   }
   let mail;
   try {
-    mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl });
+    mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: true });
   } catch (error) {
     await finalizeDispatch(config, actor, reservation.dispatchId, false, "", error.code || "mail_render_failed");
     throw error;
@@ -274,7 +276,14 @@ async function loadMailContext(offerVersionId, actor, config, options = {}) {
 }
 
 function publicMail(mail) {
-  return { subject: mail.subject.replace(/^\[TEST\]\s*/, ""), html: mail.html, text: mail.text, desktopUrl: mail.desktopUrl, mobileUrl: mail.mobileUrl, qrCodeUrl: mail.qrCodeUrl, disclaimer: mail.disclaimer };
+  return { subject: mail.subject, html: mail.html, text: mail.text, desktopUrl: mail.desktopUrl, mobileUrl: mail.mobileUrl, qrCodeUrl: mail.qrCodeUrl, disclaimer: mail.disclaimer, validUntil: mail.validUntil };
+}
+
+function offerExpiry(snapshot = {}) {
+  const value = normalizeValidityDate(snapshot.validUntil);
+  if (!value) throw problem(409, "OFFER_VALIDITY_REQUIRED", "De aanbodversie mist een geldige, server-side bepaalde geldigheidsdatum.");
+  if (isExpired(value)) throw problem(409, "OFFER_EXPIRED", "De aanbodversie is verlopen en kan niet worden verzonden.");
+  return expiryIso(value);
 }
 
 async function loadRelationship(type, id, config) {
@@ -471,4 +480,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, sha256, publicMail };
+exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, sha256, publicMail, offerExpiry };

@@ -11,6 +11,7 @@ const {
   catalogSnapshot,
   stable,
 } = require("../_commercial-catalog");
+const { DEFAULT_VALIDITY_DAYS, defaultValidityDate } = require("./commercialOfferValidityService");
 
 const PAYMENT_CHOICES = new Set(["fixed_deposit", "full", "none"]);
 const CUSTOM_PRICE_ROLES = new Set(["super_admin"]);
@@ -49,12 +50,14 @@ function buildOfferVersion(input = {}, actor = {}) {
   });
 
   const totals = calculateTotals(lines, websiteIds[0], paymentChoice);
+  const validUntil = defaultValidityDate();
   const snapshot = {
     catalogKey: CATALOG_KEY,
     catalogVersion: CATALOG_VERSION,
     catalogChecksum: catalogChecksum(),
     currency: CURRENCY,
     vatRate: VAT_RATE,
+    validUntil,
     paymentChoice,
     ...totals,
     lines,
@@ -167,4 +170,5 @@ module.exports = {
   buildOfferVersion,
   catalogRegistrationPayload,
   PAYMENT_CHOICES,
+  _private: { validityDate: (days, now) => days === DEFAULT_VALIDITY_DAYS ? defaultValidityDate(now) : null, DEFAULT_VALIDITY_DAYS },
 };

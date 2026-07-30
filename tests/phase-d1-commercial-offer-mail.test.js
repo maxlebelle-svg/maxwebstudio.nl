@@ -41,8 +41,34 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.text, /Business Website: € 995,00 excl\. btw eenmalig/);
   assert.match(mail.text, /Care Basic: € 19,95 excl\. btw per maand/);
   assert.match(mail.text, /Vaste aanbetaling excl\. btw: € 300,00/);
+  assert.match(mail.text, /Geldig tot en met:/);
+  assert.match(mail.html, /Geldig tot en met/);
   assert.doesNotMatch(mail.text, /50%|€ 1\.750,00/);
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
+});
+
+test("offer validity is server-side, immutable, fourteen calendar days and fail-closed", () => {
+  const manipulated = offerService.buildOfferVersion({
+    paymentChoice: "fixed_deposit",
+    validUntil: "2099-12-31",
+    selections: [{ productId: "business_website" }, { productId: "care_basic" }],
+  }, { id: "11111111-1111-4111-8111-111111111111", profileId: "22222222-2222-4222-8222-222222222222", role: "admin" });
+  assert.equal(manipulated.validUntil, offerService._private.validityDate(14));
+  assert.notEqual(manipulated.validUntil, "2099-12-31");
+  assert.throws(() => buildCommercialOfferMail({ ...base, snapshot: { ...snapshot, validUntil: undefined }, mode: "test" }), /geldigheidsdatum/i);
+  assert.throws(() => buildCommercialOfferMail({ ...base, snapshot: { ...snapshot, validUntil: "2020-01-01" }, mode: "definitive", interestUrl: "https://example.test/interest" }), /verlopen/i);
+  assert.throws(() => endpoint.offerExpiry({}), /geldigheidsdatum/i);
+  assert.throws(() => endpoint.offerExpiry({ validUntil: "2020-01-01" }), /verlopen/i);
+});
+
+test("staging mail is unmistakably labelled and interest page displays validity", () => {
+  const mail = buildCommercialOfferMail({ ...base, mode: "test", staging: true });
+  assert.match(mail.subject, /^\[STAGING TEST\]/);
+  assert.match(mail.html, /STAGINGTEST — niet naar een echte klant verzenden/);
+  const interestPage = read("public/voorstel-interesse.html");
+  assert.match(interestPage, /Geldigheid controleren/);
+  assert.match(interestPage, /validUntil/);
+  assert.match(read("functions/commercial-offer-interest.js"), /commercial_offer_versions\?select=snapshot/);
 });
 
 test("test mail is clearly labelled and cannot contain a customer interest token", () => {

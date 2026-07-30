@@ -1,5 +1,6 @@
 const crypto = require("node:crypto");
 const { corsHeaders } = require("./_cors");
+const { normalizeValidityDate, isExpired } = require("./services/commercialOfferValidityService");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(204, {});
@@ -10,6 +11,10 @@ exports.handler = async (event) => {
     if (!/^[A-Za-z0-9_-]{40,100}$/.test(token)) throw problem(404, "INTEREST_LINK_INVALID", "Deze interesselink is ongeldig of niet meer beschikbaar.");
     const config = runtimeConfig();
     if (!config.ready) throw problem(503, "INTEREST_STORAGE_UNAVAILABLE", "De interessebevestiging is tijdelijk niet beschikbaar.");
+    if (clean(input.action).toLowerCase() === "inspect") {
+      const offer = await inspectOffer(config, sha256(token));
+      return json(200, { success: true, validUntil: offer.validUntil, expired: false });
+    }
     const result = await rpc(config, "commercial_confirm_offer_interest_v1", {
       input_token_sha256: sha256(token),
       input_idempotency_key: `interest:${sha256(`${token}:confirm`).slice(0, 48)}`,
@@ -27,12 +32,28 @@ exports.handler = async (event) => {
   }
 };
 
+async function inspectOffer(config, tokenHash) {
+  const tokens = await rest(config, `commercial_offer_interest_tokens?select=offer_version_id,expires_at,confirmed_at,revoked_at&token_sha256=eq.${tokenHash}&limit=1`);
+  const token = tokens[0];
+  if (!token || token.revoked_at || new Date(token.expires_at).getTime() <= Date.now()) throw problem(404, "INTEREST_LINK_INVALID", "Deze interesselink is ongeldig, verlopen of ingetrokken.");
+  const versions = await rest(config, `commercial_offer_versions?select=snapshot&id=eq.${token.offer_version_id}&limit=1`);
+  const validUntil = normalizeValidityDate(versions[0]?.snapshot?.validUntil);
+  if (!validUntil || isExpired(validUntil)) throw problem(404, "INTEREST_LINK_INVALID", "Deze interesselink is ongeldig, verlopen of ingetrokken.");
+  return { validUntil };
+}
+
 async function rpc(config, name, body) {
   const response = await fetch(`${config.url}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await response.json().catch(() => null);
   if (response.ok) return data;
   const code = clean(data?.code);
   if (code === "P0002" || ["22023", "23514"].includes(code)) throw problem(404, "INTEREST_LINK_INVALID", "Deze interesselink is ongeldig, verlopen of ingetrokken.");
+  throw problem(503, "INTEREST_CONFIRMATION_UNAVAILABLE", "De interessebevestiging is tijdelijk niet beschikbaar.");
+}
+async function rest(config, path) {
+  const response = await fetch(`${config.url}/rest/v1/${path}`, { headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, Accept: "application/json" } });
+  const data = await response.json().catch(() => null);
+  if (response.ok) return Array.isArray(data) ? data : [];
   throw problem(503, "INTEREST_CONFIRMATION_UNAVAILABLE", "De interessebevestiging is tijdelijk niet beschikbaar.");
 }
 function runtimeConfig() { const url = clean(process.env.SUPABASE_URL).replace(/\/$/, ""); const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY); return { url, key, ready: Boolean(url && key) }; }
@@ -42,4 +63,4 @@ function clean(value) { return String(value || "").trim(); }
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { sha256 };
+exports._private = { sha256, inspectOffer };
