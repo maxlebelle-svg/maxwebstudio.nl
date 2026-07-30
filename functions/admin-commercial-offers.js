@@ -1,6 +1,9 @@
+const crypto = require("node:crypto");
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { buildOfferVersion, catalogRegistrationPayload } = require("./services/commercialOfferService");
+const { buildCommercialOfferMail } = require("./services/commercialOfferMailService");
+const { sendTrackedEmail } = require("./services/resendMailService");
 const { adminCatalog } = require("./_commercial-catalog");
 const { DOCUMENTS, validateReadyDocuments } = require("./services/commercialDocumentRegistry");
 
@@ -23,7 +26,7 @@ exports.handler = async (event) => {
   try {
     const input = parseBody(event);
     const action = clean(input.action).toLowerCase();
-    const actor = { id: auth.admin.id, profileId: auth.admin.profileId, role: auth.admin.role };
+    const actor = { id: auth.admin.id, profileId: auth.admin.profileId, role: auth.admin.role, email: clean(auth.admin.email).toLowerCase() };
     if (!UUID.test(clean(actor.id)) || !UUID.test(clean(actor.profileId))) throw problem(403, "ACTOR_INVALID", "De actieve beheerder kon niet veilig worden vastgesteld.");
     if (event.httpMethod === "GET") {
       const config = runtimeConfig();
@@ -37,6 +40,10 @@ exports.handler = async (event) => {
     if (!config.ready) throw problem(503, "OFFER_STORAGE_UNAVAILABLE", "De commerciële opslag is niet geconfigureerd.");
     if (action === "create_version") return createVersion(input, actor, config);
     if (action === "transition") return transition(input, actor, config);
+    if (action === "preview_mail") return previewMail(input, actor, config);
+    if (action === "test_mail") return dispatchMail("test", input, actor, config);
+    if (action === "definitive_send") return dispatchMail("definitive", input, actor, config);
+    if (action === "revoke_interest") return revokeInterest(input, actor, config);
     throw problem(400, "ACTION_INVALID", "Kies een geldige commerciële offeractie.");
   } catch (error) {
     const status = Number(error.statusCode) || 500;
@@ -116,7 +123,7 @@ async function readComposerContext(query, actor, config) {
   ]);
   return json(200, {
     success: true,
-    actor: { role: normalizeRole(actor.role), profileId: actor.profileId },
+    actor: { role: normalizeRole(actor.role), profileId: actor.profileId, verifiedEmail: actor.email },
     relationship: mapRelationship(relationshipType, relationship),
     demos: demos.map(mapDemo),
     factoryProjects,
@@ -125,8 +132,9 @@ async function readComposerContext(query, actor, config) {
     history,
     capabilities: {
       customPrices: normalizeRole(actor.role) === "super_admin",
-      testMail: false,
-      definitiveSend: false,
+      previewMail: phaseD1Enabled(),
+      testMail: phaseD1Enabled() && validEmail(actor.email),
+      definitiveSend: phaseD1Enabled(),
       providersEnabled: false,
     },
   });
@@ -145,6 +153,128 @@ async function assertReadyForReview(offerVersionId, actor, config) {
   const bindings = await rest(config, `commercial_offer_document_bindings?select=document_type,version_code,checksum_sha256,required&offer_version_id=eq.${offerVersionId}`);
   const readiness = validateReadyDocuments(version.snapshot || {}, bindings);
   if (!readiness.ready) throw problem(409, "DOCUMENTS_INCOMPLETE", `Verplichte documenten ontbreken of hebben een ongeldige checksum: ${readiness.missing.join(", ")}.`);
+}
+
+async function previewMail(input, actor, config) {
+  assertPhaseD1Enabled();
+  const offerVersionId = uuid(input.offerVersionId, "De aanbodversie is ongeldig.");
+  const context = await loadMailContext(offerVersionId, actor, config);
+  const mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: "preview" });
+  const evidence = await rpc(config, "commercial_record_offer_preview_v1", {
+    input_actor_profile_id: actor.profileId,
+    input_actor_auth_user_id: actor.id,
+    input_offer_version_id: offerVersionId,
+    input_idempotency_key: boundedKey(input.actionKey),
+  });
+  return json(200, {
+    success: true,
+    preview: publicMail(mail),
+    manualFallback: { subject: mail.subject.replace(/^\[TEST\]\s*/, ""), text: mail.text.replace(/^TESTMAIL[^\n]*\n?/, "") },
+    evidence,
+  });
+}
+
+async function dispatchMail(kind, input, actor, config) {
+  assertPhaseD1Enabled();
+  const offerVersionId = uuid(input.offerVersionId, "De aanbodversie is ongeldig.");
+  const actionKey = boundedKey(input.actionKey);
+  const context = await loadMailContext(offerVersionId, actor, config, { allowSent: kind === "definitive" });
+  const recipient = kind === "test" ? actor.email : context.relationship.email;
+  if (!validEmail(recipient)) throw problem(409, kind === "test" ? "ADMIN_EMAIL_INVALID" : "CUSTOMER_EMAIL_REQUIRED", kind === "test" ? "Het geverifieerde beheerderse-mailadres ontbreekt." : "De klant heeft geen geldig e-mailadres.");
+  let rawToken = "";
+  let tokenHash = null;
+  let tokenExpiresAt = null;
+  let interestUrl = "";
+  if (kind === "definitive") {
+    rawToken = crypto.randomBytes(32).toString("base64url");
+    tokenHash = sha256(rawToken);
+    tokenExpiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+    interestUrl = `${siteUrl()}/voorstel-interesse.html#token=${encodeURIComponent(rawToken)}`;
+  }
+  const reservation = await rpc(config, "commercial_reserve_offer_dispatch_v1", {
+    input_actor_profile_id: actor.profileId,
+    input_actor_auth_user_id: actor.id,
+    input_offer_version_id: offerVersionId,
+    input_dispatch_kind: kind,
+    input_recipient_sha256: sha256(recipient.toLowerCase()),
+    input_token_sha256: tokenHash,
+    input_token_expires_at: tokenExpiresAt,
+    input_idempotency_key: actionKey,
+  });
+  if (reservation.duplicate) {
+    if (reservation.status === "sent") return json(200, { success: true, duplicate: true, dispatch: reservation });
+    throw problem(409, "DISPATCH_ALREADY_RESERVED", "Deze verzendactie is al veilig gereserveerd en wordt niet opnieuw uitgevoerd.");
+  }
+  let mail;
+  try {
+    mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl });
+  } catch (error) {
+    await finalizeDispatch(config, actor, reservation.dispatchId, false, "", error.code || "mail_render_failed");
+    throw error;
+  }
+  const result = await sendTrackedEmail({
+    to: recipient,
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    idempotencyKey: `commercial-offer/${kind}/${reservation.dispatchId}`,
+    templateKey: `commercial_offer_${kind}`,
+    templateName: kind === "test" ? "Voorstel testmail" : "Demo en voorstel",
+    leadId: context.offer.relationship_type === "lead" ? context.offer.relationship_id : undefined,
+    customerId: context.offer.relationship_type === "customer" ? context.offer.relationship_id : undefined,
+    metadata: { offerVersion: context.version.version_number, dispatchKind: kind },
+  });
+  const sent = result.sent === true && Boolean(clean(result.id));
+  const finalized = await finalizeDispatch(config, actor, reservation.dispatchId, sent, sent ? sha256(result.id) : "", result.errorCode || "provider_failed");
+  if (!sent) throw problem(502, "MAIL_PROVIDER_UNCONFIRMED", "De mailprovider heeft de verzending niet bevestigd. Er wordt niet automatisch opnieuw geprobeerd.");
+  return json(200, { success: true, duplicate: false, dispatch: finalized, recipient: kind === "test" ? actor.email : "customer" });
+}
+
+async function finalizeDispatch(config, actor, dispatchId, sent, providerHash, failureCode) {
+  return rpc(config, "commercial_finalize_offer_dispatch_v1", {
+    input_actor_profile_id: actor.profileId,
+    input_actor_auth_user_id: actor.id,
+    input_dispatch_id: dispatchId,
+    input_sent: sent,
+    input_provider_message_id_sha256: providerHash || null,
+    input_failure_code: sent ? null : clean(failureCode).toLowerCase().replace(/[^a-z0-9_-]+/g, "_").slice(0, 80),
+  });
+}
+
+async function revokeInterest(input, actor, config) {
+  assertPhaseD1Enabled();
+  const result = await rpc(config, "commercial_revoke_offer_interest_v1", {
+    input_actor_profile_id: actor.profileId,
+    input_actor_auth_user_id: actor.id,
+    input_offer_version_id: uuid(input.offerVersionId, "De aanbodversie is ongeldig."),
+    input_reason: clean(input.reason),
+    input_idempotency_key: boundedKey(input.actionKey),
+  });
+  return json(200, { success: true, result });
+}
+
+async function loadMailContext(offerVersionId, actor, config, options = {}) {
+  const versions = await rest(config, `commercial_offer_versions?select=id,offer_id,version_number,status,has_non_binding_lines,snapshot&id=eq.${offerVersionId}&limit=1`);
+  const version = versions[0];
+  if (!version) throw problem(404, "OFFER_NOT_FOUND", "De aanbodversie bestaat niet.");
+  const offers = await rest(config, `commercial_offers?select=id,relationship_type,relationship_id,demo_journey_id,current_version_id,status&id=eq.${version.offer_id}&limit=1`);
+  const offer = offers[0];
+  if (!offer) throw problem(404, "OFFER_NOT_FOUND", "Het voorstel bestaat niet.");
+  const relationshipRow = await loadRelationship(offer.relationship_type, offer.relationship_id, config);
+  assertRelationshipAccess(actor, offer.relationship_type, relationshipRow);
+  const allowedStatuses = options.allowSent ? ["ready_for_review", "sent"] : ["ready_for_review"];
+  if (offer.current_version_id !== version.id || !allowedStatuses.includes(version.status) || version.has_non_binding_lines) throw problem(409, "OFFER_NOT_SEND_READY", "Alleen de actuele, volledig bindende versie die gereed is voor controle kan worden verzonden.");
+  if (!offer.demo_journey_id) throw problem(409, "DEMO_REQUIRED", "Koppel eerst een geldige demo.");
+  const demos = await rest(config, `demo_journeys?select=id,business_name,contact_name,demo_status,preview_url,preview_package,preview_generated_at,updated_at&id=eq.${offer.demo_journey_id}&limit=1`);
+  if (!demos[0]) throw problem(409, "DEMO_REQUIRED", "De gekoppelde demo bestaat niet meer.");
+  const relationshipColumn = offer.relationship_type === "lead" ? "lead_id" : "customer_id";
+  const ownership = await rest(config, `demo_journeys?select=id&id=eq.${offer.demo_journey_id}&${relationshipColumn}=eq.${offer.relationship_id}&limit=1`);
+  if (!ownership[0]) throw problem(409, "DEMO_RELATIONSHIP_MISMATCH", "De demo hoort niet bij deze relatie.");
+  return { version, offer, relationship: mapRelationship(offer.relationship_type, relationshipRow), demo: mapDemo(demos[0]) };
+}
+
+function publicMail(mail) {
+  return { subject: mail.subject.replace(/^\[TEST\]\s*/, ""), html: mail.html, text: mail.text, desktopUrl: mail.desktopUrl, mobileUrl: mail.mobileUrl, qrCodeUrl: mail.qrCodeUrl, disclaimer: mail.disclaimer };
 }
 
 async function loadRelationship(type, id, config) {
@@ -193,10 +323,12 @@ async function loadHistory(type, id, requestedOfferId, config) {
   const filter = `in.(${offerIds.join(",")})`;
   const versions = await rest(config, `commercial_offer_versions?select=*&offer_id=${filter}&order=version_number.desc`);
   const versionFilter = `in.(${versions.map((version) => version.id).join(",") || "00000000-0000-0000-0000-000000000000"})`;
-  const [lines, documents, events] = await Promise.all([
+  const [lines, documents, events, dispatches, interestTokens] = await Promise.all([
     rest(config, `commercial_offer_lines?select=*&offer_version_id=${versionFilter}&order=position.asc`),
     rest(config, `commercial_offer_document_bindings?select=*&offer_version_id=${versionFilter}&order=document_type.asc`),
     rest(config, `commercial_offer_events?select=offer_id,offer_version_id,event_type,actor_profile_id,actor_role,reason,previous_status,new_status,occurred_at,safe_metadata&offer_id=${filter}&order=occurred_at.desc`),
+    rest(config, `commercial_offer_mail_dispatches?select=id,offer_id,offer_version_id,dispatch_kind,status,reserved_at,completed_at&offer_id=${filter}&order=created_at.desc`),
+    rest(config, `commercial_offer_interest_tokens?select=id,offer_id,offer_version_id,expires_at,confirmed_at,revoked_at,created_at&offer_id=${filter}&order=created_at.desc`),
   ]);
   return offers.map((offer) => ({
     ...offer,
@@ -205,6 +337,8 @@ async function loadHistory(type, id, requestedOfferId, config) {
       lines: lines.filter((line) => line.offer_version_id === version.id),
       documents: documents.filter((document) => document.offer_version_id === version.id),
       events: events.filter((event) => event.offer_version_id === version.id),
+      dispatches: dispatches.filter((dispatch) => dispatch.offer_version_id === version.id),
+      interestTokens: interestTokens.filter((token) => token.offer_version_id === version.id),
     })),
     events: events.filter((event) => event.offer_id === offer.id),
   }));
@@ -234,6 +368,7 @@ function mapDemo(row) {
     desktopUrl,
     mobileUrl,
     qrTarget: safePreviewUrl(meta.qrTarget) || mobileUrl,
+    qrCodeUrl: safePreviewUrl(meta.qrCodeUrl || meta.qrAssetUrl) || silveradoQr(row, desktopUrl),
     status: clean(row.demo_status),
     expiresAt: clean(meta.expiresAt),
     updatedAt: row.updated_at,
@@ -248,6 +383,12 @@ function safePreviewUrl(value) {
     const parsed = new URL(raw);
     return parsed.protocol === "https:" && !parsed.username && !parsed.password ? parsed.toString() : "";
   } catch { return ""; }
+}
+
+function silveradoQr(row, desktopUrl) {
+  const haystack = `${clean(row?.business_name)} ${clean(desktopUrl)}`.toLowerCase();
+  if (!haystack.includes("silverado") && !haystack.includes("rotishop") && !haystack.includes("roti-shop")) return "";
+  try { return new URL("/assets/food/silverado/silverado-demo-qr.svg", siteUrl()).toString(); } catch { return ""; }
 }
 
 async function rest(config, path) {
@@ -304,6 +445,24 @@ function runtimeConfig() {
   const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
   return { url, key, ready: Boolean(url && key) };
 }
+function phaseD1Enabled() {
+  const enabled = clean(process.env.COMMERCIAL_OFFER_PHASE_D1_ENABLED).toLowerCase() === "true";
+  let siteHost = "";
+  let databaseHost = "";
+  try { siteHost = new URL(clean(process.env.URL || process.env.DEPLOY_PRIME_URL)).hostname.toLowerCase(); } catch {}
+  try { databaseHost = new URL(clean(process.env.SUPABASE_URL)).hostname.toLowerCase(); } catch {}
+  return enabled
+    && siteHost === "maxwebstudio-staging.netlify.app"
+    && databaseHost === "xlxpuuycigeqhgxqtzni.supabase.co";
+}
+function assertPhaseD1Enabled() { if (!phaseD1Enabled()) throw problem(403, "PHASE_D1_DISABLED", "Deze mailfase is in deze omgeving niet geactiveerd."); }
+function siteUrl() {
+  const candidate = clean(process.env.URL || process.env.DEPLOY_PRIME_URL || "https://maxwebstudio-staging.netlify.app");
+  try { const url = new URL(candidate); if (url.protocol !== "https:" || url.username || url.password) throw new Error("unsafe"); return url.origin; }
+  catch { throw problem(503, "SITE_URL_INVALID", "De veilige applicatie-URL ontbreekt."); }
+}
+function sha256(value) { return crypto.createHash("sha256").update(clean(value)).digest("hex"); }
+function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(value)); }
 function parseBody(event) { if (event.httpMethod === "GET") return {}; const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString("utf8") : String(event.body || ""); if (!raw || Buffer.byteLength(raw) > 131072) throw problem(400, "BODY_INVALID", "De aanvraag is leeg of te groot."); try { return JSON.parse(raw); } catch { throw problem(400, "JSON_INVALID", "De aanvraag bevat geen geldige gegevens."); } }
 function boundedKey(value) { const key = clean(value); if (key.length < 16 || key.length > 150 || !/^[a-zA-Z0-9:_-]+$/.test(key)) throw problem(400, "ACTION_KEY_INVALID", "De actiebeveiliging ontbreekt."); return key; }
 function uuid(value, message) { const result = clean(value); if (!UUID.test(result)) throw problem(400, "UUID_INVALID", message); return result; }
@@ -312,4 +471,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl };
+exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, sha256, publicMail };

@@ -71,6 +71,10 @@
     {
       "manifest": "docs/release-readiness/phase-bc-composer-read-fix/MANIFEST.json",
       "fileset": "docs/release-readiness/phase-bc-composer-read-fix/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-d1-commercial-offer-mail/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-d1-commercial-offer-mail/FILESET.json"
     }
   ]
 }

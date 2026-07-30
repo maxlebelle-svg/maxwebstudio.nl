@@ -1,6 +1,5 @@
 import { getAdminAccessToken } from './services/adminAuthBridgeService.js';
 import {
-  buildMailPreview,
   catalogGroups,
   composerUrl,
   composerReadiness,
@@ -32,10 +31,11 @@ const state = {
   currentVersionStatus: '',
   calculating: false,
   dirty: false,
+  lastPreview: null,
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','mail-preview','close-preview','preview-subject','preview-greeting','preview-desktop','preview-mobile','preview-qr','preview-offer','preview-validity'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -96,6 +96,9 @@ function bindEvents() {
   elements.readyReview.addEventListener('click', () => transition('ready_for_review'));
   elements.revokeVersion.addEventListener('click', () => transition('revoked'));
   elements.openPreview.addEventListener('click', openPreview);
+  elements.testMail.addEventListener('click', sendTestMail);
+  elements.definitiveSend.addEventListener('click', sendDefinitiveMail);
+  elements.copyManualMail.addEventListener('click', copyManualMail);
   elements.closePreview.addEventListener('click', () => elements.mailPreview.close());
   elements.mailPreview.addEventListener('click', (event) => { if (event.target === elements.mailPreview) elements.mailPreview.close(); });
 }
@@ -194,6 +197,7 @@ function renderReadiness() {
     [readiness.invalidChecksums.length === 0, 'Alle documentchecksums zijn geldig'],
     [savedDraft, 'Actuele inhoud is als immutable conceptversie opgeslagen'],
   ].map(([ok, label]) => `<div class="${ok ? 'ok' : 'blocked'}">${ok ? '✓' : '○'} ${escapeHtml(label)}</div>`).join('');
+  renderPreviewAvailability();
 }
 
 function renderHistory() {
@@ -206,7 +210,20 @@ function renderStatus() {
   elements.composerStatus.textContent = state.currentVersionId ? `${statusLabel(state.currentVersionStatus)}${state.dirty ? ' · niet-opgeslagen wijzigingen' : ''}` : 'Concept niet opgeslagen';
 }
 
-function renderPreviewAvailability() { elements.openPreview.disabled = !state.snapshot; }
+function renderPreviewAvailability() {
+  const version = currentVersion();
+  const sendReady = Boolean(version && state.currentVersionStatus === 'ready_for_review' && !state.dirty && state.selectedDemoId && !state.snapshot?.hasNonBindingLines);
+  const resendReady = Boolean(version && state.currentVersionStatus === 'sent' && !state.dirty && state.selectedDemoId && !state.snapshot?.hasNonBindingLines);
+  const previewed = Boolean(version?.events?.some((event) => event.event_type === 'offer.previewed'));
+  const tested = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'test' && dispatch.status === 'sent'));
+  const definitiveSent = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive' && dispatch.status === 'sent'));
+  elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
+  elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
+  elements.definitiveSend.disabled = !((sendReady || resendReady) && previewed && tested && state.data?.relationship?.email && state.data?.capabilities?.definitiveSend);
+  setSequence(elements.sequencePreview, previewed, !sendReady);
+  setSequence(elements.sequenceTest, tested, !previewed);
+  setSequence(elements.sequenceDefinitive, definitiveSent, !tested);
+}
 
 function selectSingle(event, key) {
   if (!event.target.matches('input[type="radio"]')) return;
@@ -308,21 +325,54 @@ async function transition(targetStatus) {
 
 async function reloadContext() {
   state.data = await request('GET', null, { ...routeContext, offerId: state.currentOfferId });
+  const version = currentVersion();
+  if (version) state.currentVersionStatus = version.status;
   renderHistory(); renderStatus(); renderReadiness();
 }
 
-function openPreview() {
-  if (!state.snapshot) return;
-  const demo = state.data.demos.find((item) => item.id === state.selectedDemoId) || {};
-  const valid = new Date(); valid.setDate(valid.getDate() + 14);
-  const preview = buildMailPreview({ relationship: state.data.relationship, demo, snapshot: state.snapshot, validUntil: valid.toLocaleDateString('nl-NL') });
-  elements.previewSubject.textContent = preview.subject;
-  elements.previewGreeting.textContent = preview.greeting;
-  linkPreview(elements.previewDesktop, preview.desktopUrl); linkPreview(elements.previewMobile, preview.mobileUrl);
-  elements.previewQr.title = preview.qrTarget ? `QR-doel: ${preview.qrTarget}` : 'QR-doel ontbreekt';
-  elements.previewOffer.innerHTML = `<strong>Persoonlijk aanbod voor ${escapeHtml(preview.companyName || 'jou')}</strong><p>Eenmalig: ${money(preview.oneTimeInclVatCents)} incl. btw<br/>Per maand: ${money(preview.recurringInclVatCents, { monthly: true })} incl. btw<br/>Nu te betalen: ${money(preview.dueNowInclVatCents)}</p>`;
-  elements.previewValidity.textContent = `Dit voorstel is geldig tot en met ${preview.validUntil}. Dit is uitsluitend een lokale voorbeeldweergave.`;
-  elements.mailPreview.showModal();
+async function openPreview() {
+  if (!state.currentVersionId || elements.openPreview.disabled) return;
+  elements.openPreview.disabled = true;
+  try {
+    const result = await request('POST', { action: 'preview_mail', offerVersionId: state.currentVersionId, actionKey: actionKey('preview') });
+    state.lastPreview = result.preview;
+    elements.previewSubject.textContent = result.preview.subject;
+    elements.previewFrame.srcdoc = result.preview.html;
+    elements.manualMailText.value = `${result.manualFallback.subject}\n\n${result.manualFallback.text}`;
+    elements.mailPreview.showModal();
+    await reloadContext();
+    showMessage('Het exacte servervoorbeeld is gecontroleerd en in de audittrail vastgelegd.', 'success');
+  } catch (error) { showMessage(error.message, 'error'); }
+  finally { renderPreviewAvailability(); }
+}
+
+async function sendTestMail() {
+  if (elements.testMail.disabled) return;
+  elements.testMail.disabled = true;
+  try {
+    const result = await request('POST', { action: 'test_mail', offerVersionId: state.currentVersionId, actionKey: actionKey('test-mail') });
+    await reloadContext();
+    showMessage(`TEST-mail is uitsluitend verzonden naar ${result.recipient}.`, 'success');
+  } catch (error) { showMessage(error.message, 'error'); }
+  finally { renderPreviewAvailability(); }
+}
+
+async function sendDefinitiveMail() {
+  if (elements.definitiveSend.disabled) return;
+  if (!window.confirm(`Definitief verzenden naar ${state.data.relationship.email}? Dit verstuurt alleen de demo, het voorstel en een niet-bindende interesseknop.`)) return;
+  elements.definitiveSend.disabled = true;
+  try {
+    await request('POST', { action: 'definitive_send', offerVersionId: state.currentVersionId, actionKey: actionKey('definitive-send') });
+    await reloadContext();
+    showMessage('De definitieve demomail is één keer verzonden. Er is geen contract, betaling of onboarding gestart.', 'success');
+  } catch (error) { showMessage(error.message, 'error'); }
+  finally { renderPreviewAvailability(); }
+}
+
+async function copyManualMail() {
+  if (!elements.manualMailText.value) return;
+  try { await navigator.clipboard.writeText(elements.manualMailText.value); showMessage('De handmatige mailtekst is gekopieerd.', 'success'); }
+  catch { elements.manualMailText.select(); showMessage('Kopiëren is geblokkeerd; de tekst is geselecteerd.', 'warning'); }
 }
 
 function activeDocuments() {
@@ -339,7 +389,7 @@ function productPrice(product) { if (product.classification === 'on_request') re
 function classificationLabel(value) { return ({ fixed: 'Vaste prijs', starting_at: 'Vanafprijs', on_request: 'Op aanvraag', custom: 'Maatwerk bevestigd' })[value] || value; }
 function categoryLabel(value) { return ({ branding: 'Branding', domain_email: 'Domein en e-mail', telephony: 'Telefonie', website_expansion: 'Website-uitbreiding', marketing: 'Marketing', content: 'Content', care: 'Onderhoud', custom: 'Maatwerk' })[value] || value; }
 function centsInput(value) { return `${Math.floor(Number(value) / 100)},${String(Number(value) % 100).padStart(2, '0')}`; }
-function linkPreview(anchor, href) { anchor.href = href || '#'; anchor.setAttribute('aria-disabled', href ? 'false' : 'true'); anchor.onclick = href ? null : (event) => event.preventDefault(); }
+function setSequence(element, complete, blocked) { element.classList.toggle('complete', complete); element.classList.toggle('blocked', !complete && blocked); element.classList.toggle('active', !complete && !blocked); }
 function formatDate(value) { const date = new Date(value || ''); return Number.isNaN(date.getTime()) ? value || '—' : date.toLocaleString('nl-NL'); }
 function actionKey(action) { return `composer:${action}:${crypto.randomUUID()}`; }
 function setText(key, value) { elements[key].textContent = value || '—'; }

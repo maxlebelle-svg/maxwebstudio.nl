@@ -138,24 +138,27 @@ test("18 server blocks ready-for-review when a required binding is missing", () 
   assert.match(endpoint, /DOCUMENTS_INCOMPLETE/);
 });
 
-test("19 local mail preview contains customer-facing demo and offer fields", async () => {
+test("19 preview model contains customer-facing demo and offer fields", async () => {
   const { buildMailPreview } = await corePromise;
   const result = buildMailPreview({ relationship: { contactName: "Max Le Belle", companyName: "Silverado" }, demo: { desktopUrl: "https://example.test/demo", mobileUrl: "https://example.test/mobiel" }, snapshot: { oneTimeInclVatCents: 120395, recurringInclVatCents: 2414 }, validUntil: "13-08-2026" });
   assert.equal(result.greeting, "Hoi Max,");
   assert.equal(result.companyName, "Silverado");
   assert.equal(result.qrTarget, "https://example.test/mobiel");
-  for (const id of ["preview-subject", "preview-desktop", "preview-mobile", "preview-qr", "preview-offer", "preview-validity"]) assert.match(html, new RegExp(`id="${id}"`));
+  for (const id of ["preview-subject", "preview-frame", "manual-mail-text"]) assert.match(html, new RegExp(`id="${id}"`));
 });
 
-test("20 test mail is visibly and functionally blocked", () => {
+test("20 test mail starts disabled and is guarded by server evidence", () => {
   assert.match(html, /id="test-mail"[^>]*disabled/);
-  assert.doesNotMatch(browser, /testMail\.addEventListener|test-mail[^\n]*fetch|resend/i);
-  assert.match(html, /Wordt aangesloten in Fase D/);
+  assert.match(browser, /elements\.testMail\.addEventListener\('click', sendTestMail\)/);
+  assert.match(browser, /previewed && state\.data\?\.capabilities\?\.testMail/);
+  assert.match(endpoint, /kind === "test" \? actor\.email/);
 });
 
-test("21 definitive send is visibly and functionally blocked", () => {
+test("21 definitive send starts disabled and requires preview plus successful test", () => {
   assert.match(html, /id="definitive-send"[^>]*disabled/);
-  assert.doesNotMatch(browser, /definitiveSend\.addEventListener|public.*token|approvalToken/i);
+  assert.match(browser, /elements\.definitiveSend\.addEventListener\('click', sendDefinitiveMail\)/);
+  assert.match(browser, /previewed && tested/);
+  assert.match(endpoint, /crypto\.randomBytes\(32\)/);
   assert.match(endpoint, /PHASE_B_TRANSITION_BLOCKED/);
 });
 
@@ -209,7 +212,7 @@ test("27b Composer is a shared Commerce module and safely waits for relationship
   assert.match(browser, /waitForRelationship/);
   assert.match(browser, /maxwebstudio:relationship-change/);
   const commerce = require("../public/admin/config/sidebar-navigation.js").ADMIN_SIDEBAR_NAVIGATION.find((section) => section.id === "commerce");
-  assert.deepEqual(commerce.items.map((item) => item.label), ["Nieuwe Opdracht", "Voorstel maken", "Offertes", "Facturen", "Abonnementen"]);
+  assert.deepEqual(commerce.items.map((item) => item.label), ["Voorstellen", "Offertes", "Facturen", "Abonnementen"]);
 });
 
 test("28 tenant and relationship isolation applies to reads and linked resources", async () => {
@@ -268,11 +271,11 @@ test("33 document registry checksums match the published local documents", () =>
   }
 });
 
-test("34 no external mail, signature, payment or QR provider is reachable from Phase C", () => {
+test("34 Phase D1 adds mail only and no signature, payment or external QR provider", () => {
   const phaseC = html + browser + endpoint + read("public/src/offer-composer-core.mjs");
-  assert.doesNotMatch(phaseC, /resend\.com|api\.mollie|signhost|api\.qrserver|quickchart/i);
+  assert.doesNotMatch(phaseC, /api\.mollie|signhost|api\.qrserver|quickchart/i);
   assert.match(endpoint, /providersEnabled:\s*false/);
-  assert.match(html, /Lokale placeholder/);
+  assert.match(endpoint, /silverado-demo-qr\.svg/);
 });
 
 test("35 GET context is read-only while all writes use bounded Phase B RPCs", () => {
