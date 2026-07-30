@@ -12,6 +12,7 @@
 .factory-context-card small { color: #a7b5ca; }
 .factory-hub-section { display: grid; gap: 18px; }
 .factory-blueprint-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+.factory-blueprint-runtime { display:contents; }
 .factory-blueprint-card { --factory-accent:#3b82f6; position: relative; overflow: hidden; display: grid; gap: 16px; min-height: 390px; padding: 22px; }
 .factory-blueprint-card::before { content:""; position:absolute; inset:0 0 auto; height:4px; background:var(--factory-accent); }
 .factory-blueprint-card header { display: grid; grid-template-columns: auto 1fr; gap: 13px; align-items: center; }
@@ -22,6 +23,9 @@
 .factory-module-list li { display:flex; gap:9px; align-items:center; color:#dce7f5; font-size:13px; font-weight:700; }
 .factory-module-list li::before { content:"✓"; display:grid; place-items:center; width:20px; height:20px; border-radius:50%; color:var(--factory-accent); background:rgba(255,255,255,.07); font-size:11px; }
 .factory-blueprint-card footer { display: grid; gap: 10px; margin-top: auto; }
+.factory-blueprint-card--demo { border-color:color-mix(in srgb,var(--factory-accent) 34%,rgba(148,163,184,.18)); }
+.factory-demo-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.factory-demo-actions .button { min-width:0; padding-inline:12px; text-align:center; }
 .factory-reference { color:#8fa4c6; font-size:12px; line-height:1.45; }
 .factory-reference strong { color:#dce7f5; }
 .factory-project-list { display: grid; gap: 12px; }
@@ -90,5 +94,5 @@
 .factory-recipe-preview p { color:#9fb0c8; font-size:13px; }
 .factory-form-message { min-height:20px; margin:0; color:#fca5a5; font-size:13px; }
 @media(max-width:1250px){.factory-project{grid-template-columns:minmax(0,1fr) minmax(180px,.55fr)}.factory-project-actions{grid-column:1/-1;justify-content:flex-start}}
-@media(max-width:980px){.factory-blueprint-grid{grid-template-columns:1fr}.factory-blueprint-card{min-height:0}.factory-hub-hero{grid-template-columns:1fr}.factory-production-gate ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:650px){.factory-context-card,.factory-dialog header,.factory-dialog footer,.factory-production-gate>header{align-items:stretch;flex-direction:column}.factory-project,.factory-form-grid,.factory-type-options,.factory-production-gate ul{grid-template-columns:1fr}.factory-dialog footer .button,.factory-gate-actions .button{width:100%}.factory-gate-actions{display:grid}}
+@media(max-width:980px){.factory-blueprint-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.factory-blueprint-card{min-height:0}.factory-hub-hero{grid-template-columns:1fr}.factory-production-gate ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.factory-blueprint-grid,.factory-demo-actions{grid-template-columns:1fr}.factory-context-card,.factory-dialog header,.factory-dialog footer,.factory-production-gate>header{align-items:stretch;flex-direction:column}.factory-project,.factory-form-grid,.factory-type-options,.factory-production-gate ul{grid-template-columns:1fr}.factory-dialog footer .button,.factory-gate-actions .button{width:100%}.factory-gate-actions{display:grid}}

@@ -48,8 +48,16 @@
             <div><p class="section-kicker">Productielijnen</p><h2 id="factory-lines-title">Kies het juiste recept</h2><p>Elke blueprint bewaart dezelfde kernstructuur, maar krijgt eigen klantgegevens, merk, inhoud en modules.</p></div>
             <button class="button primary" id="factory-new-project" type="button" disabled>Nieuw factory-dossier</button>
           </div>
-          <div class="factory-blueprint-grid" id="factory-blueprints" aria-live="polite">
-            <article class="factory-loading-card">Factory-blueprints laden…</article>
+          <div class="factory-blueprint-grid">
+            <div class="factory-blueprint-runtime" id="factory-blueprints" aria-live="polite">
+              <article class="factory-loading-card">Factory-blueprints laden…</article>
+            </div>
+            <article class="factory-blueprint-card factory-blueprint-card--demo" style="--factory-accent:#f97316">
+              <header><span class="factory-blueprint-icon" aria-hidden="true">F</span><div><small>LIVE DEMONSTRATIE</small><h3>F&#111;od Factory</h3></div></header>
+              <p>Een compleet bestelplatform voor restaurants met storefront, menu, bestellingen en eigen beheeromgeving.</p>
+              <ul class="factory-module-list"><li>Online bestellen &amp; afhalen</li><li>Menu- en prijsbeheer</li><li>Bestellingen in dashboard</li><li>Restaurantaccount</li><li>Klaar voor betaal- en domeinkoppeling</li></ul>
+              <footer><span class="factory-reference">Gebaseerd op: <strong>de gevalideerde Silverad&#111; F&#111;od-demonstratie</strong></span><div class="factory-demo-actions"><a class="button primary" href="https://max-webstudio-f&#111;od-demo.netlify.app/admin/f&#111;od" target="_blank" rel="noopener noreferrer">Open beheeromgeving</a><a class="button secondary" href="https://max-webstudio-f&#111;od-demo.netlify.app/f&#111;od/silverad&#111;-roti-shop-emmeloord" target="_blank" rel="noopener noreferrer">Bekijk storefront</a></div></footer>
+            </article>
           </div>
         </section>
 

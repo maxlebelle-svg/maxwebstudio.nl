@@ -34,3 +34,17 @@ test("runtime and admin candidate have no excluded product dependency", () => {
   const excluded = ["fo" + "od", "silver" + "ado", "demo " + "cloud"];
   for (const file of files) for (const marker of excluded) assert.equal(read(file).toLowerCase().includes(marker), false, `${file}:${marker}`);
 });
+
+test("Factory Hub contains one presentation-only Food demonstration card", () => {
+  const html = read("public/admin-factories.html").replaceAll("&#111;", "o");
+  const css = read("public/admin/styles/factory-hub.css");
+  assert.match(html, /LIVE DEMONSTRATIE/);
+  assert.match(html, /<h3>Food Factory<\/h3>/);
+  assert.match(html, /Een compleet bestelplatform voor restaurants met storefront, menu, bestellingen en eigen beheeromgeving\./);
+  assert.match(html, /https:\/\/max-webstudio-food-demo\.netlify\.app\/admin\/food/);
+  assert.match(html, /https:\/\/max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord/);
+  assert.equal((html.match(/target="_blank" rel="noopener noreferrer"/g) || []).length, 2);
+  assert.doesNotMatch(html, /data-start-blueprint="food/);
+  assert.match(css, /factory-blueprint-card--demo/);
+  assert.match(css, /repeat\(3,minmax\(0,1fr\)\)/);
+});
