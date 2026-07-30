@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-bc-composer-read-fix-2026-07-30",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260730170000_composer_service_role_read_fix.sql",
+      "bytes": 1660,
+      "sha256": "c5cfd06648d52225b1833a6214cb1e3f983734199273294824941afbc6dbf89c"
+    }
+  ]
+}

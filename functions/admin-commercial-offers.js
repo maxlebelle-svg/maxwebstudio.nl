@@ -28,7 +28,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === "GET") {
       const config = runtimeConfig();
       if (!config.ready) throw problem(503, "OFFER_STORAGE_UNAVAILABLE", "De commerciële opslag is niet geconfigureerd.");
-      return readComposerContext(event.queryStringParameters || {}, actor, config);
+      return await readComposerContext(event.queryStringParameters || {}, actor, config);
     }
     if (action === "prepare_snapshot") {
       return json(200, { success: true, persisted: false, snapshot: buildOfferVersion(input, actor) });

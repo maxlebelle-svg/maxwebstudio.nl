@@ -67,6 +67,10 @@
     {
       "manifest": "docs/release-readiness/phase-b-commercial-foundation/MANIFEST.json",
       "fileset": "docs/release-readiness/phase-b-commercial-foundation/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-bc-composer-read-fix/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-bc-composer-read-fix/FILESET.json"
     }
   ]
 }
