@@ -598,6 +598,7 @@
                         <button class="button secondary" id="factory-preview-use-customer" type="button" hidden disabled>Gebruik als klantpreview</button>
                         <button class="button primary" id="factory-preview-publish-customer" type="button" disabled>Doorzetten naar klantportaal</button>
                         <button class="button secondary" id="factory-preview-save-demo" type="button" disabled>Opslaan in Demo Sites</button>
+                        <button class="button secondary" id="factory-new-offer" type="button" disabled>Nieuw voorstel maken</button>
                       </div>
                     </div>
                     <div class="factory-editor-workspace">
@@ -24792,6 +24793,7 @@
           const portalLink = document.getElementById("factory-preview-open-portal");
           const copyButton = document.getElementById("factory-preview-copy-link");
           const whatsappButton = document.getElementById("factory-preview-share-whatsapp");
+          const newOfferButton = document.getElementById("factory-new-offer");
           const signature = JSON.stringify([context || {}, Array.from(journeyLocks).sort()]);
           const container = document.getElementById("factory-selected-preview-actions");
           if (!force && container?.dataset.signature === signature) return context;
@@ -24844,6 +24846,12 @@
             button.disabled = !context?.shareEnabled;
             button.title = context?.shareEnabled ? `Deel exact ${context.versionLabel}` : context?.explanation || "Geen veilige publieke previewlink beschikbaar";
           });
+          if (newOfferButton) {
+            const customerId = factoryCustomerContext?.customer?.id || factoryCustomerSelection?.customerId || "";
+            const leadId = customerId ? "" : selectedLead()?.id || "";
+            newOfferButton.disabled = !(customerId || leadId);
+            newOfferButton.title = newOfferButton.disabled ? "Selecteer eerst een lead of klant" : "Open de Voorstel Composer met deze bestaande relatie";
+          }
           if (activateButton) {
             const manual = context?.sourceType === window.WebsiteFactoryPreviewActions?.SOURCE_MANUAL;
             activateButton.hidden = !manual || context?.published;
@@ -27203,6 +27211,19 @@
 
           document.getElementById("factory-primary-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
           document.getElementById("factory-preview-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
+          document.getElementById("factory-new-offer")?.addEventListener("click", () => {
+            const customerId = factoryCustomerContext?.customer?.id || factoryCustomerSelection?.customerId || "";
+            const lead = selectedLead();
+            const relationshipType = customerId ? "customer" : "lead";
+            const relationshipId = customerId || lead?.id || "";
+            if (!relationshipId) {
+              setMessage(elements.message, "Selecteer eerst een lead of klant om een voorstel te maken.", "warning");
+              return;
+            }
+            const params = new URLSearchParams({ relationshipType, relationshipId, source: "factory" });
+            if (journey?.id) params.set("demoJourneyId", journey.id);
+            window.location.assign(`admin-offer-composer.html?${params.toString()}`);
+          });
           document.getElementById("factory-preview-open-selected")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.openSelectedPreview?.());
           document.getElementById("factory-preview-copy-link")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.copySelectedPreviewLink?.());
           document.getElementById("factory-preview-share-whatsapp")?.addEventListener("click", () => window.WebsiteFactoryRuntime?.shareSelectedPreviewViaWhatsApp?.());

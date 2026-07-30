@@ -67,6 +67,7 @@ const ACTIVE_ROUTE_IDS = Object.freeze({
 const STANDALONE_ADMIN_PAGES = Object.freeze([
   "admin-brand-center-lab.html",
   "admin-logo-studio.html",
+  "admin-offer-composer.html",
   "admin-partners.html",
   "admin-relatie-workspace.html",
 ]);

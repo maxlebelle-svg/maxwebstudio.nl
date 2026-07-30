@@ -214,6 +214,15 @@ function publicCatalog() {
   };
 }
 
+function adminCatalog() {
+  const snapshot = catalogSnapshot();
+  return {
+    ...snapshot,
+    checksum: catalogChecksum(snapshot),
+    products: snapshot.products.filter((item) => item.active && item.adminSelectable),
+  };
+}
+
 function deepFreeze(value) {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   Object.values(value).forEach(deepFreeze);
@@ -234,6 +243,7 @@ module.exports = {
   WEBSITE_PRODUCT_IDS,
   CARE_PRODUCT_IDS,
   assertCatalogIntegrity,
+  adminCatalog,
   catalogChecksum,
   catalogSnapshot,
   legacyProducts,
