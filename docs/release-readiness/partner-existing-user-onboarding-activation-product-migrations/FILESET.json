@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260728134000_partner_existing_user_onboarding_activation.sql",
+      "bytes": 2977,
+      "sha256": "406f25afbf40f3233631e3ad8ab7e54659dd01ec7600deef1e63ba94b47053c1"
+    }
+  ]
+}

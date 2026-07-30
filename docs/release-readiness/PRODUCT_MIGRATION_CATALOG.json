@@ -55,6 +55,14 @@
     {
       "manifest": "docs/release-readiness/signhost-smoke-test-v1-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/signhost-smoke-test-v1-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/factory-production-gate-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/factory-production-gate-product-migrations/FILESET.json"
     }
   ]
 }

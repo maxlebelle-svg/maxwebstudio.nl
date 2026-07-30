@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Factory Hub | Max Webstudio</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
+    <link rel="stylesheet" href="admin/styles/factory-hub.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
+    <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
+    <script src="admin/config/sidebar-navigation.js" defer></script>
+    <script src="admin/components/admin-sidebar.js" defer></script>
+    <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
+    <script type="module" src="src/admin-route-guard.js"></script>
+    <script src="admin/ui/factory-hub.js" defer></script>
+  </head>
+  <body class="admin-body" data-shared-admin-sidebar="true">
+    <main class="admin-crm-shell">
+      <div id="admin-sidebar-root" aria-live="polite"></div>
+      <div class="admin-crm-main factory-hub-shell">
+        <header class="admin-section admin-hero factory-hub-hero">
+          <div>
+            <p class="section-kicker">Production system</p>
+            <h1>Factory Hub</h1>
+            <p>Herhaal bewezen digitale formules voor nieuwe klanten, zonder opnieuw vanaf nul te beginnen.</p>
+          </div>
+          <aside class="factory-hub-hero-status">
+            <span>Herhaalbaar recept</span>
+            <strong>Intake → Productie → Review → Live</strong>
+            <small>Een dossier aanmaken publiceert nooit automatisch.</small>
+          </aside>
+        </header>
+
+        <section class="factory-context-card" id="factory-context" aria-live="polite">
+          <div><span>Actieve relatie</span><strong>Selecteer eerst een lead of klant</strong><small>Gebruik de centrale relatiekiezer in de zijbalk.</small></div>
+          <button class="button secondary" type="button" data-select-relationship>Relatie kiezen</button>
+        </section>
+
+        <section class="factory-hub-section" aria-labelledby="factory-lines-title">
+          <div class="admin-section-heading">
+            <div><p class="section-kicker">Productielijnen</p><h2 id="factory-lines-title">Kies het juiste recept</h2><p>Elke blueprint bewaart dezelfde kernstructuur, maar krijgt eigen klantgegevens, merk, inhoud en modules.</p></div>
+            <button class="button primary" id="factory-new-project" type="button" disabled>Nieuw factory-dossier</button>
+          </div>
+          <div class="factory-blueprint-grid" id="factory-blueprints" aria-live="polite">
+            <article class="factory-loading-card">Factory-blueprints laden…</article>
+          </div>
+        </section>
+
+        <section class="factory-hub-section" aria-labelledby="factory-projects-title">
+          <div class="admin-section-heading">
+            <div><p class="section-kicker">Productieportfolio</p><h2 id="factory-projects-title">Dossiers voor deze relatie</h2><p id="factory-projects-intro">Selecteer een relatie om de bijbehorende dossiers te zien.</p></div>
+            <span class="factory-status-pill" id="factory-storage-status" data-tone="neutral">Wachten op relatie</span>
+          </div>
+          <div class="factory-project-list" id="factory-projects" aria-live="polite">
+            <div class="factory-empty"><strong>Nog geen relatie geselecteerd</strong><span>Na selectie verschijnen hier alle Website- en Webshop-dossiers.</span></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <dialog class="factory-dialog" id="factory-dialog" aria-labelledby="factory-dialog-title">
+      <form method="dialog" id="factory-form">
+        <header><div><p class="section-kicker">Nieuw productiedossier</p><h2 id="factory-dialog-title">Start vanuit een bewezen formule</h2></div><button type="button" class="factory-dialog-close" aria-label="Sluiten">×</button></header>
+        <div class="factory-dialog-body">
+          <fieldset><legend>1. Kies de productielijn</legend><div class="factory-type-options" id="factory-type-options"></div></fieldset>
+          <fieldset>
+            <legend>2. Leg de klantspecifieke basis vast</legend>
+            <div class="factory-form-grid">
+              <label>Projectnaam<input name="name" id="factory-project-name" required maxlength="160" placeholder="Bijv. Website Factory — Bedrijfsnaam" /></label>
+              <label>Branche of formule<input name="industry" maxlength="100" placeholder="Bijv. Zakelijke dienstverlening" /></label>
+              <label>Gewenst domein<input name="domain" maxlength="160" placeholder="voorbeeld.nl" /></label>
+              <label>Primaire conversie<select name="conversion"><option value="contact">Contactaanvraag</option><option value="purchase">Online aankoop</option><option value="reservation">Reservering</option></select></label>
+            </div>
+            <label>Doel en belangrijke wensen<textarea name="goals" rows="4" maxlength="1200" placeholder="Wat moet deze formule voor de klant bereiken?"></textarea></label>
+          </fieldset>
+          <section class="factory-recipe-preview" id="factory-recipe-preview"></section>
+          <p class="factory-form-message" id="factory-form-message" role="status" aria-live="polite"></p>
+        </div>
+        <footer><button class="button secondary factory-dialog-cancel" type="button">Annuleren</button><button class="button primary" id="factory-submit" type="submit">Dossier aanmaken</button></footer>
+      </form>
+    </dialog>
+    <script src="admin/ui/global-command-palette.js" defer></script>
+  </body>
+</html>
