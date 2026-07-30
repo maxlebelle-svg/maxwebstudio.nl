@@ -2,7 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { createTimelineEvent } = require("./services/timelineService");
 const { sendTrackedEmail } = require("./services/resendMailService");
-const { buildPublicDemoShareMail } = require("./services/leadDemoInvitationTemplate");
+const { buildPublicDemoShareMail, buildFoodDemoShareMail } = require("./services/leadDemoInvitationTemplate");
 const { createHash } = require("crypto");
 const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
 const { previewSourceForVersion } = require("./_preview-zip");
@@ -58,6 +58,11 @@ const publicLeadFieldsWithoutCustomerId = "id,company_name,contact_name,status,l
 const legacyLeadFields = "id,converted_customer_id";
 const buildJobFields = "id,demo_journey_id,lead_id,customer_id,preview_url,preview_token";
 const publicPublicationFields = "id,relationship_type,relationship_id,public_slug,preview_version_id,enabled,published_at,revoked_at,created_at,updated_at,created_by";
+const silveradoFoodDemo = Object.freeze({
+  storefrontUrl: "https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord",
+  restaurantPortalUrl: "https://max-webstudio-food-demo.netlify.app/admin/food",
+  qrCodeUrl: "https://maxwebstudio.nl/assets/food/silverado/silverado-demo-qr.svg",
+});
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -85,6 +90,7 @@ exports.handler = async (event) => {
       if (payload.action === "publish_customer_preview") return publishActiveCustomerPreview(context, payload);
       if (payload.action === "publish_public_preview") return publishPublicPreview(context, payload);
       if (payload.action === "share_public_preview_email") return sharePublicPreviewEmail(context, payload);
+      if (payload.action === "share_silverado_food_demo_email") return shareSilveradoFoodDemoEmail(context, payload);
       if (payload.action === "set_public_preview_slug") return setPublicPreviewSlug(context, payload);
       if (payload.action === "revoke_public_preview") return revokePublicPreview(context, payload);
       return publishPreviewVersion(context, payload);
@@ -221,6 +227,86 @@ async function sharePublicPreviewEmail(context, payload = {}) {
     relationshipId: relationship.id,
     previewVersionId,
     publicPreviewUrl: details.publicPreviewUrl,
+    email: { sent: true, id: cleanText(result.id), logId: cleanText(result.logId), to: email },
+  });
+}
+
+async function shareSilveradoFoodDemoEmail(context, payload = {}) {
+  const relationship = relationshipFromInput(payload);
+  const demoJourneyId = uuidOrEmpty(payload.demoJourneyId || payload.demo_journey_id);
+  const actionKey = uuidOrEmpty(payload.actionKey || payload.action_key);
+  if (!relationship) throw previewError("FOOD_DEMO_RELATIONSHIP_REQUIRED", "Selecteer eerst een geldige lead of klant.", 400);
+  if (!demoJourneyId) throw previewError("FOOD_DEMO_JOURNEY_REQUIRED", "De restaurant-demo kon niet eenduidig worden gevonden.", 400);
+  if (!actionKey) throw previewError("FOOD_DEMO_SHARE_ACTION_REQUIRED", "De deelactie mist een geldige unieke sleutel.", 400);
+
+  const journey = await readSingle(context, "demo_journeys", `select=id,lead_id,customer_id,business_name,email,website_url,preview_url&id=eq.${encodeURIComponent(demoJourneyId)}&limit=1`);
+  if (!journey?.id) throw previewError("FOOD_DEMO_NOT_FOUND", "De restaurant-demo is niet gevonden.", 404);
+  const relationshipMatches = relationship.type === "lead"
+    ? cleanText(journey.lead_id) === relationship.id
+    : cleanText(journey.customer_id) === relationship.id;
+  if (!relationshipMatches) throw previewError("FOOD_DEMO_RELATIONSHIP_MISMATCH", "Deze restaurant-demo hoort niet bij de geselecteerde relatie.", 409);
+  const identity = [journey.business_name, journey.website_url, journey.preview_url].map((value) => cleanText(value).toLowerCase()).join(" ");
+  if (!identity.includes("silverado") || (!identity.includes("roti") && !identity.includes("rotishop"))) {
+    throw previewError("FOOD_DEMO_NOT_ALLOWLISTED", "Deze deelactie is uitsluitend beschikbaar voor de gecontroleerde Silverado-demo.", 409);
+  }
+
+  const table = relationship.type === "lead" ? "leads" : "customers";
+  const select = relationship.type === "lead"
+    ? "id,company_name,contact_name,email,status,lead_status"
+    : "id,name,company,email,status,portal_status";
+  const recipient = await readSingle(context, table, `select=${select}&id=eq.${encodeURIComponent(relationship.id)}&limit=1`);
+  const email = cleanText(recipient?.email).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw previewError("FOOD_DEMO_SHARE_EMAIL_INVALID", "Deze relatie heeft geen geldig e-mailadres.", 422);
+  }
+
+  const mail = buildFoodDemoShareMail({
+    contactName: recipient.contact_name || recipient.name,
+    companyName: recipient.company_name || recipient.company || recipient.name || journey.business_name,
+    ...silveradoFoodDemo,
+    supportEmail: process.env.SUPPORT_EMAIL || "info@maxwebstudio.nl",
+  });
+  const sendMail = context.sendMail || sendTrackedEmail;
+  const result = await sendMail({
+    to: email,
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    templateKey: "silverado_food_demo_share",
+    templateName: "Silverado restaurant-demo delen",
+    leadId: relationship.type === "lead" ? relationship.id : null,
+    customerId: relationship.type === "customer" ? relationship.id : null,
+    triggeredBy: "admin_demo_sites",
+    triggeredByUserId: uuidOrEmpty(context.admin?.profileId) || undefined,
+    idempotencyKey: `food.demo.share:${relationship.type}:${relationship.id}:${demoJourneyId}:${actionKey}`,
+    metadata: {
+      relationshipType: relationship.type,
+      relationshipId: relationship.id,
+      demoJourneyId,
+      demoKey: "silverado_roti_shop_emmeloord",
+      source: "demo_sites",
+    },
+  });
+  if (!result?.sent) throw previewError("FOOD_DEMO_EMAIL_FAILED", cleanText(result?.warning) || "De restaurant-demo kon niet per e-mail worden verzonden.", 502);
+
+  await safeTimeline({
+    ...(relationship.type === "lead" ? { leadId: relationship.id } : { customerId: relationship.id }),
+    eventType: "preview_shared",
+    title: "Restaurant-demo per e-mail gedeeld",
+    description: "De gecontroleerde Silverado-demo is met de klant- en restaurantportaal-link gedeeld.",
+    module: "demo_sites",
+    referenceType: "demo_journey",
+    referenceId: demoJourneyId,
+    actorName: cleanText(context.admin?.email || "Max CRM"),
+    actorRole: cleanText(context.admin?.role || "admin"),
+    severity: "success",
+    metadata: { dedupeKey: `food-demo-email:${actionKey}`, channel: "email", demoKey: "silverado_roti_shop_emmeloord" },
+  });
+  return jsonResponse(200, {
+    success: true,
+    relationshipType: relationship.type,
+    relationshipId: relationship.id,
+    demoJourneyId,
     email: { sent: true, id: cleanText(result.id), logId: cleanText(result.logId), to: email },
   });
 }
@@ -1351,6 +1437,7 @@ exports._private = {
   resolveOwnership,
   sanitizeAdminVersion,
   sharePublicPreviewEmail,
+  shareSilveradoFoodDemoEmail,
   setPublicPreviewSlug,
   transferPublicPreviewPublication,
   validatePublicPreviewOwnership,

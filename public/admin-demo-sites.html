@@ -23364,6 +23364,86 @@
           return savedDemo.thumbnailUrl || savedDemo.thumbnail_url || savedDemo.thumbnail || pack.thumbnailUrl || pack.thumbnail_url || pack.meta?.thumbnailUrl || "";
         }
 
+        const silveradoFoodDemo = Object.freeze({
+          storefrontUrl: "https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord",
+          restaurantPortalUrl: "https://max-webstudio-food-demo.netlify.app/admin/food",
+          qrAssetUrl: "/assets/food/silverado/silverado-demo-qr.svg",
+        });
+
+        function isSilveradoFoodDemo(record = {}, preview = "") {
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          const identity = [
+            record.businessName,
+            savedDemo.businessName,
+            record.websiteUrl,
+            savedDemo.websiteUrl,
+            preview,
+          ].join(" ").toLowerCase();
+          return identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop"));
+        }
+
+        function demoPreviewHtml(preview = "", thumbnail = "", demoName = "demo-site", linkHref = "") {
+          return `<div class="demo-library-thumbnail">
+            <a class="demo-library-thumbnail-link" href="${escapeHtml(preview || linkHref)}" target="${preview ? "_blank" : "_self"}" rel="noopener" aria-label="${escapeHtml(`Preview openen van ${demoName}`)}"></a>
+            ${preview
+              ? `<div class="demo-library-browser-bar" aria-hidden="true"><span></span><span></span><span></span><small>Live demo-preview</small></div><div class="demo-library-preview-frame" aria-hidden="true" data-preview-shell><iframe data-demo-preview-url="${escapeHtml(preview)}" title="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" tabindex="-1"></iframe><div class="demo-preview-error" data-preview-error hidden><strong>Preview niet beschikbaar</strong><small>De previewlink is verlopen of bestaat niet meer. Genereer de preview opnieuw in Website Factory.</small></div></div>`
+              : thumbnail
+                ? `<img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" />`
+                : `<span class="demo-library-thumbnail-placeholder"><strong>Miniatuur volgt</strong><small>Sla deze demo-site opnieuw op voor een previewbeeld.</small></span>`}
+          </div>`;
+        }
+
+        function silveradoFoodPresentationHtml(record = {}, preview = "", thumbnail = "", demoName = "demo-site", factoryHref = "") {
+          if (!isSilveradoFoodDemo(record, preview)) return demoPreviewHtml(preview, thumbnail, demoName, factoryHref);
+          const canEmailDemo = Boolean(recordRelationship(record) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recordEmail(record)));
+          return `<div class="demo-food-presentation-stack" data-food-demo-presentation>
+            <section class="demo-food-preview-block" aria-labelledby="food-customer-preview-${escapeHtml(record.id)}">
+              <div class="demo-food-preview-heading">
+                <span aria-hidden="true">01</span>
+                <div><strong id="food-customer-preview-${escapeHtml(record.id)}">Klantweergave</strong><small>De voorkant die je aan de klant laat zien</small></div>
+              </div>
+              ${demoPreviewHtml(preview, thumbnail, demoName, factoryHref)}
+              <div class="demo-food-mobile-tools">
+                <img src="${silveradoFoodDemo.qrAssetUrl}" alt="QR-code naar de interactieve Silverado bestelomgeving" width="112" height="112" loading="lazy" />
+                <div class="demo-food-mobile-copy">
+                  <span class="demo-food-device-label">Open op telefoon</span>
+                  <strong>Scan de QR-code</strong>
+                  <p>Hiermee opent de interactieve voorkant van de Silverado-demo direct op je telefoon.</p>
+                  <div class="demo-food-mobile-actions">
+                    <a class="button secondary" href="${silveradoFoodDemo.storefrontUrl}" target="_blank" rel="noopener noreferrer" data-food-storefront-link>Voorkant openen <span aria-hidden="true">↗</span></a>
+                    <button class="button primary" type="button" data-food-demo-email="${escapeHtml(record.id)}"${canEmailDemo ? "" : " disabled"}>Naar klant mailen <span aria-hidden="true">✉</span></button>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="demo-food-preview-block" aria-labelledby="food-portal-preview-${escapeHtml(record.id)}">
+              <div class="demo-food-preview-heading">
+                <span aria-hidden="true">02</span>
+                <div><strong id="food-portal-preview-${escapeHtml(record.id)}">Restaurantportaal</strong><small>De achterkant voor je demo op de computer</small></div>
+              </div>
+              <a class="demo-food-portal-screen" href="${silveradoFoodDemo.restaurantPortalUrl}" target="_blank" rel="noopener noreferrer" data-food-restaurant-portal-link aria-label="Restaurantportaal van Silverado openen">
+                <div class="demo-food-portal-browser-bar" aria-hidden="true"><span></span><span></span><span></span><small>Silverado · Restaurantportaal</small></div>
+                <div class="demo-food-portal-canvas" data-food-dashboard-preview aria-hidden="true">
+                  <aside class="demo-food-portal-sidebar">
+                    <strong><span>S</span> Silverado</strong>
+                    <small>Restaurantbeheer</small>
+                    <em class="is-active">▦ Dashboard</em>
+                    <em>☰ Bestellingen</em>
+                    <em>◇ Menukaart</em>
+                    <em>⚙ Instellingen</em>
+                  </aside>
+                  <div class="demo-food-portal-main">
+                    <header><div><small>Vandaag</small><strong>Restaurantdashboard</strong></div><span>Open voor bestellingen</span></header>
+                    <div class="demo-food-portal-stats"><span><small>Nieuw</small><strong>3</strong></span><span><small>In bereiding</small><strong>2</strong></span><span><small>Gereed</small><strong>8</strong></span></div>
+                    <div class="demo-food-portal-orders"><strong>Recente bestellingen</strong><span><b>#1048</b><small>2 gerechten · 18:25</small><em>Nieuw</em></span><span><b>#1047</b><small>4 gerechten · 18:18</small><em>Bereiden</em></span><span><b>#1046</b><small>1 gerecht · 18:05</small><em>Gereed</em></span></div>
+                  </div>
+                </div>
+                <span class="demo-food-portal-open">Restaurantportaal volledig openen <b aria-hidden="true">↗</b></span>
+              </a>
+            </section>
+          </div>`;
+        }
+
         function normalizeDemoPreviewSource(value = "") {
           const source = String(value || "").trim().toLowerCase();
           if (["manual", "manual_zip", "manual-zip", "zip"].includes(source)) return "manual_zip";
@@ -23938,15 +24018,8 @@
               `<a href="${escapeHtml(factoryHref)}"><span aria-hidden="true">⌘</span> Open in Factory</a>`,
             ].join("");
             return `
-              <article class="saved-demo-site-card demo-library-card">
-                <div class="demo-library-thumbnail">
-                  <a class="demo-library-thumbnail-link" href="${escapeHtml(preview || factoryHref)}" target="${preview ? "_blank" : "_self"}" rel="noopener" aria-label="${escapeHtml(`Preview openen van ${demoName}`)}"></a>
-                  ${preview
-                    ? `<div class="demo-library-browser-bar" aria-hidden="true"><span></span><span></span><span></span><small>Live demo-preview</small></div><div class="demo-library-preview-frame" aria-hidden="true" data-preview-shell><iframe data-demo-preview-url="${escapeHtml(preview)}" title="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" tabindex="-1"></iframe><div class="demo-preview-error" data-preview-error hidden><strong>Preview niet beschikbaar</strong><small>De previewlink is verlopen of bestaat niet meer. Genereer de preview opnieuw in Website Factory.</small></div></div>`
-                    : thumbnail
-                      ? `<img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" />`
-                      : `<span class="demo-library-thumbnail-placeholder"><strong>Miniatuur volgt</strong><small>Sla deze demo-site opnieuw op voor een previewbeeld.</small></span>`}
-                </div>
+              <article class="saved-demo-site-card demo-library-card${isSilveradoFoodDemo(record, preview) ? " is-food-demo-presentation" : ""}">
+                ${silveradoFoodPresentationHtml(record, preview, thumbnail, demoName, factoryHref)}
                 <div class="demo-library-card-content">
                   <div class="demo-library-compact-head">
                     <div class="demo-library-card-heading">
@@ -24032,6 +24105,23 @@
             actionKey: uniqueActionKey(),
           });
           setMessage(data.email?.sent ? `Demo verzonden naar ${data.email.to || context.email}.` : "De demo-e-mail is verwerkt.", data.email?.sent ? "success" : "warning");
+        }
+
+        async function shareSilveradoFoodDemoByEmail(record = {}) {
+          const relationship = recordRelationship(record);
+          const email = recordEmail(record);
+          if (!relationship || !record?.id) throw new Error("Deze restaurant-demo kon niet eenduidig aan een relatie worden gekoppeld.");
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Deze relatie heeft geen geldig e-mailadres.");
+          if (!window.confirm(`De complete restaurant-demo nu mailen naar ${email}?\n\nDe mail bevat de voorkant, het restaurantportaal en de QR-code.`)) return;
+          setMessage("Restaurant-demo per e-mail versturen...", "info");
+          const data = await postJson(endpoints.publication, {
+            action: "share_silverado_food_demo_email",
+            relationshipType: relationship.type,
+            relationshipId: relationship.id,
+            demoJourneyId: record.id,
+            actionKey: uniqueActionKey(),
+          });
+          setMessage(data.email?.sent ? `Restaurant-demo verzonden naar ${data.email.to || email}.` : "De restaurant-demo-e-mail is verwerkt.", data.email?.sent ? "success" : "warning");
         }
 
         function populateInvoiceModal(record = {}) {
@@ -24672,6 +24762,22 @@
               await sharePublicPreviewByEmail(record);
             } catch (error) {
               setMessage(error.message || "De demo kon niet per e-mail worden gedeeld.", "error");
+            }
+            return;
+          }
+          const foodDemoEmail = event.target.closest("[data-food-demo-email]");
+          if (foodDemoEmail) {
+            event.preventDefault();
+            if (foodDemoEmail.disabled) return;
+            const record = getRecordById(foodDemoEmail.dataset.foodDemoEmail);
+            if (!record) return;
+            foodDemoEmail.disabled = true;
+            try {
+              await shareSilveradoFoodDemoByEmail(record);
+            } catch (error) {
+              setMessage(error.message || "De restaurant-demo kon niet per e-mail worden gedeeld.", "error");
+            } finally {
+              foodDemoEmail.disabled = false;
             }
             return;
           }
