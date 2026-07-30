@@ -234,6 +234,7 @@ test("29 refresh resumes only an explicitly requested valid offer", async () => 
 
 test("30 responsive Composer collapses safely and has keyboard focus states", () => {
   assert.match(css, /@media\(max-width:1100px\)/);
+  assert.match(html, /composer-steps span \{ flex: 0 0 23px; \}/);
   assert.match(css, /@media\(max-width:720px\)/);
   assert.match(css, /focus-visible/);
   assert.match(css, /overflow-wrap:anywhere/);
