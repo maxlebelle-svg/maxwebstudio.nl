@@ -136,6 +136,7 @@ async function readComposerContext(query, actor, config) {
       previewMail: phaseD1Enabled(),
       testMail: phaseD1Enabled() && validEmail(actor.email),
       definitiveSend: phaseD1Enabled(),
+      revokeInterest: phaseD1Enabled() && ["super_admin", "admin"].includes(normalizeRole(actor.role)),
       providersEnabled: false,
     },
   });
@@ -225,6 +226,7 @@ async function dispatchMail(kind, input, actor, config) {
     leadId: context.offer.relationship_type === "lead" ? context.offer.relationship_id : undefined,
     customerId: context.offer.relationship_type === "customer" ? context.offer.relationship_id : undefined,
     metadata: { offerVersion: context.version.version_number, dispatchKind: kind },
+    sensitiveContent: kind === "definitive",
   });
   const sent = result.sent === true && Boolean(clean(result.id));
   const finalized = await finalizeDispatch(config, actor, reservation.dispatchId, sent, sent ? sha256(result.id) : "", result.errorCode || "provider_failed");
@@ -245,14 +247,25 @@ async function finalizeDispatch(config, actor, dispatchId, sent, providerHash, f
 
 async function revokeInterest(input, actor, config) {
   assertPhaseD1Enabled();
+  if (!["super_admin", "admin"].includes(normalizeRole(actor.role))) throw problem(403, "OFFER_FORBIDDEN", "Alleen een beheerder mag een actieve interesselink intrekken.");
+  const offerVersionId = uuid(input.offerVersionId, "De aanbodversie is ongeldig.");
+  const reason = clean(input.reason);
+  if (reason.length < 8 || reason.length > 500) throw problem(400, "REVOCATION_REASON_INVALID", "Geef een duidelijke reden van 8 tot 500 tekens.");
   const result = await rpc(config, "commercial_revoke_offer_interest_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
-    input_offer_version_id: uuid(input.offerVersionId, "De aanbodversie is ongeldig."),
-    input_reason: clean(input.reason),
+    input_offer_version_id: offerVersionId,
+    input_reason: reason,
     input_idempotency_key: boundedKey(input.actionKey),
   });
-  return json(200, { success: true, result });
+  const redaction = await rpc(config, "commercial_redact_offer_email_logs_v1", {
+    input_actor_profile_id: actor.profileId,
+    input_actor_auth_user_id: actor.id,
+    input_offer_version_id: offerVersionId,
+    input_reason: reason,
+    input_idempotency_key: boundedKey(input.redactionActionKey),
+  });
+  return json(200, { success: true, result, redaction });
 }
 
 async function loadMailContext(offerVersionId, actor, config, options = {}) {

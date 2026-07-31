@@ -163,7 +163,7 @@ export function stateFromSnapshot(snapshot = {}) {
 }
 
 export function statusLabel(value = '') {
-  return ({ draft: 'Concept', ready_for_review: 'Gereed voor controle', revoked: 'Ingetrokken', superseded: 'Vervangen', sent: 'Verzonden', viewed: 'Bekeken', signed: 'Ondertekend', payment_pending: 'Betaling open', paid: 'Betaald', accepted: 'Geaccepteerd', expired: 'Verlopen', declined: 'Afgewezen', failed: 'Mislukt' })[value] || value || 'Onbekend';
+  return ({ draft: 'Concept', ready_for_review: 'Gereed voor controle', revoked: 'Ingetrokken', superseded: 'Vervangen', sent: 'Verzonden', viewed: 'Bekeken', interested: 'Interesse bevestigd', signed: 'Ondertekend', payment_pending: 'Betaling open', paid: 'Betaald', accepted: 'Geaccepteerd', expired: 'Verlopen', declined: 'Afgewezen', failed: 'Mislukt' })[value] || value || 'Onbekend';
 }
 
 function validOptionalUuid(value) { return UUID.test(String(value || '')) ? String(value) : ''; }

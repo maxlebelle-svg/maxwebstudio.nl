@@ -10,6 +10,7 @@ const offerService = require("../functions/services/commercialOfferService");
 const endpoint = require("../functions/admin-commercial-offers")._private;
 const interest = require("../functions/commercial-offer-interest")._private;
 const migration = read("supabase/migrations/20260730223000_commercial_offer_phase_d1_mail.sql");
+const hardening = read("supabase/migrations/20260731100000_harden_commercial_offer_interest_security.sql");
 const browser = read("public/src/offer-composer.js");
 const html = read("public/admin-offer-composer.html");
 const css = read("public/src/offer-composer.css");
@@ -281,4 +282,116 @@ test("interest inspection exposes useful offer facts without internal identifier
   assert.equal("email" in details, false);
   assert.match(interestPage, /data\.companyName/);
   assert.doesNotMatch(interestPage, /offerVersionId|relationshipId|dispatchId/);
+});
+
+test("hardening migration is the only forward-only D1 security migration", () => {
+  assert.match(hardening, /^-- Harden D1 interest access/m);
+  assert.match(hardening, /begin;[\s\S]*commit;/);
+  assert.match(hardening, /Commercial offer D1 foundation is missing/);
+  assert.doesNotMatch(hardening, /drop table|truncate|delete from/i);
+});
+
+test("definitive mail content is structurally redacted while provider delivery keeps its body", () => {
+  const server = read("functions/admin-commercial-offers.js");
+  const logger = read("functions/services/mailLogService.js");
+  assert.match(server, /sensitiveContent: kind === "definitive"/);
+  assert.match(logger, /html_body: sensitiveContent \? null/);
+  assert.match(logger, /text_body: sensitiveContent \? null/);
+  assert.match(logger, /contentRedacted: true/);
+  assert.match(hardening, /set html_body=null,text_body=null/);
+});
+
+test("sensitive definitive proposal logs cannot be replayed through Mail Center", () => {
+  const source = read("functions/admin-email-logs.js");
+  assert.match(source, /metadata\?\.contentRedacted === true/);
+  assert.match(source, /commercial_offer_definitive/);
+  assert.match(source, /kan niet vanuit Mail Center opnieuw worden verzonden/);
+});
+
+test("one active unconfirmed token per immutable version is database enforced", () => {
+  assert.match(hardening, /unique index commercial_offer_interest_one_active_unconfirmed_idx/);
+  assert.match(hardening, /where confirmed_at is null and revoked_at is null/);
+  assert.match(hardening, /for update/);
+});
+
+test("resend revokes only the previous unconfirmed link with actor and reason evidence", () => {
+  assert.match(hardening, /confirmed_at is null and revoked_at is null/);
+  assert.match(hardening, /revoked_by_profile_id=input_actor_profile_id/);
+  assert.match(hardening, /revoked_by_auth_user_id=input_actor_auth_user_id/);
+  assert.match(hardening, /offer\.previous_interest_token_revoked/);
+  assert.match(hardening, /offer\.email_resent/);
+});
+
+test("confirmed interest blocks creation of a fresh unconfirmed token", () => {
+  assert.match(hardening, /confirmed_at is not null/);
+  assert.match(hardening, /Confirmed interest cannot create a new access token/);
+  assert.doesNotMatch(browser, /currentVersionStatus === 'interested'.*resendReady/);
+});
+
+test("interest confirmation is an explicit offer and version lifecycle status", async () => {
+  const { statusLabel } = await corePromise;
+  assert.equal(statusLabel("interested"), "Interesse bevestigd");
+  assert.match(hardening, /update public\.commercial_offer_versions set status='interested'/);
+  assert.match(hardening, /update public\.commercial_offers set status='interested'/);
+  assert.match(hardening, /'offer\.interest_confirmed'.*'interested'/s);
+});
+
+test("stale, revoked and expired interest links remain fail closed", () => {
+  assert.match(hardening, /token_record\.revoked_at is not null or token_record\.expires_at<=clock_timestamp\(\)/);
+  assert.match(hardening, /offer_record\.current_version_id is distinct from version_record\.id/);
+  assert.match(hardening, /version_record\.status not in \('sent','viewed'\)/);
+});
+
+test("interest revoke is restricted to admin roles and requires a bounded reason", () => {
+  const server = read("functions/admin-commercial-offers.js");
+  assert.match(server, /\["super_admin", "admin"\]\.includes\(normalizeRole\(actor\.role\)\)/);
+  assert.match(server, /reason\.length < 8 \|\| reason\.length > 500/);
+  assert.match(hardening, /actor_role not in \('super_admin','admin'\)/);
+  assert.match(hardening, /offer\.interest_access_revoked/);
+});
+
+test("revoke maintenance redacts existing staging message bodies with append-only audit", () => {
+  assert.match(hardening, /commercial_redact_offer_email_logs_v1/);
+  assert.match(hardening, /template_key='commercial_offer_definitive'/);
+  assert.match(hardening, /offer\.sensitive_email_log_redacted/);
+  assert.match(hardening, /jsonb_build_array\('html_body','text_body'\)/);
+  assert.doesNotMatch(hardening, /raw_token|token_plaintext|interest_url.*safe_metadata/i);
+});
+
+test("revoke modal is accessible, explicit and never uses a native prompt", () => {
+  assert.match(html, /id="revoke-interest-dialog"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="revoke-interest-title"/);
+  assert.match(html, /id="revoke-interest-reason"[^>]*minlength="8"[^>]*maxlength="500"/);
+  assert.match(html, /id="confirm-revoke-interest"[^>]*disabled/);
+  assert.match(browser, /revokeInterestDialog\.showModal\(\)/);
+  assert.match(browser, /trapDialogFocus/);
+  assert.doesNotMatch(browser, /window\.(?:confirm|alert|prompt)/);
+});
+
+test("revoke modal shows only safe operational facts and masks the recipient", () => {
+  assert.match(html, /Laatste verzending/);
+  assert.match(html, /Link geldig tot/);
+  assert.match(html, /Interesse bevestigd/);
+  assert.match(browser, /revokeRecipient\.textContent = details\.maskedEmail/);
+  assert.doesNotMatch(html, /token_sha256|raw token|service.role/i);
+});
+
+test("revoke UI is disabled without active unconfirmed access or sufficient role", () => {
+  assert.match(browser, /!token\.confirmed_at && !token\.revoked_at/);
+  assert.match(browser, /capabilities\?\.revokeInterest/);
+  assert.match(browser, /elements\.revokeInterest\.disabled/);
+  assert.match(read("functions/admin-commercial-offers.js"), /revokeInterest: phaseD1Enabled\(\)/);
+});
+
+test("revoke request is idempotent and performs no provider action", () => {
+  const body = browser.match(/async function revokeInterestAccess\(\) \{([\s\S]*?)\n\}/)?.[1] || "";
+  assert.match(body, /state\.revokeInterestPending = true/);
+  assert.match(body, /action: 'revoke_interest'/);
+  assert.match(body, /redactionActionKey/);
+  assert.doesNotMatch(body, /definitive_send|sendTestMail|sendTrackedEmail/);
+  assert.match(hardening, /idempotency_key=input_idempotency_key/);
+});
+
+test("D1 hardening remains free of production providers and activation side effects", () => {
+  const scope = [hardening, read("functions/admin-commercial-offers.js"), browser].join("\n");
+  assert.doesNotMatch(scope, /signhost|api\.mollie|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
 });

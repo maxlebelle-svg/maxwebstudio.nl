@@ -37,10 +37,12 @@ const state = {
   definitiveRequestLocked: false,
   definitiveActionKey: '',
   definitiveTrigger: null,
+  revokeInterestPending: false,
+  revokeInterestTrigger: null,
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -103,6 +105,7 @@ function bindEvents() {
   elements.openPreview.addEventListener('click', openPreview);
   elements.testMail.addEventListener('click', sendTestMail);
   elements.definitiveSend.addEventListener('click', openDefinitiveSendDialog);
+  elements.revokeInterest.addEventListener('click', openRevokeInterestDialog);
   elements.copyManualMail.addEventListener('click', copyManualMail);
   elements.closePreview.addEventListener('click', () => elements.mailPreview.close());
   elements.mailPreview.addEventListener('click', (event) => { if (event.target === elements.mailPreview) elements.mailPreview.close(); });
@@ -115,6 +118,15 @@ function bindEvents() {
     if (!state.definitiveRequestPending) closeDefinitiveSendDialog();
   });
   elements.definitiveSendDialog.addEventListener('keydown', trapDefinitiveDialogFocus);
+  elements.revokeInterestReason.addEventListener('input', updateRevokeInterestConfirmation);
+  elements.confirmRevokeInterest.addEventListener('click', revokeInterestAccess);
+  elements.cancelRevokeInterest.addEventListener('click', closeRevokeInterestDialog);
+  elements.closeRevokeInterest.addEventListener('click', closeRevokeInterestDialog);
+  elements.revokeInterestDialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    if (!state.revokeInterestPending) closeRevokeInterestDialog();
+  });
+  elements.revokeInterestDialog.addEventListener('keydown', (event) => trapDialogFocus(event, elements.revokeInterestDialog, state.revokeInterestPending));
 }
 
 function hydrateExistingOffer() {
@@ -231,9 +243,14 @@ function renderPreviewAvailability() {
   const previewed = Boolean(version?.events?.some((event) => event.event_type === 'offer.previewed'));
   const tested = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'test' && dispatch.status === 'sent'));
   const definitiveSent = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive' && dispatch.status === 'sent'));
+  const activeInterestTokens = (version?.interestTokens || []).filter((token) => !token.confirmed_at && !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
   elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
   elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
   elements.definitiveSend.disabled = !((sendReady || resendReady) && previewed && tested && state.data?.relationship?.email && state.data?.capabilities?.definitiveSend);
+  elements.revokeInterest.disabled = !(activeInterestTokens.length && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
+  elements.interestAccessSummary.textContent = activeInterestTokens.length
+    ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}`
+    : version?.interestTokens?.some((token) => token.confirmed_at) ? 'Interesse is bevestigd; er is geen onbevestigde link actief.' : 'Geen actieve interesselink.';
   setSequence(elements.sequencePreview, previewed, !sendReady);
   setSequence(elements.sequenceTest, tested, !previewed);
   setSequence(elements.sequenceDefinitive, definitiveSent, !tested);
@@ -409,13 +426,88 @@ function updateDefinitiveConfirmation() {
 }
 
 function trapDefinitiveDialogFocus(event) {
-  if (event.key !== 'Tab' || state.definitiveRequestPending) return;
-  const focusable = [...elements.definitiveSendDialog.querySelectorAll('button:not([disabled]),input:not([disabled])')].filter((item) => !item.hidden);
+  trapDialogFocus(event, elements.definitiveSendDialog, state.definitiveRequestPending);
+}
+
+function trapDialogFocus(event, dialog, pending) {
+  if (event.key !== 'Tab' || pending) return;
+  const focusable = [...dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled])')].filter((item) => !item.hidden);
   if (!focusable.length) return;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
   if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
+
+function openRevokeInterestDialog() {
+  if (elements.revokeInterest.disabled || state.revokeInterestPending) return;
+  const version = currentVersion();
+  const token = (version?.interestTokens || []).find((item) => !item.confirmed_at && !item.revoked_at && new Date(item.expires_at).getTime() > Date.now());
+  const dispatch = (version?.dispatches || []).find((item) => item.dispatch_kind === 'definitive' && item.status === 'sent');
+  if (!token) return renderPreviewAvailability();
+  const details = definitiveConfirmationDetails({ relationship: state.data.relationship, demo: {}, snapshot: state.snapshot || version.snapshot });
+  elements.revokeCompany.textContent = state.data.relationship.companyName || state.data.relationship.contactName || '—';
+  elements.revokeRecipient.textContent = details.maskedEmail;
+  elements.revokeVersionNumber.textContent = `Versie ${version.version_number}`;
+  elements.revokeDispatchDate.textContent = formatDate(dispatch?.completed_at || dispatch?.reserved_at);
+  elements.revokeExpiry.textContent = formatDate(token.expires_at);
+  elements.revokeConfirmed.textContent = 'Nee';
+  elements.revokeInterestReason.value = '';
+  elements.revokeInterestResult.textContent = '';
+  state.revokeInterestTrigger = elements.revokeInterest;
+  updateRevokeInterestConfirmation();
+  elements.revokeInterestDialog.showModal();
+  elements.revokeInterestReason.focus();
+}
+
+function closeRevokeInterestDialog() {
+  if (state.revokeInterestPending || !elements.revokeInterestDialog.open) return;
+  elements.revokeInterestDialog.close();
+  const trigger = state.revokeInterestTrigger;
+  state.revokeInterestTrigger = null;
+  trigger?.focus();
+}
+
+function updateRevokeInterestConfirmation() {
+  const length = elements.revokeInterestReason.value.trim().length;
+  elements.confirmRevokeInterest.disabled = state.revokeInterestPending || length < 8 || length > 500;
+}
+
+async function revokeInterestAccess() {
+  const reason = elements.revokeInterestReason.value.trim();
+  if (state.revokeInterestPending || reason.length < 8 || reason.length > 500) return;
+  state.revokeInterestPending = true;
+  elements.revokeInterestDialog.setAttribute('aria-busy', 'true');
+  elements.confirmRevokeInterest.disabled = true;
+  elements.cancelRevokeInterest.disabled = true;
+  elements.closeRevokeInterest.disabled = true;
+  elements.revokeInterestResult.textContent = 'De server trekt de actieve link in en redigeert beveiligde maillogs…';
+  try {
+    const result = await request('POST', {
+      action: 'revoke_interest',
+      offerVersionId: state.currentVersionId,
+      reason,
+      actionKey: actionKey('revoke-interest'),
+      redactionActionKey: actionKey('redact-sensitive-mail'),
+    });
+    await reloadContext();
+    elements.revokeInterestResult.textContent = `${result.result.revokedCount || 0} link(s) ingetrokken; ${result.redaction.redactedCount || 0} beveiligde maillog(s) geredigeerd.`;
+    elements.revokeInterestDialog.close();
+    state.revokeInterestTrigger?.focus();
+    state.revokeInterestTrigger = null;
+    showMessage('De actieve interesselink is ingetrokken en gevoelige mailloginhoud is veilig verwijderd.', 'success');
+  } catch (error) {
+    try { await reloadContext(); } catch { /* De oorspronkelijke fout blijft leidend. */ }
+    elements.revokeInterestResult.textContent = error.message;
+    showMessage(error.message, 'error');
+  } finally {
+    state.revokeInterestPending = false;
+    elements.revokeInterestDialog.removeAttribute('aria-busy');
+    elements.cancelRevokeInterest.disabled = false;
+    elements.closeRevokeInterest.disabled = false;
+    updateRevokeInterestConfirmation();
+    renderPreviewAvailability();
+  }
 }
 
 async function sendDefinitiveMail() {

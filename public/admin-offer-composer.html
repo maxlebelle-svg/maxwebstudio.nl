@@ -48,7 +48,7 @@
         </div>
         <aside class="composer-sidebar" aria-label="Voorstelsamenvatting">
           <section class="summary-card"><div><span>Serverberekening</span><strong id="summary-version">Nog niet berekend</strong></div><div class="summary-lines" id="summary-lines"></div><dl><div><dt>Eenmalig excl. btw</dt><dd id="sum-once-ex">—</dd></div><div><dt>Btw eenmalig</dt><dd id="sum-once-vat">—</dd></div><div class="total"><dt>Eenmalig incl. btw</dt><dd id="sum-once-incl">—</dd></div><div><dt>Per maand excl. btw</dt><dd id="sum-month-ex">—</dd></div><div class="total"><dt>Per maand incl. btw</dt><dd id="sum-month-incl">—</dd></div><div class="due"><dt>Nu te betalen incl. btw</dt><dd id="sum-due">—</dd></div><div><dt>Later excl. btw</dt><dd id="sum-remaining">—</dd></div></dl><p id="summary-warning"></p></section>
-          <section class="send-sequence"><h2>Vaste verzendvolgorde</h2><ol><li id="sequence-preview"><span>1</span><div><strong>Voorbeeld bekijken</strong><small>Exacte servermail controleren</small></div></li><li id="sequence-test" class="blocked"><span>2</span><div><strong>Testmail naar mijzelf</strong><small>Alleen geverifieerde beheerder</small></div></li><li id="sequence-definitive" class="blocked"><span>3</span><div><strong>Definitief verzenden</strong><small>Pas na geslaagde testmail</small></div></li></ol><button class="button primary" id="open-preview" type="button" disabled>Voorbeeld bekijken</button><button class="button secondary" id="test-mail" type="button" disabled>Testmail naar mijzelf</button><button class="button secondary" id="definitive-send" type="button" disabled>Definitief verzenden</button><p>De interesseknop maakt geen contract, betaling, factuur, abonnement of onboarding.</p></section>
+          <section class="send-sequence"><h2>Vaste verzendvolgorde</h2><ol><li id="sequence-preview"><span>1</span><div><strong>Voorbeeld bekijken</strong><small>Exacte servermail controleren</small></div></li><li id="sequence-test" class="blocked"><span>2</span><div><strong>Testmail naar mijzelf</strong><small>Alleen geverifieerde beheerder</small></div></li><li id="sequence-definitive" class="blocked"><span>3</span><div><strong>Definitief verzenden</strong><small>Pas na geslaagde testmail</small></div></li></ol><button class="button primary" id="open-preview" type="button" disabled>Voorbeeld bekijken</button><button class="button secondary" id="test-mail" type="button" disabled>Testmail naar mijzelf</button><button class="button secondary" id="definitive-send" type="button" disabled>Definitief verzenden</button><button class="button danger" id="revoke-interest" type="button" disabled>Interesselink intrekken</button><p id="interest-access-summary">Geen actieve interesselink.</p><p>De interesseknop maakt geen contract, betaling, factuur, abonnement of onboarding.</p></section>
         </aside>
       </div>
     </div>
@@ -73,6 +73,16 @@
         <p class="definitive-send-result" id="definitive-send-result" role="status" aria-live="polite"></p>
       </div>
       <div class="definitive-send-actions"><button class="button secondary" id="cancel-definitive-send" type="button">Annuleren</button><button class="button primary" id="confirm-definitive-send" type="button" disabled>Definitief verzenden</button></div>
+    </dialog>
+    <dialog class="definitive-send-dialog" id="revoke-interest-dialog" role="dialog" aria-modal="true" aria-labelledby="revoke-interest-title" aria-describedby="revoke-interest-warning">
+      <div class="dialog-toolbar"><div><span>Beveiligde beheeractie</span><h2 id="revoke-interest-title">Interesselink intrekken?</h2></div><button type="button" id="close-revoke-interest" aria-label="Intrekken annuleren">×</button></div>
+      <div class="definitive-send-content">
+        <dl class="definitive-send-summary"><div><dt>Relatie / bedrijf</dt><dd id="revoke-company">—</dd></div><div><dt>Ontvanger</dt><dd id="revoke-recipient">—</dd></div><div><dt>Versie</dt><dd id="revoke-version-number">—</dd></div><div><dt>Laatste verzending</dt><dd id="revoke-dispatch-date">—</dd></div><div><dt>Link geldig tot</dt><dd id="revoke-expiry">—</dd></div><div><dt>Interesse bevestigd</dt><dd id="revoke-confirmed">Nee</dd></div></dl>
+        <p class="definitive-send-warning" id="revoke-interest-warning">De actieve, nog niet bevestigde link stopt direct. Bevestigde interesse en bewijs worden niet verwijderd. Beveiligde maillogs worden inhoudelijk geredigeerd.</p>
+        <label class="composer-field" for="revoke-interest-reason">Reden van intrekken<textarea id="revoke-interest-reason" rows="3" minlength="8" maxlength="500" placeholder="Bijvoorbeeld: stagingcertificering afgerond"></textarea></label>
+        <p class="definitive-send-result" id="revoke-interest-result" role="status" aria-live="polite"></p>
+      </div>
+      <div class="definitive-send-actions"><button class="button secondary" id="cancel-revoke-interest" type="button">Annuleren</button><button class="button danger" id="confirm-revoke-interest" type="button" disabled>Link definitief intrekken</button></div>
     </dialog>
       </div>
     </main>

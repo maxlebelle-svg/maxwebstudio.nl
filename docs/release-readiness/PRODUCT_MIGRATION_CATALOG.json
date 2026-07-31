@@ -75,6 +75,10 @@
     {
       "manifest": "docs/release-readiness/phase-d1-commercial-offer-mail/MANIFEST.json",
       "fileset": "docs/release-readiness/phase-d1-commercial-offer-mail/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-d1-interest-security-hardening/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-d1-interest-security-hardening/FILESET.json"
     }
   ]
 }
