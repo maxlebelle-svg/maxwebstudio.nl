@@ -243,10 +243,11 @@ function renderPreviewAvailability() {
   const previewed = Boolean(version?.events?.some((event) => event.event_type === 'offer.previewed'));
   const tested = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'test' && dispatch.status === 'sent'));
   const definitiveSent = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive' && dispatch.status === 'sent'));
+  const interestConfirmed = Boolean(version?.interestTokens?.some((token) => token.confirmed_at));
   const activeInterestTokens = (version?.interestTokens || []).filter((token) => !token.confirmed_at && !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
   elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
   elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
-  elements.definitiveSend.disabled = !((sendReady || resendReady) && previewed && tested && state.data?.relationship?.email && state.data?.capabilities?.definitiveSend);
+  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed)) && previewed && tested && state.data?.relationship?.email && state.data?.capabilities?.definitiveSend);
   elements.revokeInterest.disabled = !(activeInterestTokens.length && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
   elements.interestAccessSummary.textContent = activeInterestTokens.length
     ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}`

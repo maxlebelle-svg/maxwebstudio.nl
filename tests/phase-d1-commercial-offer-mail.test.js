@@ -326,6 +326,7 @@ test("confirmed interest blocks creation of a fresh unconfirmed token", () => {
   assert.match(hardening, /confirmed_at is not null/);
   assert.match(hardening, /Confirmed interest cannot create a new access token/);
   assert.doesNotMatch(browser, /currentVersionStatus === 'interested'.*resendReady/);
+  assert.match(browser, /resendReady && !interestConfirmed/);
 });
 
 test("interest confirmation is an explicit offer and version lifecycle status", async () => {
