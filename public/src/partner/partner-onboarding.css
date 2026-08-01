@@ -76,6 +76,13 @@ h1 { font-size: clamp(2.35rem, 4.5vw, 4rem); line-height: .98; margin: 0 0 20px;
 .notice { padding: 17px 19px; border: 1px solid rgba(25,194,255,.27); border-radius: 10px; background: linear-gradient(90deg, rgba(21,94,239,.14), rgba(25,194,255,.08)); color: #d8f4ff; font-weight: 700; line-height: 1.5; }
 .notice.error { border-color: rgba(239,68,68,.42); background: rgba(127,29,29,.28); color: #ffd8df; }
 .notice.success { border-color: rgba(43,217,130,.4); background: rgba(6,78,59,.3); color: #caffea; }
+.portal-access { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; margin-top: 16px; padding: 22px; border: 1px solid rgba(43,217,130,.45); border-radius: 12px; background: linear-gradient(135deg, rgba(6,78,59,.42), rgba(21,94,239,.18)); box-shadow: 0 18px 46px rgba(0,8,18,.25); }
+.portal-access[hidden] { display: none; }
+.portal-access .eyebrow { margin-bottom: 7px; color: #83f1b8; }
+.portal-access strong { display: block; font-size: 1.15rem; margin-bottom: 6px; }
+.portal-access span { display: block; max-width: 58ch; color: var(--muted); font-size: .86rem; line-height: 1.55; }
+.portal-access-link { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 13px 20px; border-radius: 9px; background: linear-gradient(135deg, var(--blue), #2577ff 58%, var(--cyan)); box-shadow: 0 16px 34px rgba(21,94,239,.26); color: #fff; font-size: .84rem; font-weight: 900; text-decoration: none; white-space: nowrap; }
+.portal-access-link:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .module, .assessment { margin-top: 18px; padding: clamp(26px, 5vw, 58px); border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(145deg, rgba(14,38,61,.96), rgba(5,21,36,.96)); box-shadow: var(--shadow); }
 .module-meta { display: flex; gap: 12px; color: var(--cyan); font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 900; }
 .module h2, .controlled h2, .assessment h2 { font-size: clamp(2rem, 4vw, 3.35rem); line-height: 1.02; letter-spacing: -.045em; margin: 14px 0; }
@@ -128,6 +135,8 @@ h1 { font-size: clamp(2.35rem, 4.5vw, 4rem); line-height: .98; margin: 0 0 20px;
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; gap: 30px; }
   .sidebar { position: static; }
+  .portal-access { grid-template-columns: 1fr; }
+  .portal-access-link { width: 100%; }
   .step-nav { grid-template-columns: repeat(2, 1fr); }
   .controlled-grid { grid-template-columns: 1fr; }
   .controlled-card p { min-height: 0; }
@@ -146,7 +155,7 @@ h1 { font-size: clamp(2.35rem, 4.5vw, 4rem); line-height: .98; margin: 0 0 20px;
 }
 @media print {
   body { background: #fff; color: #111; }
-  .topbar, .sidebar, .notice, .module, .assessment, .controlled, .secondary { display: none !important; }
+  .topbar, .sidebar, .notice, .portal-access, .module, .assessment, .controlled, .secondary { display: none !important; }
   .layout { display: block; width: 100%; padding: 0; }
   .certificate { display: block !important; background: #fff; color: #111; border: 2px solid #987b35; box-shadow: none; }
   .disclaimer { color: #444; }

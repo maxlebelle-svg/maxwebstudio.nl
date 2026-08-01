@@ -4,6 +4,44 @@ import { getSupabaseClient, getSupabaseClientStatus } from "../providers/supabas
 const PREPARED_MESSAGE = "Supabase Auth is voorbereid maar nog niet actief/geconfigureerd.";
 const AUTH_SESSION_KEY = "maxwebstudioSupabaseAuthSession";
 const AUTH_CONFIG_ENDPOINT = "/.netlify/functions/client-auth-config";
+const AUTH_REQUEST_TIMEOUT_MS = 12000;
+const AUTH_CLIENT_INIT_TIMEOUT_MS = 2500;
+
+function timeoutError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = 504;
+  return error;
+}
+
+async function withTimeout(promise, timeoutMs, error) {
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve(promise),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(error), timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = AUTH_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw timeoutError("SUPABASE_AUTH_TIMEOUT", "De loginomgeving antwoordde niet op tijd. Probeer het opnieuw.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function isTruthy(value) {
   return value === true || String(value || "").toLowerCase() === "true";
@@ -188,10 +226,10 @@ async function requestRecoverySession(input = {}) {
 async function getRuntimeAuthConfig() {
   let endpointConfig = {};
   try {
-    const response = await fetch(AUTH_CONFIG_ENDPOINT, {
+    const response = await fetchWithTimeout(AUTH_CONFIG_ENDPOINT, {
       headers: { Accept: "application/json" },
       cache: "no-store",
-    });
+    }, 8000);
     if (response.ok) endpointConfig = await response.json();
   } catch {
     endpointConfig = {};
@@ -349,21 +387,33 @@ export async function signInWithEmail(email, password) {
   const config = await getRuntimeAuthConfig();
   if (!config.active) return throwPrepared("signInWithEmail");
 
-  const officialAuth = await getOfficialAuthClient();
+  const officialAuth = await withTimeout(
+    getOfficialAuthClient(),
+    AUTH_CLIENT_INIT_TIMEOUT_MS,
+    timeoutError("SUPABASE_CLIENT_INIT_TIMEOUT", "De loginclient kon niet op tijd worden gestart."),
+  ).catch(() => null);
   if (officialAuth?.signInWithPassword) {
-    const { data, error } = await officialAuth.signInWithPassword({ email, password });
-    if (error || !data?.session?.access_token) {
-      const authError = new Error(sanitizeAuthMessage(error?.message || "Inloggen is niet gelukt."));
-      authError.code = error?.code || "SUPABASE_AUTH_FAILED";
-      authError.status = error?.status || "";
-      throw authError;
+    try {
+      const { data, error } = await withTimeout(
+        officialAuth.signInWithPassword({ email, password }),
+        AUTH_REQUEST_TIMEOUT_MS,
+        timeoutError("SUPABASE_AUTH_TIMEOUT", "De loginomgeving antwoordde niet op tijd."),
+      );
+      if (error || !data?.session?.access_token) {
+        const authError = new Error(sanitizeAuthMessage(error?.message || "Inloggen is niet gelukt."));
+        authError.code = error?.code || "SUPABASE_AUTH_FAILED";
+        authError.status = error?.status || "";
+        throw authError;
+      }
+      return toSessionResult(storeSession(data.session));
+    } catch (error) {
+      if (error?.code !== "SUPABASE_AUTH_TIMEOUT") throw error;
     }
-    return toSessionResult(storeSession(data.session));
   }
 
   let response;
   try {
-    response = await fetch(`${config.url}/auth/v1/token?grant_type=password`, {
+    response = await fetchWithTimeout(`${config.url}/auth/v1/token?grant_type=password`, {
       method: "POST",
       headers: {
         apikey: config.anonKey,
@@ -373,9 +423,12 @@ export async function signInWithEmail(email, password) {
       body: JSON.stringify({ email, password }),
     });
   } catch (requestError) {
-    const error = new Error("Supabase Auth request kon de omgeving niet bereiken.");
-    error.code = "SUPABASE_AUTH_NETWORK_ERROR";
-    error.status = "";
+    const timedOut = requestError?.code === "SUPABASE_AUTH_TIMEOUT";
+    const error = new Error(timedOut
+      ? "De loginomgeving antwoordde niet op tijd. Probeer het opnieuw."
+      : "Supabase Auth request kon de omgeving niet bereiken.");
+    error.code = timedOut ? "SUPABASE_AUTH_TIMEOUT" : "SUPABASE_AUTH_NETWORK_ERROR";
+    error.status = timedOut ? 504 : "";
     error.supabaseAuth = {
       code: error.code,
       message: sanitizeAuthMessage(requestError?.message || "Network request failed"),

@@ -11,6 +11,9 @@ const styles = fs.readFileSync(path.resolve(__dirname, "../public/styles.css"), 
 test("CEO-dashboard gebruikt Nederlandse begroeting en consistente CEO-MODUS", () => {
   for (const text of ["CEO-MODUS", "Goedemorgen", "Goedemiddag", "Goedenavond", "Prioriteiten van vandaag", "Platformgezondheid"]) assert.match(dashboard, new RegExp(text));
   assert.doesNotMatch(dashboard, /CEO Mode|Good morning|Good afternoon|Good evening|Today's priorities/);
+  assert.doesNotMatch(dashboard, /greeting\.textContent = `\$\{greeting\}, Max`/);
+  assert.match(dashboard, /state\.adminSession\?\.name/);
+  assert.match(dashboard, /name: profile\.name \|\| email/);
   assert.doesNotMatch(platformHealth, /CEO Mode/);
 });
 
@@ -20,6 +23,8 @@ test("kerncopy van Max Command is Nederlands", () => {
 });
 
 test("CEO-dashboard bevat responsieve regels voor laptop- en kleinere breedtes", () => {
+  assert.match(styles, /@media\s*\(max-width:\s*1480px\)\s*and\s*\(min-width:\s*1181px\)[\s\S]{0,500}\.ceo-hero/);
+  assert.match(styles, /\.ceo-hero \.admin-hero-copy h1\s*\{[\s\S]{0,150}font-size:\s*clamp\(40px,\s*3\.1vw,\s*56px\)/);
   assert.match(styles, /@media\s*\(max-width:\s*1200px\)[\s\S]{0,500}\.ceo-scoreboard-grid/);
   assert.match(styles, /@media\s*\(max-width:\s*980px\)[\s\S]{0,500}\.ceo-command-grid/);
   assert.match(styles, /@media\s*\(max-width:\s*640px\)[\s\S]{0,700}\.ceo-hero-meta/);

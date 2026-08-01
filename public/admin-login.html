@@ -23,6 +23,7 @@
         const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
         const SUPABASE_SESSION_KEY = "maxwebstudioSupabaseAuthSession";
         const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
+        const roleAliases = { sales: "sales_partner" };
         const status = document.getElementById("admin-login-status");
         const loginLink = document.getElementById("admin-login-link");
         let navigating = false;
@@ -31,7 +32,8 @@
           try {
             const parsed = new URL(value || fallback, window.location.origin);
             if (parsed.origin !== window.location.origin) return fallback;
-            if (!/^\/admin(?:-|\/|$)/.test(parsed.pathname)) return fallback;
+            const allowedPath = /^\/admin(?:-|\/|$)/.test(parsed.pathname) || parsed.pathname === "/partner-onboarding.html";
+            if (!allowedPath) return fallback;
             if (parsed.pathname === "/admin-login.html") return "/admin-dashboard.html";
             return `${parsed.pathname}${parsed.search}${parsed.hash}`;
           } catch {
@@ -74,6 +76,11 @@
           return null;
         }
 
+        function normalizeRole(value = "") {
+          const rawRole = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+          return roleAliases[rawRole] || rawRole;
+        }
+
         function sessionExpired(session = {}) {
           const expiresAt = Number(session.expiresAt || 0);
           return expiresAt && expiresAt <= Date.now() + 30000;
@@ -99,7 +106,7 @@
         function storeAdminSession(session, account) {
           const profile = account.profile || {};
           const user = account.user || session.user || {};
-          const role = String(profile.role || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+          const role = normalizeRole(profile.role);
           const operational = account.access?.operational !== false;
           if (!adminRoles.has(role) || String(profile.status || "").toLowerCase() !== "active" || !operational) return false;
           localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
@@ -142,6 +149,11 @@
 
           try {
             const account = await fetchAccountProfile(session.accessToken);
+            if (normalizeRole(account.profile?.role) === "sales_partner" && account.access?.onboardingRequired) {
+              status.textContent = "Login bevestigd. Je onboarding wordt geopend.";
+              navigateOnce("/partner-onboarding.html");
+              return;
+            }
             if (!storeAdminSession(session, account)) {
               localStorage.removeItem(ADMIN_SESSION_KEY);
               status.textContent = "Admin-login geblokkeerd: dit account heeft geen actieve adminrol.";
