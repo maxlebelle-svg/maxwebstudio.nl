@@ -18,6 +18,7 @@
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
+    <script src="src/sales-workspace-model.js?v=20260801-business-cards"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
@@ -356,6 +357,7 @@
                 <label for="leadfinder-call-status">Leadstatus<select id="leadfinder-call-status"></select></label>
                 <label for="leadfinder-follow-up">Opvolgdatum<input id="leadfinder-follow-up" type="date" /></label>
                 <label class="admin-profile-wide" for="leadfinder-source">Bron<input id="leadfinder-source" type="text" placeholder="Handmatig, netwerk, social, demo..." /></label>
+                <label for="leadfinder-smart-view">Slimme weergave<select id="leadfinder-smart-view"></select></label>
                 <label class="admin-profile-wide" for="leadfinder-notes">Notities<textarea id="leadfinder-notes" placeholder="Waarom is dit een kans? Welke websiteproblemen zijn zichtbaar?"></textarea></label>
               </div>
               <div class="admin-profile-actions">
@@ -19425,6 +19427,7 @@
         callStatus: document.getElementById("leadfinder-call-status"),
         followUp: document.getElementById("leadfinder-follow-up"),
         source: document.getElementById("leadfinder-source"),
+        smartView: document.getElementById("leadfinder-smart-view"),
         notes: document.getElementById("leadfinder-notes"),
         reset: document.getElementById("leadfinder-reset"),
         message: document.getElementById("leadfinder-message"),
@@ -23492,6 +23495,8 @@
                       notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
                       leadScore: exactAnalysisScore ?? Number(lead.leadScore || 60),
                     };
+                    Object.assign(lead, updates);
+                    renderLeadfinderList();
                     if (isProductionLead(lead)) {
                       selectedLeadFinderId = lead.id;
                       rememberWebsiteAnalysis([lead.id, target.key, target.urlKey], analysis);
@@ -23502,7 +23507,7 @@
                       } catch (syncError) {
                         queueLeadOffline("update", { id: lead.id, ...updates });
                         setAnalysisSyncStatus("local");
-                        renderLeadWebsiteAnalysis(lead);
+                        renderLeadfinderList();
                         if (developerModeActive()) console.warn("Website analyse lokaal opgeslagen; centrale sync volgt later", syncError);
                       }
                     } else {
@@ -23648,6 +23653,7 @@
           leadStatus: "new",
           followUpDate: leadfinderElements.followUp?.value || "",
           source: leadfinderElements.source?.value || "handmatig",
+          manualSmartView: leadfinderElements.smartView?.value || "",
           notes: leadfinderElements.notes?.value || "",
           googlePlaceId: leadfinderElements.form?.dataset.googlePlaceId || "",
           googleMapsUrl: leadfinderElements.form?.dataset.googleMapsUrl || "",
@@ -24221,6 +24227,7 @@
         if (!leadfinderElements.form || !leadfinderElements.list) return;
         fillSelect(leadfinderElements.websiteStatus, LEADFINDER_WEBSITE_STATUSES, "Kies website-status", "onbekend");
         fillSelect(leadfinderElements.callStatus, LEADFINDER_CALL_STATUSES, "Kies leadstatus", "nieuw");
+        fillSelect(leadfinderElements.smartView, window.MaxSalesWorkspaceModel?.MANUAL_SMART_VIEWS || [], "Automatisch bepalen");
         fillSelect(leadfinderElements.filterWebsiteStatus, LEADFINDER_WEBSITE_STATUSES, "Alle statussen");
         fillSelect(leadfinderElements.filterCallStatus, LEADFINDER_CALL_STATUSES, "Alle leadstatussen");
         fillSelect(leadfinderElements.filterScore, LEADFINDER_SCORE_BUCKETS, "Alle scores");

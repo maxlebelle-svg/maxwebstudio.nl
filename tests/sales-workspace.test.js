@@ -6,6 +6,7 @@ const path = require("node:path");
 const model = require("../public/src/sales-workspace-model");
 const leadsApi = require("../functions/admin-leads");
 const salesHtml = fs.readFileSync(path.resolve(__dirname, "../public/admin-sales.html"), "utf8");
+const leadGeneratorHtml = fs.readFileSync(path.resolve(__dirname, "../public/admin-lead-generator.html"), "utf8");
 const salesCss = fs.readFileSync(path.resolve(__dirname, "../public/admin/styles/sales-workspace.css"), "utf8");
 const leadFinderSource = fs.readFileSync(path.resolve(__dirname, "../public/src/services/leadFinderService.js"), "utf8");
 const apiSource = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
@@ -22,6 +23,7 @@ const fixtures = [
 
 const requiredSmartViews = [
   ["all", "Alle leads"], ["today", "Vandaag actie"], ["new", "Nieuwe leads"],
+  ["business_cards", "Visitekaartjes"],
   ["interested", "Geïnteresseerd"], ["callback", "Terugbellen"], ["voicemail", "Voicemails"],
   ["not_interested", "Niet geïnteresseerd"], ["demos", "Demo’s"], ["payment", "Wacht op betaling"],
   ["won", "Gewonnen"], ["lost", "Verloren"], ["archived", "Gearchiveerd"],
@@ -115,11 +117,35 @@ test("handmatige indeling zet een lead in precies het gekozen slimme vak", () =>
   assert.equal(model.matchesSmartView({ ...lead, metadata: { manualSmartView: "onbekend" } }, "new", now), true);
 });
 
+test("visitekaartjes zijn een expliciete categorie en worden niet automatisch gevuld", () => {
+  const businessCardLead = { pipelineStage: "new", metadata: { manualSmartView: "business_cards" } };
+  assert.equal(model.matchesSmartView(businessCardLead, "business_cards", now), true);
+  assert.equal(model.matchesSmartView({ pipelineStage: "new" }, "business_cards", now), false);
+  assert.equal(model.smartViewCounts([businessCardLead, { pipelineStage: "new" }], now).business_cards, 1);
+});
+
 test("handmatig indeelbare vakken sluiten algemene en datumweergaven uit", () => {
   const values = model.MANUAL_SMART_VIEWS.map(({ value }) => value);
   assert(!values.includes("all"));
   assert(!values.includes("today"));
-  ["new", "interested", "callback", "voicemail", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"].forEach((value) => assert(values.includes(value)));
+  ["new", "business_cards", "interested", "callback", "voicemail", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"].forEach((value) => assert(values.includes(value)));
+});
+
+test("handmatige invoer bewaart Visitekaartjes via het beveiligde leadcontract", () => {
+  const record = leadsApi._test.leadPayload(
+    { companyName: "Netwerklead", manualSmartView: "business_cards" },
+    { id: "11111111-1111-4111-8111-111111111111", email: "lisanne@example.test", role: "sales_partner" },
+    { create: true },
+  );
+  assert.equal(record.metadata.manualSmartView, "business_cards");
+  assert.throws(
+    () => leadsApi._test.leadPayload({ companyName: "Fout", manualSmartView: "onbekend" }, { role: "admin" }, { create: true }),
+    /geldige slimme weergave/,
+  );
+  assert.match(salesHtml, /id="leadfinder-smart-view"/);
+  assert.match(salesHtml, /manualSmartView: leadfinderElements\.smartView\?\.value/);
+  assert.match(leadGeneratorHtml, /id="leadfinder-smart-view"/);
+  assert.match(leadGeneratorHtml, /manualSmartView: leadfinderElements\.smartView\?\.value/);
 });
 
 test("combineerbare filters zoeken ook op plaats en branche", () => {
@@ -431,6 +457,27 @@ test("handmatige leads kunnen vanuit het detail alsnog een website analyseren", 
   assert.match(salesHtml, /websiteUrl: target\.url,[\s\S]+websiteAnalysis: analysis/);
   assert.match(salesHtml, /analysisUrl\?\.addEventListener\("input"/);
   assert.match(salesHtml, /Vul hierboven de website URL in om deze handmatige lead te analyseren/);
+  assert.match(salesHtml, /Object\.assign\(lead, updates\);[\s\S]+renderLeadfinderList\(\)/);
+});
+
+test("website-analyse is server-side leidend voor de opgeslagen website score", () => {
+  const analysis = { ok: true, score: 43 };
+  const update = leadsApi._test.leadPayload(
+    { websiteAnalysis: analysis },
+    { id: "11111111-1111-4111-8111-111111111111", email: "lisanne@example.test", role: "sales_partner" },
+    { update: true, existingLead: { lead_score: 70, metadata: {} } },
+  );
+  assert.equal(update.lead_score, 43);
+  assert.equal(update.metadata.leadScore, 43);
+  assert.deepEqual(update.metadata.websiteAnalysis, analysis);
+  assert.ok(update.lead_score_updated_at);
+
+  const unrelatedUpdate = leadsApi._test.leadPayload(
+    { notes: "Nieuwe notitie" },
+    { id: "11111111-1111-4111-8111-111111111111", email: "lisanne@example.test", role: "sales_partner" },
+    { update: true, existingLead: { lead_score: 70, metadata: {} } },
+  );
+  assert.equal(Object.hasOwn(unrelatedUpdate, "lead_score"), false);
 });
 
 test("lead-detail blijft in normale documentflow zonder overlappende kaarten", () => {
