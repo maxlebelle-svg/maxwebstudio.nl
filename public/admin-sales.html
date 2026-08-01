@@ -19,7 +19,7 @@
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
-    <script src="src/sales-workspace-model.js?v=20260728-manual-smart-view"></script>
+    <script src="src/sales-workspace-model.js?v=20260801-business-cards"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
   </head>
@@ -355,6 +355,7 @@
                 <label for="leadfinder-follow-up">Opvolgdatum<input id="leadfinder-follow-up" type="date" /></label>
                 <label for="leadfinder-source">Acquisitiekanaal<select id="leadfinder-source"><option value="">Onbekend</option><option value="website">Website</option><option value="email">E-mail</option><option value="outbound_sales">Actieve acquisitie</option><option value="referral">Aanbeveling</option><option value="phone">Telefoon</option><option value="social">Social media</option><option value="partner">Partner</option><option value="manual">Handmatig</option><option value="import">Import</option><option value="other">Overig</option></select></label>
                 <label for="leadfinder-sourced-by">Ingebracht door<select id="leadfinder-sourced-by"><option value="">Onbekend</option><option value="self">Mijzelf</option></select></label>
+                <label for="leadfinder-smart-view">Slimme weergave<select id="leadfinder-smart-view"></select></label>
                 <label class="admin-profile-wide" for="leadfinder-notes">Notities<textarea id="leadfinder-notes" placeholder="Waarom is dit een kans? Welke websiteproblemen zijn zichtbaar?"></textarea></label>
               </div>
               <div class="admin-profile-actions">
@@ -19499,6 +19500,7 @@
         followUp: document.getElementById("leadfinder-follow-up"),
         source: document.getElementById("leadfinder-source"),
         sourcedBy: document.getElementById("leadfinder-sourced-by"),
+        smartView: document.getElementById("leadfinder-smart-view"),
         notes: document.getElementById("leadfinder-notes"),
         reset: document.getElementById("leadfinder-reset"),
         message: document.getElementById("leadfinder-message"),
@@ -24323,6 +24325,8 @@
                       notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
                       leadScore: exactAnalysisScore ?? Number(lead.leadScore || 60),
                     };
+                    Object.assign(lead, updates);
+                    renderLeadfinderList();
                     if (isProductionLead(lead)) {
                       selectedLeadFinderId = lead.id;
                       rememberWebsiteAnalysis([lead.id, target.key, target.urlKey], analysis);
@@ -24333,7 +24337,7 @@
                       } catch (syncError) {
                         queueLeadOffline("update", { id: lead.id, ...updates });
                         setAnalysisSyncStatus("local");
-                        renderLeadWebsiteAnalysis(lead);
+                        renderLeadfinderList();
                         if (developerModeActive()) console.warn("Website analyse lokaal opgeslagen; centrale sync volgt later", syncError);
                       }
                     } else {
@@ -24481,6 +24485,7 @@
           acquisitionChannel: leadfinderElements.source?.value || "",
           sourcedByUserId: leadfinderElements.sourcedBy?.value || "",
           sourcedByName: leadfinderElements.sourcedBy?.selectedOptions?.[0]?.textContent === "Onbekend" ? "" : leadfinderElements.sourcedBy?.selectedOptions?.[0]?.textContent || "",
+          manualSmartView: leadfinderElements.smartView?.value || "",
           notes: leadfinderElements.notes?.value || "",
           googlePlaceId: leadfinderElements.form?.dataset.googlePlaceId || "",
           googleMapsUrl: leadfinderElements.form?.dataset.googleMapsUrl || "",
@@ -24941,6 +24946,7 @@
         if (!leadfinderElements.form || !leadfinderElements.list) return;
         fillSelect(leadfinderElements.websiteStatus, LEADFINDER_WEBSITE_STATUSES, "Kies website-status", "onbekend");
         fillSelect(leadfinderElements.callStatus, LEADFINDER_CALL_STATUSES, "Kies leadstatus", "nieuw");
+        fillSelect(leadfinderElements.smartView, window.MaxSalesWorkspaceModel?.MANUAL_SMART_VIEWS || [], "Automatisch bepalen");
         fillSelect(leadfinderElements.filterWebsiteStatus, LEADFINDER_WEBSITE_STATUSES, "Alle statussen");
         fillSelect(leadfinderElements.filterCallStatus, LEADFINDER_CALL_STATUSES, "Alle leadstatussen");
         fillSelect(leadfinderElements.filterScore, LEADFINDER_SCORE_BUCKETS, "Alle scores");

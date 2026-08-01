@@ -26,7 +26,7 @@ const callDispositionByOutcome = new Map([
 ]);
 const interestLevels = new Set(["hot", "interested", "unsure", "not_interested"]);
 const leadPriorities = new Set(["high", "normal", "low"]);
-const manualSmartViews = new Set(["new", "interested", "callback", "voicemail", "not_interested", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"]);
+const manualSmartViews = new Set(["new", "business_cards", "interested", "callback", "voicemail", "not_interested", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"]);
 const assignableStaffRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
 const assignableProfileStatuses = new Set(["active", "invited", "pending"]);
 const allowedStatuses = new Set([
@@ -238,6 +238,7 @@ async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   const preparedRecord = leadPayload(payload, admin, { create: true });
   const existingLead = await findExistingLead({ supabaseUrl, serviceRoleKey, payload, record: preparedRecord });
   if (existingLead?.id) {
+    const websiteUrl = cleanText(payload.websiteUrl || payload.website || preparedRecord.website);
     const patch = mergeMissingLeadValues(existingLead, {
       ...preparedRecord,
       metadata: {
@@ -251,6 +252,8 @@ async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
     });
     const rows = await trySchemaAttempts([
       () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id: existingLead.id, record: patch }),
+      () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id: existingLead.id, record: { ...(websiteUrl ? { website_url: websiteUrl } : {}), metadata: patch.metadata, updated_at: patch.updated_at } }),
+      () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id: existingLead.id, record: { ...(websiteUrl ? { website: websiteUrl } : {}), metadata: patch.metadata, updated_at: patch.updated_at } }),
       () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id: existingLead.id, record: { metadata: patch.metadata, updated_at: patch.updated_at } }),
     ]);
     const lead = mapLead(rows[0] || existingLead);
@@ -340,7 +343,7 @@ async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   if (leadAssignmentInput(payload)) {
     return jsonResponse(400, { success: false, error: "Gebruik de expliciete toewijzingsactie om de eigenaar te wijzigen." });
   }
-  if (payload.metadata && typeof payload.metadata === "object" && (Object.prototype.hasOwnProperty.call(payload.metadata, "manualSmartView") || Object.prototype.hasOwnProperty.call(payload.metadata, "manual_smart_view"))) {
+  if (Object.prototype.hasOwnProperty.call(payload, "manualSmartView") || Object.prototype.hasOwnProperty.call(payload, "manual_smart_view") || (payload.metadata && typeof payload.metadata === "object" && (Object.prototype.hasOwnProperty.call(payload.metadata, "manualSmartView") || Object.prototype.hasOwnProperty.call(payload.metadata, "manual_smart_view")))) {
     return jsonResponse(400, { success: false, error: "Gebruik de expliciete indelingsactie om het slimme vak te wijzigen." });
   }
   const modernRecord = leadPayload(payload, admin, { update: true, existingLead });
@@ -784,6 +787,11 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
   const ownerEmail = firstCleanText(payload.ownerEmail, payload.owner_email, existingMeta.ownerEmail, existingMeta.owner_email, payload.createdByEmail, options.create ? admin.email : "").toLowerCase();
   const ownerName = firstCleanText(payload.ownerName, payload.owner_name, existingMeta.ownerName, existingMeta.owner_name, payload.createdByName, options.create ? admin.email : "");
   const analysisScore = websiteAnalysisScore(payload.websiteAnalysis || payload.metadata?.websiteAnalysis);
+  const websiteUrl = cleanText(payload.websiteUrl || payload.website);
+  const requestedManualSmartView = cleanText(payload.manualSmartView || payload.manual_smart_view || payload.metadata?.manualSmartView || payload.metadata?.manual_smart_view).toLowerCase();
+  if (requestedManualSmartView && !manualSmartViews.has(requestedManualSmartView)) {
+    throw Object.assign(new Error("Kies een geldige slimme weergave."), { status: 400 });
+  }
   const acquisitionChannel = cleanText(payload.acquisitionChannel || payload.acquisition_channel || options.existingLead?.acquisition_channel || options.existingLead?.acquisitionChannel || existingMeta.acquisitionChannel || existingMeta.acquisition_channel).toLowerCase();
   if (acquisitionChannel && !acquisitionChannels.has(acquisitionChannel)) {
     const error = new Error("Kies een geldig acquisitiekanaal.");
@@ -804,8 +812,9 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
   }
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
   const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
+  const hasWebsite = Object.prototype.hasOwnProperty.call(payload, "websiteUrl") || Object.prototype.hasOwnProperty.call(payload, "website");
   const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
-  const hasLeadScore = Object.prototype.hasOwnProperty.call(payload, "leadScore") || Object.prototype.hasOwnProperty.call(payload, "score") || Object.prototype.hasOwnProperty.call(payload, "lead_score");
+  const hasLeadScore = analysisScore !== null || Object.prototype.hasOwnProperty.call(payload, "leadScore") || Object.prototype.hasOwnProperty.call(payload, "score") || Object.prototype.hasOwnProperty.call(payload, "lead_score");
   const hasFollowUpDate = Object.prototype.hasOwnProperty.call(payload, "followUpDate") || Object.prototype.hasOwnProperty.call(payload, "follow_up_date");
   const hasPipelineStage = Object.prototype.hasOwnProperty.call(payload, "pipelineStage") || Object.prototype.hasOwnProperty.call(payload, "pipeline_stage");
   const hasCallDisposition = Object.prototype.hasOwnProperty.call(payload, "callDisposition") || Object.prototype.hasOwnProperty.call(payload, "call_disposition");
@@ -840,7 +849,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     contact_name: cleanText(payload.contactName || payload.contact_name || payload.name || payload.contact),
     email: cleanText(payload.email).toLowerCase(),
     phone: cleanText(payload.phone),
-    website: cleanText(payload.websiteUrl || payload.website),
+    website: websiteUrl,
     status: status || "nieuw",
     lead_status: lifecycleStatus,
     pipeline_stage: pipelineStage,
@@ -869,6 +878,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     last_activity_at: cleanText(payload.lastActivityAt || payload.last_activity_at || now),
     last_contacted_at: cleanText(payload.lastContactedAt || payload.last_contacted_at || existingMeta.lastContactedAt || existingMeta.last_contacted_at),
     next_action_at: cleanText(payload.nextActionAt || payload.next_action_at || payload.followUpDate || existingMeta.nextActionAt || existingMeta.next_action_at),
+    lead_score: analysisScore ?? Number(payload.leadScore ?? payload.score ?? payload.lead_score ?? options.existingLead?.lead_score ?? existingMeta.leadScore ?? 60),
     lead_score_reasoning: cleanText(payload.leadScoreReasoning || payload.lead_score_reasoning || existingMeta.leadScoreReasoning || existingMeta.lead_score_reasoning),
     lead_score_updated_at: cleanText(payload.leadScoreUpdatedAt || payload.lead_score_updated_at || existingMeta.leadScoreUpdatedAt || existingMeta.lead_score_updated_at || (hasLeadScore ? now : "")),
     owner_email: assignment.email || ownerEmail,
@@ -889,8 +899,9 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       isFavorite,
       region: cleanText(payload.region),
       industry: cleanText(payload.industry),
+      websiteUrl,
       websiteStatus: cleanText(payload.websiteStatus),
-      leadScore: analysisScore ?? Number(payload.leadScore || payload.score || 60),
+      leadScore: analysisScore ?? Number(payload.leadScore ?? payload.score ?? payload.lead_score ?? options.existingLead?.lead_score ?? existingMeta.leadScore ?? 60),
       followUpDate: cleanText(payload.followUpDate),
       googlePlaceId: cleanText(payload.googlePlaceId),
       externalSource: cleanText(payload.externalSource || payload.external_source || payload.source || options.existingLead?.external_source || options.existingLead?.externalSource || existingMeta.externalSource || existingMeta.external_source || "admin-dashboard-leadfinder"),
@@ -914,6 +925,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       nextActionAt: cleanText(payload.nextActionAt || payload.next_action_at || payload.followUpDate || existingMeta.nextActionAt || existingMeta.next_action_at),
       googleMapsUrl: cleanText(payload.googleMapsUrl),
       websiteAnalysis: payload.websiteAnalysis && typeof payload.websiteAnalysis === "object" ? payload.websiteAnalysis : undefined,
+      manualSmartView: options.create ? requestedManualSmartView || undefined : existingMeta.manualSmartView,
       demoBriefing: cleanText(payload.demoBriefing || payload.generatedBriefing),
       salesCallBriefing: cleanText(payload.salesCallBriefing),
       demoFactoryIntake: payload.demoFactoryIntake && typeof payload.demoFactoryIntake === "object" ? payload.demoFactoryIntake : undefined,
@@ -1020,8 +1032,15 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       ].forEach((key) => delete record.metadata[key]);
     }
     if (!hasSource) delete record.metadata.source;
+    if (!hasWebsite) {
+      delete record.website;
+      delete record.metadata.websiteUrl;
+    }
     if (!hasWebsiteStatus) delete record.metadata.websiteStatus;
-    if (!hasLeadScore) delete record.metadata.leadScore;
+    if (!hasLeadScore) {
+      delete record.lead_score;
+      delete record.metadata.leadScore;
+    }
     if (!hasFollowUpDate) delete record.metadata.followUpDate;
     Object.keys(record.metadata || {}).forEach((key) => {
       if (record.metadata[key] === "" || record.metadata[key] === undefined || Number.isNaN(record.metadata[key])) delete record.metadata[key];
@@ -1046,10 +1065,16 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
   const ownerEmail = firstCleanText(payload.ownerEmail, payload.owner_email, existingMeta.ownerEmail, existingMeta.owner_email, payload.createdByEmail, options.create ? admin.email : "").toLowerCase();
   const ownerName = firstCleanText(payload.ownerName, payload.owner_name, existingMeta.ownerName, existingMeta.owner_name, payload.createdByName, options.create ? admin.email : "");
   const analysisScore = websiteAnalysisScore(payload.websiteAnalysis || payload.metadata?.websiteAnalysis);
+  const websiteUrl = cleanText(payload.websiteUrl || payload.website);
+  const requestedManualSmartView = cleanText(payload.manualSmartView || payload.manual_smart_view || payload.metadata?.manualSmartView || payload.metadata?.manual_smart_view).toLowerCase();
+  if (requestedManualSmartView && !manualSmartViews.has(requestedManualSmartView)) {
+    throw Object.assign(new Error("Kies een geldige slimme weergave."), { status: 400 });
+  }
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
   const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
+  const hasWebsite = Object.prototype.hasOwnProperty.call(payload, "websiteUrl") || Object.prototype.hasOwnProperty.call(payload, "website");
   const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
-  const hasLeadScore = Object.prototype.hasOwnProperty.call(payload, "leadScore") || Object.prototype.hasOwnProperty.call(payload, "score") || Object.prototype.hasOwnProperty.call(payload, "lead_score");
+  const hasLeadScore = analysisScore !== null || Object.prototype.hasOwnProperty.call(payload, "leadScore") || Object.prototype.hasOwnProperty.call(payload, "score") || Object.prototype.hasOwnProperty.call(payload, "lead_score");
   const hasFollowUpDate = Object.prototype.hasOwnProperty.call(payload, "followUpDate") || Object.prototype.hasOwnProperty.call(payload, "follow_up_date");
   const meta = {
     ...existingMeta,
@@ -1078,8 +1103,10 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     source: cleanText(payload.source || "admin-dashboard-leadfinder"),
     leadStatus: lifecycleStatus,
     lead_status: lifecycleStatus,
+    websiteUrl,
     websiteStatus: cleanText(payload.websiteStatus),
     leadScore: analysisScore ?? Number(payload.leadScore || payload.score || 60),
+    manualSmartView: options.create ? requestedManualSmartView || undefined : existingMeta.manualSmartView,
     googlePlaceId: cleanText(payload.googlePlaceId),
     googleMapsUrl: cleanText(payload.googleMapsUrl),
     demoBriefing: cleanText(payload.demoBriefing || payload.generatedBriefing),
@@ -1168,6 +1195,11 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     if (!hasSource) {
       delete record.source;
       delete record.metadata.source;
+    }
+    if (!hasWebsite) {
+      delete record.interest;
+      delete record.website_url;
+      delete record.metadata.websiteUrl;
     }
     if (!hasWebsiteStatus) {
       delete record.website_status;

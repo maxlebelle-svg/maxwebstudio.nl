@@ -34,6 +34,7 @@
 
   const SMART_VIEWS = Object.freeze([
     ["all", "Alle leads"], ["today", "Vandaag actie"], ["new", "Nieuwe leads"],
+    ["business_cards", "Visitekaartjes"],
     ["interested", "Geïnteresseerd"], ["callback", "Terugbellen"], ["voicemail", "Voicemails"],
     ["not_interested", "Niet geïnteresseerd"], ["demos", "Demo’s"], ["payment", "Wacht op betaling"],
     ["won", "Gewonnen"], ["lost", "Verloren"], ["archived", "Gearchiveerd"],
@@ -112,6 +113,7 @@
     if (view === "all") return true;
     if (view === "today") return needsActionToday(item, now);
     if (item.manualSmartView && MANUAL_SMART_VIEW_VALUES.has(view)) return item.manualSmartView === view;
+    if (view === "business_cards") return false;
     if (view === "new") return item.pipelineStage === "new";
     if (view === "interested") return ["hot", "interested"].includes(item.interestLevel) && !isArchivedLead(item) && !isLostLead(item);
     if (view === "callback") return item.callDisposition === "callback";
