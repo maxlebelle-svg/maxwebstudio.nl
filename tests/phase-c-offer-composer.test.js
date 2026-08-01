@@ -302,3 +302,13 @@ test("37 demo and QR links reject unsafe protocols on server and client", async 
   assert.equal(safePreviewUrl("https://demo.example/path"), "https://demo.example/path");
   assert.equal(safePreviewUrl("data:text/html,unsafe"), "");
 });
+
+test("38 a manual recipient can unlock definitive mail without mutating the relationship", async () => {
+  const { validRecipientEmail } = await corePromise;
+  assert.equal(validRecipientEmail(" gekozen@voorbeeld.nl "), true);
+  assert.equal(validRecipientEmail("geen-adres"), false);
+  assert.match(browser, /id="relationship-recipient-email"/);
+  assert.match(browser, /recipientEmail: effectiveRecipientEmail\(\)/);
+  assert.doesNotMatch(browser.match(/async function saveDraft\(\) \{[\s\S]*?\n\}/)?.[0] || "", /recipientEmail/);
+  assert.match(read("public/src/offer-composer-recipient.css"), /relation-recipient input/);
+});

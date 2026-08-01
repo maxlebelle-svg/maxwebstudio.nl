@@ -182,8 +182,7 @@ async function dispatchMail(kind, input, actor, config) {
   const actionKey = boundedKey(input.actionKey);
   const context = await loadMailContext(offerVersionId, actor, config, { allowSent: kind === "definitive" });
   const snapshotExpiry = offerExpiry(context.version.snapshot);
-  const recipient = kind === "test" ? actor.email : context.relationship.email;
-  if (!validEmail(recipient)) throw problem(409, kind === "test" ? "ADMIN_EMAIL_INVALID" : "CUSTOMER_EMAIL_REQUIRED", kind === "test" ? "Het geverifieerde beheerderse-mailadres ontbreekt." : "De klant heeft geen geldig e-mailadres.");
+  const recipient = resolveDispatchRecipient(kind, input, actor, context.relationship);
   let rawToken = "";
   let tokenHash = null;
   let tokenExpiresAt = null;
@@ -210,7 +209,7 @@ async function dispatchMail(kind, input, actor, config) {
   }
   let mail;
   try {
-    mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: true });
+    mail = buildCommercialOfferMail({ relationship: { ...context.relationship, email: recipient }, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: true });
   } catch (error) {
     await finalizeDispatch(config, actor, reservation.dispatchId, false, "", error.code || "mail_render_failed");
     throw error;
@@ -484,7 +483,18 @@ function siteUrl() {
   catch { throw problem(503, "SITE_URL_INVALID", "De veilige applicatie-URL ontbreekt."); }
 }
 function sha256(value) { return crypto.createHash("sha256").update(clean(value)).digest("hex"); }
-function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(value)); }
+function validEmail(value) { const email = clean(value); return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+function resolveDispatchRecipient(kind, input = {}, actor = {}, relationship = {}) {
+  if (kind === "test") {
+    if (!validEmail(actor.email)) throw problem(409, "ADMIN_EMAIL_INVALID", "Het geverifieerde beheerderse-mailadres ontbreekt.");
+    return clean(actor.email).toLowerCase();
+  }
+  const manualRecipient = clean(input.recipientEmail);
+  if (manualRecipient && !validEmail(manualRecipient)) throw problem(400, "RECIPIENT_EMAIL_INVALID", "Vul een geldig verzendadres in.");
+  const recipient = manualRecipient || clean(relationship.email);
+  if (!validEmail(recipient)) throw problem(409, "CUSTOMER_EMAIL_REQUIRED", "Vul een geldig verzendadres in voordat u definitief verzendt.");
+  return recipient.toLowerCase();
+}
 function parseBody(event) { if (event.httpMethod === "GET") return {}; const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString("utf8") : String(event.body || ""); if (!raw || Buffer.byteLength(raw) > 131072) throw problem(400, "BODY_INVALID", "De aanvraag is leeg of te groot."); try { return JSON.parse(raw); } catch { throw problem(400, "JSON_INVALID", "De aanvraag bevat geen geldige gegevens."); } }
 function boundedKey(value) { const key = clean(value); if (key.length < 16 || key.length > 150 || !/^[a-zA-Z0-9:_-]+$/.test(key)) throw problem(400, "ACTION_KEY_INVALID", "De actiebeveiliging ontbreekt."); return key; }
 function uuid(value, message) { const result = clean(value); if (!UUID.test(result)) throw problem(400, "UUID_INVALID", message); return result; }
@@ -493,4 +503,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, sha256, publicMail, offerExpiry };
+exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, sha256, publicMail, offerExpiry, resolveDispatchRecipient };

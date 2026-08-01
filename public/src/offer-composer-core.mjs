@@ -46,6 +46,11 @@ export function maskEmail(value) {
   return `${hidden(local)}@${hidden(name)}${suffix ? `.${suffix}` : ''}`;
 }
 
+export function validRecipientEmail(value) {
+  const email = clean(value).toLowerCase();
+  return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export function definitiveConfirmationDetails({ relationship = {}, demo = {}, snapshot = {} } = {}) {
   const lines = Array.isArray(snapshot.lines) ? snapshot.lines : [];
   const website = lines.find((line) => ['starter_site', 'business_website', 'premium_growth'].includes(line.productId));
@@ -111,7 +116,7 @@ export function composerReadiness({ snapshot, documents = [], selectedDocumentTy
   const nonBinding = Boolean(snapshot?.hasNonBindingLines);
   return {
     readyForReview: Boolean(snapshot) && !nonBinding && missingDocuments.length === 0 && invalidChecksums.length === 0,
-    canTestMailLater: Boolean(clean(email)) && Boolean(snapshot),
+    canTestMailLater: validRecipientEmail(email) && Boolean(snapshot),
     nonBinding,
     missingDocuments,
     invalidChecksums,

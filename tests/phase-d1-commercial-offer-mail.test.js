@@ -396,3 +396,13 @@ test("D1 hardening remains free of production providers and activation side effe
   const scope = [hardening, read("functions/admin-commercial-offers.js"), browser].join("\n");
   assert.doesNotMatch(scope, /signhost|api\.mollie|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
 });
+
+test("manual definitive recipient is normalized while test mail remains admin-only", () => {
+  const actor = { email: "beheerder@maxwebstudio.nl" };
+  const relationship = { email: "lead@voorbeeld.nl" };
+  assert.equal(endpoint.resolveDispatchRecipient("definitive", { recipientEmail: " Keuze@Voorbeeld.nl " }, actor, relationship), "keuze@voorbeeld.nl");
+  assert.equal(endpoint.resolveDispatchRecipient("definitive", {}, actor, relationship), "lead@voorbeeld.nl");
+  assert.equal(endpoint.resolveDispatchRecipient("test", { recipientEmail: "klant@voorbeeld.nl" }, actor, relationship), "beheerder@maxwebstudio.nl");
+  assert.throws(() => endpoint.resolveDispatchRecipient("definitive", { recipientEmail: "ongeldig" }, actor, relationship), /geldig verzendadres/i);
+  assert.match(browser, /relationship: \{ \.\.\.state\.data\.relationship, email: effectiveRecipientEmail\(\) \}/);
+});

@@ -11,6 +11,7 @@ import {
   selectionsFromState,
   stateFromSnapshot,
   statusLabel,
+  validRecipientEmail,
 } from './offer-composer-core.mjs';
 
 const endpoint = '/api/admin-commercial-offers';
@@ -40,6 +41,7 @@ const state = {
   revokeInterestPending: false,
   revokeInterestTrigger: null,
   preflightPending: false,
+  recipientEmail: '',
 };
 
 const elements = Object.fromEntries([
@@ -54,6 +56,7 @@ async function init() {
   bindEvents();
   try {
     state.data = await request('GET', null, routeContext);
+    state.recipientEmail = String(state.data.relationship?.email || '').trim();
     state.selectedDocumentTypes = state.data.documents.filter((document) => document.required).map((document) => document.documentType);
     hydrateExistingOffer();
     renderAll();
@@ -229,9 +232,18 @@ function renderAll() {
 
 function renderRelationship() {
   const relation = state.data.relationship;
-  const values = [['Type', relation.type === 'lead' ? 'Lead' : 'Klant'], ['Bedrijf', relation.companyName || 'Ontbreekt'], ['Contactpersoon', relation.contactName || 'Ontbreekt'], ['E-mail', relation.email || 'Ontbreekt'], ['Telefoon', relation.phone || 'Ontbreekt'], ['Website', relation.website || 'Niet ingevuld']];
-  elements.relationshipCard.innerHTML = values.map(([label, value], index) => `<div class="${index > 3 ? 'wide' : ''}"><span>${escapeHtml(label)}</span><strong class="${value === 'Ontbreekt' ? 'missing' : ''}">${escapeHtml(value)}</strong></div>`).join('');
-  if (!relation.email) showMessage('E-mailadres ontbreekt. Conceptopslag blijft mogelijk; toekomstige mailstappen blijven geblokkeerd.', 'warning');
+  const values = [['Type', relation.type === 'lead' ? 'Lead' : 'Klant'], ['Bedrijf', relation.companyName || 'Ontbreekt'], ['Contactpersoon', relation.contactName || 'Ontbreekt'], ['Opgeslagen e-mail', relation.email || 'Ontbreekt'], ['Telefoon', relation.phone || 'Ontbreekt'], ['Website', relation.website || 'Niet ingevuld']];
+  elements.relationshipCard.innerHTML = values.map(([label, value], index) => `<div class="${index > 3 ? 'wide' : ''}"><span>${escapeHtml(label)}</span><strong class="${value === 'Ontbreekt' ? 'missing' : ''}">${escapeHtml(value)}</strong></div>`).join('') + `<label class="relation-recipient wide" for="relationship-recipient-email"><span>Verzendadres</span><input id="relationship-recipient-email" type="email" inputmode="email" autocomplete="email" maxlength="320" value="${escapeHtml(state.recipientEmail)}" placeholder="naam@bedrijf.nl" aria-describedby="relationship-recipient-help"/><small id="relationship-recipient-help">Dit adres ontvangt de definitieve klantmail. De lead of klant wordt niet aangepast.</small></label>`;
+  const input = document.getElementById('relationship-recipient-email');
+  input.addEventListener('input', () => {
+    state.recipientEmail = input.value;
+    input.setAttribute('aria-invalid', String(Boolean(input.value.trim()) && !validRecipientEmail(input.value)));
+    renderReadiness();
+  });
+  input.addEventListener('blur', () => {
+    if (input.value.trim() && !validRecipientEmail(input.value)) showMessage('Vul een geldig verzendadres in.', 'warning');
+  });
+  if (!state.recipientEmail) showMessage('E-mailadres ontbreekt. Vul hieronder het verzendadres voor deze offerte in.', 'warning');
 }
 
 function renderFactory() {
@@ -287,7 +299,7 @@ function renderSummary() {
 }
 
 function renderReadiness() {
-  const readiness = composerReadiness({ snapshot: state.snapshot, documents: activeDocuments(), selectedDocumentTypes: state.selectedDocumentTypes, email: state.data?.relationship?.email });
+  const readiness = composerReadiness({ snapshot: state.snapshot, documents: activeDocuments(), selectedDocumentTypes: state.selectedDocumentTypes, email: effectiveRecipientEmail() });
   const savedDraft = state.currentVersionId && state.currentVersionStatus === 'draft' && !state.dirty;
   elements.readyReview.disabled = !(readiness.readyForReview && savedDraft);
   elements.revokeVersion.disabled = !(state.currentVersionId && ['draft', 'ready_for_review'].includes(state.currentVersionStatus));
@@ -322,7 +334,7 @@ function renderPreviewAvailability() {
   const activeInterestTokens = (version?.interestTokens || []).filter((token) => !token.confirmed_at && !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
   elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
   elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
-  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed)) && previewed && tested && state.data?.relationship?.email && state.data?.capabilities?.definitiveSend);
+  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend);
   elements.revokeInterest.disabled = !(activeInterestTokens.length && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
   elements.interestAccessSummary.textContent = activeInterestTokens.length
     ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}`
@@ -467,7 +479,7 @@ async function sendTestMail() {
 function openDefinitiveSendDialog() {
   if (elements.definitiveSend.disabled || state.definitiveRequestPending) return;
   const demo = (state.data.demos || []).find((item) => item.id === state.selectedDemoId) || {};
-  const details = definitiveConfirmationDetails({ relationship: state.data.relationship, demo, snapshot: state.snapshot });
+  const details = definitiveConfirmationDetails({ relationship: { ...state.data.relationship, email: effectiveRecipientEmail() }, demo, snapshot: state.snapshot });
   elements.confirmCompany.textContent = details.companyName;
   elements.confirmRecipient.textContent = details.maskedEmail;
   elements.confirmDemo.textContent = details.demoName;
@@ -596,7 +608,7 @@ async function sendDefinitiveMail() {
   elements.confirmDefinitiveSend.textContent = 'Veilig verzenden…';
   elements.definitiveSendResult.textContent = 'De server controleert de actuele status en verstuurt maximaal één e-mail…';
   try {
-    await request('POST', { action: 'definitive_send', offerVersionId: state.currentVersionId, actionKey: state.definitiveActionKey });
+    await request('POST', { action: 'definitive_send', offerVersionId: state.currentVersionId, actionKey: state.definitiveActionKey, recipientEmail: effectiveRecipientEmail() });
     await reloadContext();
     elements.definitiveSendResult.textContent = 'Verzending bevestigd.';
     elements.definitiveSendDialog.close();
@@ -635,6 +647,7 @@ function activeDocuments() {
 }
 
 function selectedIds() { return [state.websiteProductId, state.careProductId, ...state.addOnIds].filter(Boolean); }
+function effectiveRecipientEmail() { return String(state.recipientEmail || '').trim().toLowerCase(); }
 function currentVersion() { return state.data?.history?.flatMap((offer) => offer.versions || []).find((version) => version.id === state.currentVersionId); }
 function productChoice(product, name, selected) { const once = product.components.find((item) => item.type === 'one_time'); const recurring = product.components.find((item) => item.type === 'recurring'); return `<label class="choice-card"><input type="radio" name="${name}" value="${product.id}" ${selected === product.id ? 'checked' : ''}/><strong>${escapeHtml(product.name)}</strong><span>${escapeHtml(product.description)}</span><small>${escapeHtml(classificationLabel(product.classification))}</small><span class="choice-price">${once ? money(once.amountExVatCents ?? once.startingAmountExVatCents) : money(recurring?.amountExVatCents ?? recurring?.startingAmountExVatCents, { monthly: true })} excl. btw${product.fixedDepositExVatCents ? ` · aanbetaling ${money(product.fixedDepositExVatCents)}` : ''}</span></label>`; }
 function choiceNone(name, label, checked) { return `<label class="choice-card"><input type="radio" name="${name}" value="" ${checked ? 'checked' : ''}/><strong>${label}</strong><span>Geen keuze voor deze categorie.</span><span class="choice-price">${money(0)}</span></label>`; }
