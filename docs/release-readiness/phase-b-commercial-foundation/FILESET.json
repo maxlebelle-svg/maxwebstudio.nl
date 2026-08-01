@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-b-commercial-foundation-2026-07-30",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260730150000_commercial_offer_foundation.sql",
+      "bytes": 45172,
+      "sha256": "a6f043620b7bc1e56dc974f0d29631b4fe139aeef2a445342745e5d016a3513e"
+    }
+  ]
+}

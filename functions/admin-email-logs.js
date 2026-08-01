@@ -30,6 +30,9 @@ exports.handler = async (event) => {
 
       const log = await getEmailLog(payload.id || payload.emailLogId);
       if (!log) return jsonResponse(404, { success: false, error: "Mail-log niet gevonden." });
+      if (log.metadata?.contentRedacted === true || cleanText(log.template_key) === "commercial_offer_definitive") {
+        return jsonResponse(409, { success: false, error: "Een beveiligde voorstelmail kan niet vanuit Mail Center opnieuw worden verzonden." });
+      }
       if (!cleanText(log.to_email) || !cleanText(log.subject)) {
         return jsonResponse(400, { success: false, error: "Deze mail mist ontvanger of onderwerp en kan niet opnieuw worden verstuurd." });
       }

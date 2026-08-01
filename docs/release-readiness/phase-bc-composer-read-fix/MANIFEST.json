@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-bc-composer-read-fix-2026-07-30",
+  "release": "Max Webstudio Phase B/C Composer service-role read fix",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/phase-bc-production-release-v2",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260730170000_composer_service_role_read_fix.sql"
+  ],
+  "scope": [
+    "service-role SELECT grants for the five immutable Composer evidence tables"
+  ],
+  "explicitlyExcluded": [
+    "table or column creation",
+    "data mutation",
+    "email delivery",
+    "Signhost",
+    "Mollie"
+  ]
+}
