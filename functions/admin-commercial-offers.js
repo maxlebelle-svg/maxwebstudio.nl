@@ -137,6 +137,7 @@ async function readComposerContext(query, actor, config) {
       testMail: phaseD1Enabled() && validEmail(actor.email),
       definitiveSend: phaseD1Enabled(),
       revokeInterest: phaseD1Enabled() && ["super_admin", "admin"].includes(normalizeRole(actor.role)),
+      stagingMail: isStagingDeployment(),
       providersEnabled: false,
     },
   });
@@ -382,18 +383,27 @@ function mapDemo(row) {
   const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
   const desktopUrl = absolutePreviewUrl(row.preview_url);
   const mobileUrl = absolutePreviewUrl(meta.mobileUrl) || desktopUrl;
+  const qrTarget = absolutePreviewUrl(meta.qrTarget) || mobileUrl;
   return {
     id: row.id,
     name: clean(row.business_name || meta.name || "Demo"),
     type: clean(meta.factoryType || meta.type || "website"),
     desktopUrl,
     mobileUrl,
-    qrTarget: absolutePreviewUrl(meta.qrTarget) || mobileUrl,
-    qrCodeUrl: absolutePreviewUrl(meta.qrCodeUrl || meta.qrAssetUrl) || silveradoQr(row, desktopUrl),
+    qrTarget,
+    qrCodeUrl: signedQrCodeUrl(qrTarget),
     status: clean(row.demo_status),
     expiresAt: clean(meta.expiresAt),
     updatedAt: row.updated_at,
   };
+}
+
+function signedQrCodeUrl(target) {
+  const safeTarget = absolutePreviewUrl(target);
+  const secret = clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!safeTarget || !secret) return "";
+  const signature = crypto.createHmac("sha256", secret).update(safeTarget).digest("hex");
+  return `${siteUrl()}/api/commercial-offer-qr?target=${encodeURIComponent(safeTarget)}&signature=${signature}`;
 }
 
 function absolutePreviewUrl(value) {
@@ -516,4 +526,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, absolutePreviewUrl, silveradoQr, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };
+exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, absolutePreviewUrl, signedQrCodeUrl, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };

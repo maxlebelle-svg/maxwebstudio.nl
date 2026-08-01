@@ -45,7 +45,7 @@ const state = {
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -227,6 +227,7 @@ function renderAll() {
   elements.catalogVersion.textContent = state.data.catalog.version;
   elements.websiteCatalogVersion.textContent = state.data.catalog.version;
   elements.catalogChecksum.textContent = `SHA-256 ${state.data.catalog.checksum.slice(0, 16)}…`;
+  elements.definitiveStagingWarning.hidden = !state.data?.capabilities?.stagingMail;
   renderRelationship(); renderFactory(); renderDemos(); renderCatalog(); renderDocuments(); renderHistory(); renderSummary(); renderReadiness(); renderStatus();
 }
 
@@ -316,8 +317,31 @@ function renderReadiness() {
 
 function renderHistory() {
   const offers = state.data?.history || [];
-  const versions = offers.flatMap((offer) => (offer.versions || []).map((version) => ({ ...version, offerTitle: offer.title, current: offer.current_version_id === version.id })));
-  elements.versionHistory.innerHTML = versions.length ? versions.map((version) => `<article class="version-item"><header><strong>Versie ${version.version_number} · ${escapeHtml(version.offerTitle)}</strong><span class="classification ${version.status}">${escapeHtml(statusLabel(version.status))}</span></header><dl><div><dt>Aangemaakt</dt><dd>${escapeHtml(formatDate(version.created_at))}</dd></div><div><dt>Actor</dt><dd>${escapeHtml(version.created_by_profile_id || 'Onbekend')}</dd></div><div><dt>Catalogus</dt><dd>${escapeHtml(version.catalog_version)}</dd></div><div><dt>Eenmalig</dt><dd>${money(Number(version.one_time_incl_vat_cents))}</dd></div><div><dt>Per maand</dt><dd>${money(Number(version.recurring_incl_vat_cents), { monthly: true })}</dd></div><div><dt>Documenten</dt><dd>${version.documents?.length || 0}</dd></div><div><dt>Maatwerk</dt><dd>${version.lines?.some((line) => line.price_classification === 'custom') ? 'Ja' : 'Nee'}</dd></div><div><dt>Reden</dt><dd>${escapeHtml(version.lifecycle_reason || version.internal_change_reason || '—')}</dd></div></dl></article>`).join('') : '<p>Nog geen opgeslagen versies voor deze relatie.</p>';
+  const versions = offers.flatMap((offer) => (offer.versions || []).map((version) => ({ ...version, offerId: offer.id, offerTitle: offer.title, demoJourneyId: offer.demo_journey_id, factoryProjectId: offer.factory_project_id, current: offer.current_version_id === version.id })));
+  elements.versionHistory.innerHTML = versions.length ? versions.map((version) => `<article class="version-item ${version.id === state.currentVersionId ? 'selected' : ''}"><header><strong>Versie ${version.version_number} · ${escapeHtml(version.offerTitle)}</strong><span class="classification ${version.status}">${escapeHtml(statusLabel(version.status))}</span></header><dl><div><dt>Aangemaakt</dt><dd>${escapeHtml(formatDate(version.created_at))}</dd></div><div><dt>Actor</dt><dd>${escapeHtml(version.created_by_profile_id || 'Onbekend')}</dd></div><div><dt>Catalogus</dt><dd>${escapeHtml(version.catalog_version)}</dd></div><div><dt>Eenmalig</dt><dd>${money(Number(version.one_time_incl_vat_cents))}</dd></div><div><dt>Per maand</dt><dd>${money(Number(version.recurring_incl_vat_cents), { monthly: true })}</dd></div><div><dt>Documenten</dt><dd>${version.documents?.length || 0}</dd></div><div><dt>Maatwerk</dt><dd>${version.lines?.some((line) => line.price_classification === 'custom') ? 'Ja' : 'Nee'}</dd></div><div><dt>Reden</dt><dd>${escapeHtml(version.lifecycle_reason || version.internal_change_reason || '—')}</dd></div></dl><button type="button" class="version-select" data-offer-id="${version.offerId}" data-version-id="${version.id}">${version.current ? (version.id === state.currentVersionId ? 'Geselecteerd voorstel' : 'Dit voorstel kiezen') : 'Oude bewijsversie bekijken'}</button></article>`).join('') : '<p>Nog geen opgeslagen versies voor deze relatie.</p>';
+  elements.versionHistory.querySelectorAll('.version-select').forEach((button) => button.addEventListener('click', selectHistoryVersion));
+}
+
+function selectHistoryVersion(event) {
+  const offer = (state.data?.history || []).find((item) => item.id === event.currentTarget.dataset.offerId);
+  const version = offer?.versions?.find((item) => item.id === event.currentTarget.dataset.versionId);
+  if (!offer || !version) return;
+  if (offer.current_version_id !== version.id) {
+    showMessage('Dit is een oude bewijsversie. Alleen de actuele versie van een voorstel kan veilig worden verzonden.', 'warning');
+    return;
+  }
+  Object.assign(state, stateFromSnapshot(version.snapshot || {}));
+  state.snapshot = version.snapshot || null;
+  state.currentOfferId = offer.id;
+  state.currentVersionId = version.id;
+  state.currentVersionStatus = version.status;
+  state.selectedDemoId = offer.demo_journey_id || '';
+  state.selectedFactoryProjectId = offer.factory_project_id || '';
+  state.selectedDocumentTypes = (version.documents || []).map((document) => document.document_type);
+  state.dirty = false;
+  elements.offerTitle.value = offer.title || 'Websitevoorstel';
+  renderAll();
+  showMessage(`Versie ${version.version_number} van ${offer.title} is geselecteerd voor controle en verzending.`, 'success');
 }
 
 function renderStatus() {
@@ -444,7 +468,7 @@ async function transition(targetStatus) {
 }
 
 async function reloadContext() {
-  state.data = await request('GET', null, { ...routeContext, offerId: state.currentOfferId });
+  state.data = await request('GET', null, { relationshipType: routeContext.relationshipType, relationshipId: routeContext.relationshipId });
   const version = currentVersion();
   if (version) state.currentVersionStatus = version.status;
   renderHistory(); renderStatus(); renderReadiness();

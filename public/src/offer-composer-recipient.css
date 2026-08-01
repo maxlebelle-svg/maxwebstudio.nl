@@ -31,3 +31,27 @@
   color: var(--oc-muted);
   font-size: .78rem;
 }
+
+.version-item.selected {
+  border-color: var(--oc-cyan);
+  box-shadow: 0 0 0 2px rgba(24, 197, 219, .16);
+}
+
+.version-select {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--oc-line);
+  border-radius: 11px;
+  background: #123b56;
+  color: #c8f6ff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.version-select:hover,
+.version-select:focus-visible {
+  border-color: var(--oc-cyan);
+  outline: none;
+}

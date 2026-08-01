@@ -420,8 +420,10 @@ test("production preview and dispatch do not force a staging label", () => {
 
 test("relative stored demo links become safe absolute production mail links", () => {
   const previousUrl = process.env.URL;
+  const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   try {
     process.env.URL = "https://maxwebstudio.nl";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-qr-signing-secret";
     const demo = endpoint.mapDemo({
       id: "33333333-3333-4333-8333-333333333333",
       business_name: "Emmeloord Rotishop",
@@ -430,9 +432,35 @@ test("relative stored demo links become safe absolute production mail links", ()
     });
     assert.equal(demo.desktopUrl, "https://maxwebstudio.nl/preview/emmeloord-rotishop");
     assert.equal(demo.mobileUrl, demo.desktopUrl);
-    assert.equal(demo.qrCodeUrl, "https://maxwebstudio.nl/assets/food/silverado/silverado-demo-qr.svg");
+    assert.match(demo.qrCodeUrl, /^https:\/\/maxwebstudio\.nl\/api\/commercial-offer-qr\?target=/);
+    assert.match(decodeURIComponent(demo.qrCodeUrl), /https:\/\/maxwebstudio\.nl\/preview\/emmeloord-rotishop/);
     assert.doesNotThrow(() => buildCommercialOfferMail({ ...base, demo, mode: "preview" }));
   } finally {
     if (previousUrl === undefined) delete process.env.URL; else process.env.URL = previousUrl;
+    if (previousKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey;
   }
+});
+
+test("proposal mail uses the canonical Max Webstudio dark branding", () => {
+  const mail = buildCommercialOfferMail({ ...base, mode: "test" });
+  assert.match(mail.html, /supported-color-schemes/);
+  assert.match(mail.html, /max-webstudio-logo-mark\.svg/);
+  assert.match(mail.html, /class="mws-card"/);
+  assert.match(mail.html, /#061626/);
+  assert.match(mail.html, /wa\.me\/31851302326/);
+  assert.match(mail.html, /@media\(max-width:620px\)/);
+});
+
+test("production hides the staging-only definitive warning", () => {
+  assert.match(html, /id="definitive-staging-warning" hidden/);
+  assert.match(browser, /definitiveStagingWarning\.hidden = !state\.data\?\.capabilities\?\.stagingMail/);
+  assert.match(read("functions/admin-commercial-offers.js"), /stagingMail: isStagingDeployment\(\)/);
+});
+
+test("version history selects only the current immutable version of an offer", () => {
+  assert.match(browser, /class="version-select"/);
+  assert.match(browser, /data-offer-id/);
+  assert.match(browser, /offer\.current_version_id !== version\.id/);
+  assert.match(browser, /Alleen de actuele versie van een voorstel kan veilig worden verzonden/);
+  assert.match(browser, /state\.currentVersionId = version\.id/);
 });
