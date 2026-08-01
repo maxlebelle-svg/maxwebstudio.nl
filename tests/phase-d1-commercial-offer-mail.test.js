@@ -95,9 +95,11 @@ test("Phase D1 is enabled only for exact staging or production host and database
     process.env.URL = "https://maxwebstudio-staging.netlify.app";
     process.env.SUPABASE_URL = "https://xlxpuuycigeqhgxqtzni.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), true);
+    assert.equal(endpoint.isStagingDeployment(), true);
     process.env.URL = "https://maxwebstudio.nl";
     process.env.SUPABASE_URL = "https://yxxahurphdbblkuxoeje.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), true);
+    assert.equal(endpoint.isStagingDeployment(), false);
     process.env.SUPABASE_URL = "https://wrong-project.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), false);
     process.env.URL = "https://wrong-site.example";
@@ -408,4 +410,10 @@ test("manual definitive recipient is normalized while test mail remains admin-on
   assert.equal(endpoint.resolveDispatchRecipient("test", { recipientEmail: "klant@voorbeeld.nl" }, actor, relationship), "beheerder@maxwebstudio.nl");
   assert.throws(() => endpoint.resolveDispatchRecipient("definitive", { recipientEmail: "ongeldig" }, actor, relationship), /geldig verzendadres/i);
   assert.match(browser, /relationship: \{ \.\.\.state\.data\.relationship, email: effectiveRecipientEmail\(\) \}/);
+});
+
+test("production preview and dispatch do not force a staging label", () => {
+  const server = read("functions/admin-commercial-offers.js");
+  assert.doesNotMatch(server, /buildCommercialOfferMail\([^\n]+staging:\s*true/);
+  assert.match(server, /staging: isStagingDeployment\(\)/);
 });

@@ -161,7 +161,7 @@ async function previewMail(input, actor, config) {
   assertPhaseD1Enabled();
   const offerVersionId = uuid(input.offerVersionId, "De aanbodversie is ongeldig.");
   const context = await loadMailContext(offerVersionId, actor, config);
-  const mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: "preview", staging: true });
+  const mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: "preview", staging: isStagingDeployment() });
   const evidence = await rpc(config, "commercial_record_offer_preview_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
@@ -209,7 +209,7 @@ async function dispatchMail(kind, input, actor, config) {
   }
   let mail;
   try {
-    mail = buildCommercialOfferMail({ relationship: { ...context.relationship, email: recipient }, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: true });
+    mail = buildCommercialOfferMail({ relationship: { ...context.relationship, email: recipient }, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: isStagingDeployment() });
   } catch (error) {
     await finalizeDispatch(config, actor, reservation.dispatchId, false, "", error.code || "mail_render_failed");
     throw error;
@@ -478,6 +478,10 @@ function phaseD1Enabled() {
   ].some(([allowedSite, allowedDatabase]) => siteHost === allowedSite && databaseHost === allowedDatabase);
   return enabled && allowedEnvironment;
 }
+function isStagingDeployment() {
+  try { return new URL(clean(process.env.URL || process.env.DEPLOY_PRIME_URL)).hostname.toLowerCase() === "maxwebstudio-staging.netlify.app"; }
+  catch { return false; }
+}
 function assertPhaseD1Enabled() { if (!phaseD1Enabled()) throw problem(403, "PHASE_D1_DISABLED", "Deze mailfase is in deze omgeving niet geactiveerd."); }
 function siteUrl() {
   const candidate = clean(process.env.URL || process.env.DEPLOY_PRIME_URL || "https://maxwebstudio-staging.netlify.app");
@@ -505,4 +509,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, sha256, publicMail, offerExpiry, resolveDispatchRecipient };
+exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };
