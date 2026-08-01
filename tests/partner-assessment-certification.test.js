@@ -58,3 +58,14 @@ test('admin portal can verify and revoke an accessible certificate', () => {
   assert.match(page, /Verifieer een certificaat-ID/);
   assert.match(page, /interne kwalificatie/i);
 });
+
+test('an activated partner gets a direct Sales Workspace action after certification', () => {
+  const page = fs.readFileSync(path.join(root, 'public/partner-onboarding.html'), 'utf8');
+  const client = fs.readFileSync(path.join(root, 'public/src/partner/partner-onboarding.js'), 'utf8');
+  const styles = fs.readFileSync(path.join(root, 'public/src/partner/partner-onboarding.css'), 'utf8');
+  assert.match(page, /id="portalAccess"/);
+  assert.match(page, /href="\/admin-sales\.html"[^>]*>Open Sales Workspace/);
+  assert.match(client, /portalAccessAllowed = !state\.preview && data\.access\.allowed/);
+  assert.match(client, /element\("portalAccess"\)\.hidden = !portalAccessAllowed/);
+  assert.match(styles, /\.portal-access\[hidden\] \{ display: none; \}/);
+});

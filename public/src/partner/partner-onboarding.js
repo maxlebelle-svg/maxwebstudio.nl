@@ -90,6 +90,12 @@ function render(data, preferredStep = "") {
     : data.onboarding?.status === "certified"
       ? "Je certificaat is toegekend. Een bevoegde admin moet je account nog expliciet activeren."
       : `${completed} van ${total} verplichte stappen afgerond. Je kunt veilig verdergaan waar je gebleven bent.`;
+  const portalAccessAllowed = !state.preview && data.access.allowed;
+  element("portalAccess").hidden = !portalAccessAllowed;
+  if (portalAccessAllowed) {
+    element("securityTitle").textContent = "Toegang vrijgegeven";
+    element("securityText").textContent = "Je certificering is actief en de Sales Workspace is geopend.";
+  }
 
   const modules = data.training.modules || [];
   element("stepNav").replaceChildren(...modules.map((module) => {
