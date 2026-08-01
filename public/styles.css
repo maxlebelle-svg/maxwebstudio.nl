@@ -7059,6 +7059,15 @@ h3 {
   min-width: 0;
 }
 
+.admin-body select {
+  color-scheme: dark;
+}
+
+.admin-body select option {
+  background: #071a30;
+  color: #f3f7ff;
+}
+
 .admin-shell {
   display: grid;
   gap: clamp(22px, 3vw, 34px);
