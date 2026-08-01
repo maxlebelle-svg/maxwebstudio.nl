@@ -88,7 +88,7 @@ test("unsafe or incomplete demos and non-binding prices fail closed before mail 
   assert.throws(() => buildCommercialOfferMail({ ...base, snapshot: { ...snapshot, hasNonBindingLines: true }, mode: "test" }), /bindende/i);
 });
 
-test("Phase D1 is environment gated and cannot be enabled in production", () => {
+test("Phase D1 is enabled only for exact staging or production host and database pairs", () => {
   const previous = { flag: process.env.COMMERCIAL_OFFER_PHASE_D1_ENABLED, url: process.env.URL, supabaseUrl: process.env.SUPABASE_URL };
   try {
     process.env.COMMERCIAL_OFFER_PHASE_D1_ENABLED = "true";
@@ -96,8 +96,11 @@ test("Phase D1 is environment gated and cannot be enabled in production", () => 
     process.env.SUPABASE_URL = "https://xlxpuuycigeqhgxqtzni.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), true);
     process.env.URL = "https://maxwebstudio.nl";
+    process.env.SUPABASE_URL = "https://yxxahurphdbblkuxoeje.supabase.co";
+    assert.equal(endpoint.phaseD1Enabled(), true);
+    process.env.SUPABASE_URL = "https://wrong-project.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), false);
-    process.env.URL = "https://maxwebstudio-staging.netlify.app";
+    process.env.URL = "https://wrong-site.example";
     process.env.SUPABASE_URL = "https://yxxahurphdbblkuxoeje.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), false);
   } finally {

@@ -300,7 +300,8 @@ function renderSummary() {
 
 function renderReadiness() {
   const readiness = composerReadiness({ snapshot: state.snapshot, documents: activeDocuments(), selectedDocumentTypes: state.selectedDocumentTypes, email: effectiveRecipientEmail() });
-  const savedDraft = state.currentVersionId && state.currentVersionStatus === 'draft' && !state.dirty;
+  const savedCurrentVersion = Boolean(currentVersion() && !state.dirty);
+  const savedDraft = savedCurrentVersion && state.currentVersionStatus === 'draft';
   elements.readyReview.disabled = !(readiness.readyForReview && savedDraft);
   elements.revokeVersion.disabled = !(state.currentVersionId && ['draft', 'ready_for_review'].includes(state.currentVersionStatus));
   elements.readinessList.innerHTML = [
@@ -308,7 +309,7 @@ function renderReadiness() {
     [!readiness.nonBinding, 'Alle prijzen zijn bindend bevestigd'],
     [readiness.missingDocuments.length === 0, 'Alle verplichte documenten zijn gekoppeld'],
     [readiness.invalidChecksums.length === 0, 'Alle documentchecksums zijn geldig'],
-    [savedDraft, 'Actuele inhoud is als immutable conceptversie opgeslagen'],
+    [savedCurrentVersion, 'Actuele inhoud is als immutable versie opgeslagen'],
   ].map(([ok, label]) => `<div class="${ok ? 'ok' : 'blocked'}">${ok ? '✓' : '○'} ${escapeHtml(label)}</div>`).join('');
   renderPreviewAvailability();
 }

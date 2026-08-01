@@ -472,9 +472,11 @@ function phaseD1Enabled() {
   let databaseHost = "";
   try { siteHost = new URL(clean(process.env.URL || process.env.DEPLOY_PRIME_URL)).hostname.toLowerCase(); } catch {}
   try { databaseHost = new URL(clean(process.env.SUPABASE_URL)).hostname.toLowerCase(); } catch {}
-  return enabled
-    && siteHost === "maxwebstudio-staging.netlify.app"
-    && databaseHost === "xlxpuuycigeqhgxqtzni.supabase.co";
+  const allowedEnvironment = [
+    ["maxwebstudio-staging.netlify.app", "xlxpuuycigeqhgxqtzni.supabase.co"],
+    ["maxwebstudio.nl", "yxxahurphdbblkuxoeje.supabase.co"],
+  ].some(([allowedSite, allowedDatabase]) => siteHost === allowedSite && databaseHost === allowedDatabase);
+  return enabled && allowedEnvironment;
 }
 function assertPhaseD1Enabled() { if (!phaseD1Enabled()) throw problem(403, "PHASE_D1_DISABLED", "Deze mailfase is in deze omgeving niet geactiveerd."); }
 function siteUrl() {

@@ -312,3 +312,9 @@ test("38 a manual recipient can unlock definitive mail without mutating the rela
   assert.doesNotMatch(browser.match(/async function saveDraft\(\) \{[\s\S]*?\n\}/)?.[0] || "", /recipientEmail/);
   assert.match(read("public/src/offer-composer-recipient.css"), /relation-recipient input/);
 });
+
+test("39 a stored ready-for-review version is shown as immutable and complete", () => {
+  assert.match(browser, /const savedCurrentVersion = Boolean\(currentVersion\(\) && !state\.dirty\)/);
+  assert.match(browser, /\[savedCurrentVersion, 'Actuele inhoud is als immutable versie opgeslagen'\]/);
+  assert.match(browser, /const savedDraft = savedCurrentVersion && state\.currentVersionStatus === 'draft'/);
+});
