@@ -1,0 +1,66 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.resolve(__dirname, "..");
+const html = fs.readFileSync(path.join(root, "public/admin-demo-sites.html"), "utf8");
+const css = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
+const qrPath = path.join(root, "public/assets/food/silverado/silverado-demo-qr.svg");
+
+test("Silverado krijgt een afgebakende klant- en restaurantpresentatie", () => {
+  assert.match(html, /function isSilveradoFoodDemo/);
+  assert.match(html, /identity\.includes\("silverado"\)/);
+  assert.match(html, /identity\.includes\("roti"\).*identity\.includes\("rotishop"\)/s);
+  assert.match(html, /identity\.includes\("\/preview\/emmerloord-rotishop"\)/);
+  assert.match(html, /identity\.includes\("\/preview\/emmeloord-rotishop"\)/);
+  assert.match(html, /data-food-demo-presentation/);
+  assert.match(html, />Klantweergave</);
+  assert.match(html, />Restaurantportaal</);
+  assert.match(html, /data-food-dashboard-preview/);
+  assert.match(css, /\.demo-food-presentation-stack/);
+  assert.match(css, /\.demo-food-portal-canvas/);
+});
+
+test("het bestaande Emmerloord Rotishop-record wordt ook zonder Silverado in de opgeslagen naam herkend", () => {
+  const helperMatch = html.match(/function isSilveradoFoodDemo\(record = \{\}, preview = ""\) \{([\s\S]*?)\n        \}/);
+  assert.ok(helperMatch, "Silverado-herkenningsfunctie ontbreekt");
+  const savedDemoSiteMeta = (record = {}) => record.savedDemoSite || null;
+  const isSilveradoFoodDemo = new Function("savedDemoSiteMeta", `return function isSilveradoFoodDemo(record = {}, preview = "") {${helperMatch[1]}\n}`)(savedDemoSiteMeta);
+  assert.equal(isSilveradoFoodDemo({ businessName: "Emmerloord Rotishop" }, "https://maxwebstudio.nl/preview/emmerloord-rotishop?source=manual_zip"), true);
+  assert.equal(isSilveradoFoodDemo({ businessName: "Andere rotishop" }, "https://maxwebstudio.nl/preview/andere-rotishop"), false);
+});
+
+test("klantweergave behoudt de echte bestaande preview en externe Food-pagina's worden niet ingebed", () => {
+  assert.match(html, /data-demo-preview-url="\$\{escapeHtml\(preview\)\}"/);
+  assert.match(html, /storefrontUrl: "https:\/\/max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord"/);
+  assert.match(html, /restaurantPortalUrl: "https:\/\/max-webstudio-food-demo\.netlify\.app\/admin\/food"/);
+  assert.doesNotMatch(html, /<iframe[^>]+max-webstudio-food-demo/s);
+  assert.match(html, /data-food-storefront-link/);
+  assert.match(html, /data-food-restaurant-portal-link/);
+  assert.match(html, /target="_blank" rel="noopener noreferrer" data-food-storefront-link/);
+  assert.match(html, /target="_blank" rel="noopener noreferrer" data-food-restaurant-portal-link/);
+});
+
+test("QR-code en expliciete klantmailactie zijn aanwezig", () => {
+  assert.equal(fs.existsSync(qrPath), true);
+  const qr = fs.readFileSync(qrPath, "utf8");
+  assert.match(qr, /<svg/);
+  assert.match(qr, /viewBox="0 0 45 45"/);
+  assert.match(html, /qrAssetUrl: "\/assets\/food\/silverado\/silverado-demo-qr\.svg"/);
+  assert.match(html, /data-food-demo-email/);
+  assert.match(html, /data-food-demo-email-input/);
+  assert.match(html, /type="email"[^>]+placeholder="naam@bedrijf\.nl"/);
+  assert.match(html, />Naar klant mailen/);
+  assert.match(html, />Complete demo versturen</);
+  assert.match(html, /alleen voor deze verzending gebruikt en niet bij de relatie opgeslagen/);
+  assert.match(html, /action: "share_silverado_food_demo_email"/);
+  assert.match(html, /recipientEmail: email/);
+  assert.match(html, /De mail bevat de voorkant, het restaurantportaal en de QR-code/);
+});
+
+test("de dubbele presentatie schaalt mee op kleinere Demo Sites-kaarten", () => {
+  assert.match(css, /@container \(max-width: 980px\)[\s\S]*\.admin-body \.demo-library-card \{\s*grid-template-columns: 1fr;/);
+  assert.match(css, /@container \(max-width: 620px\)[\s\S]*\.demo-food-mobile-tools/);
+  assert.match(css, /grid-template-columns: 88px minmax\(0, 1fr\)/);
+});

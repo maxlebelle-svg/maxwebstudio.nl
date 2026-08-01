@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-commercial-offer-mail-2026-07-30",
+  "release": "Max Webstudio Phase D1 commercial offer mail evidence",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/phase-bc-production-release-v2",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260730223000_commercial_offer_phase_d1_mail.sql"
+  ],
+  "scope": [
+    "bounded preview, test-mail and definitive-mail evidence",
+    "hashed recipient and provider evidence",
+    "version-scoped expiring and revocable non-binding interest tokens"
+  ],
+  "explicitlyExcluded": [
+    "production execution",
+    "Signhost",
+    "Mollie",
+    "invoice creation",
+    "subscription creation",
+    "onboarding activation"
+  ]
+}

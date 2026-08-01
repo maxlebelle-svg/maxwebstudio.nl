@@ -17,7 +17,7 @@ exports.handler = async (event) => {
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const anonKey = process.env.SUPABASE_ANON_KEY || "";
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+  if (!supabaseUrl || !anonKey) {
     return jsonResponse(500, { success: false, error: "Profielcontrole is nog niet geconfigureerd." });
   }
 
@@ -34,8 +34,8 @@ exports.handler = async (event) => {
     const rows = await supabaseFetch("profiles", `${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,name,email,role,status,last_login_at,metadata&auth_user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`, {
       method: "GET",
       headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: anonKey,
+        Authorization: `Bearer ${bearer}`,
         Accept: "application/json",
         "Accept-Profile": "public",
       },

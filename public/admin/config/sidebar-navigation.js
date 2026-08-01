@@ -63,6 +63,7 @@
       id: "production",
       label: "Production",
       items: Object.freeze([
+        item("factory-hub", "Factory Hub", "admin-factories.html", "layout", { badge: "factoryProjects", statusTone: "purple", relationshipTypes: ["lead", "customer"], permission: permission("websites", "update", roleGroups.production) }),
         item("website-factory", "Website Factory", "admin-website-factory.html", "wand", { badge: "websiteFactory", statusTone: "success", workspaceRequired: true, permission: permission("websites", "update", roleGroups.production) }),
         item("website-qa", "Website QA Scanner", "admin-website-qa-scanner.html", "scan-search", { permission: permission("websites", "view", roleGroups.production), secondary: true }),
         item("demo-sites", "Demo Sites", "admin-demo-sites.html", "monitor", { badge: "demoSites", statusTone: "info", workspaceRequired: true, permission: permission("demo", "view") }),
@@ -82,7 +83,7 @@
       id: "commerce",
       label: "Commerce",
       items: Object.freeze([
-        item("new-assignment", "Nieuwe Opdracht", "admin-nieuwe-opdracht.html", "circle-plus", { permission: permission("quotes", "update", roleGroups.sales), secondary: true }),
+        item("offer-composer", "Voorstellen", "admin-offer-composer.html", "pen-line", { relationshipTypes: ["lead", "customer"], permission: permission("quotes", "create", roleGroups.sales) }),
         item("quotes", "Offertes", "admin-offertes.html", "file-signature", { badge: "openQuotes", statusTone: "warning", workspaceRequired: true, permission: permission("quotes", "view", roleGroups.sales) }),
         item("invoices", "Facturen", "admin-facturen.html", "receipt", { badge: "openInvoices", statusTone: "warning", workspaceRequired: true, permission: permission("invoices", "view", Object.freeze(["super_admin", "admin", "sales_manager"])) }),
         item("subscriptions", "Abonnementen", "admin-facturen.html#onderhoud", "repeat", { badge: "subscriptionStatus", statusTone: "success", workspaceRequired: true, permission: permission("subscriptions", "view", roleGroups.management) }),

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-interest-security-hardening-2026-07-31",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260731100000_harden_commercial_offer_interest_security.sql",
+      "bytes": 21439,
+      "sha256": "facbccb7d4fe014c24922f22bb18255c10a0e59bfaceccd0691376aaec2ae58f"
+    }
+  ]
+}

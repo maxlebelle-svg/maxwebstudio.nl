@@ -59,6 +59,38 @@
     {
       "manifest": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/factory-production-gate-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/factory-production-gate-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-b-commercial-foundation/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-b-commercial-foundation/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-bc-composer-read-fix/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-bc-composer-read-fix/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-d1-commercial-offer-mail/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-d1-commercial-offer-mail/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-d1-interest-security-hardening/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-d1-interest-security-hardening/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-d1-child-read-scope-hardening/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-d1-child-read-scope-hardening/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-d1-customer-rls-leads-privilege-repair/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-d1-customer-rls-leads-privilege-repair/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/phase-d1-leads-demo-read-policy-hardening/MANIFEST.json",
+      "fileset": "docs/release-readiness/phase-d1-leads-demo-read-policy-hardening/FILESET.json"
     }
   ]
 }

@@ -6,6 +6,7 @@ const NORMAL_ADMIN_PAGES = Object.freeze({
   "admin-demo-sites.html": ["demo-sites"],
   "admin-domain-center.html": ["domain-summary", "domain-search-input"],
   "admin-email-studio.html": ["template-count", "save-template"],
+  "admin-factories.html": ["factory-context", "factory-projects"],
   "admin-facturen.html": ["invoice-list", "subscription-list"],
   "admin-instellingen.html": ["admin-access-control-banner"],
   "admin-journeys.html": ["journey-state", "metric-active"],
@@ -15,8 +16,8 @@ const NORMAL_ADMIN_PAGES = Object.freeze({
   "admin-medewerkers.html": ["employee-search", "employee-list"],
   "admin-max-automations.html": ["automation-search", "automation-new"],
   "admin-max-brain.html": ["brain-customers", "brain-recommendations-count"],
-  "admin-nieuwe-opdracht.html": ["commercial-order-form", "summary-total"],
   "admin-notification-center.html": ["notification-filters", "activity-feed"],
+  "admin-offer-composer.html": ["composer-app", "relationship-card"],
   "admin-offertes.html": ["quote-list"],
   "admin-onboarding.html": ["metric-active-onboardings", "new-onboarding-top"],
   "admin-platform-health.html": ["health-summary", "health-refresh"],
@@ -38,6 +39,7 @@ const ACTIVE_ROUTE_IDS = Object.freeze({
   "admin-demo-sites.html": "demo-sites",
   "admin-domain-center.html": "domain-center",
   "admin-email-studio.html": "email-studio",
+  "admin-factories.html": "factory-hub",
   "admin-facturen.html": "invoices",
   "admin-instellingen.html": "settings",
   "admin-journeys.html": "journeys",
@@ -47,8 +49,8 @@ const ACTIVE_ROUTE_IDS = Object.freeze({
   "admin-medewerkers.html": "staff-directory",
   "admin-max-automations.html": "automations",
   "admin-max-brain.html": "max-brain",
-  "admin-nieuwe-opdracht.html": "new-assignment",
   "admin-notification-center.html": "notifications",
+  "admin-offer-composer.html": "offer-composer",
   "admin-offertes.html": "quotes",
   "admin-onboarding.html": "customer-onboarding",
   "admin-platform-health.html": "platform-health",
@@ -63,6 +65,7 @@ const ACTIVE_ROUTE_IDS = Object.freeze({
 });
 
 const STANDALONE_ADMIN_PAGES = Object.freeze([
+  "admin-nieuwe-opdracht.html",
   "admin-brand-center-lab.html",
   "admin-logo-studio.html",
   "admin-partners.html",

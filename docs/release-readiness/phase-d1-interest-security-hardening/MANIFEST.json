@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-interest-security-hardening-2026-07-31",
+  "release": "Max Webstudio Phase D1 interest access and sensitive mail-log hardening",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/phase-bc-production-release-v2",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260731100000_harden_commercial_offer_interest_security.sql"
+  ],
+  "scope": [
+    "one active unconfirmed interest token per immutable offer version",
+    "explicit interested lifecycle status",
+    "admin-only audited interest-link revocation",
+    "audited redaction of sensitive definitive-offer mail bodies"
+  ],
+  "explicitlyExcluded": [
+    "production execution",
+    "Signhost",
+    "Mollie",
+    "invoice creation",
+    "subscription creation",
+    "onboarding activation"
+  ]
+}

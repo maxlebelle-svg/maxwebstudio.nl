@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const manualPreviewRoute = require("../functions/admin-manual-preview");
 const { _private } = manualPreviewRoute;
@@ -208,10 +209,20 @@ test("the actual Fuellinq regression ZIP is accepted and has a root index", () =
   assert(result.files.some((file) => file.path === "styles.css"));
 });
 
-test("the actual Quantumbouw ZIP is accepted and omits .htaccess", () => {
-  const buffer = fs.readFileSync(path.join(__dirname, "../Klanten MaxWebstudio/Quantumbouw.nl/quantumbouw-factory-upload.zip"));
-  const result = _private.extractZip(buffer);
-  assert.equal(_private.resolveEntryFile(result.files), "index.html");
-  assert(result.files.some((file) => file.path === "assets/quantumbouw-logo.jpg"));
-  assert(!result.files.some((file) => file.path.endsWith(".htaccess")));
+test("a representative customer ZIP is accepted and omits .htaccess", () => {
+  const fixtureDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "maxwebstudio-preview-zip-"));
+  const fixturePath = path.join(fixtureDirectory, "representative-site.zip");
+  try {
+    fs.writeFileSync(fixturePath, zip([
+      ["index.html", "<h1>Example Company</h1>"],
+      ["assets/company-logo.jpg", "synthetic-image-bytes"],
+      [".htaccess", "RewriteEngine On"],
+    ]));
+    const result = _private.extractZip(fs.readFileSync(fixturePath));
+    assert.equal(_private.resolveEntryFile(result.files), "index.html");
+    assert(result.files.some((file) => file.path === "assets/company-logo.jpg"));
+    assert(!result.files.some((file) => file.path.endsWith(".htaccess")));
+  } finally {
+    fs.rmSync(fixtureDirectory, { recursive: true, force: true });
+  }
 });

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-child-read-scope-hardening-2026-07-31",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260731190000_harden_commercial_offer_child_read_scope.sql",
+      "bytes": 5941,
+      "sha256": "5cdb759417ef3c68cf4d81da5ed9cc80cefaa994e654167de320ca44f222a99f"
+    }
+  ]
+}

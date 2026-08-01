@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-child-read-scope-hardening-2026-07-31",
+  "release": "Max Webstudio Phase D1 commercial child evidence read-scope hardening",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/phase-bc-production-release-v2",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260731190000_harden_commercial_offer_child_read_scope.sql"
+  ],
+  "scope": [
+    "relationship-assigned sales-partner read access for commercial offer versions",
+    "relationship-assigned sales-partner read access for commercial offer lines",
+    "relationship-assigned sales-partner read access for commercial document bindings"
+  ],
+  "explicitlyExcluded": [
+    "production execution",
+    "table, column or data mutation",
+    "Signhost",
+    "Mollie",
+    "email delivery",
+    "invoice creation",
+    "subscription creation",
+    "onboarding activation"
+  ]
+}

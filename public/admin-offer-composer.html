@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>Voorstel Composer | Max Webstudio</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
+    <link rel="stylesheet" href="src/offer-composer.css" />
+    <style>.offer-composer-page .choice-card > strong { color: var(--oc-text); }.offer-composer-page .composer-steps span { flex: 0 0 23px; }</style>
+    <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
+    <script src="admin/config/sidebar-navigation.js" defer></script>
+    <script src="admin/components/admin-sidebar.js" defer></script>
+    <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
+    <script type="module" src="src/admin-route-guard.js"></script>
+  </head>
+  <body class="admin-body offer-composer-page" data-shared-admin-sidebar="true">
+    <main class="admin-crm-shell">
+      <div id="admin-sidebar-root" aria-live="polite"></div>
+      <div class="admin-crm-main">
+    <header class="composer-topbar">
+      <a class="composer-brand" href="admin-offertes.html" aria-label="Terug naar offertes"><img src="max-webstudio-logo-mark.svg" alt="" /><span>Max Webstudio</span></a>
+      <div><span class="composer-status" id="composer-status">Concept niet opgeslagen</span><a class="button secondary" href="admin-offertes.html">Sluiten</a></div>
+    </header>
+    <div class="composer-shell" id="composer-app" aria-busy="true">
+      <header class="composer-hero">
+        <div><p class="eyebrow">Interne beheeromgeving · Fase D1</p><h1>Nieuw voorstel maken</h1><p>Stel een controleerbaar voorstel samen. Prijzen, mailinhoud en verzendvolgorde worden uitsluitend server-side bepaald.</p></div>
+        <div class="composer-version"><span>Catalogus</span><strong id="catalog-version">Laden…</strong><small id="catalog-checksum"></small></div>
+      </header>
+      <div class="composer-alert" id="composer-message" role="status" aria-live="polite" hidden></div>
+      <nav class="composer-steps" aria-label="Composerstappen">
+        <a href="#relation"><span>1</span>Relatie</a><a href="#demo"><span>2</span>Demo</a><a href="#website"><span>3</span>Website</a><a href="#care"><span>4</span>Onderhoud</a><a href="#addons"><span>5</span>Add-ons</a><a href="#payment"><span>6</span>Betaling</a><a href="#documents"><span>7</span>Documenten</a><a href="#review"><span>8</span>Controle</a>
+      </nav>
+      <div class="composer-layout">
+        <div class="composer-main">
+          <section class="composer-section" id="relation"><div class="section-heading"><span>01</span><div><h2>Relatie</h2><p>De bestaande lead of klant blijft de enige relatiebron.</p></div></div><div class="relation-card" id="relationship-card"></div><div class="linked-context" id="factory-context"></div></section>
+          <section class="composer-section" id="demo"><div class="section-heading"><span>02</span><div><h2>Demo selecteren</h2><p>Koppel een bestaande demo; de demodata wordt niet gewijzigd.</p></div></div><div class="choice-grid" id="demo-options"></div></section>
+          <section class="composer-section" id="website"><div class="section-heading"><span>03</span><div><h2>Websitepakket</h2><p>Vaste prijs, btw, aanbetaling en restant komen uit catalogus <strong id="website-catalog-version"></strong>.</p></div></div><div class="choice-grid three" id="website-options"></div></section>
+          <section class="composer-section" id="care"><div class="section-heading"><span>04</span><div><h2>Onderhoud</h2><p>Er wordt in deze fase nog geen abonnement aangemaakt.</p></div></div><div class="choice-grid four" id="care-options"></div></section>
+          <section class="composer-section" id="addons"><div class="section-heading"><span>05</span><div><h2>Add-ons en diensten</h2><p>Eenmalige en maandelijkse componenten blijven financieel gescheiden.</p></div></div><div class="composer-filter"><label for="addon-search">Zoeken<input id="addon-search" type="search" placeholder="Zoek dienst of categorie" /></label><label for="addon-category">Categorie<select id="addon-category"><option value="">Alle categorieën</option></select></label></div><div class="addon-list" id="addon-options"></div></section>
+          <section class="composer-section" id="payment"><div class="section-heading"><span>06</span><div><h2>Betaalkeuze</h2><p>Geen algemene 50%-optie. Er wordt geen betaling of factuur aangemaakt.</p></div></div><div class="choice-grid" id="payment-options"><label class="choice-card"><input type="radio" name="payment" value="fixed_deposit" /><strong>Vaste catalogusaanbetaling</strong><span>Alleen beschikbaar bij een websitepakket.</span></label><label class="choice-card"><input type="radio" name="payment" value="full" /><strong>Volledig betalen</strong><span>Het volledige eenmalige bedrag.</span></label><label class="choice-card"><input type="radio" name="payment" value="none" checked /><strong>Nog geen betaalkeuze</strong><span>Geschikt voor een intern concept.</span></label></div></section>
+          <section class="composer-section" id="documents"><div class="section-heading"><span>07</span><div><h2>Documenten en voorwaarden</h2><p>Iedere binding bevat een exacte versie en SHA-256-checksum.</p></div></div><div class="document-list" id="document-options"></div></section>
+          <section class="composer-section" id="review"><div class="section-heading"><span>08</span><div><h2>Controle en versiebeheer</h2><p>Opslaan maakt een immutable offer version. Verdere inhoudelijke wijzigingen maken een nieuwe versie.</p></div></div><label class="composer-field" for="offer-title">Titel<input id="offer-title" maxlength="180" value="Websitevoorstel" /></label><label class="composer-field" for="change-reason">Reden van deze versie<textarea id="change-reason" rows="3" placeholder="Bij een volgende versie: wat is inhoudelijk gewijzigd?"></textarea></label><div class="review-actions"><button class="button primary" id="save-draft" type="button">Concept opslaan</button><button class="button secondary" id="ready-review" type="button" disabled>Gereedmaken voor controle</button><button class="button danger" id="revoke-version" type="button" disabled>Concept intrekken</button></div><div class="readiness-list" id="readiness-list"></div></section>
+          <section class="composer-section version-section"><div class="section-heading"><span>↻</span><div><h2>Versiehistorie</h2><p>Oude versies blijven als bewijs zichtbaar.</p></div></div><div class="version-list" id="version-history"></div></section>
+        </div>
+        <aside class="composer-sidebar" aria-label="Voorstelsamenvatting">
+          <section class="summary-card"><div><span>Serverberekening</span><strong id="summary-version">Nog niet berekend</strong></div><div class="summary-lines" id="summary-lines"></div><dl><div><dt>Eenmalig excl. btw</dt><dd id="sum-once-ex">—</dd></div><div><dt>Btw eenmalig</dt><dd id="sum-once-vat">—</dd></div><div class="total"><dt>Eenmalig incl. btw</dt><dd id="sum-once-incl">—</dd></div><div><dt>Per maand excl. btw</dt><dd id="sum-month-ex">—</dd></div><div class="total"><dt>Per maand incl. btw</dt><dd id="sum-month-incl">—</dd></div><div class="due"><dt>Nu te betalen incl. btw</dt><dd id="sum-due">—</dd></div><div><dt>Later excl. btw</dt><dd id="sum-remaining">—</dd></div></dl><p id="summary-warning"></p></section>
+          <section class="send-sequence"><h2>Vaste verzendvolgorde</h2><ol><li id="sequence-preview"><span>1</span><div><strong>Voorbeeld bekijken</strong><small>Exacte servermail controleren</small></div></li><li id="sequence-test" class="blocked"><span>2</span><div><strong>Testmail naar mijzelf</strong><small>Alleen geverifieerde beheerder</small></div></li><li id="sequence-definitive" class="blocked"><span>3</span><div><strong>Definitief verzenden</strong><small>Pas na geslaagde testmail</small></div></li></ol><button class="button primary" id="open-preview" type="button" disabled>Voorbeeld bekijken</button><button class="button secondary" id="test-mail" type="button" disabled>Testmail naar mijzelf</button><button class="button secondary" id="definitive-send" type="button" disabled>Definitief verzenden</button><button class="button danger" id="revoke-interest" type="button" disabled>Interesselink intrekken</button><p id="interest-access-summary">Geen actieve interesselink.</p><p>De interesseknop maakt geen contract, betaling, factuur, abonnement of onboarding.</p></section>
+          <section class="commercial-preflight-card" id="commercial-preflight-panel" aria-labelledby="commercial-preflight-title" hidden>
+            <span class="commercial-preflight-eyebrow">Superadmin · read-only</span>
+            <h2 id="commercial-preflight-title">Commercial D1 releasecontrole</h2>
+            <p>Controleert uitsluitend de vaste <code>profiles</code>- en <code>customers</code>-resources met <code>limit=0</code>.</p>
+            <button class="button secondary" id="commercial-preflight-run" type="button" data-keep-enabled="true">Commercial D1-preflight uitvoeren</button>
+            <p class="commercial-preflight-status" id="commercial-preflight-status" role="status" aria-live="polite">Nog niet uitgevoerd.</p>
+            <ul class="commercial-preflight-flags" id="commercial-preflight-flags" aria-label="Preflightcontrolevlaggen"></ul>
+          </section>
+        </aside>
+      </div>
+    </div>
+    <dialog class="mail-preview-dialog" id="mail-preview"><div class="dialog-toolbar"><div><span>Exacte serverweergave</span><strong id="preview-subject"></strong></div><button type="button" id="close-preview" aria-label="Voorbeeld sluiten">×</button></div><iframe id="preview-frame" title="Voorbeeld van de definitieve e-mail" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe><div class="manual-fallback"><label for="manual-mail-text">Handmatige fallback<textarea id="manual-mail-text" readonly></textarea></label><button class="button secondary" id="copy-manual-mail" type="button">Mailtekst kopiëren</button></div></dialog>
+    <dialog class="definitive-send-dialog" id="definitive-send-dialog" role="dialog" aria-modal="true" aria-labelledby="definitive-send-title" aria-describedby="definitive-send-warning">
+      <div class="dialog-toolbar"><div><span>Laatste controle</span><h2 id="definitive-send-title">Voorstel definitief verzenden?</h2></div><button type="button" id="close-definitive-send" aria-label="Verzending annuleren">×</button></div>
+      <div class="definitive-send-content">
+        <p class="definitive-staging-warning" id="definitive-staging-warning"><strong>STAGINGTEST</strong> Deze mail mag uitsluitend naar de beheerde stagingtestontvanger worden verstuurd.</p>
+        <dl class="definitive-send-summary">
+          <div><dt>Relatie / bedrijf</dt><dd id="confirm-company">—</dd></div>
+          <div><dt>Ontvanger</dt><dd id="confirm-recipient">—</dd></div>
+          <div><dt>Gekoppelde demo</dt><dd id="confirm-demo">—</dd></div>
+          <div><dt>Websitepakket</dt><dd id="confirm-website">—</dd></div>
+          <div><dt>Onderhoud</dt><dd id="confirm-care">—</dd></div>
+          <div><dt>Eenmalig totaal excl. btw</dt><dd id="confirm-once">—</dd></div>
+          <div><dt>Per maand excl. btw</dt><dd id="confirm-monthly">—</dd></div>
+          <div><dt id="confirm-payment-label">Te betalen</dt><dd id="confirm-payment">—</dd></div>
+          <div><dt>Geldig tot en met</dt><dd id="confirm-valid-until">—</dd></div>
+        </dl>
+        <p class="definitive-send-warning" id="definitive-send-warning">Na bevestiging wordt er werkelijk één e-mail verstuurd. Er wordt geen contract, betaling, factuur, abonnement of onboarding gestart.</p>
+        <label class="definitive-check"><input id="definitive-send-check" type="checkbox" /> <span>Ik heb ontvanger, prijzen en demo gecontroleerd</span></label>
+        <p class="definitive-send-result" id="definitive-send-result" role="status" aria-live="polite"></p>
+      </div>
+      <div class="definitive-send-actions"><button class="button secondary" id="cancel-definitive-send" type="button">Annuleren</button><button class="button primary" id="confirm-definitive-send" type="button" disabled>Definitief verzenden</button></div>
+    </dialog>
+    <dialog class="definitive-send-dialog" id="revoke-interest-dialog" role="dialog" aria-modal="true" aria-labelledby="revoke-interest-title" aria-describedby="revoke-interest-warning">
+      <div class="dialog-toolbar"><div><span>Beveiligde beheeractie</span><h2 id="revoke-interest-title">Interesselink intrekken?</h2></div><button type="button" id="close-revoke-interest" aria-label="Intrekken annuleren">×</button></div>
+      <div class="definitive-send-content">
+        <dl class="definitive-send-summary"><div><dt>Relatie / bedrijf</dt><dd id="revoke-company">—</dd></div><div><dt>Ontvanger</dt><dd id="revoke-recipient">—</dd></div><div><dt>Versie</dt><dd id="revoke-version-number">—</dd></div><div><dt>Laatste verzending</dt><dd id="revoke-dispatch-date">—</dd></div><div><dt>Link geldig tot</dt><dd id="revoke-expiry">—</dd></div><div><dt>Interesse bevestigd</dt><dd id="revoke-confirmed">Nee</dd></div></dl>
+        <p class="definitive-send-warning" id="revoke-interest-warning">De actieve, nog niet bevestigde link stopt direct. Bevestigde interesse en bewijs worden niet verwijderd. Beveiligde maillogs worden inhoudelijk geredigeerd.</p>
+        <label class="composer-field" for="revoke-interest-reason">Reden van intrekken<textarea id="revoke-interest-reason" rows="3" minlength="8" maxlength="500" placeholder="Bijvoorbeeld: stagingcertificering afgerond"></textarea></label>
+        <p class="definitive-send-result" id="revoke-interest-result" role="status" aria-live="polite"></p>
+      </div>
+      <div class="definitive-send-actions"><button class="button secondary" id="cancel-revoke-interest" type="button">Annuleren</button><button class="button danger" id="confirm-revoke-interest" type="button" disabled>Link definitief intrekken</button></div>
+    </dialog>
+      </div>
+    </main>
+    <script type="module" src="src/offer-composer.js"></script>
+  </body>
+</html>

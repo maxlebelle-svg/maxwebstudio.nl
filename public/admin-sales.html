@@ -24752,20 +24752,7 @@
 
       function openQuoteForSelectedLead(lead) {
         if (!lead) return;
-        openQuoteModal();
-        if (quoteFields.title) quoteFields.title.value = `Website ${lead.companyName || ""}`.trim() || "Nieuwe offerte";
-        if (quoteFields.type) quoteFields.type.value = "Website";
-        if (quoteFields.proposal) {
-          quoteFields.proposal.value = [
-            `Voorstel voor ${lead.companyName || "deze lead"}.`,
-            lead.websiteAnalysis?.ok ? `Website Scan score: ${lead.websiteAnalysis.score}/100.` : "",
-            lead.notes ? `Belcontext: ${lead.notes.slice(0, 240)}` : "",
-          ].filter(Boolean).join("\n\n");
-        }
-        if (quoteFields.notes) {
-          quoteFields.notes.value = `Aangemaakt vanuit Sales Cockpit lead ${lead.companyName || lead.id}.`;
-        }
-        setLeadfinderMessage("Offerte gestart. Koppel een klant zodra de lead klaar is voor akkoord.", "success");
+        window.location.assign(`admin-offer-composer.html?relationshipType=lead&relationshipId=${encodeURIComponent(lead.id)}&source=lead`);
       }
 
               function openLeadFollowUpPlanner() {

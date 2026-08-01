@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260729120000_factory_hub_projects.sql",
+      "bytes": 2175,
+      "sha256": "070243fb04f11a2828950e64074684332ac4549666ae37a0324ea000bdc11638"
+    },
+    {
+      "path": "supabase/migrations/20260729200000_factory_production_gate.sql",
+      "bytes": 16902,
+      "sha256": "830e113abb432417d50262ef45f48a390e2cbd900a5a45c2fb1faeb6360132d5"
+    },
+    {
+      "path": "supabase/migrations/20260730120000_harden_factory_gate_generation_and_audit.sql",
+      "bytes": 19734,
+      "sha256": "22fa7f5f39a74e662134c825eb2feff3313f0c281d99107add7c9ca0173819ea"
+    }
+  ]
+}

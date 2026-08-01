@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-leads-demo-read-policy-hardening-2026-07-31",
+  "release": "Max Webstudio Phase D1 leads demo-read policy hardening",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/phase-bc-production-release-v2",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260731213000_harden_leads_demo_read_policy.sql"
+  ],
+  "scope": [
+    "remove the blanket leads_demo_read policy",
+    "preserve existing role-specific lead policies",
+    "prevent customer, demo-user, designer and anonymous demo-lead visibility"
+  ],
+  "explicitlyExcluded": [
+    "production execution",
+    "staging execution",
+    "replacement demo-read policy",
+    "new grants or helper functions",
+    "table, column or data mutation",
+    "Signhost",
+    "Mollie",
+    "email delivery",
+    "invoice creation",
+    "subscription creation",
+    "onboarding activation"
+  ]
+}

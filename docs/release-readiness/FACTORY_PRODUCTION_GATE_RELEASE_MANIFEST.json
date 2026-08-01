@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCAL_CANDIDATE_VALIDATED",
+  "baseCommit": "9897af9559b61f0c08582f91bdca9fd9eb949319",
+  "branch": "codex/factory-production-gate-prod-base",
+  "plannedCommitMessage": "Release Factory Production Gate from production base",
+  "scope": {
+    "runtime": [
+      "functions/_factory-blueprints.js",
+      "functions/_factory-production-gate.js",
+      "functions/_factory-production-gate-suppliers.js",
+      "functions/admin-factory-projects.js"
+    ],
+    "adminUi": [
+      "public/admin-factories.html",
+      "public/admin/styles/factory-hub.css",
+      "public/admin/ui/factory-hub.js",
+      "public/admin/config/sidebar-navigation.js"
+    ],
+    "migrations": [
+      "supabase/migrations/20260729120000_factory_hub_projects.sql",
+      "supabase/migrations/20260729200000_factory_production_gate.sql",
+      "supabase/migrations/20260730120000_harden_factory_gate_generation_and_audit.sql"
+    ],
+    "tests": [
+      "scripts/factory-production-gate-local-validation.zsh",
+      "tests/factory-hub.test.js",
+      "tests/factory-production-gate.test.js",
+      "tests/factory-production-gate-release-scope.test.js",
+      "tests/fixtures/factory-production-gate-functional.sql",
+      "tests/fixtures/factory-production-gate-generation-functional.sql",
+      "tests/admin-sidebar-dashboard-pilot.test.js",
+      "tests/helpers/admin-page-inventory.js"
+    ],
+    "releaseMetadata": [
+      "docs/release-readiness/PRODUCT_MIGRATION_CATALOG.json",
+      "docs/release-readiness/factory-production-gate-product-migrations/MANIFEST.json",
+      "docs/release-readiness/factory-production-gate-product-migrations/FILESET.json",
+      "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/MANIFEST.json",
+      "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/FILESET.json",
+      "docs/release-readiness/FACTORY_PRODUCTION_GATE_RELEASE_MANIFEST.json"
+    ],
+    "routing": [],
+    "deletedFiles": [],
+    "unexpectedFiles": []
+  },
+  "fileJustifications": {
+    "docs/release-readiness/FACTORY_PRODUCTION_GATE_RELEASE_MANIFEST.json": "Locks the production-base identity, exact release fileset, exclusions, and non-authorizing status.",
+    "docs/release-readiness/PRODUCT_MIGRATION_CATALOG.json": "Adds only the Factory Production Gate product-migration entry to the production-base catalog.",
+    "docs/release-readiness/factory-production-gate-product-migrations/FILESET.json": "Locks the exact byte counts and SHA-256 values of the three Gate migrations.",
+    "docs/release-readiness/factory-production-gate-product-migrations/MANIFEST.json": "Declares the only allowed Factory Production Gate migration order and authority.",
+    "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/MANIFEST.json": "BASELINE_GOVERNANCE_CLOSURE: classifies the partner migration already present in the active production-base tree; it authorizes no execution.",
+    "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/FILESET.json": "BASELINE_GOVERNANCE_CLOSURE: locks the existing production-base partner migration hash without adding or changing SQL.",
+    "functions/_factory-blueprints.js": "Defines the server-side Factory project blueprint contract used by the admin endpoint.",
+    "functions/_factory-production-gate-suppliers.js": "Builds the server-side required-check supplier set without a Food runtime dependency.",
+    "functions/_factory-production-gate.js": "Implements fail-closed Gate evaluation, approvals, overrides, evidence binding, and live authorization.",
+    "functions/admin-factory-projects.js": "Provides the authenticated Factory Hub server endpoint and rechecks the Gate server-side.",
+    "public/admin-factories.html": "Adds the Factory Hub admin entry page.",
+    "public/admin/config/sidebar-navigation.js": "Adds exactly one Factory Hub navigation item.",
+    "public/admin/styles/factory-hub.css": "Provides isolated Factory Hub styling.",
+    "public/admin/ui/factory-hub.js": "Provides the Factory Hub admin client without diagnostics or automatic calls.",
+    "scripts/factory-production-gate-local-validation.zsh": "Runs isolated local PostgreSQL schema and adversarial Gate validation.",
+    "supabase/migrations/20260729120000_factory_hub_projects.sql": "Creates the Factory Hub project foundation required by all Gate records.",
+    "supabase/migrations/20260729200000_factory_production_gate.sql": "Creates Gate checks, approvals, overrides, audit events, and fail-closed authorization.",
+    "supabase/migrations/20260730120000_harden_factory_gate_generation_and_audit.sql": "Binds evidence to a monotone server generation and hardens complete audit transitions.",
+    "tests/admin-sidebar-dashboard-pilot.test.js": "Updates the canonical admin inventory assertion for the single new navigation destination.",
+    "tests/factory-hub.test.js": "Covers the Factory Hub page and authenticated endpoint contract.",
+    "tests/factory-production-gate-release-scope.test.js": "Fails if unrelated migrations, diagnostics, Food, Silverado, or partner governance enter the release delta.",
+    "tests/factory-production-gate.test.js": "Covers Gate evaluation, authorization, tenancy, audit, and error contracts.",
+    "tests/fixtures/factory-production-gate-functional.sql": "Exercises the base Gate schema transactionally with isolated synthetic records.",
+    "tests/fixtures/factory-production-gate-generation-functional.sql": "Exercises generation invalidation, replay, concurrency, and audit invariants transactionally.",
+    "tests/helpers/admin-page-inventory.js": "Registers the Factory Hub page in the existing admin test inventory."
+  },
+  "excluded": [
+    "Food Factory runtime and migrations",
+    "Silverado and Demo Cloud",
+    "temporary staging diagnostics and rewrites",
+    "staging certification controls and evidence",
+    "customer fixtures and customer data",
+    "all unrelated and superseded migrations"
+  ],
+  "classifications": {
+    "FACTORY_GATE_RELEASE": {
+      "files": 23,
+      "description": "The Factory Hub and Production Gate runtime, UI, three migrations, tests, validator, and Gate release metadata."
+    },
+    "BASELINE_GOVERNANCE_CLOSURE": {
+      "files": [
+        "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/MANIFEST.json",
+        "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/FILESET.json"
+      ],
+      "catalogEntry": {
+        "manifest": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/MANIFEST.json",
+        "fileset": "docs/release-readiness/partner-existing-user-onboarding-activation-product-migrations/FILESET.json"
+      },
+      "existingMigration": "supabase/migrations/20260728134000_partner_existing_user_onboarding_activation.sql",
+      "addsRuntime": false,
+      "addsMigration": false,
+      "remoteExecutionAuthorized": false
+    }
+  },
+  "remoteExecutionAuthorizedByThisManifest": false
+}
