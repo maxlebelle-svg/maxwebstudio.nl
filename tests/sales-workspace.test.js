@@ -7,6 +7,7 @@ const model = require("../public/src/sales-workspace-model");
 const leadsApi = require("../functions/admin-leads");
 const salesHtml = fs.readFileSync(path.resolve(__dirname, "../public/admin-sales.html"), "utf8");
 const salesCss = fs.readFileSync(path.resolve(__dirname, "../public/admin/styles/sales-workspace.css"), "utf8");
+const leadFinderSource = fs.readFileSync(path.resolve(__dirname, "../public/src/services/leadFinderService.js"), "utf8");
 const apiSource = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const migration = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/026_sales_workspace_normalized_fields.sql"), "utf8");
 const favoritesFilterHarness = fs.readFileSync(path.resolve(__dirname, "fixtures/sales-workspace-favorites-filter.html"), "utf8");
@@ -422,6 +423,29 @@ test("premium responsive contract behoudt desktopkolommen en mobiele detaildrawe
   assert.match(salesCss, /@media \(max-width: 1050px\)[\s\S]+grid-template-columns: 155px minmax\(0, 1fr\)/);
   assert.match(salesCss, /@media \(max-width: 520px\)[\s\S]+width: 100% !important[\s\S]+height: 100dvh/);
   assert.match(salesCss, /sales-premium-action-bar[\s\S]+repeat\(2, minmax\(0, 1fr\)\)/);
+});
+
+test("handmatige leads kunnen vanuit het detail alsnog een website analyseren", () => {
+  assert.match(salesHtml, /id="lead-website-analysis-url"/);
+  assert.match(salesHtml, /analysisWebsite \|\| lead\?\.websiteUrl/);
+  assert.match(salesHtml, /websiteUrl: target\.url,[\s\S]+websiteAnalysis: analysis/);
+  assert.match(salesHtml, /analysisUrl\?\.addEventListener\("input"/);
+  assert.match(salesHtml, /Vul hierboven de website URL in om deze handmatige lead te analyseren/);
+});
+
+test("lead-detail blijft in normale documentflow zonder overlappende kaarten", () => {
+  assert.match(salesCss, /\.sales-detail-panel\.sales-lead-summary-card\s*\{[\s\S]{0,180}display: flex;[\s\S]{0,180}flex-direction: column/);
+  assert.match(salesCss, /\.sales-detail-panel\.sales-lead-summary-card > \*\s*\{[\s\S]{0,140}position: static/);
+  assert.match(salesCss, /\.sales-analysis-url-control/);
+});
+
+test("leadstatusmenu toont een korte unieke lijst en bewaart legacywaarden", () => {
+  const visibleBlock = leadFinderSource.match(/export const LEADFINDER_CALL_STATUSES = Object\.freeze\(\[([\s\S]+?)\]\);/)?.[1] || "";
+  const labels = [...visibleBlock.matchAll(/label: "([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(new Set(labels).size, labels.length);
+  assert(labels.length <= 14);
+  assert.match(leadFinderSource, /LEGACY_CALL_STATUS_LABELS/);
+  assert.match(leadFinderSource, /\.\.\.Object\.keys\(LEGACY_CALL_STATUS_LABELS\)/);
 });
 
 test("dynamische premium inhoud blijft escaped en externe acties blijven afgeschermd", () => {

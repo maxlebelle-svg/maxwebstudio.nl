@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=20260707-sales-actions-demo" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css?v=20260709-briefing-system" />
     <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
-    <link rel="stylesheet" href="admin/styles/sales-workspace.css?v=20260728-manual-smart-view" />
+    <link rel="stylesheet" href="admin/styles/sales-workspace.css?v=20260801-sales-analysis-fix" />
     <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
@@ -578,6 +578,11 @@
                   <mark class="status-badge status-prepared" id="lead-website-analysis-state">Niet uitgevoerd</mark>
                 </summary>
                 <div class="lead-analysis-panel">
+                  <label class="sales-analysis-url-control" for="lead-website-analysis-url">
+                    <span>Website URL</span>
+                    <input id="lead-website-analysis-url" type="url" inputmode="url" placeholder="https://voorbeeld.nl" autocomplete="url" />
+                    <small>Ontbreekt de website bij een handmatige lead? Vul hem hier alsnog in.</small>
+                  </label>
                   <button class="button primary" id="lead-website-analysis-run" type="button" disabled>Website analyseren</button>
                   <button class="button secondary" id="lead-website-analysis-sync" type="button" disabled>Opnieuw synchroniseren</button>
                   <div class="lead-analysis-result" id="lead-website-analysis-result">
@@ -19467,7 +19472,7 @@
         readAllLocalLeadSources,
         readLeadFinderLeads,
         updateLeadFinderLeadLocally,
-      } from "./src/services/leadFinderService.js?v=20260709-briefing-system";
+      } from "./src/services/leadFinderService.js?v=20260801-sales-analysis-fix";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-session-hotfix";
       import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-session-hotfix";
 
@@ -19590,6 +19595,7 @@
         timeline: document.getElementById("sales-timeline"),
         timelineCount: document.getElementById("sales-timeline-count"),
         analysisState: document.getElementById("lead-website-analysis-state"),
+        analysisUrl: document.getElementById("lead-website-analysis-url"),
         analysisRun: document.getElementById("lead-website-analysis-run"),
         analysisSync: document.getElementById("lead-website-analysis-sync"),
         analysisResult: document.getElementById("lead-website-analysis-result"),
@@ -24002,6 +24008,9 @@
         renderSalesNextAction(lead);
         renderSalesQuickActions(lead);
         renderSalesTimeline(lead);
+        if (leadfinderElements.analysisUrl && document.activeElement !== leadfinderElements.analysisUrl) {
+          leadfinderElements.analysisUrl.value = lead?.websiteUrl || "";
+        }
         renderLeadWebsiteAnalysis(lead);
         renderLeadWhatsappAction(lead);
         renderLeadAgendaActions(lead);
@@ -24051,9 +24060,10 @@
 
       function getLeadWebsiteScanTarget() {
         const lead = selectedLeadFinderLead();
+        const analysisWebsite = String(leadfinderElements.analysisUrl?.value || "").trim();
         const formWebsite = String(leadfinderElements.website?.value || "").trim();
         const googleWebsite = String(googlePlacesPlace?.website || "").trim();
-        const url = String(lead?.websiteUrl || formWebsite || googleWebsite || "").trim();
+        const url = String(analysisWebsite || lead?.websiteUrl || formWebsite || googleWebsite || "").trim();
         const normalizedUrl = normalizeComparableUrl(url) || url;
         const key = lead?.id || (url ? `draft:${normalizedUrl}` : "");
         return {
@@ -24117,7 +24127,9 @@
         if (!canRun) {
           setAnalysisSyncStatus("idle", "");
           if (leadfinderElements.analysisResult) {
-            leadfinderElements.analysisResult.textContent = "Selecteer een lead met website of neem eerst een website over via Google Maps.";
+            leadfinderElements.analysisResult.textContent = lead?.id
+              ? "Vul hierboven de website URL in om deze handmatige lead te analyseren."
+              : "Selecteer een lead met website of neem eerst een website over via Google Maps.";
           }
           return;
         }
@@ -24306,6 +24318,7 @@
                     const analysisNote = buildWebsiteAnalysisNote(analysis);
                     const exactAnalysisScore = analysisScoreValue(analysis);
                     const updates = {
+                      websiteUrl: target.url,
                       websiteAnalysis: analysis,
                       notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
                       leadScore: exactAnalysisScore ?? Number(lead.leadScore || 60),
@@ -25239,6 +25252,9 @@
         });
         leadfinderElements.syncNote?.addEventListener("click", () => retrySelectedLeadSync("notes"));
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
+        leadfinderElements.analysisUrl?.addEventListener("input", () => {
+          renderLeadWebsiteAnalysis(selectedLeadFinderLead());
+        });
         leadfinderElements.analysisSync?.addEventListener("click", () => retrySelectedLeadSync("analysis"));
         leadfinderElements.nextActionButton?.addEventListener("click", () => runSalesCockpitAction(leadfinderElements.nextActionButton.dataset.salesAction || ""));
         leadfinderElements.quickDemoNow?.addEventListener("click", makeDemoSiteNow);

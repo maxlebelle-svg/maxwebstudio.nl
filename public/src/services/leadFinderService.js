@@ -11,29 +11,32 @@ export const LEADFINDER_WEBSITE_STATUSES = Object.freeze([
 ]);
 
 export const LEADFINDER_CALL_STATUSES = Object.freeze([
-  { value: "lead", label: "Lead" },
-  { value: "bellen", label: "Bellen" },
-  { value: "offerte", label: "Offerte" },
-  { value: "verkocht", label: "Verkocht" },
-  { value: "klant_actief", label: "Klant actief" },
   { value: "nieuw", label: "Nieuw" },
+  { value: "te_bellen", label: "Te bellen" },
   { value: "contact_planned", label: "Contact gepland" },
   { value: "contacted", label: "Contact gehad" },
+  { value: "voicemail", label: "Voicemail" },
   { value: "qualified", label: "Gekwalificeerd" },
+  { value: "interesse", label: "Interesse" },
+  { value: "opvolgen", label: "Opvolgen" },
   { value: "quote_ready", label: "Offerte klaar" },
   { value: "quote_sent", label: "Offerte verzonden" },
   { value: "won", label: "Verkocht" },
   { value: "lost", label: "Niet doorgegaan" },
   { value: "customer_active", label: "Klant actief" },
-  { value: "te_bellen", label: "Te bellen" },
-  { value: "gebeld", label: "Gebeld" },
-  { value: "voicemail", label: "Voicemail" },
-  { value: "interesse", label: "Interesse" },
-  { value: "opvolgen", label: "Opvolgen" },
-  { value: "geen_interesse", label: "Geen interesse" },
   { value: "archived", label: "Gearchiveerd" },
-  { value: "geconverteerd", label: "Geconverteerd" },
 ]);
+
+const LEGACY_CALL_STATUS_LABELS = Object.freeze({
+  lead: "Lead",
+  bellen: "Te bellen",
+  offerte: "Offerte klaar",
+  verkocht: "Verkocht",
+  klant_actief: "Klant actief",
+  gebeld: "Contact gehad",
+  geen_interesse: "Geen interesse",
+  geconverteerd: "Geconverteerd",
+});
 
 export const LEADFINDER_LIFECYCLE_STATUSES = Object.freeze([
   { value: "new", label: "Nieuw" },
@@ -64,7 +67,10 @@ export const LEADFINDER_SCORE_BUCKETS = Object.freeze([
 ]);
 
 const WEBSITE_STATUS_VALUES = new Set(LEADFINDER_WEBSITE_STATUSES.map((item) => item.value));
-const CALL_STATUS_VALUES = new Set(LEADFINDER_CALL_STATUSES.map((item) => item.value));
+const CALL_STATUS_VALUES = new Set([
+  ...LEADFINDER_CALL_STATUSES.map((item) => item.value),
+  ...Object.keys(LEGACY_CALL_STATUS_LABELS),
+]);
 
 function createId(prefix = "leadfinder") {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
@@ -438,5 +444,8 @@ export function convertLeadFinderLeadToCustomer(leadId) {
 }
 
 export function getLeadFinderLabel(options, value, fallback = "Onbekend") {
-  return options.find((item) => item.value === value)?.label || fallback;
+  const directLabel = options.find((item) => item.value === value)?.label;
+  if (directLabel) return directLabel;
+  if (options === LEADFINDER_CALL_STATUSES && LEGACY_CALL_STATUS_LABELS[value]) return LEGACY_CALL_STATUS_LABELS[value];
+  return fallback;
 }
