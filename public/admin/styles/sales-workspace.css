@@ -659,3 +659,68 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Keep every detail block in normal flow; the compact three-column shell must never layer cards. */
+.sales-workspace-detail-column .sales-detail-panel.sales-lead-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  align-items: stretch;
+}
+
+.sales-workspace-detail-column .sales-detail-panel.sales-lead-summary-card > * {
+  position: static;
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-workspace-detail-column .sales-premium-action-bar {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sales-workspace-detail-column .sales-premium-contact-list,
+.sales-workspace-detail-column .sales-detail-compact-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.sales-analysis-url-control {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .4rem;
+  width: 100%;
+  padding: .8rem;
+  border: 1px solid rgba(74, 146, 255, .32);
+  border-radius: 10px;
+  background: rgba(5, 20, 41, .72);
+}
+
+.sales-analysis-url-control span {
+  color: #dceaff;
+  font-size: .72rem;
+  font-weight: 850;
+}
+
+.sales-analysis-url-control input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(112, 157, 216, .44);
+  border-radius: 8px;
+  padding: .65rem .75rem;
+  background: #061a35;
+  color: #f2f7ff;
+  font: inherit;
+}
+
+.sales-analysis-url-control small {
+  color: #8fa7c7;
+  font-size: .68rem;
+  line-height: 1.4;
+}
+
+@container sales-detail (max-width: 460px) {
+  .sales-workspace-detail-column .sales-premium-action-bar,
+  .sales-workspace-detail-column .sales-premium-contact-list,
+  .sales-workspace-detail-column .sales-detail-compact-list {
+    grid-template-columns: 1fr !important;
+  }
+}
