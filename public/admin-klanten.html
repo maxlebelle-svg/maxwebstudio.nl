@@ -18061,13 +18061,10 @@
         function createQuoteFromCustomer() {
           const customer = selectedCustomer();
           if (!customer) {
-            reportUnavailableAction("Selecteer eerst een klant om een offerte te maken.", setDetailMessage);
+            reportUnavailableAction("Selecteer eerst een klant om een voorstel te maken.", setDetailMessage);
             return;
           }
-          openQuoteModal();
-          quoteFields.profile.value = customer.id;
-          populateQuoteOptions(customer.id);
-          quoteFields.profile.value = customer.id;
+          window.location.assign(`admin-offer-composer.html?relationshipType=customer&relationshipId=${encodeURIComponent(customer.id)}&source=customer`);
         }
 
         function createQuoteFromWebsite() {

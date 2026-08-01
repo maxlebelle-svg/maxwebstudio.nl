@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-customer-rls-leads-privilege-repair-2026-07-31",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260731200000_harden_commercial_offer_sales_assignment_rls.sql",
+      "bytes": 5486,
+      "sha256": "c9c98e69cb7ac1bbebedb7d13bd43f7b18b51a025ec2637a2cbe416736f16a35"
+    }
+  ]
+}

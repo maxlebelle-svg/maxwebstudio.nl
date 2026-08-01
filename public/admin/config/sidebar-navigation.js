@@ -83,7 +83,7 @@
       id: "commerce",
       label: "Commerce",
       items: Object.freeze([
-        item("new-assignment", "Nieuwe Opdracht", "admin-nieuwe-opdracht.html", "circle-plus", { permission: permission("quotes", "update", roleGroups.sales), secondary: true }),
+        item("offer-composer", "Voorstellen", "admin-offer-composer.html", "pen-line", { relationshipTypes: ["lead", "customer"], permission: permission("quotes", "create", roleGroups.sales) }),
         item("quotes", "Offertes", "admin-offertes.html", "file-signature", { badge: "openQuotes", statusTone: "warning", workspaceRequired: true, permission: permission("quotes", "view", roleGroups.sales) }),
         item("invoices", "Facturen", "admin-facturen.html", "receipt", { badge: "openInvoices", statusTone: "warning", workspaceRequired: true, permission: permission("invoices", "view", Object.freeze(["super_admin", "admin", "sales_manager"])) }),
         item("subscriptions", "Abonnementen", "admin-facturen.html#onderhoud", "repeat", { badge: "subscriptionStatus", statusTone: "success", workspaceRequired: true, permission: permission("subscriptions", "view", roleGroups.management) }),

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-leads-demo-read-policy-hardening-2026-07-31",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260731213000_harden_leads_demo_read_policy.sql",
+      "bytes": 1222,
+      "sha256": "bdc3b1a612dc34225e46d649a4fcdf09a5d13b31091cc553d39beb690692e4f6"
+    }
+  ]
+}

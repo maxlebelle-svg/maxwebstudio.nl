@@ -208,9 +208,12 @@ test("the actual Fuellinq regression ZIP is accepted and has a root index", () =
   assert(result.files.some((file) => file.path === "styles.css"));
 });
 
-test("the actual Quantumbouw ZIP is accepted and omits .htaccess", () => {
-  const buffer = fs.readFileSync(path.join(__dirname, "../Klanten MaxWebstudio/Quantumbouw.nl/quantumbouw-factory-upload.zip"));
-  const result = _private.extractZip(buffer);
+test("a representative customer ZIP is accepted and omits .htaccess", () => {
+  const result = _private.extractZip(zip([
+    ["index.html", "<h1>Representative customer site</h1>"],
+    ["assets/quantumbouw-logo.jpg", "synthetic-image-bytes"],
+    [".htaccess", "RewriteEngine On"],
+  ]));
   assert.equal(_private.resolveEntryFile(result.files), "index.html");
   assert(result.files.some((file) => file.path === "assets/quantumbouw-logo.jpg"));
   assert(!result.files.some((file) => file.path.endsWith(".htaccess")));

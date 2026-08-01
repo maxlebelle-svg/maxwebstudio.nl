@@ -14,7 +14,7 @@ test("central sidebar configuration describes every required section and product
   const items = sections.flatMap((section) => section.items);
   const ids = items.map((item) => item.id);
   assert.equal(new Set(ids).size, ids.length);
-  for (const id of ["leads", "website-factory", "demo-sites", "ai-content-library", "asset-manager", "seo-studio", "social-media-studio", "brand-center", "domain-center", "customer-onboarding", "roadmap", "partner-management", "staff-directory"]) assert(ids.includes(id), `missing ${id}`);
+  for (const id of ["leads", "website-factory", "demo-sites", "ai-content-library", "asset-manager", "seo-studio", "social-media-studio", "brand-center", "domain-center", "customer-onboarding", "roadmap", "offer-composer", "partner-management", "staff-directory"]) assert(ids.includes(id), `missing ${id}`);
   items.forEach((item) => {
     assert.match(item.route, /^admin-[a-z0-9-]+\.html(?:#.*)?$/);
     assert.equal(typeof item.workspaceRequired, "boolean");
@@ -46,6 +46,7 @@ test("sidebar module exports the full phase one component contract without auto 
 test("customer-only production routes are explicit and relationship routes never invent employee context", () => {
   const items = navigation.ADMIN_SIDEBAR_NAVIGATION.flatMap((section) => section.items);
   assert.deepEqual(items.find((item) => item.id === "customer-onboarding").relationshipTypes, ["customer"]);
+  assert.deepEqual(items.find((item) => item.id === "offer-composer").relationshipTypes, ["lead", "customer"]);
   for (const id of ["website-factory", "demo-sites", "ai-content-library", "asset-manager", "seo-studio", "social-media-studio", "brand-center", "domain-center"]) assert.deepEqual(items.find((item) => item.id === id).relationshipTypes, ["lead", "customer"]);
   for (const id of ["website-qa", "roadmap", "websites", "projects"]) assert.deepEqual(items.find((item) => item.id === id).relationshipTypes, []);
   assert.equal(items.some((item) => item.relationshipTypes.includes("employee")), false);

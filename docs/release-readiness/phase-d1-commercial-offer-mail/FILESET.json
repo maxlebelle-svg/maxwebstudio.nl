@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-commercial-offer-mail-2026-07-30",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260730223000_commercial_offer_phase_d1_mail.sql",
+      "bytes": 21874,
+      "sha256": "be3a84c026da82650fae95a2d33fc7706c21d84835fc09145838857810c8128c"
+    }
+  ]
+}

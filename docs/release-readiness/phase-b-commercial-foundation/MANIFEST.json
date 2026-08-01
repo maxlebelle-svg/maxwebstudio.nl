@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-b-commercial-foundation-2026-07-30",
+  "release": "Max Webstudio Phase B commercial foundation",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/phase-b-commercial-foundation",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260730150000_commercial_offer_foundation.sql"
+  ],
+  "scope": [
+    "versioned commercial catalog registration",
+    "immutable commercial offer snapshots",
+    "document and terms checksums",
+    "append-only commercial audit events",
+    "tenant- and role-scoped read policies"
+  ],
+  "explicitlyExcluded": [
+    "email delivery",
+    "Signhost",
+    "Mollie",
+    "customer activation",
+    "project or subscription creation"
+  ]
+}

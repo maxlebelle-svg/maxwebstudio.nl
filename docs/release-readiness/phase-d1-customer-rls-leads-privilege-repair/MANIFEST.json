@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "phase-d1-customer-rls-leads-privilege-repair-2026-07-31",
+  "release": "Max Webstudio Phase D1 customer RLS leads-privilege repair",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/phase-bc-production-release-v2",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260731200000_harden_commercial_offer_sales_assignment_rls.sql"
+  ],
+  "scope": [
+    "boolean-only security-definer sales-assignment helper",
+    "commercial customer reads independent from direct leads-table evaluation",
+    "customer, sales-partner and administrator commercial read-scope preservation"
+  ],
+  "explicitlyExcluded": [
+    "production execution",
+    "staging execution",
+    "direct customer grants on leads",
+    "table, column or data mutation",
+    "Signhost",
+    "Mollie",
+    "email delivery",
+    "invoice creation",
+    "subscription creation",
+    "onboarding activation"
+  ]
+}
