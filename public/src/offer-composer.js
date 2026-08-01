@@ -39,15 +39,17 @@ const state = {
   definitiveTrigger: null,
   revokeInterestPending: false,
   revokeInterestTrigger: null,
+  preflightPending: false,
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
 
 async function init() {
+  bindCommercialPreflight();
   if (!routeContext.valid) return waitForRelationship();
   bindEvents();
   try {
@@ -66,7 +68,9 @@ function waitForRelationship() {
   showMessage('Selecteer links in de actieve werkruimte eerst een lead of klant. Daarna opent de Composer automatisch met de juiste relatie.', 'warning');
   elements.catalogVersion.textContent = 'Wacht op relatie';
   elements.composerApp.setAttribute('aria-busy', 'false');
-  elements.composerApp.querySelectorAll('button,input,select,textarea').forEach((item) => { item.disabled = true; });
+  elements.composerApp.querySelectorAll('button,input,select,textarea').forEach((item) => {
+    if (!item.hasAttribute('data-keep-enabled')) item.disabled = true;
+  });
   let navigating = false;
   const openRelationship = (relationship) => {
     if (navigating || !relationship) return;
@@ -80,6 +84,77 @@ function waitForRelationship() {
   window.addEventListener('maxwebstudio:relationship-change', (event) => openRelationship(event.detail?.relationship));
   window.addEventListener('maxwebstudio:relationship-ready', (event) => openRelationship(event.detail?.relationship));
   openRelationship(window.ActiveRelationship?.getActiveRelationship?.());
+}
+
+function bindCommercialPreflight() {
+  if (!elements.commercialPreflightPanel || !elements.commercialPreflightRun) return;
+  if (currentAdminRole() !== 'super_admin') return;
+  elements.commercialPreflightPanel.hidden = false;
+  elements.commercialPreflightRun.addEventListener('click', runCommercialPreflight);
+}
+
+function currentAdminRole() {
+  for (const key of ['maxwebstudioCurrentSession', 'mws_admin_supabase_session']) {
+    try {
+      const session = JSON.parse(localStorage.getItem(key) || 'null');
+      const role = String(session?.role || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+      if (role) return role;
+    } catch { /* invalid derived session remains fail-closed */ }
+  }
+  return '';
+}
+
+async function runCommercialPreflight() {
+  if (state.preflightPending || currentAdminRole() !== 'super_admin') return;
+  state.preflightPending = true;
+  elements.commercialPreflightRun.disabled = true;
+  setCommercialPreflightResult({ state: 'running', message: 'Read-only controles worden uitgevoerd…', probes: [] });
+  try {
+    const accessToken = await getAdminAccessToken();
+    const response = await fetch('/api/admin-commercial-postgrest-preflight', {
+      method: 'GET',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    const payload = await response.json().catch(() => ({}));
+    const probes = normalizeCommercialPreflightProbes(payload?.probes);
+    const passed = response.ok && probes.length === 2 && probes.every((probe) => probe.healthy);
+    setCommercialPreflightResult({
+      state: passed ? 'pass' : 'fail',
+      message: passed ? 'PASS · beide read-only controles zijn gezond.' : 'FAIL · release blijft geblokkeerd.',
+      probes,
+      checkedAt: new Date().toISOString(),
+    });
+  } catch {
+    setCommercialPreflightResult({ state: 'fail', message: 'FAIL · preflight kon niet veilig worden voltooid.', probes: [], checkedAt: new Date().toISOString() });
+  } finally {
+    state.preflightPending = false;
+    elements.commercialPreflightRun.disabled = false;
+  }
+}
+
+function normalizeCommercialPreflightProbes(input) {
+  const expected = new Set(['profiles', 'customers']);
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter((probe) => expected.has(String(probe?.resource || '')))
+    .map((probe) => ({
+      resource: String(probe.resource),
+      httpStatus: Number(probe.httpStatus) || 0,
+      healthy: Number(probe.httpStatus) === 200 && String(probe.resultCategory || '') === 'healthy' && !String(probe.errorCode || ''),
+    }));
+}
+
+function setCommercialPreflightResult(result) {
+  const timestamp = result.checkedAt ? ` · ${new Date(result.checkedAt).toLocaleString('nl-NL')}` : '';
+  elements.commercialPreflightStatus.dataset.state = result.state;
+  elements.commercialPreflightStatus.textContent = `${result.message}${timestamp}`;
+  elements.commercialPreflightFlags.replaceChildren(...result.probes.map((probe) => {
+    const item = document.createElement('li');
+    item.dataset.state = probe.healthy ? 'pass' : 'fail';
+    item.textContent = `${probe.resource}: ${probe.healthy ? 'PASS' : 'FAIL'} (${probe.httpStatus || 'geen status'})`;
+    return item;
+  }));
 }
 
 function bindEvents() {

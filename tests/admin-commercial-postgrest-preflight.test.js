@@ -1,8 +1,13 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 const { _test } = require("../functions/admin-commercial-postgrest-preflight");
+
+const root = path.resolve(__dirname, "..");
+const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 const secret = "server-only-secret-value";
 const now = () => new Date("2026-08-01T12:00:00.000Z");
@@ -135,4 +140,48 @@ test("missing configuration and transport failures are fail-closed and secret-fr
 test("the preflight implementation has no service-role dependency", () => {
   const source = require("node:fs").readFileSync(require.resolve("../functions/admin-commercial-postgrest-preflight"), "utf8");
   assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY|serviceRoleKey/);
+});
+
+test("the Composer exposes one hidden-by-default fixed superadmin preflight control", () => {
+  const html = read("public/admin-offer-composer.html");
+  assert.match(html, /id="commercial-preflight-panel"[^>]*hidden/);
+  assert.match(html, /id="commercial-preflight-run"[^>]*data-keep-enabled="true"[^>]*>Commercial D1-preflight uitvoeren</);
+  assert.match(html, /id="commercial-preflight-status"[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(html, /id="commercial-preflight-flags"[^>]*aria-label="Preflightcontrolevlaggen"/);
+  const panel = html.match(/<section class="commercial-preflight-card"[\s\S]*?<\/section>/)?.[0] || "";
+  assert.doesNotMatch(panel, /<(?:input|select|textarea)\b/i);
+});
+
+test("the Composer button uses only the existing user-JWT helper and fixed GET route", () => {
+  const source = read("public/src/offer-composer.js");
+  assert.match(source, /import \{ getAdminAccessToken \} from '\.\/services\/adminAuthBridgeService\.js'/);
+  assert.match(source, /state\.preflightPending \|\| currentAdminRole\(\) !== 'super_admin'/);
+  assert.match(source, /const accessToken = await getAdminAccessToken\(\)/);
+  assert.match(source, /fetch\('\/api\/admin-commercial-postgrest-preflight', \{\s*method: 'GET'/s);
+  assert.equal((source.match(/\/api\/admin-commercial-postgrest-preflight/g) || []).length, 1);
+  assert.doesNotMatch(source, /commercialPreflight[^\n]*(?:URLSearchParams|querySelector\('input|prompt\()/i);
+  assert.doesNotMatch(source, /console\.(?:log|info|warn|error)\([^\n]*preflight/i);
+  assert.doesNotMatch(source, /localStorage\.setItem\([^\n]*preflight/i);
+});
+
+test("the Composer renders only bounded safe flags and never raw preflight payloads", () => {
+  const source = read("public/src/offer-composer.js");
+  assert.match(source, /new Set\(\['profiles', 'customers'\]\)/);
+  assert.match(source, /probe\.httpStatus/);
+  assert.match(source, /probe\.resultCategory/);
+  assert.match(source, /probe\.errorCode/);
+  assert.match(source, /item\.textContent = `\$\{probe\.resource\}: \$\{probe\.healthy \? 'PASS' : 'FAIL'\}/);
+  assert.doesNotMatch(source, /JSON\.stringify\(payload\)|innerHTML\s*=\s*payload|textContent\s*=\s*payload/);
+});
+
+test("the unrelated preview admin-data error is the existing fail-closed service-role configuration guard", () => {
+  const adminData = read("functions/admin-supabase-data.js");
+  const accountProfile = read("functions/account-profile.js");
+  const preflight = read("functions/admin-commercial-postgrest-preflight.js");
+  assert.match(adminData, /const serviceRoleKey = process\.env\.SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(adminData, /if \(!supabaseUrl \|\| !serviceRoleKey\)/);
+  assert.match(adminData, /reason: "missing_server_configuration"/);
+  assert.doesNotMatch(preflight, /SUPABASE_SERVICE_ROLE_KEY|serviceRoleKey/);
+  assert.match(preflight, /SUPABASE_ANON_KEY/);
+  assert.match(accountProfile, /SUPABASE_ANON_KEY/);
 });
