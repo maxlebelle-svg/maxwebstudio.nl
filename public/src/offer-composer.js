@@ -462,7 +462,10 @@ async function openPreview() {
     elements.mailPreview.showModal();
     await reloadContext();
     showMessage('Het exacte servervoorbeeld is gecontroleerd en in de audittrail vastgelegd.', 'success');
-  } catch (error) { showMessage(error.message, 'error'); }
+  } catch (error) {
+    showMessage(error.message, 'error');
+    elements.composerMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
   finally { renderPreviewAvailability(); }
 }
 

@@ -318,3 +318,8 @@ test("39 a stored ready-for-review version is shown as immutable and complete", 
   assert.match(browser, /\[savedCurrentVersion, 'Actuele inhoud is als immutable versie opgeslagen'\]/);
   assert.match(browser, /const savedDraft = savedCurrentVersion && state\.currentVersionStatus === 'draft'/);
 });
+
+test("40 preview failures are brought into view instead of failing invisibly", () => {
+  const previewHandler = browser.match(/async function openPreview\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  assert.match(previewHandler, /composerMessage\.scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
+});

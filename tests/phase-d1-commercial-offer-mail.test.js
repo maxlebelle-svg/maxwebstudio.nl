@@ -417,3 +417,22 @@ test("production preview and dispatch do not force a staging label", () => {
   assert.doesNotMatch(server, /buildCommercialOfferMail\([^\n]+staging:\s*true/);
   assert.match(server, /staging: isStagingDeployment\(\)/);
 });
+
+test("relative stored demo links become safe absolute production mail links", () => {
+  const previousUrl = process.env.URL;
+  try {
+    process.env.URL = "https://maxwebstudio.nl";
+    const demo = endpoint.mapDemo({
+      id: "33333333-3333-4333-8333-333333333333",
+      business_name: "Emmeloord Rotishop",
+      preview_url: "/preview/emmeloord-rotishop",
+      preview_package: {},
+    });
+    assert.equal(demo.desktopUrl, "https://maxwebstudio.nl/preview/emmeloord-rotishop");
+    assert.equal(demo.mobileUrl, demo.desktopUrl);
+    assert.equal(demo.qrCodeUrl, "https://maxwebstudio.nl/assets/food/silverado/silverado-demo-qr.svg");
+    assert.doesNotThrow(() => buildCommercialOfferMail({ ...base, demo, mode: "preview" }));
+  } finally {
+    if (previousUrl === undefined) delete process.env.URL; else process.env.URL = previousUrl;
+  }
+});

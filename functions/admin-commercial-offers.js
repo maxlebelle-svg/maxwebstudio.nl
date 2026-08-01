@@ -380,20 +380,27 @@ function mapRelationship(type, record) {
 
 function mapDemo(row) {
   const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
-  const desktopUrl = safePreviewUrl(row.preview_url);
-  const mobileUrl = safePreviewUrl(meta.mobileUrl) || desktopUrl;
+  const desktopUrl = absolutePreviewUrl(row.preview_url);
+  const mobileUrl = absolutePreviewUrl(meta.mobileUrl) || desktopUrl;
   return {
     id: row.id,
     name: clean(row.business_name || meta.name || "Demo"),
     type: clean(meta.factoryType || meta.type || "website"),
     desktopUrl,
     mobileUrl,
-    qrTarget: safePreviewUrl(meta.qrTarget) || mobileUrl,
-    qrCodeUrl: safePreviewUrl(meta.qrCodeUrl || meta.qrAssetUrl) || silveradoQr(row, desktopUrl),
+    qrTarget: absolutePreviewUrl(meta.qrTarget) || mobileUrl,
+    qrCodeUrl: absolutePreviewUrl(meta.qrCodeUrl || meta.qrAssetUrl) || silveradoQr(row, desktopUrl),
     status: clean(row.demo_status),
     expiresAt: clean(meta.expiresAt),
     updatedAt: row.updated_at,
   };
+}
+
+function absolutePreviewUrl(value) {
+  const safe = safePreviewUrl(value);
+  if (!safe) return "";
+  if (safe.startsWith("https://")) return safe;
+  try { return new URL(safe, siteUrl()).toString(); } catch { return ""; }
 }
 
 function safePreviewUrl(value) {
@@ -509,4 +516,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };
+exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, absolutePreviewUrl, silveradoQr, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };
