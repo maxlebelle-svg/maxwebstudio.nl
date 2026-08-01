@@ -8,8 +8,13 @@ const secret = "server-only-secret-value";
 const now = () => new Date("2026-08-01T12:00:00.000Z");
 const event = { httpMethod: "GET", headers: { authorization: "Bearer browser-session" }, queryStringParameters: { resource: "leads", limit: "100" } };
 
-function response(status, body = {}) {
-  return { ok: status >= 200 && status < 300, status, json: async () => body };
+function response(status, onBodyRead = () => {}) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => { onBodyRead(); throw new Error("response body must not be read"); },
+    text: async () => { onBodyRead(); throw new Error("response body must not be read"); },
+  };
 }
 
 function setup(overrides = {}) {
@@ -25,7 +30,7 @@ function setup(overrides = {}) {
       calls.push({ url, options });
       return response(200);
     },
-    env: { SUPABASE_URL: "https://project-ref.supabase.co", SUPABASE_SERVICE_ROLE_KEY: secret },
+    env: { SUPABASE_URL: "https://project-ref.supabase.co", SUPABASE_ANON_KEY: "anon-publishable-key" },
     now,
     consumeRateLimit: () => true,
     logger: { info: (...args) => logs.push(args) },
@@ -44,6 +49,10 @@ test("route performs exactly the two fixed GET limit=0 probes and returns metada
     "https://project-ref.supabase.co/rest/v1/customers?select=id&limit=0",
   ]);
   for (const call of calls) assert.equal(call.options.method, "GET");
+  for (const call of calls) {
+    assert.equal(call.options.headers.apikey, "anon-publishable-key");
+    assert.equal(call.options.headers.Authorization, "Bearer browser-session");
+  }
   assert.deepEqual(JSON.parse(result.body), {
     probes: [
       { resource: "profiles", httpStatus: 200, errorCode: "", resultCategory: "healthy" },
@@ -64,14 +73,17 @@ test("query input cannot alter the fixed resource set or limit", async () => {
   assert.deepEqual(calls.map((call) => new URL(call.url).search), ["?select=id&limit=0", "?select=id&limit=0"]);
 });
 
-test("authorization failure stops before all probes", async () => {
+test("a non-super-admin authorization result stops before all probes", async () => {
   let fetched = 0;
   const { handler } = setup({
-    verifyAdmin: async () => ({ success: false, response: { statusCode: 401, body: "denied" } }),
+    verifyAdmin: async (_event, _json, options) => {
+      assert.deepEqual(options.allowedRoles, ["super_admin"]);
+      return { success: false, response: { statusCode: 403, body: "denied" } };
+    },
     fetch: async () => { fetched += 1; return response(200); },
   });
   const result = await handler(event);
-  assert.equal(result.statusCode, 401);
+  assert.equal(result.statusCode, 403);
   assert.equal(fetched, 0);
 });
 
@@ -87,12 +99,13 @@ test("unsupported method and rate limit fail closed without probes", async () =>
   assert.equal(limited.calls.length, 0);
 });
 
-test("errors expose only safe codes and categories while both probes still run", async () => {
+test("errors expose only status-derived safe codes without reading response bodies", async () => {
   const seen = [];
+  let bodyReads = 0;
   const { handler } = setup({
     fetch: async (url) => {
       seen.push(url);
-      return url.includes("profiles") ? response(404, { code: "PGRST205", message: secret }) : response(403, { code: "42501", details: secret });
+      return url.includes("profiles") ? response(404, () => { bodyReads += 1; }) : response(403, () => { bodyReads += 1; });
     },
   });
   const result = await handler(event);
@@ -100,11 +113,11 @@ test("errors expose only safe codes and categories while both probes still run",
   assert.equal(seen.length, 2);
   assert.deepEqual(JSON.parse(result.body), {
     probes: [
-      { resource: "profiles", httpStatus: 404, errorCode: "PGRST205", resultCategory: "schema_unavailable" },
-      { resource: "customers", httpStatus: 403, errorCode: "42501", resultCategory: "authorization_failed" },
+      { resource: "profiles", httpStatus: 404, errorCode: "POSTGREST_RESOURCE_UNAVAILABLE", resultCategory: "schema_unavailable" },
+      { resource: "customers", httpStatus: 403, errorCode: "POSTGREST_AUTHORIZATION_FAILED", resultCategory: "authorization_failed" },
     ],
   });
-  assert.equal(result.body.includes(secret), false);
+  assert.equal(bodyReads, 0);
 });
 
 test("missing configuration and transport failures are fail-closed and secret-free", async () => {
@@ -117,4 +130,9 @@ test("missing configuration and transport failures are fail-closed and secret-fr
   assert.equal(result.statusCode, 502);
   assert.equal(result.body.includes(secret), false);
   assert.deepEqual(JSON.parse(result.body).probes.map((probe) => probe.errorCode), ["POSTGREST_REQUEST_FAILED", "POSTGREST_REQUEST_FAILED"]);
+});
+
+test("the preflight implementation has no service-role dependency", () => {
+  const source = require("node:fs").readFileSync(require.resolve("../functions/admin-commercial-postgrest-preflight"), "utf8");
+  assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY|serviceRoleKey/);
 });

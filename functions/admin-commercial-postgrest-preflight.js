@@ -33,15 +33,20 @@ function createHandler(dependencies = {}) {
     if (!auth.success) return auth.response;
 
     const actorProfileId = clean(auth.admin?.profileId);
+    const bearer = getBearer(event);
     const checkedAt = timestamp(now);
+    if (!bearer) {
+      safeAudit(logger, { actorProfileId, checkedAt, result: "AUTHORIZATION_ERROR", probes: [] });
+      return json(401, { probes: [] });
+    }
     if (!consumeRateLimit(actorProfileId, new Date(checkedAt).getTime())) {
       safeAudit(logger, { actorProfileId, checkedAt, result: "RATE_LIMITED", probes: [] });
       return json(429, { probes: [] }, { "Retry-After": "60" });
     }
 
     const supabaseUrl = clean(env.SUPABASE_URL).replace(/\/$/, "");
-    const serviceRoleKey = clean(env.SUPABASE_SERVICE_ROLE_KEY);
-    if (!supabaseUrl || !serviceRoleKey || typeof request !== "function") {
+    const anonKey = clean(env.SUPABASE_ANON_KEY);
+    if (!supabaseUrl || !anonKey || typeof request !== "function") {
       safeAudit(logger, { actorProfileId, checkedAt, result: "CONFIGURATION_ERROR", probes: [] });
       return json(500, { probes: [] });
     }
@@ -50,7 +55,8 @@ function createHandler(dependencies = {}) {
       probe,
       request,
       supabaseUrl,
-      serviceRoleKey,
+      anonKey,
+      bearer,
     })));
     const success = probes.every((probe) => probe.httpStatus === 200 && probe.resultCategory === "healthy");
     safeAudit(logger, {
@@ -63,17 +69,17 @@ function createHandler(dependencies = {}) {
   };
 }
 
-async function executeProbe({ probe, request, supabaseUrl, serviceRoleKey }) {
+async function executeProbe({ probe, request, supabaseUrl, anonKey, bearer }) {
   try {
     const response = await request(`${supabaseUrl}/rest/v1/${probe.path}`, {
       method: "GET",
       headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: anonKey,
+        Authorization: `Bearer ${bearer}`,
         Accept: "application/json",
       },
     });
-    const errorCode = response.ok ? "" : await extractErrorCode(response);
+    const errorCode = safeErrorCode(response.status);
     return Object.freeze({
       resource: probe.resource,
       httpStatus: Number(response.status) || 0,
@@ -90,20 +96,19 @@ async function executeProbe({ probe, request, supabaseUrl, serviceRoleKey }) {
   }
 }
 
-async function extractErrorCode(response) {
-  try {
-    const body = await response.json();
-    const code = clean(body?.code);
-    return /^[A-Z0-9_]{2,64}$/i.test(code) ? code : "POSTGREST_ERROR";
-  } catch {
-    return "POSTGREST_ERROR";
-  }
+function safeErrorCode(status) {
+  const value = Number(status) || 0;
+  if (value === 200) return "";
+  if ([401, 403].includes(value)) return "POSTGREST_AUTHORIZATION_FAILED";
+  if (value === 404) return "POSTGREST_RESOURCE_UNAVAILABLE";
+  if (value >= 500) return "POSTGREST_UPSTREAM_UNAVAILABLE";
+  return "POSTGREST_UNEXPECTED_STATUS";
 }
 
 function category(status, code) {
   if (Number(status) === 200) return "healthy";
   if ([401, 403].includes(Number(status))) return "authorization_failed";
-  if (code === "PGRST205") return "schema_unavailable";
+  if (Number(status) === 404) return "schema_unavailable";
   if (Number(status) >= 500) return "upstream_unavailable";
   return "unexpected_response";
 }
@@ -138,6 +143,11 @@ function timestamp(now) {
   return Number.isFinite(date.getTime()) ? date.toISOString() : new Date(0).toISOString();
 }
 
+function getBearer(event) {
+  const authHeader = event?.headers?.authorization || event?.headers?.Authorization || "";
+  return authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+}
+
 function json(statusCode, body, extraHeaders = {}) {
   return {
     statusCode,
@@ -156,4 +166,4 @@ function clean(value) {
 }
 
 exports.handler = createHandler();
-exports._test = Object.freeze({ PROBES, RATE_LIMIT, RATE_WINDOW_MS, category, createHandler, defaultRateLimit });
+exports._test = Object.freeze({ PROBES, RATE_LIMIT, RATE_WINDOW_MS, category, createHandler, defaultRateLimit, safeErrorCode });
