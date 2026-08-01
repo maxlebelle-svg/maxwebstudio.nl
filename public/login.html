@@ -159,12 +159,12 @@
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
         const roleAliases = {
-          "Developer": "developer",
-          "Super Admin": "super_admin",
-          "Admin": "admin",
-          "Sales Manager": "sales_manager",
-          "Sales": "sales_partner",
-          "Sales Partner": "sales_partner",
+          developer: "developer",
+          super_admin: "super_admin",
+          admin: "admin",
+          sales_manager: "sales_manager",
+          sales: "sales_partner",
+          sales_partner: "sales_partner",
         };
         const statusCopy = {
           demo: {
@@ -200,8 +200,8 @@
         }
 
         function normalizeRole(role = "") {
-          const value = String(role || "").trim();
-          return roleAliases[value] || value.toLowerCase().replace(/[\s-]+/g, "_");
+          const value = String(role || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+          return roleAliases[value] || value;
         }
 
         function isAdminRole(role = "") {
@@ -388,6 +388,9 @@
           if (code.includes("NETWORK") || code.includes("FETCH")) {
             return "Admin-login geblokkeerd: de loginomgeving is nu niet bereikbaar.";
           }
+          if (code.includes("TIMEOUT")) {
+            return "De loginomgeving antwoordde niet op tijd. Probeer het opnieuw.";
+          }
           return `Admin-login geblokkeerd: ${code}${status ? ` (${status})` : ""}.`;
         }
 
@@ -433,13 +436,29 @@
         }
 
         async function fetchAccountProfile(accessToken) {
-          const response = await fetch("/api/account-profile", {
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-            cache: "no-store",
-          });
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 12000);
+          let response;
+          try {
+            response = await fetch("/api/account-profile", {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+              cache: "no-store",
+              signal: controller.signal,
+            });
+          } catch (error) {
+            if (error?.name === "AbortError") {
+              const timeout = new Error("Profielcontrole antwoordde niet op tijd.");
+              timeout.code = "PROFILE_LOOKUP_TIMEOUT";
+              timeout.status = 504;
+              throw timeout;
+            }
+            throw error;
+          } finally {
+            clearTimeout(timer);
+          }
           const data = await response.json().catch(() => ({}));
           if (!response.ok || !data.success) {
             const error = new Error(data.error || "Profiel kon niet worden gecontroleerd.");
@@ -642,6 +661,7 @@
 
           let account;
           try {
+            setMessage("Login gelukt. Je profiel wordt gecontroleerd...");
             account = await fetchAccountProfile(session.access_token);
           } catch (error) {
             const code = String(error?.code || "PROFILE_LOOKUP_FAILED").toUpperCase();
@@ -660,7 +680,8 @@
 
           const role = normalizeRole(account.profile?.role);
           const profileStatus = String(account.profile?.status || "").toLowerCase();
-          if (adminMode && profileStatus !== "active") {
+          const partnerOnboardingRequired = role === "sales_partner" && account.access?.onboardingRequired;
+          if (adminMode && profileStatus !== "active" && !partnerOnboardingRequired) {
             logAuthEvent("PROFILE_INACTIVE", { role, profileStatus });
             setMessage(getAdminLoginErrorMessage({ code: "PROFILE_INACTIVE" }), "error");
             return;
@@ -671,6 +692,12 @@
             return;
           }
           storeRealSession(session, account);
+          if (partnerOnboardingRequired) {
+            logAuthEvent("PARTNER_ONBOARDING_REQUIRED", { role, profileStatus });
+            setMessage("Login gelukt. Je onboarding wordt geopend.", "success");
+            window.location.href = "/partner-onboarding.html";
+            return;
+          }
           if (isAdminRole(role)) {
             const adminAuthBridge = await loadAdminAuthBridge();
             await adminAuthBridge.resolveAdminAuth({ account });
