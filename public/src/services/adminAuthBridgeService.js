@@ -4,9 +4,11 @@ const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
 const CURRENT_SESSION_KEY = "maxwebstudioCurrentSession";
 const LEGACY_ADMIN_SESSION_KEY = "maxwebstudioAdminSession";
 const ADMIN_ROLES = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
+const LEGACY_ROLE_ALIASES = Object.freeze({ sales: "sales_partner" });
 
 function normalizeRole(value = "") {
-  return String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return LEGACY_ROLE_ALIASES[normalized] || normalized;
 }
 
 function clearDerivedAdminSessions() {
