@@ -11,6 +11,10 @@ const { normalizeValidityDate, expiryIso, isExpired } = require("./services/comm
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const WRITE_ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "sales"];
 const PHASE_B_TRANSITIONS = new Set(["ready_for_review", "revoked", "superseded"]);
+const SILVERADO_FOOD_DEMO = Object.freeze({
+  storefrontUrl: "https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord",
+  restaurantPortalUrl: "https://max-webstudio-food-demo.netlify.app/admin/food",
+});
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(204, {});
@@ -137,6 +141,7 @@ async function readComposerContext(query, actor, config) {
       testMail: phaseD1Enabled() && validEmail(actor.email),
       definitiveSend: phaseD1Enabled(),
       revokeInterest: phaseD1Enabled() && ["super_admin", "admin"].includes(normalizeRole(actor.role)),
+      stagingMail: isStagingDeployment(),
       providersEnabled: false,
     },
   });
@@ -161,7 +166,7 @@ async function previewMail(input, actor, config) {
   assertPhaseD1Enabled();
   const offerVersionId = uuid(input.offerVersionId, "De aanbodversie is ongeldig.");
   const context = await loadMailContext(offerVersionId, actor, config);
-  const mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: "preview", staging: true });
+  const mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: "preview", staging: isStagingDeployment() });
   const evidence = await rpc(config, "commercial_record_offer_preview_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
@@ -182,8 +187,7 @@ async function dispatchMail(kind, input, actor, config) {
   const actionKey = boundedKey(input.actionKey);
   const context = await loadMailContext(offerVersionId, actor, config, { allowSent: kind === "definitive" });
   const snapshotExpiry = offerExpiry(context.version.snapshot);
-  const recipient = kind === "test" ? actor.email : context.relationship.email;
-  if (!validEmail(recipient)) throw problem(409, kind === "test" ? "ADMIN_EMAIL_INVALID" : "CUSTOMER_EMAIL_REQUIRED", kind === "test" ? "Het geverifieerde beheerderse-mailadres ontbreekt." : "De klant heeft geen geldig e-mailadres.");
+  const recipient = resolveDispatchRecipient(kind, input, actor, context.relationship);
   let rawToken = "";
   let tokenHash = null;
   let tokenExpiresAt = null;
@@ -210,7 +214,7 @@ async function dispatchMail(kind, input, actor, config) {
   }
   let mail;
   try {
-    mail = buildCommercialOfferMail({ relationship: context.relationship, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: true });
+    mail = buildCommercialOfferMail({ relationship: { ...context.relationship, email: recipient }, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: isStagingDeployment() });
   } catch (error) {
     await finalizeDispatch(config, actor, reservation.dispatchId, false, "", error.code || "mail_render_failed");
     throw error;
@@ -289,7 +293,7 @@ async function loadMailContext(offerVersionId, actor, config, options = {}) {
 }
 
 function publicMail(mail) {
-  return { subject: mail.subject, html: mail.html, text: mail.text, desktopUrl: mail.desktopUrl, mobileUrl: mail.mobileUrl, qrCodeUrl: mail.qrCodeUrl, disclaimer: mail.disclaimer, validUntil: mail.validUntil };
+  return { subject: mail.subject, html: mail.html, text: mail.text, desktopUrl: mail.desktopUrl, mobileUrl: mail.mobileUrl, storefrontUrl: mail.storefrontUrl, restaurantPortalUrl: mail.restaurantPortalUrl, qrCodeUrl: mail.qrCodeUrl, disclaimer: mail.disclaimer, validUntil: mail.validUntil };
 }
 
 function offerExpiry(snapshot = {}) {
@@ -381,20 +385,52 @@ function mapRelationship(type, record) {
 
 function mapDemo(row) {
   const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
-  const desktopUrl = safePreviewUrl(row.preview_url);
-  const mobileUrl = safePreviewUrl(meta.mobileUrl) || desktopUrl;
+  const desktopUrl = absolutePreviewUrl(row.preview_url);
+  const foodDemo = isSilveradoFoodDemo(row, desktopUrl);
+  const storefrontUrl = foodDemo ? SILVERADO_FOOD_DEMO.storefrontUrl : "";
+  const restaurantPortalUrl = foodDemo ? SILVERADO_FOOD_DEMO.restaurantPortalUrl : "";
+  const mobileUrl = storefrontUrl || absolutePreviewUrl(meta.mobileUrl) || desktopUrl;
+  const qrTarget = storefrontUrl || absolutePreviewUrl(meta.qrTarget) || mobileUrl;
   return {
     id: row.id,
     name: clean(row.business_name || meta.name || "Demo"),
-    type: clean(meta.factoryType || meta.type || "website"),
+    type: foodDemo ? "food" : clean(meta.factoryType || meta.type || "website"),
     desktopUrl,
     mobileUrl,
-    qrTarget: safePreviewUrl(meta.qrTarget) || mobileUrl,
-    qrCodeUrl: safePreviewUrl(meta.qrCodeUrl || meta.qrAssetUrl) || silveradoQr(row, desktopUrl),
+    storefrontUrl,
+    restaurantPortalUrl,
+    qrTarget,
+    qrCodeUrl: signedQrCodeUrl(qrTarget),
     status: clean(row.demo_status),
     expiresAt: clean(meta.expiresAt),
     updatedAt: row.updated_at,
   };
+}
+
+function isSilveradoFoodDemo(row = {}, desktopUrl = "") {
+  const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
+  const saved = meta.savedDemoSite || meta.saved_demo_site || {};
+  const identity = [row.business_name, row.preview_url, desktopUrl, meta.name, saved.businessName, saved.websiteUrl]
+    .map(clean)
+    .join(" ")
+    .toLowerCase();
+  const knownPreview = identity.includes("/preview/emmerloord-rotishop") || identity.includes("/preview/emmeloord-rotishop");
+  return knownPreview || (identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop")));
+}
+
+function signedQrCodeUrl(target) {
+  const safeTarget = absolutePreviewUrl(target);
+  const secret = clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!safeTarget || !secret) return "";
+  const signature = crypto.createHmac("sha256", secret).update(safeTarget).digest("hex");
+  return `${siteUrl()}/api/commercial-offer-qr?target=${encodeURIComponent(safeTarget)}&signature=${signature}`;
+}
+
+function absolutePreviewUrl(value) {
+  const safe = safePreviewUrl(value);
+  if (!safe) return "";
+  if (safe.startsWith("https://")) return safe;
+  try { return new URL(safe, siteUrl()).toString(); } catch { return ""; }
 }
 
 function safePreviewUrl(value) {
@@ -473,9 +509,15 @@ function phaseD1Enabled() {
   let databaseHost = "";
   try { siteHost = new URL(clean(process.env.URL || process.env.DEPLOY_PRIME_URL)).hostname.toLowerCase(); } catch {}
   try { databaseHost = new URL(clean(process.env.SUPABASE_URL)).hostname.toLowerCase(); } catch {}
-  return enabled
-    && siteHost === "maxwebstudio-staging.netlify.app"
-    && databaseHost === "xlxpuuycigeqhgxqtzni.supabase.co";
+  const allowedEnvironment = [
+    ["maxwebstudio-staging.netlify.app", "xlxpuuycigeqhgxqtzni.supabase.co"],
+    ["maxwebstudio.nl", "yxxahurphdbblkuxoeje.supabase.co"],
+  ].some(([allowedSite, allowedDatabase]) => siteHost === allowedSite && databaseHost === allowedDatabase);
+  return enabled && allowedEnvironment;
+}
+function isStagingDeployment() {
+  try { return new URL(clean(process.env.URL || process.env.DEPLOY_PRIME_URL)).hostname.toLowerCase() === "maxwebstudio-staging.netlify.app"; }
+  catch { return false; }
 }
 function assertPhaseD1Enabled() { if (!phaseD1Enabled()) throw problem(403, "PHASE_D1_DISABLED", "Deze mailfase is in deze omgeving niet geactiveerd."); }
 function siteUrl() {
@@ -484,7 +526,18 @@ function siteUrl() {
   catch { throw problem(503, "SITE_URL_INVALID", "De veilige applicatie-URL ontbreekt."); }
 }
 function sha256(value) { return crypto.createHash("sha256").update(clean(value)).digest("hex"); }
-function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(value)); }
+function validEmail(value) { const email = clean(value); return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+function resolveDispatchRecipient(kind, input = {}, actor = {}, relationship = {}) {
+  if (kind === "test") {
+    if (!validEmail(actor.email)) throw problem(409, "ADMIN_EMAIL_INVALID", "Het geverifieerde beheerderse-mailadres ontbreekt.");
+    return clean(actor.email).toLowerCase();
+  }
+  const manualRecipient = clean(input.recipientEmail);
+  if (manualRecipient && !validEmail(manualRecipient)) throw problem(400, "RECIPIENT_EMAIL_INVALID", "Vul een geldig verzendadres in.");
+  const recipient = manualRecipient || clean(relationship.email);
+  if (!validEmail(recipient)) throw problem(409, "CUSTOMER_EMAIL_REQUIRED", "Vul een geldig verzendadres in voordat u definitief verzendt.");
+  return recipient.toLowerCase();
+}
 function parseBody(event) { if (event.httpMethod === "GET") return {}; const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString("utf8") : String(event.body || ""); if (!raw || Buffer.byteLength(raw) > 131072) throw problem(400, "BODY_INVALID", "De aanvraag is leeg of te groot."); try { return JSON.parse(raw); } catch { throw problem(400, "JSON_INVALID", "De aanvraag bevat geen geldige gegevens."); } }
 function boundedKey(value) { const key = clean(value); if (key.length < 16 || key.length > 150 || !/^[a-zA-Z0-9:_-]+$/.test(key)) throw problem(400, "ACTION_KEY_INVALID", "De actiebeveiliging ontbreekt."); return key; }
 function uuid(value, message) { const result = clean(value); if (!UUID.test(result)) throw problem(400, "UUID_INVALID", message); return result; }
@@ -493,4 +546,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, silveradoQr, phaseD1Enabled, sha256, publicMail, offerExpiry };
+exports._private = { PHASE_B_TRANSITIONS, SILVERADO_FOOD_DEMO, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, isSilveradoFoodDemo, safePreviewUrl, absolutePreviewUrl, signedQrCodeUrl, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };

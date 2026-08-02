@@ -51,6 +51,30 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
 });
 
+test("Silverado proposal mail shows the storefront and restaurant portal as separate verified actions", () => {
+  const demo = {
+    ...base.demo,
+    type: "food",
+    storefrontUrl: "https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord",
+    restaurantPortalUrl: "https://max-webstudio-food-demo.netlify.app/admin/food",
+  };
+  const mail = buildCommercialOfferMail({ ...base, demo, mode: "preview" });
+  assert.match(mail.html, />Bekijk de bestelpagina</);
+  assert.match(mail.html, />Open het restaurantportaal</);
+  assert.match(mail.html, /href="https:\/\/max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord"/);
+  assert.match(mail.html, /href="https:\/\/max-webstudio-food-demo\.netlify\.app\/admin\/food"/);
+  assert.match(mail.text, /Bestelpagina voor klanten:/);
+  assert.match(mail.text, /Restaurantportaal voor beheer:/);
+  assert.doesNotMatch(mail.html, />Demo op computer bekijken</);
+  const preview = endpoint.publicMail(mail);
+  assert.equal(preview.storefrontUrl, demo.storefrontUrl);
+  assert.equal(preview.restaurantPortalUrl, demo.restaurantPortalUrl);
+});
+
+test("an incomplete food proposal fails closed before email delivery", () => {
+  assert.throws(() => buildCommercialOfferMail({ ...base, demo: { ...base.demo, type: "food", storefrontUrl: base.demo.mobileUrl }, mode: "test" }), /restaurant-demo mist/i);
+});
+
 test("offer validity is server-side, immutable, fourteen calendar days and fail-closed", () => {
   const manipulated = offerService.buildOfferVersion({
     paymentChoice: "fixed_deposit",
@@ -88,16 +112,21 @@ test("unsafe or incomplete demos and non-binding prices fail closed before mail 
   assert.throws(() => buildCommercialOfferMail({ ...base, snapshot: { ...snapshot, hasNonBindingLines: true }, mode: "test" }), /bindende/i);
 });
 
-test("Phase D1 is environment gated and cannot be enabled in production", () => {
+test("Phase D1 is enabled only for exact staging or production host and database pairs", () => {
   const previous = { flag: process.env.COMMERCIAL_OFFER_PHASE_D1_ENABLED, url: process.env.URL, supabaseUrl: process.env.SUPABASE_URL };
   try {
     process.env.COMMERCIAL_OFFER_PHASE_D1_ENABLED = "true";
     process.env.URL = "https://maxwebstudio-staging.netlify.app";
     process.env.SUPABASE_URL = "https://xlxpuuycigeqhgxqtzni.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), true);
+    assert.equal(endpoint.isStagingDeployment(), true);
     process.env.URL = "https://maxwebstudio.nl";
+    process.env.SUPABASE_URL = "https://yxxahurphdbblkuxoeje.supabase.co";
+    assert.equal(endpoint.phaseD1Enabled(), true);
+    assert.equal(endpoint.isStagingDeployment(), false);
+    process.env.SUPABASE_URL = "https://wrong-project.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), false);
-    process.env.URL = "https://maxwebstudio-staging.netlify.app";
+    process.env.URL = "https://wrong-site.example";
     process.env.SUPABASE_URL = "https://yxxahurphdbblkuxoeje.supabase.co";
     assert.equal(endpoint.phaseD1Enabled(), false);
   } finally {
@@ -395,4 +424,72 @@ test("revoke request is idempotent and performs no provider action", () => {
 test("D1 hardening remains free of production providers and activation side effects", () => {
   const scope = [hardening, read("functions/admin-commercial-offers.js"), browser].join("\n");
   assert.doesNotMatch(scope, /signhost|api\.mollie|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
+});
+
+test("manual definitive recipient is normalized while test mail remains admin-only", () => {
+  const actor = { email: "beheerder@maxwebstudio.nl" };
+  const relationship = { email: "lead@voorbeeld.nl" };
+  assert.equal(endpoint.resolveDispatchRecipient("definitive", { recipientEmail: " Keuze@Voorbeeld.nl " }, actor, relationship), "keuze@voorbeeld.nl");
+  assert.equal(endpoint.resolveDispatchRecipient("definitive", {}, actor, relationship), "lead@voorbeeld.nl");
+  assert.equal(endpoint.resolveDispatchRecipient("test", { recipientEmail: "klant@voorbeeld.nl" }, actor, relationship), "beheerder@maxwebstudio.nl");
+  assert.throws(() => endpoint.resolveDispatchRecipient("definitive", { recipientEmail: "ongeldig" }, actor, relationship), /geldig verzendadres/i);
+  assert.match(browser, /relationship: \{ \.\.\.state\.data\.relationship, email: effectiveRecipientEmail\(\) \}/);
+});
+
+test("production preview and dispatch do not force a staging label", () => {
+  const server = read("functions/admin-commercial-offers.js");
+  assert.doesNotMatch(server, /buildCommercialOfferMail\([^\n]+staging:\s*true/);
+  assert.match(server, /staging: isStagingDeployment\(\)/);
+});
+
+test("relative stored demo links become safe absolute production mail links", () => {
+  const previousUrl = process.env.URL;
+  const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  try {
+    process.env.URL = "https://maxwebstudio.nl";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-qr-signing-secret";
+    const demo = endpoint.mapDemo({
+      id: "33333333-3333-4333-8333-333333333333",
+      business_name: "Emmeloord Rotishop",
+      preview_url: "/preview/emmerloord-rotishop",
+      preview_package: {},
+    });
+    assert.equal(demo.desktopUrl, "https://maxwebstudio.nl/preview/emmerloord-rotishop");
+    assert.equal(demo.type, "food");
+    assert.equal(demo.storefrontUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
+    assert.equal(demo.restaurantPortalUrl, endpoint.SILVERADO_FOOD_DEMO.restaurantPortalUrl);
+    assert.equal(demo.mobileUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
+    assert.match(demo.qrCodeUrl, /^https:\/\/maxwebstudio\.nl\/api\/commercial-offer-qr\?target=/);
+    assert.match(decodeURIComponent(demo.qrCodeUrl), /max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord/);
+    assert.doesNotThrow(() => buildCommercialOfferMail({ ...base, demo, mode: "preview" }));
+  } finally {
+    if (previousUrl === undefined) delete process.env.URL; else process.env.URL = previousUrl;
+    if (previousKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey;
+  }
+});
+
+test("proposal mail uses the canonical Max Webstudio dark branding", () => {
+  const mail = buildCommercialOfferMail({ ...base, mode: "test" });
+  assert.match(mail.html, /supported-color-schemes/);
+  assert.match(mail.html, /assets\/maxwebstudio-logo-mark\.png/);
+  assert.match(mail.html, /class="mws-card"/);
+  assert.match(mail.html, /#061626/);
+  assert.match(mail.html, /bgcolor="#061626"/);
+  assert.doesNotMatch(mail.html, /rgba\(/);
+  assert.match(mail.html, /wa\.me\/31851302326/);
+  assert.match(mail.html, /@media\(max-width:620px\)/);
+});
+
+test("production hides the staging-only definitive warning", () => {
+  assert.match(html, /id="definitive-staging-warning" hidden/);
+  assert.match(browser, /definitiveStagingWarning\.hidden = !state\.data\?\.capabilities\?\.stagingMail/);
+  assert.match(read("functions/admin-commercial-offers.js"), /stagingMail: isStagingDeployment\(\)/);
+});
+
+test("version history selects only the current immutable version of an offer", () => {
+  assert.match(browser, /class="version-select"/);
+  assert.match(browser, /data-offer-id/);
+  assert.match(browser, /offer\.current_version_id !== version\.id/);
+  assert.match(browser, /Alleen de actuele versie van een voorstel kan veilig worden verzonden/);
+  assert.match(browser, /state\.currentVersionId = version\.id/);
 });

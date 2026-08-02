@@ -2,6 +2,7 @@
   "name": "maxwebstudio-netlify-functions",
   "private": true,
   "dependencies": {
-    "parse5": "7.2.1"
+    "parse5": "7.2.1",
+    "qrcode": "1.5.4"
   }
 }

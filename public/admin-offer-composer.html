@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
     <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
     <link rel="stylesheet" href="src/offer-composer.css" />
+    <link rel="stylesheet" href="src/offer-composer-recipient.css" />
     <style>.offer-composer-page .choice-card > strong { color: var(--oc-text); }.offer-composer-page .composer-steps span { flex: 0 0 23px; }</style>
     <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <script src="admin/config/sidebar-navigation.js" defer></script>
@@ -47,7 +48,7 @@
           <section class="composer-section version-section"><div class="section-heading"><span>↻</span><div><h2>Versiehistorie</h2><p>Oude versies blijven als bewijs zichtbaar.</p></div></div><div class="version-list" id="version-history"></div></section>
         </div>
         <aside class="composer-sidebar" aria-label="Voorstelsamenvatting">
-          <section class="summary-card"><div><span>Serverberekening</span><strong id="summary-version">Nog niet berekend</strong></div><div class="summary-lines" id="summary-lines"></div><dl><div><dt>Eenmalig excl. btw</dt><dd id="sum-once-ex">—</dd></div><div><dt>Btw eenmalig</dt><dd id="sum-once-vat">—</dd></div><div class="total"><dt>Eenmalig incl. btw</dt><dd id="sum-once-incl">—</dd></div><div><dt>Per maand excl. btw</dt><dd id="sum-month-ex">—</dd></div><div class="total"><dt>Per maand incl. btw</dt><dd id="sum-month-incl">—</dd></div><div class="due"><dt>Nu te betalen incl. btw</dt><dd id="sum-due">—</dd></div><div><dt>Later excl. btw</dt><dd id="sum-remaining">—</dd></div></dl><p id="summary-warning"></p></section>
+          <section class="summary-card"><div class="summary-heading"><span>Prijsberekening</span><strong id="summary-version">Nog niet berekend</strong></div><div class="summary-lines" id="summary-lines"></div><dl><div><dt>Eenmalig excl. btw</dt><dd id="sum-once-ex">—</dd></div><div><dt>Btw eenmalig</dt><dd id="sum-once-vat">—</dd></div><div class="total"><dt>Eenmalig incl. btw</dt><dd id="sum-once-incl">—</dd></div><div><dt>Per maand excl. btw</dt><dd id="sum-month-ex">—</dd></div><div class="total"><dt>Per maand incl. btw</dt><dd id="sum-month-incl">—</dd></div><div class="due"><dt>Nu te betalen incl. btw</dt><dd id="sum-due">—</dd></div><div><dt>Later excl. btw</dt><dd id="sum-remaining">—</dd></div></dl><p id="summary-warning"></p></section>
           <section class="send-sequence"><h2>Vaste verzendvolgorde</h2><ol><li id="sequence-preview"><span>1</span><div><strong>Voorbeeld bekijken</strong><small>Exacte servermail controleren</small></div></li><li id="sequence-test" class="blocked"><span>2</span><div><strong>Testmail naar mijzelf</strong><small>Alleen geverifieerde beheerder</small></div></li><li id="sequence-definitive" class="blocked"><span>3</span><div><strong>Definitief verzenden</strong><small>Pas na geslaagde testmail</small></div></li></ol><button class="button primary" id="open-preview" type="button" disabled>Voorbeeld bekijken</button><button class="button secondary" id="test-mail" type="button" disabled>Testmail naar mijzelf</button><button class="button secondary" id="definitive-send" type="button" disabled>Definitief verzenden</button><button class="button danger" id="revoke-interest" type="button" disabled>Interesselink intrekken</button><p id="interest-access-summary">Geen actieve interesselink.</p><p>De interesseknop maakt geen contract, betaling, factuur, abonnement of onboarding.</p></section>
           <section class="commercial-preflight-card" id="commercial-preflight-panel" aria-labelledby="commercial-preflight-title" hidden>
             <span class="commercial-preflight-eyebrow">Superadmin · read-only</span>
@@ -64,7 +65,7 @@
     <dialog class="definitive-send-dialog" id="definitive-send-dialog" role="dialog" aria-modal="true" aria-labelledby="definitive-send-title" aria-describedby="definitive-send-warning">
       <div class="dialog-toolbar"><div><span>Laatste controle</span><h2 id="definitive-send-title">Voorstel definitief verzenden?</h2></div><button type="button" id="close-definitive-send" aria-label="Verzending annuleren">×</button></div>
       <div class="definitive-send-content">
-        <p class="definitive-staging-warning" id="definitive-staging-warning"><strong>STAGINGTEST</strong> Deze mail mag uitsluitend naar de beheerde stagingtestontvanger worden verstuurd.</p>
+        <p class="definitive-staging-warning" id="definitive-staging-warning" hidden><strong>STAGINGTEST</strong> Deze mail mag uitsluitend naar de beheerde stagingtestontvanger worden verstuurd.</p>
         <dl class="definitive-send-summary">
           <div><dt>Relatie / bedrijf</dt><dd id="confirm-company">—</dd></div>
           <div><dt>Ontvanger</dt><dd id="confirm-recipient">—</dd></div>
