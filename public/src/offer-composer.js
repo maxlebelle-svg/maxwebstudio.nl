@@ -24,6 +24,7 @@ const state = {
   quantities: {},
   customPrices: {},
   paymentChoice: 'none',
+  offerPurpose: 'personal_proposal',
   discountPercentage: 0,
   selectedDemoId: routeContext.demoJourneyId,
   selectedFactoryProjectId: routeContext.factoryProjectId,
@@ -46,7 +47,7 @@ const state = {
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','discount-percentage','document-options','document-preview-dialog','document-preview-title','document-preview-meta','document-preview-frame','close-document-preview','done-document-preview','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-before-discount','sum-discount-label','sum-discount','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once-before-discount','confirm-discount-label','confirm-discount','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','offer-purpose','offer-purpose-help','offer-flow-explanation','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','discount-percentage','document-options','document-preview-dialog','document-preview-title','document-preview-meta','document-preview-frame','close-document-preview','done-document-preview','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-before-discount','sum-discount-label','sum-discount','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','definitive-send-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once-before-discount','confirm-discount-label','confirm-discount','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -175,6 +176,7 @@ function bindEvents() {
   elements.paymentOptions = document.getElementById('payment-options');
   elements.paymentOptions.addEventListener('change', (event) => { if (event.target.name === 'payment') { state.paymentChoice = event.target.value; changed(); } });
   elements.discountPercentage.addEventListener('change', () => { state.discountPercentage = Number(elements.discountPercentage.value); changed(); });
+  elements.offerPurpose.addEventListener('change', () => { state.offerPurpose = elements.offerPurpose.value; changed(); renderOfferPurpose(); });
   elements.demoOptions.addEventListener('change', (event) => { if (event.target.name === 'demo') { state.selectedDemoId = event.target.value; markDirty(); renderPreviewAvailability(); } });
   elements.addonOptions.addEventListener('change', handleAddonChange);
   elements.addonOptions.addEventListener('input', handleCustomInput);
@@ -242,6 +244,8 @@ function renderAll() {
   elements.catalogChecksum.textContent = `SHA-256 ${state.data.catalog.checksum.slice(0, 16)}…`;
   elements.definitiveStagingWarning.hidden = !state.data?.capabilities?.stagingMail;
   elements.discountPercentage.value = String(state.discountPercentage);
+  elements.offerPurpose.value = state.offerPurpose;
+  renderOfferPurpose();
   renderRelationship(); renderFactory(); renderDemos(); renderCatalog(); renderDocuments(); renderHistory(); renderSummary(); renderReadiness(); renderStatus();
 }
 
@@ -259,6 +263,19 @@ function renderRelationship() {
     if (input.value.trim() && !validRecipientEmail(input.value)) showMessage('Vul een geldig verzendadres in.', 'warning');
   });
   if (!state.recipientEmail) showMessage('E-mailadres ontbreekt. Vul hieronder het verzendadres voor deze offerte in.', 'warning');
+}
+
+function renderOfferPurpose() {
+  const definitive = state.offerPurpose === 'definitive_offer';
+  elements.offerPurposeHelp.textContent = definitive
+    ? 'Bindend na ondertekening via Signhost. Pas de provider-webhook zet de sale op ondertekend.'
+    : 'Vrijblijvend: interesse is nog geen sale of overeenkomst.';
+  elements.offerFlowExplanation.textContent = definitive
+    ? 'De klant controleert de offerte en tekent via Signhost. Daarna worden sale en klantportaal automatisch klaargezet; betaling blijft apart.'
+    : 'De interesseknop maakt geen contract, betaling, factuur, abonnement of onboarding.';
+  elements.definitiveSendWarning.textContent = definitive
+    ? 'Na bevestiging wordt één e-mail met een beveiligde ondertekenlink verstuurd. Alleen een geldige Signhost-handtekening maakt de zakelijke overeenkomst definitief.'
+    : 'Na bevestiging wordt er werkelijk één e-mail verstuurd. Er wordt geen contract, betaling, factuur, abonnement of onboarding gestart.';
 }
 
 function renderFactory() {
@@ -438,13 +455,17 @@ function renderPreviewAvailability() {
   const definitiveSent = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive' && dispatch.status === 'sent'));
   const interestConfirmed = Boolean(version?.interestTokens?.some((token) => token.confirmed_at));
   const activeInterestTokens = (version?.interestTokens || []).filter((token) => !token.confirmed_at && !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
+  const activeSigningTokens = (version?.signingAccessTokens || []).filter((token) => !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
+  const signingTransaction = version?.signingTransactions?.[0];
+  const definitiveOffer = state.offerPurpose === 'definitive_offer';
+  const providerReady = !definitiveOffer || state.data?.capabilities?.providersEnabled;
   elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
   elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
-  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend);
-  elements.revokeInterest.disabled = !(activeInterestTokens.length && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
-  elements.interestAccessSummary.textContent = activeInterestTokens.length
-    ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}`
-    : version?.interestTokens?.some((token) => token.confirmed_at) ? 'Interesse is bevestigd; er is geen onbevestigde link actief.' : 'Geen actieve interesselink.';
+  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed && !signingTransaction)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend && providerReady);
+  elements.revokeInterest.disabled = !((activeInterestTokens.length || (activeSigningTokens.length && !signingTransaction)) && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
+  elements.interestAccessSummary.textContent = definitiveOffer
+    ? signingTransaction ? `Signhost-status: ${statusLabel(signingTransaction.status)}${signingTransaction.signed_at ? ` · ${formatDate(signingTransaction.signed_at)}` : ''}` : activeSigningTokens.length ? `Actieve ondertekenlink · geldig tot ${formatDate(activeSigningTokens[0].expires_at)}` : providerReady ? 'Geen actieve ondertekenlink.' : 'Signhost is nog niet geconfigureerd.'
+    : activeInterestTokens.length ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}` : version?.interestTokens?.some((token) => token.confirmed_at) ? 'Interesse is bevestigd; er is geen onbevestigde link actief.' : 'Geen actieve interesselink.';
   setSequence(elements.sequencePreview, previewed, !sendReady);
   setSequence(elements.sequenceTest, tested, !previewed);
   setSequence(elements.sequenceDefinitive, definitiveSent, !tested);
@@ -494,7 +515,7 @@ async function calculate() {
   if (!selections.length) { state.snapshot = null; renderSummary(); renderDocuments(); renderReadiness(); return; }
   state.calculating = true; renderSummary();
   try {
-    const data = await request('POST', { action: 'prepare_snapshot', paymentChoice: state.paymentChoice, discountPercentage: state.discountPercentage, selections });
+    const data = await request('POST', { action: 'prepare_snapshot', offerPurpose: state.offerPurpose, paymentChoice: state.paymentChoice, discountPercentage: state.discountPercentage, selections });
     state.snapshot = data.snapshot;
     renderDocuments(); renderSummary(); renderReadiness();
   } catch (error) {
@@ -520,6 +541,7 @@ async function saveDraft() {
       demoJourneyId: state.selectedDemoId || null,
       factoryProjectId: state.selectedFactoryProjectId || null,
       paymentChoice: state.paymentChoice,
+      offerPurpose: state.offerPurpose,
       discountPercentage: state.discountPercentage,
       selections: selectionsFromState(state, state.data.actor),
       documents,
@@ -643,7 +665,9 @@ function trapDialogFocus(event, dialog, pending) {
 function openRevokeInterestDialog() {
   if (elements.revokeInterest.disabled || state.revokeInterestPending) return;
   const version = currentVersion();
-  const token = (version?.interestTokens || []).find((item) => !item.confirmed_at && !item.revoked_at && new Date(item.expires_at).getTime() > Date.now());
+  const token = state.offerPurpose === 'definitive_offer'
+    ? (version?.signingAccessTokens || []).find((item) => !item.started_at && !item.revoked_at && new Date(item.expires_at).getTime() > Date.now())
+    : (version?.interestTokens || []).find((item) => !item.confirmed_at && !item.revoked_at && new Date(item.expires_at).getTime() > Date.now());
   const dispatch = (version?.dispatches || []).find((item) => item.dispatch_kind === 'definitive' && item.status === 'sent');
   if (!token) return renderPreviewAvailability();
   const details = definitiveConfirmationDetails({ relationship: state.data.relationship, demo: {}, snapshot: state.snapshot || version.snapshot });
@@ -727,7 +751,7 @@ async function sendDefinitiveMail() {
     elements.definitiveSendDialog.close();
     state.definitiveTrigger?.focus();
     state.definitiveTrigger = null;
-    showMessage('De definitieve demomail is één keer verzonden. Er is geen contract, betaling of onboarding gestart.', 'success');
+    showMessage(state.offerPurpose === 'definitive_offer' ? 'De definitieve offerte is verzonden. De sale wordt pas gewonnen na de Signhost-handtekening.' : 'Het persoonlijke voorstel is verzonden. Interesse is nog geen contract, betaling of onboarding.', 'success');
   } catch (error) {
     try { await reloadContext(); } catch { /* De oorspronkelijke fout blijft leidend. */ }
     const hasDispatch = Boolean(currentVersion()?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive'));
