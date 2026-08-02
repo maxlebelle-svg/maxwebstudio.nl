@@ -107,9 +107,48 @@ test("14 full payment uses the entire one-time total", () => {
   assert.equal(snapshot.remainingExVatCents, 0);
 });
 
-test("15 legacy fifty-percent route is absent from Composer", () => {
-  assert.doesNotMatch(browser + endpoint, /50\s*%|0\.5\s*\/\s*1\.21|half[_-]?payment/i);
-  assert.match(html, /Geen algemene 50%-optie/);
+test("15 fifty-percent discount is distinct from the removed percentage payment route", () => {
+  assert.doesNotMatch(browser + endpoint, /0\.5\s*\/\s*1\.21|half[_-]?payment/i);
+  assert.match(html, /<option value="50">50% korting<\/option>/);
+  assert.doesNotMatch(html, /name="payment"[^>]*value="50"/);
+});
+
+test("15a only the six approved manual discounts are accepted", () => {
+  for (const discountPercentage of [10, 15, 20, 25, 50, 75]) {
+    const snapshot = offers.buildOfferVersion({ paymentChoice: "none", discountPercentage, selections: [{ productId: "starter_site" }] }, actor);
+    assert.equal(snapshot.discountPercentage, discountPercentage);
+  }
+  for (const discountPercentage of [-10, 12, 100]) {
+    assert.throws(() => offers.buildOfferVersion({ paymentChoice: "none", discountPercentage, selections: [{ productId: "starter_site" }] }, actor), /kortingspercentage/i);
+  }
+});
+
+test("15b discount changes only the one-time total and VAT", () => {
+  const snapshot = offers.buildOfferVersion({ paymentChoice: "full", discountPercentage: 20, selections: [{ productId: "business_website" }, { productId: "care_basic" }] }, actor);
+  assert.equal(snapshot.oneTimeBeforeDiscountExVatCents, 99500);
+  assert.equal(snapshot.discountExVatCents, 19900);
+  assert.equal(snapshot.oneTimeExVatCents, 79600);
+  assert.equal(snapshot.oneTimeVatCents, 16716);
+  assert.equal(snapshot.oneTimeInclVatCents, 96316);
+  assert.equal(snapshot.recurringExVatCents, 1995);
+  assert.equal(snapshot.dueNowExVatCents, 79600);
+});
+
+test("15c a discounted total safely caps the fixed deposit", () => {
+  const snapshot = offers.buildOfferVersion({ paymentChoice: "fixed_deposit", discountPercentage: 75, selections: [{ productId: "starter_site" }] }, actor);
+  assert.equal(snapshot.oneTimeExVatCents, 12375);
+  assert.equal(snapshot.fixedDepositExVatCents, 15000);
+  assert.equal(snapshot.dueNowExVatCents, 12375);
+  assert.equal(snapshot.remainingExVatCents, 0);
+});
+
+test("15d discount is immutable input and restored by Composer", async () => {
+  const original = offers.buildOfferVersion({ paymentChoice: "none", discountPercentage: 10, selections: [{ productId: "starter_site" }] }, actor);
+  const changed = offers.buildOfferVersion({ paymentChoice: "none", discountPercentage: 15, selections: [{ productId: "starter_site" }] }, actor);
+  assert.notEqual(original.checksum, changed.checksum);
+  const { stateFromSnapshot } = await corePromise;
+  assert.equal(stateFromSnapshot(changed).discountPercentage, 15);
+  assert.match(browser, /discountPercentage: state\.discountPercentage/);
 });
 
 test("16 cents and VAT formatting preserve nineteen euros ninety-five", async () => {

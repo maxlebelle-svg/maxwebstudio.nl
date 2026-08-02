@@ -51,6 +51,16 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
 });
 
+test("proposal mail visibly reconciles the original amount, discount and final total", () => {
+  const discountedSnapshot = offerService.buildOfferVersion({ paymentChoice: "full", discountPercentage: 25, selections: [{ productId: "business_website" }, { productId: "care_basic" }] }, { id: "11111111-1111-4111-8111-111111111111", profileId: "22222222-2222-4222-8222-222222222222", role: "admin" });
+  const mail = buildCommercialOfferMail({ ...base, snapshot: discountedSnapshot, mode: "preview" });
+  assert.match(mail.text, /Eenmalig vóór korting: € 995,00/);
+  assert.match(mail.text, /Korting \(25%\): -€ 248,75/);
+  assert.match(mail.text, /Eenmalig na korting excl\. btw: € 746,25/);
+  assert.match(mail.text, /Per maand excl\. btw: € 19,95/);
+  assert.match(mail.html, /Korting \(25%\)/);
+});
+
 test("Silverado proposal mail shows the storefront and restaurant portal as separate verified actions", () => {
   const demo = {
     ...base.demo,
