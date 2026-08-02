@@ -38,7 +38,7 @@ function generateCommercialInvoicePdf(input = {}) {
     text(truncate(clean(customer.email), 56), 42, 636, 8.5, "F1", C.muted),
     text("AFZENDER", 330, 697, 7, "F2", C.muted),
     text(truncate(clean(company.legalName || company.companyName) || "Max Webstudio", 36), 330, 672, 10.5, "F2", C.navy),
-    ...companyAddress(company, 330, 653),
+    ...companyAddress(company, 330, 658),
     roundedRect(42, 555, 511, 55, 11, C.paper, C.line, 0.7),
     meta("Factuurdatum", dateLabel(invoice.issuedAt || invoice.invoice_date || invoice.createdAt), 62, 580),
     meta("Vervaldatum", dateLabel(invoice.dueAt || invoice.due_date), 232, 580),
@@ -94,8 +94,8 @@ function generateCommercialInvoicePdf(input = {}) {
 }
 
 function companyAddress(company, x, y) {
-  const values = [company.addressLine1, company.addressLine2, company.primaryEmail, company.websiteUrl].map(clean).filter(Boolean).slice(0, 4);
-  return values.map((value, index) => text(truncate(value, 45), x, y - index * 15, 7.7, "F1", C.muted));
+  const values = [company.addressLine1, company.addressLine2, company.primaryEmail, company.phoneDisplay, company.websiteUrl].map(clean).filter(Boolean).slice(0, 4);
+  return values.map((value, index) => text(truncate(value, 45), x, y - index * 14, 7.7, "F1", C.muted));
 }
 function companyFooter(company) { return [clean(company.tradeName || company.companyName), clean(company.kvkNumber) && `KvK ${clean(company.kvkNumber)}`, clean(company.vatNumber) && `Btw ${clean(company.vatNumber)}`, clean(company.primaryEmail)].filter(Boolean).join("  |  "); }
 function fallbackLine(invoice) { return { description: clean(invoice.title) || "Factuur", quantity: 1, subtotal: numberValue(invoice.subtotal), vatRate: numberValue(invoice.subtotal) ? Math.round((numberValue(invoice.vatAmount ?? invoice.vat) / numberValue(invoice.subtotal)) * 10000) / 100 : 0, vat: numberValue(invoice.vatAmount ?? invoice.vat), total: numberValue(invoice.total) }; }

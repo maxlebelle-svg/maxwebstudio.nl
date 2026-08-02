@@ -62,7 +62,7 @@ function safeCompany(company) {
   return {
     companyName: clean(company.companyName), legalName: clean(company.legalName), tradeName: clean(company.tradeName),
     addressLine1: clean(company.addressLine1), addressLine2: clean(company.addressLine2), kvkNumber: clean(company.kvkNumber), vatNumber: clean(company.vatNumber),
-    iban: clean(company.iban), ibanAccountName: clean(company.ibanAccountName), primaryEmail: clean(company.primaryEmail), phoneDisplay: clean(company.phoneDisplay),
+    iban: clean(company.iban), ibanAccountName: clean(company.ibanAccountName), primaryEmail: clean(company.primaryEmail), phoneDisplay: clean(company.phoneDisplay), phoneInternational: clean(company.phoneInternational),
     websiteUrl: safeHttps(company.websiteUrl), logoUrl: safeHttps(company.logoUrl), paymentTermDays: positive(company.paymentTermDays, 14),
   };
 }

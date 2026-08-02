@@ -13,7 +13,7 @@ function sample() {
   return {
     invoice: { id: "11111111-1111-4111-8111-111111111111", invoiceNumber: "OFF-20260802-AB12CD34", title: "Aanbetaling ondertekende opdracht", status: "sent", issuedAt: "2026-08-02", dueAt: "2026-08-16", subtotal: 150, vatAmount: 31.5, total: 181.5 },
     customer: { name: "Jan Jansen", company: "Voorbeeld BV", email: "jan@voorbeeld.nl", address: ["Voorbeeldstraat 1", "1234 AB Amsterdam"] },
-    company: { companyName: "Max Webstudio", legalName: "Max Webstudio", primaryEmail: "info@maxwebstudio.nl", websiteUrl: "https://maxwebstudio.nl", kvkNumber: "12345678", vatNumber: "NL123456789B01", iban: "NL00 BANK 0000 0000 00", ibanAccountName: "Max Webstudio" },
+    company: { companyName: "Max Webstudio", legalName: "Max Webstudio", primaryEmail: "info@maxwebstudio.nl", phoneDisplay: "085 130 5282", phoneInternational: "+31851305282", websiteUrl: "https://maxwebstudio.nl", kvkNumber: "12345678", vatNumber: "NL123456789B01", iban: "NL00 BANK 0000 0000 00", ibanAccountName: "Max Webstudio" },
     lines: [{ description: "Aanbetaling Starter Site", quantity: 1, unitPrice: 150, vatRate: 21, subtotal: 150, vat: 31.5, total: 181.5 }],
   };
 }
@@ -29,6 +29,8 @@ test("client invoice view exposes exact lines, totals and payment URL only from 
   assert.equal(view.lines[0].description, "Aanbetaling Starter Site");
   assert.equal(view.invoice.total, 181.5);
   assert.equal(view.invoice.paymentAvailable, true);
+  assert.equal(view.company.phoneDisplay, "085 130 5282");
+  assert.equal(view.company.phoneInternational, "+31851305282");
   assert.match(view.invoice.paymentUrl, /^https:\/\/www\.mollie\.com\//);
 });
 
@@ -42,6 +44,7 @@ test("branded invoice PDF is valid, one page and contains business and payment e
   assert.match(source, /OFF-20260802-AB12CD34/);
   assert.match(source, /Aanbetaling Starter Site/);
   assert.match(source, /KvK 12345678/);
+  assert.match(source, /085 130 5282/);
 });
 
 test("invoice page uses authenticated server data, Mollie payment and a protected PDF download", () => {
@@ -54,6 +57,7 @@ test("invoice page uses authenticated server data, Mollie payment and a protecte
   assert.match(script, /Authorization: `Bearer \$\{token\}`/);
   assert.match(script, /Betaal veilig via Mollie/);
   assert.match(script, /Download PDF/);
+  assert.match(script, /phoneInternational: company\.phoneInternational/);
   assert.match(css, /@media print/);
   assert.match(css, /@page\{size:A4/);
   assert.doesNotMatch(script, /innerHTML\s*=/);

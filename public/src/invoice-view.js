@@ -45,6 +45,11 @@ async function downloadPdf(invoice, button, feedback) {
 
 function renderInvoice(data) {
   const { invoice, customer, company, lines } = data;
+  const invoiceContact = {
+    ...settings,
+    phoneDisplay: company.phoneDisplay || settings.phoneDisplay,
+    phoneInternational: company.phoneInternational || settings.phoneInternational,
+  };
   const status = statusInfo(invoice.status);
   title.textContent = invoice.invoiceNumber;
   subtitle.textContent = `${customer.company || customer.name} · ${status.label}`;
@@ -74,7 +79,7 @@ function renderInvoice(data) {
   const businessValues = [["KvK-nummer", company.kvkNumber], ["Btw-nummer", company.vatNumber], ["IBAN", company.iban], ["Rekeninghouder", company.ibanAccountName], ["E-mail", company.primaryEmail], ["Website", company.websiteUrl?.replace(/^https?:\/\//, "")]];
   businessValues.filter(([, value]) => value).forEach(([label, value]) => { const wrap = document.createElement("div"); wrap.append(element("span", "", label), element("strong", "", value)); companyDetails.append(wrap); });
 
-  const footer = element("nav", "invoice-footer-actions"); footer.setAttribute("aria-label", "Contact en factuurnavigatie"); footer.append(buttonLink("Terug naar klantportaal", "/klantportaal.html#facturen"), buttonLink(settings.phoneDisplay, getTelephoneLink(settings)), buttonLink("WhatsApp Max", getWhatsappLink(settings), "button secondary", true));
+  const footer = element("nav", "invoice-footer-actions"); footer.setAttribute("aria-label", "Contact en factuurnavigatie"); footer.append(buttonLink("Terug naar klantportaal", "/klantportaal.html#facturen"), buttonLink(invoiceContact.phoneDisplay, getTelephoneLink(invoiceContact)), buttonLink("WhatsApp Max", getWhatsappLink(settings), "button secondary", true));
   card.append(header, parties, meta, element("h3", "", "Factuurregels"), lineTable(lines), totals(invoice), payment, feedback);
   if (companyDetails.childElementCount) card.append(companyDetails);
   card.append(footer);
