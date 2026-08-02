@@ -5,6 +5,16 @@ const DEFAULT_COMPANY_SETTINGS = Object.freeze({
   whatsappNumber: "+31851302326",
   primaryEmail: "info@maxwebstudio.nl",
   websiteUrl: "https://www.maxwebstudio.nl",
+  legalName: "Max Webstudio",
+  tradeName: "Max Webstudio",
+  addressLine1: "",
+  addressLine2: "",
+  kvkNumber: "",
+  vatNumber: "",
+  iban: "",
+  ibanAccountName: "",
+  paymentTermDays: 14,
+  logoUrl: "https://maxwebstudio.nl/max-webstudio-logo-full.svg",
 });
 
 function cleanText(value) {
@@ -22,6 +32,7 @@ function phoneToWaNumber(value) {
 function getCompanySettings(overrides = {}) {
   const settings = {
     ...DEFAULT_COMPANY_SETTINGS,
+    ...environmentCompanySettings(),
     ...overrides,
   };
 
@@ -31,7 +42,27 @@ function getCompanySettings(overrides = {}) {
     whatsappNumber: cleanPhoneValue(settings.whatsappNumber || settings.phoneInternational) || DEFAULT_COMPANY_SETTINGS.whatsappNumber,
     primaryEmail: cleanText(settings.primaryEmail) || DEFAULT_COMPANY_SETTINGS.primaryEmail,
     websiteUrl: cleanText(settings.websiteUrl).replace(/\/$/, "") || DEFAULT_COMPANY_SETTINGS.websiteUrl,
+    paymentTermDays: Number.isInteger(Number(settings.paymentTermDays)) && Number(settings.paymentTermDays) > 0
+      ? Number(settings.paymentTermDays)
+      : DEFAULT_COMPANY_SETTINGS.paymentTermDays,
   };
+}
+
+function environmentCompanySettings() {
+  if (typeof process === "undefined" || !process.env) return {};
+  const configured = {
+    legalName: cleanText(process.env.COMPANY_LEGAL_NAME),
+    tradeName: cleanText(process.env.COMPANY_TRADE_NAME),
+    addressLine1: cleanText(process.env.COMPANY_ADDRESS_LINE_1),
+    addressLine2: cleanText(process.env.COMPANY_ADDRESS_LINE_2),
+    kvkNumber: cleanText(process.env.COMPANY_KVK_NUMBER),
+    vatNumber: cleanText(process.env.COMPANY_VAT_NUMBER),
+    iban: cleanText(process.env.COMPANY_IBAN).replace(/\s+/g, " ").toUpperCase(),
+    ibanAccountName: cleanText(process.env.COMPANY_IBAN_ACCOUNT_NAME),
+    paymentTermDays: Number(process.env.COMPANY_PAYMENT_TERM_DAYS || 0) || undefined,
+    logoUrl: cleanText(process.env.COMPANY_LOGO_URL),
+  };
+  return Object.fromEntries(Object.entries(configured).filter(([, value]) => value !== "" && value !== undefined));
 }
 
 function getTelephoneLink(settings = getCompanySettings()) {

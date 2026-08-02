@@ -69,8 +69,8 @@ async function ensureInvoice(context, customer, commercial, payment, claim) {
   if (existing?.id) return existing;
   const snapshot = object(commercial.version.snapshot); const paymentChoice = snapshot.paymentChoice === "full" ? "full" : "deposit";
   const invoiceNumber = `OFF-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${claim.offerVersionId.slice(0, 8).toUpperCase()}`;
-  const invoiceContext = { source: "commercial_order", environment: mollieConfig().testMode ? "test" : "live", testOrder: mollieConfig().testMode, orderId: orderId(claim.offerVersionId), customerId: customer.id, customerName: clean(customer.name), customerCompany: clean(customer.company || customer.company_name), customerEmail: clean(customer.email).toLowerCase(), packageLabel: packageLabel(snapshot), paymentChoice, commercialOfferId: claim.offerId, commercialOfferVersionId: claim.offerVersionId, signedAt: new Date().toISOString(), terms: { source: "signed_commercial_offer", acceptedAt: new Date().toISOString() }, lines: Array.isArray(snapshot.lines) ? snapshot.lines : [] };
-  const rows = await rest(context.url, context.service, "invoices", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ customer_id: customer.id, invoice_number: invoiceNumber, title: paymentChoice === "full" ? "Opdrachtbevestiging Max Webstudio" : "Aanbetaling ondertekende opdracht", subtotal: payment.subtotal, vat: payment.vat, total: payment.total, status: "draft", due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10), notes: `Ondertekende offerte ${claim.offerVersionId}.\n---\nFactuurregels: ${JSON.stringify(invoiceContext)}`, metadata: { commercialOfferId: claim.offerId, commercialOfferVersionId: claim.offerVersionId, fulfilmentRunId: claim.runId }, environment: invoiceContext.testOrder ? "test" : "production", is_demo: invoiceContext.testOrder, updated_at: new Date().toISOString() }) });
+  const invoiceContext = { source: "commercial_order", environment: mollieConfig().testMode ? "test" : "live", testOrder: mollieConfig().testMode, orderId: orderId(claim.offerVersionId), customerId: customer.id, customerName: clean(customer.name), customerCompany: clean(customer.company || customer.company_name), customerEmail: clean(customer.email).toLowerCase(), packageLabel: packageLabel(snapshot), paymentChoice, commercialOfferId: claim.offerId, commercialOfferVersionId: claim.offerVersionId, signedAt: new Date().toISOString(), terms: { source: "signed_commercial_offer", acceptedAt: new Date().toISOString() }, invoiceLines: invoiceLines(snapshot, payment, paymentChoice) };
+  const rows = await rest(context.url, context.service, "invoices", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ customer_id: customer.id, invoice_number: invoiceNumber, type: paymentChoice === "full" ? "full_payment" : "deposit", title: paymentChoice === "full" ? "Opdrachtbevestiging Max Webstudio" : "Aanbetaling ondertekende opdracht", subtotal: payment.subtotal, vat: payment.vat, total: payment.total, status: "draft", invoice_date: new Date().toISOString().slice(0, 10), due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10), notes: `Ondertekende offerte ${claim.offerVersionId}.\n---\nFactuurregels: ${JSON.stringify(invoiceContext)}`, metadata: { commercialOfferId: claim.offerId, commercialOfferVersionId: claim.offerVersionId, fulfilmentRunId: claim.runId }, environment: invoiceContext.testOrder ? "test" : "production", is_demo: invoiceContext.testOrder, updated_at: new Date().toISOString() }) });
   if (!rows?.[0]?.id) throw coded("COMMERCIAL_INVOICE_CREATE_FAILED", 502, "De factuur kon niet worden aangemaakt.");
   return rows[0];
 }
@@ -90,6 +90,8 @@ async function sendPaymentRequest(context, invoice, customer, payment, mollie, c
   const company = getCompanySettings();
   const firstName = clean(customer.name).split(/\s+/)[0] || "daar";
   const amount = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(payment.total);
+  const siteUrl = clean(process.env.SITE_URL || process.env.URL).replace(/\/$/, "");
+  const invoiceUrl = `${siteUrl}/factuur.html?supabaseInvoiceId=${encodeURIComponent(invoice.id)}`;
   const text = [
     `Hallo ${firstName},`,
     "",
@@ -98,6 +100,7 @@ async function sendPaymentRequest(context, invoice, customer, payment, mollie, c
     "Na ontvangst van de betaling wordt de opdracht automatisch vrijgegeven aan productie.",
     "",
     `Betaallink: ${mollie.checkoutUrl}`,
+    `Factuur bekijken: ${invoiceUrl}`,
     "",
     `Met vriendelijke groet,\n${company.companyName}`,
   ].join("\n");
@@ -106,7 +109,7 @@ async function sendPaymentRequest(context, invoice, customer, payment, mollie, c
     bcc: clean(process.env.ADMIN_EMAIL) || undefined,
     subject: `Aanbetaling voor je opdracht bij ${company.companyName}`,
     text,
-    html: paymentEmailHtml(company.companyName, firstName, amount, mollie.checkoutUrl),
+    html: paymentEmailHtml(company.companyName, firstName, amount, mollie.checkoutUrl, invoiceUrl),
     templateKey: "commercial_offer_payment_request",
     templateName: "Betaalverzoek na ondertekende offerte",
     customerId: customer.id,
@@ -120,8 +123,8 @@ async function sendPaymentRequest(context, invoice, customer, payment, mollie, c
   return result;
 }
 
-function paymentEmailHtml(companyName, firstName, amount, checkoutUrl) {
-  return `<div style="margin:0;padding:0;background:#07111f;color:#eaf1ff;font-family:Arial,sans-serif"><div style="max-width:640px;margin:0 auto;padding:32px 20px"><div style="border:1px solid rgba(255,255,255,.12);border-radius:18px;background:#0b1728;padding:28px"><p style="margin:0 0 10px;color:#45e0bd;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">${escapeHtml(companyName)}</p><h1 style="margin:0 0 20px;color:#fff;font-size:28px">Je opdracht is ondertekend</h1><p style="color:#d7e3f7;line-height:1.7">Hallo ${escapeHtml(firstName)},</p><p style="color:#d7e3f7;line-height:1.7">Bedankt voor het ondertekenen. Je betaalverzoek van <strong style="color:#fff">${escapeHtml(amount)}</strong> staat klaar. Na betaling geven we de opdracht automatisch vrij aan productie.</p><p style="margin:26px 0"><a href="${escapeHtml(checkoutUrl)}" style="display:inline-block;background:#45e0bd;color:#07111f;text-decoration:none;border-radius:10px;padding:13px 20px;font-weight:800">Veilig betalen via Mollie</a></p><p style="color:#91a4bf;font-size:13px;line-height:1.6">Werkt de knop niet? Kopieer deze link:<br>${escapeHtml(checkoutUrl)}</p></div></div></div>`;
+function paymentEmailHtml(companyName, firstName, amount, checkoutUrl, invoiceUrl) {
+  return `<div style="margin:0;padding:0;background:#07111f;color:#eaf1ff;font-family:Arial,sans-serif"><div style="max-width:640px;margin:0 auto;padding:32px 20px"><div style="border:1px solid rgba(255,255,255,.12);border-radius:18px;background:#0b1728;padding:28px"><p style="margin:0 0 10px;color:#45e0bd;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">${escapeHtml(companyName)}</p><h1 style="margin:0 0 20px;color:#fff;font-size:28px">Je opdracht is ondertekend</h1><p style="color:#d7e3f7;line-height:1.7">Hallo ${escapeHtml(firstName)},</p><p style="color:#d7e3f7;line-height:1.7">Bedankt voor het ondertekenen. Je betaalverzoek van <strong style="color:#fff">${escapeHtml(amount)}</strong> staat klaar. Na betaling geven we de opdracht automatisch vrij aan productie.</p><p style="margin:26px 0"><a href="${escapeHtml(checkoutUrl)}" style="display:inline-block;background:#45e0bd;color:#07111f;text-decoration:none;border-radius:10px;padding:13px 20px;font-weight:800">Veilig betalen via Mollie</a></p><p style="margin:0 0 18px"><a href="${escapeHtml(invoiceUrl)}" style="color:#8edcf5;text-decoration:underline">Bekijk de volledige factuur</a></p><p style="color:#91a4bf;font-size:13px;line-height:1.6">Werkt de knop niet? Kopieer deze link:<br>${escapeHtml(checkoutUrl)}</p></div></div></div>`;
 }
 
 async function finalize(context, runId, status, values = {}) { const result = await rpc(context, "commercial_finalize_fulfilment_v1", { input_run_id: runId, input_status: status, input_customer_id: values.customerId || null, input_invoice_id: values.invoiceId || null, input_project_id: values.projectId || null, input_factory_project_id: values.factoryProjectId || null, input_error_code: values.errorCode || null }); return { ...result, checkoutUrl: values.checkoutUrl || "", paymentId: values.paymentId || "" }; }
@@ -130,6 +133,7 @@ async function rpc(context, name, body) { const response = await fetch(`${contex
 function mollieConfig() { const mode = clean(process.env.MOLLIE_MODE || "test").toLowerCase(); const apiKey = mode === "test" ? clean(process.env.MOLLIE_TEST_API_KEY || process.env.MOLLIE_API_KEY) : clean(process.env.MOLLIE_API_KEY); const testMode = apiKey.startsWith("test_"); const liveAllowed = clean(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() === "true"; const siteUrl = clean(process.env.SITE_URL || process.env.URL).replace(/\/$/, ""); if (!apiKey || !siteUrl) throw coded("COMMERCIAL_MOLLIE_CONFIG_MISSING", 503, "De Mollie-configuratie ontbreekt."); if ((!testMode || mode !== "test") && !liveAllowed) throw coded("COMMERCIAL_MOLLIE_LIVE_BLOCKED", 403, "Live betalingen zijn nog niet vrijgegeven."); return { apiKey, mode, testMode, siteUrl }; }
 function assertEnabled() { if (clean(process.env.COMMERCIAL_OFFER_POST_SIGNATURE_ENABLED).toLowerCase() !== "true") throw coded("COMMERCIAL_POST_SIGNATURE_DISABLED", 403, "De automatisering na ondertekening is nog niet geactiveerd."); }
 function packageLabel(snapshot = {}) { return (Array.isArray(snapshot.lines) ? snapshot.lines : []).filter((line) => line.componentType === "one_time").map((line) => clean(line.productName)).filter(Boolean).slice(0, 3).join(" + ") || "Max Webstudio opdracht"; }
+function invoiceLines(snapshot, payment, paymentChoice) { const label = paymentChoice === "full" ? `Volledige betaling ${packageLabel(snapshot)}` : `Aanbetaling ${packageLabel(snapshot)}`; const vatRate = payment.subtotal > 0 ? Math.round((payment.vat / payment.subtotal) * 10000) / 100 : 0; return [{ description: label, quantity: 1, unitPrice: payment.subtotal, vatRate, subtotal: payment.subtotal, vat: payment.vat, total: payment.total }]; }
 function orderId(versionId) { return `signed_offer_${clean(versionId).replace(/-/g, "")}`.slice(0, 90); }
 function integer(value) { const number = Number(value); return Number.isInteger(number) && number >= 0 ? number : 0; }
 function euros(cents) { return Math.round(integer(cents)) / 100; }
@@ -139,4 +143,4 @@ function safeCode(error) { return clean(error?.code || "commercial_fulfilment_fa
 function clean(value) { return String(value ?? "").trim(); }
 function escapeHtml(value) { return clean(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character])); }
 function coded(code, status, message) { return Object.assign(new Error(message), { code, status }); }
-module.exports = { fulfilSignedCommercialOffer, _private: { paymentAmounts, packageLabel, orderId, mollieConfig, safeCode } };
+module.exports = { fulfilSignedCommercialOffer, _private: { paymentAmounts, packageLabel, invoiceLines, orderId, mollieConfig, safeCode } };

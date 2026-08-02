@@ -175,14 +175,15 @@ function rightText(value,x,y,size,font,color){return text(value,x-estimateWidth(
 function centerText(value,x,y,size,font,color){return text(value,x-estimateWidth(value,size,font)/2,y,size,font,color);}
 function paragraph(value,x,y,width,size,leading,font,color,maxLines){return wrap(value,Math.max(12,Math.floor(width/(size*.52))),maxLines).map((entry,index)=>text(entry,x,y-index*leading,size,font,color));}
 
-function buildPdf(pages,reference,keywords=""){
+function buildPdf(pages,reference,keywords="",metadata={}){
   const objects=[]; const pageIds=[];
   objects.push("<< /Type /Catalog /Pages 2 0 R >>"); objects.push("");
   objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
   objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
   pages.forEach((content)=>{const pageId=objects.length+1;const streamId=pageId+1;pageIds.push(pageId);objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamId} 0 R >>`);const bytes=Buffer.from(content,"binary");objects.push(Buffer.concat([Buffer.from(`<< /Length ${bytes.length} >>\nstream\n`,"binary"),bytes,Buffer.from("\nendstream","binary")]));});
   objects[1]=`<< /Type /Pages /Kids [${pageIds.map(id=>`${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
-  objects.push(`<< /Title (${pdfText(`Definitieve offerte ${reference}`)}) /Author (Max Webstudio) /Subject (Definitieve zakelijke offerte via Signhost) /Keywords (${pdfText(keywords)}) >>`);
+  const title=clean(metadata.title)||`Definitieve offerte ${reference}`;const subject=clean(metadata.subject)||"Definitieve zakelijke offerte via Signhost";
+  objects.push(`<< /Title (${pdfText(title)}) /Author (Max Webstudio) /Subject (${pdfText(subject)}) /Keywords (${pdfText(keywords)}) >>`);
   const chunks=[Buffer.from("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n","binary")];const offsets=[0];let length=chunks[0].length;
   objects.forEach((object,index)=>{offsets.push(length);const body=Buffer.isBuffer(object)?object:Buffer.from(object,"binary");const chunk=Buffer.concat([Buffer.from(`${index+1} 0 obj\n`,"binary"),body,Buffer.from("\nendobj\n","binary")]);chunks.push(chunk);length+=chunk.length;});
   const xrefOffset=length;chunks.push(Buffer.from(`xref\n0 ${objects.length+1}\n0000000000 65535 f \n${offsets.slice(1).map(offset=>`${String(offset).padStart(10,"0")} 00000 n \n`).join("")}trailer\n<< /Size ${objects.length+1} /Root 1 0 R /Info ${objects.length} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`,"binary"));return Buffer.concat(chunks);
