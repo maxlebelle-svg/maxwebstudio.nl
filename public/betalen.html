@@ -153,15 +153,17 @@
               <div class="payment-form-heading">
                 <p class="section-kicker">Stap 5</p>
                 <h2>Jouw gegevens</h2>
-                <p>Met deze gegevens kunnen we je betaling en bestelling correct verwerken.</p>
+                <p>Met deze gegevens kunnen we je zakelijke betaling en bestelling correct verwerken. Deze betaalpagina is uitsluitend voor zakelijke klanten.</p>
               </div>
               <div class="payment-fields">
                 <label>Naam<input type="text" name="customerName" autocomplete="name" placeholder="Jouw naam" required /></label>
                 <label>E-mailadres<input type="email" name="customerEmail" autocomplete="email" placeholder="naam@bedrijf.nl" required /></label>
                 <label>Telefoonnummer<input type="tel" name="customerPhone" autocomplete="tel" placeholder="06 12 34 56 78" required /></label>
-                <label>Bedrijfsnaam <span>optioneel</span><input type="text" name="companyName" autocomplete="organization" placeholder="Bedrijfsnaam" /></label>
+                <label>Bedrijfsnaam<input type="text" name="companyName" autocomplete="organization" placeholder="Bedrijfsnaam" required /></label>
+                <label>KvK-nummer<input type="text" name="kvkNumber" inputmode="numeric" autocomplete="off" pattern="[0-9]{8}" minlength="8" maxlength="8" placeholder="12345678" required /></label>
               </div>
               <label>Opmerkingen <span>optioneel</span><textarea name="notes" rows="4" placeholder="Bijvoorbeeld gewenste startdatum, domeinnaam of korte vraag."></textarea></label>
+              <label class="agreement-row"><input type="checkbox" name="businessPurposeConfirmed" required /> Ik bevestig dat ik deze overeenkomst uitsluitend handelend in de uitoefening van een beroep of bedrijf sluit.</label>
               <label class="agreement-row"><input type="checkbox" name="termsAccepted" required /> Ik ga akkoord met de <a href="algemene-voorwaarden.html" target="_blank" rel="noopener">algemene voorwaarden</a> en <a href="privacyverklaring.html" target="_blank" rel="noopener">privacyverklaring</a>.</label>
             </section>
 
@@ -417,10 +419,16 @@
 
       function updateSubmitState() {
         const totals = calculate();
-        const validFields = form.elements.customerName.value.trim() && form.elements.customerEmail.validity.valid && form.elements.customerPhone.value.trim();
+        const kvkNumber = form.elements.kvkNumber.value.replace(/\D/g, "");
+        const validFields = form.elements.customerName.value.trim()
+          && form.elements.customerEmail.validity.valid
+          && form.elements.customerPhone.value.trim()
+          && form.elements.companyName.value.trim()
+          && /^\d{8}$/.test(kvkNumber);
         const hasSelection = totals.subtotal > 0 || totals.monthlyEx > 0 || totals.manual.length > 0;
         const accepted = form.termsAccepted.checked;
-        submitButton.disabled = submitButton.dataset.loading === "true" || !validFields || !hasSelection || !accepted || totals.nowIncl <= 0;
+        const businessPurposeConfirmed = form.businessPurposeConfirmed.checked;
+        submitButton.disabled = submitButton.dataset.loading === "true" || !validFields || !hasSelection || !accepted || !businessPurposeConfirmed || totals.nowIncl <= 0;
         submitButton.textContent = totals.paymentChoice === "full"
           ? `Betaal totaalbedrag van ${format(totals.nowIncl)} veilig`
           : `Betaal aanbetaling van ${format(totals.nowIncl)} veilig`;
@@ -469,8 +477,11 @@
           customerEmail: formData.get("customerEmail"),
           customerPhone: formData.get("customerPhone"),
           companyName: formData.get("companyName"),
+          kvkNumber: formData.get("kvkNumber"),
           notes: formData.get("notes"),
           customRequest: formData.get("customRequest"),
+          businessPurposeConfirmed: Boolean(formData.get("businessPurposeConfirmed")),
+          businessPurposeConfirmedAt: new Date().toISOString(),
           termsAccepted: Boolean(formData.get("termsAccepted")),
           termsAcceptedAt: new Date().toISOString(),
         };
