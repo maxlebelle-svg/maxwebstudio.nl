@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const { rest } = require("./services/partnerOnboardingAccessService");
 const { downloadReceipt, downloadSignedPdf, signhostConfig, validatePostback } = require("./services/signhostService");
 const { activateSignedCommercialOffer } = require("./services/commercialOfferActivationService");
+const { fulfilSignedCommercialOffer } = require("./services/commercialOfferFulfilmentService");
 
 const BUCKET = "staff-private-documents";
 
@@ -64,9 +65,12 @@ async function processCommercialPostback(context, signing, validation) {
     input_receipt_path:artifacts.receiptPath || signing.receipt_path || null,
     input_receipt_sha256:artifacts.receiptSha256 || signing.receipt_sha256 || null,
   });
-  if (status === "signed" && !result.duplicate) {
-    try { await activateSignedCommercialOffer(context, { ...signing, status:"signed", signed_at:new Date().toISOString() }); }
+  if (status === "signed") {
+    let activation = {};
+    try { activation = await activateSignedCommercialOffer(context, { ...signing, status:"signed", signed_at:new Date().toISOString() }); }
     catch (error) { console.error("Signed commercial offer portal activation failed", { signingId:signing.id, code:error.code || "PORTAL_ACTIVATION_FAILED" }); }
+    try { await fulfilSignedCommercialOffer(context, { ...signing, status:"signed", signed_at:new Date().toISOString() }, activation); }
+    catch (error) { console.error("Signed commercial offer fulfilment failed", { signingId:signing.id, code:error.code || "COMMERCIAL_FULFILMENT_FAILED" }); }
   }
 }
 

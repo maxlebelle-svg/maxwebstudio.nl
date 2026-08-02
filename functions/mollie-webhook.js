@@ -189,6 +189,7 @@ async function updateInvoicePaymentIfPresent(payment) {
   let commercialResult = null;
   if (payment.status === "paid") {
     commercialResult = await finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment);
+    await finalizeSignedOfferFulfilmentIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment, commercialResult);
   }
   console.log("Invoice payment status updated", {
     paymentId: payment.id,
@@ -199,6 +200,32 @@ async function updateInvoicePaymentIfPresent(payment) {
 
   if (payment.status === "paid" && !invoice.paid_email_sent_at) {
     await dispatchPaidConfirmation(supabaseUrl, serviceRoleKey, updatedInvoice, payment, commercialResult);
+  }
+}
+
+async function finalizeSignedOfferFulfilmentIfNeeded(supabaseUrl, serviceRoleKey, invoice = {}, payment = {}, commercialResult = null) {
+  const context = parseInvoiceContext(invoice.notes);
+  const offerVersionId = cleanText(payment.metadata?.commercialOfferVersionId || context.commercialOfferVersionId);
+  if (!uuidPattern(offerVersionId)) return null;
+  try {
+    const run = await fetchRecord(supabaseUrl, serviceRoleKey, "commercial_offer_fulfilment_runs", "id,status,customer_id,invoice_id,project_id,factory_project_id", `offer_version_id=eq.${encodeURIComponent(offerVersionId)}`);
+    if (!run?.id) return null;
+    const customerId = commercialResult?.customer?.id || run.customer_id || invoice.customer_id || null;
+    const projectId = commercialResult?.project?.id || run.project_id || null;
+    if (run.factory_project_id) {
+      const factory = await fetchRecord(supabaseUrl, serviceRoleKey, "factory_projects", "id,status,configuration", `id=eq.${encodeURIComponent(run.factory_project_id)}`);
+      if (factory?.id) {
+        const configuration = { ...(factory.configuration || {}), commercialOffer: { ...((factory.configuration || {}).commercialOffer || {}), paymentStatus: "paid", molliePaymentId: cleanText(payment.id), paidAt: cleanText(payment.paidAt) || new Date().toISOString(), productionReleasedAt: new Date().toISOString() } };
+        await patchRecord(supabaseUrl, serviceRoleKey, "factory_projects", factory.id, { status: ["intake", "ready", "paused"].includes(cleanText(factory.status)) ? "in_production" : factory.status, configuration, updated_at: new Date().toISOString() });
+      }
+    }
+    return callRpc(supabaseUrl, serviceRoleKey, "commercial_finalize_fulfilment_v1", {
+      input_run_id: run.id, input_status: "ready_for_production", input_customer_id: customerId,
+      input_invoice_id: invoice.id, input_project_id: projectId, input_factory_project_id: run.factory_project_id || null, input_error_code: null,
+    });
+  } catch (error) {
+    console.error("Signed commercial offer production release failed", { offerVersionId, invoiceId: invoice.id, message: error.message });
+    return null;
   }
 }
 
@@ -1055,6 +1082,33 @@ async function fetchRecord(supabaseUrl, serviceRoleKey, table, fields, filter) {
   const data = await response.json().catch(() => []);
   if (!response.ok) return null;
   return Array.isArray(data) ? data[0] || null : data;
+}
+
+async function patchRecord(supabaseUrl, serviceRoleKey, table, id, patch) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify(patch),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || data.error || `${table} kon niet worden bijgewerkt.`);
+  }
+}
+
+async function callRpc(supabaseUrl, serviceRoleKey, name, body) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.error || `${name} kon niet worden uitgevoerd.`);
+  return data;
+}
+
+function uuidPattern(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleanText(value));
 }
 
 async function upsertCommercialRecord(supabaseUrl, serviceRoleKey, table, record) {

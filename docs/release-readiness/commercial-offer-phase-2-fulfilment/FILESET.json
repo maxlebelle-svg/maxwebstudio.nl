@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-phase-2-fulfilment-2026-08-02",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260802230000_commercial_offer_phase_2_fulfilment.sql",
+      "bytes": 9070,
+      "sha256": "5ebd41ad7f921f0f7e0311016518ed23ab43f2223f679c2556a22c5751712de3"
+    }
+  ]
+}

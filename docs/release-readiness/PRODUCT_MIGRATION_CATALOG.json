@@ -95,6 +95,10 @@
     {
       "manifest": "docs/release-readiness/commercial-offer-signhost-v1-product-migrations/MANIFEST.json",
       "fileset": "docs/release-readiness/commercial-offer-signhost-v1-product-migrations/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/commercial-offer-phase-2-fulfilment/MANIFEST.json",
+      "fileset": "docs/release-readiness/commercial-offer-phase-2-fulfilment/FILESET.json"
     }
   ]
 }
