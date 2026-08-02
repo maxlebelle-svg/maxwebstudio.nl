@@ -385,11 +385,12 @@ function mapRelationship(type, record) {
 
 function mapDemo(row) {
   const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
-  const desktopUrl = absolutePreviewUrl(row.preview_url);
-  const foodDemo = isSilveradoFoodDemo(row, desktopUrl);
+  const storedPreviewUrl = absolutePreviewUrl(row.preview_url);
+  const foodDemo = isSilveradoFoodDemo(row, storedPreviewUrl);
   const storefrontUrl = foodDemo ? SILVERADO_FOOD_DEMO.storefrontUrl : "";
   const restaurantPortalUrl = foodDemo ? SILVERADO_FOOD_DEMO.restaurantPortalUrl : "";
-  const mobileUrl = storefrontUrl || absolutePreviewUrl(meta.mobileUrl) || desktopUrl;
+  const desktopUrl = restaurantPortalUrl || storedPreviewUrl;
+  const mobileUrl = storefrontUrl || absolutePreviewUrl(meta.mobileUrl) || storedPreviewUrl;
   const qrTarget = storefrontUrl || absolutePreviewUrl(meta.qrTarget) || mobileUrl;
   return {
     id: row.id,
@@ -415,7 +416,8 @@ function isSilveradoFoodDemo(row = {}, desktopUrl = "") {
     .join(" ")
     .toLowerCase();
   const knownPreview = identity.includes("/preview/emmerloord-rotishop") || identity.includes("/preview/emmeloord-rotishop");
-  return knownPreview || (identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop")));
+  const knownRestaurant = identity.includes("emmeloord rotishop") || identity.includes("emmerloord rotishop");
+  return knownPreview || knownRestaurant || (identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop")));
 }
 
 function signedQrCodeUrl(target) {

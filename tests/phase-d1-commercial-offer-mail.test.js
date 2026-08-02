@@ -442,7 +442,7 @@ test("production preview and dispatch do not force a staging label", () => {
   assert.match(server, /staging: isStagingDeployment\(\)/);
 });
 
-test("relative stored demo links become safe absolute production mail links", () => {
+test("Silverado manual preview maps computer to the restaurant portal and mobile to the storefront", () => {
   const previousUrl = process.env.URL;
   const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   try {
@@ -451,17 +451,18 @@ test("relative stored demo links become safe absolute production mail links", ()
     const demo = endpoint.mapDemo({
       id: "33333333-3333-4333-8333-333333333333",
       business_name: "Emmeloord Rotishop",
-      preview_url: "/preview/emmerloord-rotishop",
+      preview_url: "/.netlify/functions/manual-preview-render?version=9e1c8a3b-06e2-4187-9a5b-97152b03ec93&token=safe-token",
       preview_package: {},
     });
-    assert.equal(demo.desktopUrl, "https://maxwebstudio.nl/preview/emmerloord-rotishop");
     assert.equal(demo.type, "food");
     assert.equal(demo.storefrontUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
     assert.equal(demo.restaurantPortalUrl, endpoint.SILVERADO_FOOD_DEMO.restaurantPortalUrl);
+    assert.equal(demo.desktopUrl, endpoint.SILVERADO_FOOD_DEMO.restaurantPortalUrl);
     assert.equal(demo.mobileUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
     assert.match(demo.qrCodeUrl, /^https:\/\/maxwebstudio\.nl\/api\/commercial-offer-qr\?target=/);
     assert.match(decodeURIComponent(demo.qrCodeUrl), /max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord/);
     assert.doesNotThrow(() => buildCommercialOfferMail({ ...base, demo, mode: "preview" }));
+    assert.equal(endpoint.isSilveradoFoodDemo({ business_name: "Andere rotishop", preview_url: "/preview/andere-rotishop" }), false);
   } finally {
     if (previousUrl === undefined) delete process.env.URL; else process.env.URL = previousUrl;
     if (previousKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey;
