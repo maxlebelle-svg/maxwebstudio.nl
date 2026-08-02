@@ -369,4 +369,6 @@ test("43 agreement template is a complete B2B contract bound to an immutable pro
   assert.match(browser, /relationship\.kvkNumber/);
   assert.match(endpoint, /kvkNumber: clean\(record\.kvk_number \|\| record\.kvk \|\| metadata\.kvkNumber\)/);
   assert.match(browser, /Conceptweergave/);
+  assert.match(browser, /overflow-x:hidden/);
+  assert.match(browser, /overflow-wrap:anywhere/);
 });
