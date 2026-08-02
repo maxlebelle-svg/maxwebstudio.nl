@@ -126,11 +126,33 @@ async function artifactDownload(context, admin, input) {
 }
 
 async function storageDownload(context, path) {
-  const response = await fetch(`${context.url}/storage/v1/object/${BUCKET}/${encodePath(path)}`, { headers:serviceHeaders(context, false) });
-  if (!response.ok) throw coded("SMOKE_TEMPLATE_DOWNLOAD_FAILED", 502, "Het technische testdocument kon niet veilig worden geladen.");
+  let response = null;
+  try {
+    response = await fetch(`${context.url}/storage/v1/object/${BUCKET}/${encodePath(path)}`, { headers:serviceHeaders(context, false) });
+  } catch {}
+  if (!response?.ok && path === TEMPLATE_PATH) {
+    response = await fetch(publicTemplateUrl());
+  }
+  if (!response?.ok) throw coded("SMOKE_TEMPLATE_DOWNLOAD_FAILED", 502, "Het technische testdocument kon niet veilig worden geladen.");
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.length < 9 || bytes.subarray(0,5).toString("ascii") !== "%PDF-") throw coded("SMOKE_TEMPLATE_INVALID", 409, "Het technische testdocument is geen geldige PDF.");
   return bytes;
+}
+
+function publicTemplateUrl(env = process.env) {
+  const candidate = clean(env.URL || env.DEPLOY_PRIME_URL || "https://maxwebstudio.nl");
+  let origin;
+  try {
+    const parsed = new URL(candidate);
+    const allowedHost = parsed.hostname === "maxwebstudio.nl"
+      || parsed.hostname === "maxwebstudio-staging.netlify.app"
+      || parsed.hostname.endsWith("--maxwebstudionl.netlify.app");
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || !allowedHost) throw new Error("unsafe");
+    origin = parsed.origin;
+  } catch {
+    throw coded("SMOKE_TEMPLATE_URL_INVALID", 503, "De veilige URL van het technische testdocument ontbreekt.");
+  }
+  return `${origin}/documents/max-webstudio-signhost-technische-test.pdf`;
 }
 
 function smokeEnabled(email, env = process.env) {
@@ -149,5 +171,4 @@ function clean(value){return String(value??"").trim();}
 function coded(code,status,message){return Object.assign(new Error(message),{code,status});}
 function json(statusCode,body){return {statusCode,headers:{"Content-Type":"application/json","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"},body:JSON.stringify(body)};}
 
-exports._test = { TEMPLATE_PATH, TEMPLATE_SHA256, resolveSignedUrl, smokeEnabled };
-
+exports._test = { TEMPLATE_PATH, TEMPLATE_SHA256, publicTemplateUrl, resolveSignedUrl, smokeEnabled };
