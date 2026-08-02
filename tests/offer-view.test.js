@@ -43,6 +43,17 @@ test("acceptance is explicit, server-verified and cannot silently start payment"
   assert.match(browser, /expectedChecksum: quote\.checksum/);
   assert.match(browser, /Er wordt geen betaling gestart/);
   assert.match(endpoint, /acceptanceStatement: ACCEPTANCE_STATEMENT/);
-  assert.match(endpoint, /sideEffects: \{ paymentStarted: false, emailSent: false \}/);
+  assert.match(endpoint, /sideEffects: \{ paymentStarted: false, emailSent: portalNotification\.sent \}/);
   assert.doesNotMatch(browser, /localStorage\.setItem|maxwebstudioQuotes/);
+});
+
+test("accepted offer opens the portal directly and login preserves the exact offer route", () => {
+  const login = fs.readFileSync("public/login.html", "utf8");
+  assert.match(browser, /Je klantportaal is direct beschikbaar/);
+  assert.match(browser, /Ga naar mijn klantportaal/);
+  assert.match(browser, /portalAccessOutcome = data\.portalAccess/);
+  assert.match(endpoint, /quote_acceptance_portal_access/);
+  assert.match(endpoint, /quote\.acceptance\.portal:\$\{acceptance\.id\}/);
+  assert.match(login, /\^\\\/(?:\(\?:)?offerte\|klantportaal/);
+  assert.match(login, /return requested/);
 });
