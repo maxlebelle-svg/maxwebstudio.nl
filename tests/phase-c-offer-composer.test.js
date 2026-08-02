@@ -276,6 +276,9 @@ test("33 document registry checksums match the published local documents", () =>
   const generalTerms = documents.DOCUMENTS.find((doc) => doc.documentType === "general_terms");
   assert.equal(generalTerms.versionCode, "algemene-voorwaarden-2026-08-b2b");
   assert.equal(generalTerms.effectiveFrom, "2026-08-02");
+  const privacyPolicy = documents.DOCUMENTS.find((doc) => doc.documentType === "privacy_policy");
+  assert.equal(privacyPolicy.versionCode, "privacyverklaring-2026-08");
+  assert.equal(privacyPolicy.effectiveFrom, "2026-08-02");
   assert.match(read("functions/commercial-order.js"), /TERMS_VERSION = "algemene-voorwaarden-2026-08-b2b"/);
 });
 
