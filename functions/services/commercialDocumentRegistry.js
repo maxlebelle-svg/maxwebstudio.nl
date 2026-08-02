@@ -6,7 +6,7 @@ const DOCUMENTS = Object.freeze([
   template("quote", "Offerteweergave", "offer-view-2026-07", "offer-view-v1", "Max Webstudio offerteweergave v1: relatie, regels, btw, betaling en geldigheid.", true),
   template("agreement", "Overeenkomsttemplate", "commercial-agreement-2026-07", "commercial-agreement-v1", "Max Webstudio commerciële overeenkomst v1: scope, levering, betaling en toepasselijke voorwaarden.", true),
   published("general_terms", "Algemene voorwaarden", "algemene-voorwaarden-2026-07", `${SITE_URL}/algemene-voorwaarden.html`, "a5d249236ca5c3f8db724c10f3adf0fb3e5c9868d13d5f9e3e202c1b8949a992", true),
-  published("hosting_maintenance_terms", "Hosting- en onderhoudsvoorwaarden", "hosting-onderhoud-2026-07", `${SITE_URL}/hosting-onderhoud-voorwaarden.html`, "c576b0b975b2866ad64fda32d6140cc47e0ee26c3bf7dc554125c368547bb0b2", false, true),
+  published("hosting_maintenance_terms", "Hosting- en onderhoudsvoorwaarden", "hosting-onderhoud-2026-08", `${SITE_URL}/hosting-onderhoud-voorwaarden.html`, "2799b1b442d3759377beeaa09f7b35048a3810039fcd11aed59badebc39593b5", false, true, "2026-08-02"),
   published("privacy_policy", "Privacyverklaring", "privacyverklaring-2026-07", `${SITE_URL}/privacyverklaring.html`, "bf9d304f1dbff5dabf08af716751d78c11605a199ba39a8482fb1d16fc85b0f0", true),
 ]);
 
@@ -27,8 +27,8 @@ function template(documentType, name, versionCode, templateCode, canonicalTempla
   });
 }
 
-function published(documentType, name, versionCode, sourceUrl, checksumSha256, required, requiredWhenRecurring = false) {
-  return Object.freeze({ documentType, name, versionCode, templateCode: null, effectiveFrom: "2026-07-30", checksumSha256, checksumStatus: "verified", storageBucket: null, storagePath: null, sourceUrl, required, requiredWhenRecurring });
+function published(documentType, name, versionCode, sourceUrl, checksumSha256, required, requiredWhenRecurring = false, effectiveFrom = "2026-07-30") {
+  return Object.freeze({ documentType, name, versionCode, templateCode: null, effectiveFrom, checksumSha256, checksumStatus: "verified", storageBucket: null, storagePath: null, sourceUrl, required, requiredWhenRecurring });
 }
 
 function documentsForSnapshot(snapshot = {}) {

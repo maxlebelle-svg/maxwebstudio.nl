@@ -258,7 +258,10 @@ test("31 missing email warns but does not block draft pricing", async () => {
 
 test("32 recurring offer automatically requires hosting and maintenance terms", () => {
   const recurring = documents.documentsForSnapshot({ recurringExVatCents: 1995 });
-  assert.equal(recurring.find((doc) => doc.documentType === "hosting_maintenance_terms").required, true);
+  const hostingTerms = recurring.find((doc) => doc.documentType === "hosting_maintenance_terms");
+  assert.equal(hostingTerms.required, true);
+  assert.equal(hostingTerms.versionCode, "hosting-onderhoud-2026-08");
+  assert.equal(hostingTerms.effectiveFrom, "2026-08-02");
   const once = documents.documentsForSnapshot({ recurringExVatCents: 0 });
   assert.equal(once.find((doc) => doc.documentType === "hosting_maintenance_terms").required, false);
 });
