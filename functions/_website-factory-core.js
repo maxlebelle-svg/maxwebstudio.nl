@@ -6,6 +6,8 @@ const { resolveDemoImageAsset, resolveDemoImageAssetSetForProfile } = require(".
 const { adaptIndustryProfileToFactoryInput, buildIndustryProfile } = require("./industry-intelligence");
 const { loadWebsiteFactoryManifests } = require("./_website-factory-manifests");
 const { resolveFactoryConfig } = require("./website-factory/config-resolver");
+const { summarizeQualityGate } = require("./website-factory/quality-rubric");
+const { buildWebsiteBrief, websiteBriefToFactoryBriefing } = require("./website-factory/website-brief");
 const { buildVmTegelwerkenDemo, isVmTegelwerkenJourney } = require("./website-factory/vm-tegelwerken-demo");
 const { FACTORY_EDITOR_MANIFEST } = require("./_preview-editor-manifest");
 
@@ -236,24 +238,25 @@ function profile(key, keywords, config) {
 }
 
 function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
-  const businessName = cleanText(journey.businessName || journey.business_name) || "Demo bedrijf";
-  const contactName = cleanText(journey.contactName || journey.contact_name) || "Contactpersoon";
-  const email = cleanText(journey.email).toLowerCase();
-  const phone = cleanText(journey.phone);
-  const websiteUrl = cleanText(journey.websiteUrl || journey.website_url);
-  const internalNotes = cleanText(journey.internalNotes || journey.internal_notes);
-  const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
+  const websiteBrief = buildWebsiteBrief({ journey, briefing });
+  const businessName = cleanText(websiteBrief.identity.businessName) || "Demo bedrijf";
+  const contactName = cleanText(websiteBrief.identity.contactName) || "Contactpersoon";
+  const email = cleanText(websiteBrief.contact.email).toLowerCase();
+  const phone = cleanText(websiteBrief.contact.phone);
+  const websiteUrl = cleanText(websiteBrief.site.websiteUrl);
+  const combinedBriefing = cleanText(websiteBriefToFactoryBriefing(websiteBrief));
   if (isVmTegelwerkenJourney({ businessName, websiteUrl, briefing: combinedBriefing })) {
     return buildVmTegelwerkenDemo({ version, editorManifest: FACTORY_EDITOR_MANIFEST });
   }
-  const websiteAnalysis = journey.websiteAnalysis && typeof journey.websiteAnalysis === "object" ? journey.websiteAnalysis : null;
+  const websiteAnalysis = websiteBrief.research.websiteAnalysis;
   const currentWebsite = normalizeCurrentWebsiteSnapshot(websiteAnalysis?.currentWebsite || journey.currentWebsite || journey.current_website);
-  const googleReviews = normalizeGoogleReviews(journey.googleReviews || journey.google_reviews || journey.googleBusiness?.reviews || journey.google_business?.reviews);
-  const googleRating = cleanText(journey.googleRating || journey.google_rating || journey.googleBusiness?.rating || journey.google_business?.rating);
-  const googleRatingTotal = cleanText(journey.googleRatingTotal || journey.google_rating_total || journey.googleBusiness?.ratingTotal || journey.google_business?.rating_total);
-  const googleMapsUrl = cleanText(journey.googleMapsUrl || journey.google_maps_url || journey.googleBusiness?.mapsUrl || journey.google_business?.maps_url);
+  const googleBusiness = websiteBrief.research.googleBusiness || journey.googleBusiness || journey.google_business || {};
+  const googleReviews = normalizeGoogleReviews(journey.googleReviews || journey.google_reviews || googleBusiness.reviews);
+  const googleRating = cleanText(journey.googleRating || journey.google_rating || googleBusiness.rating);
+  const googleRatingTotal = cleanText(journey.googleRatingTotal || journey.google_rating_total || googleBusiness.ratingTotal || googleBusiness.rating_total);
+  const googleMapsUrl = cleanText(journey.googleMapsUrl || journey.google_maps_url || googleBusiness.mapsUrl || googleBusiness.maps_url);
   const industrySignals = [combinedBriefing, websiteUrl, businessName].filter(Boolean).join("\n");
-  const explicitIndustry = extractField(combinedBriefing, ["Branche/regio", "Branche"]);
+  const explicitIndustry = websiteBrief.business.industry || extractField(combinedBriefing, ["Branche/regio", "Branche"]);
   const currentWebsiteText = [
     currentWebsite.title,
     currentWebsite.metaDescription,
@@ -262,9 +265,14 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
   const legacyIndustry = explicitIndustry || inferIndustry(industrySignals, businessName);
-  const extractedServices = extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), legacyIndustry);
-  const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
-  const factoryConfig = resolveFactoryConfig({ packageType, industry: `${legacyIndustry} ${industrySignals} ${businessName}` });
+  const extractedServices = websiteBrief.business.services.length
+    ? websiteBrief.business.services
+    : extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), legacyIndustry);
+  const packageType = normalizePackageType(websiteBrief.site.packageType || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
+  const factoryIndustrySignals = websiteBrief.source.kind === "legacy_briefing"
+    ? `${legacyIndustry} ${industrySignals} ${businessName}`
+    : [explicitIndustry, ...extractedServices, websiteBrief.business.audience, websiteBrief.business.region, businessName].filter(Boolean).join(" ");
+  const factoryConfig = resolveFactoryConfig({ packageType, industry: factoryIndustrySignals });
   const packageRules = resolvePackageRules(factoryConfig.package.id || packageType);
   const intelligenceProfile = buildIndustryProfile({
     explicitIndustry,
@@ -272,18 +280,23 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     services: extractedServices,
     websiteAnalysis,
     currentWebsite,
-    googleBusiness: journey.googleBusiness || journey.google_business,
+    googleBusiness,
     businessName,
     websiteUrl,
-    blockedColors: extractField(combinedBriefing, ["Niet gebruiken", "Geblokkeerde kleuren"]),
-    seoKeywords: websiteAnalysis?.aiBriefing?.seoKeywords,
-    serviceArea: websiteAnalysis?.aiBriefing?.region,
+    blockedColors: websiteBrief.brand.blockedColors.length ? websiteBrief.brand.blockedColors : extractField(combinedBriefing, ["Niet gebruiken", "Geblokkeerde kleuren"]),
+    seoKeywords: websiteBrief.seo.keywords.length ? websiteBrief.seo.keywords : websiteAnalysis?.aiBriefing?.seoKeywords,
+    serviceArea: websiteBrief.seo.serviceArea || websiteAnalysis?.aiBriefing?.region,
   });
   const adaptedIndustry = adaptIndustryProfileToFactoryInput(intelligenceProfile, {
     industry: explicitIndustry,
     services: extractedServices,
     sections: packageRules.sections,
-    cta: extractField(combinedBriefing, ["CTA", "CTA's", "CTA voorkeur", "Call to action"]),
+    primaryCta: websiteBrief.site.primaryCta,
+    toneOfVoice: websiteBrief.business.toneOfVoice,
+    style: websiteBrief.brand.desiredStyle,
+    colors: Object.keys(websiteBrief.brand.colors).length ? websiteBrief.brand.colors : undefined,
+    cta: websiteBrief.site.primaryCta || extractField(combinedBriefing, ["CTA", "CTA's", "CTA voorkeur", "Call to action"]),
+    seoContext: { keywords: websiteBrief.seo.keywords },
   }, { packageSections: packageRules.sections, maxServices: 6 });
   const industry = adaptedIndustry.industry || legacyIndustry;
   const legacyIndustryProfile = resolveIndustryProfile({ industry, briefing: industrySignals, businessName });
@@ -333,6 +346,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const htaccess = renderHtaccess();
   const briefingJson = {
     businessName,
+    websiteBrief,
     contactName,
     email,
     phone,
@@ -649,52 +663,48 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const assetCount = files.filter((file) => file.path.startsWith("assets/")).length;
   const hasFile = (path) => files.some((file) => file.path === path);
   const checks = [
-    check("Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10),
-    check("Hero visual aanwezig", /class="[^"]*hero/i.test(html) && /<img[^>]+src=/i.test(html), 12),
-    check("Contact direct zichtbaar", /class="[^"]*contact-bar/i.test(html) && /(Direct bellen|Contactformulier|Afspraak)/i.test(html), 10),
-    check("CTA aanwezig", /class="[^"]*button/i.test(html) && /(contact|advies|afspraak|kennismaking|offerte)/i.test(html), 10),
-    check("Dienstensectie aanwezig", /id="diensten"|Diensten|Onze aanpak/i.test(html), 10),
-    check("Minimaal vijf secties", sectionCount >= 5, 10),
-    check("Pakket pagina-aantal klopt", htmlPageCount >= packageRules.pages.length, 12),
-    check("Minimaal drie diensten", serviceCardCount >= 3, 8),
-    check("Minimaal drie voordelen", benefitCount >= 3, 8),
-    check("Werkwijze aanwezig", /id="werkwijze"|Zo werkt|Werkwijze/i.test(html), 8),
-    check("Reviews of vertrouwen aanwezig", /id="reviews"|review|vertrouwen/i.test(html), 8),
-    check("Contactsectie aanwezig", /id="contact"|mailto:|tel:/i.test(html), 10),
-    check("Footer aanwezig", /<footer/i.test(html), 8),
-    check("Meta title aanwezig", /<title>[^<]{8,}<\/title>/i.test(html), 7),
-    check("Meta description aanwezig", /<meta\s+name="description"\s+content="[^"]{20,}"/i.test(html), 7),
-    check("Responsive viewport aanwezig", /<meta\s+name="viewport"/i.test(html), 7),
-    check("Geen lorem ipsum", !/lorem ipsum|dolor sit amet/i.test(html), 8),
-    check("Geen lege placeholders", !/\[placeholder\]|\{\{|\}\}|TODO|Preview wordt voorbereid|Voorbeeldreview|Vervang deze later/i.test(html), 8),
-    check("Geen interne AI-termen", !/\bAI\b|Codex/i.test(html), 8),
-    check("Bedrijfsnaam aanwezig", businessName && html.toLowerCase().includes(businessName.toLowerCase()), 7),
-    check("CTA niet leeg", />\s*(Plan|Vraag|Neem|Bel|Start|Bekijk)[^<]+</i.test(html), 4),
-    check("HTML basis klopt", /<!doctype html>/i.test(html) && /<\/html>/i.test(html) && /<\/body>/i.test(html), 6),
-    check("Script statisch veilig", script ? !/document\.write|eval\(|fetch\(/i.test(script) : true, 4),
-    check("Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())) || /branche|diensten/i.test(html), 8),
-    check("Geen kale preview", css.length > 3500 && html.length > 6000, 10),
-    check("CSS aanwezig", css.length > 1200, 6),
-    check("Lokale assets aanwezig", assetCount >= 4 && hasFile("assets/hero.svg") && hasFile("assets/logo.svg"), 10),
-    check("SEO pakket aanwezig", hasFile("sitemap.xml") && hasFile("robots.txt") && hasFile(".htaccess"), 8),
-    check("Favicon en social preview aanwezig", hasFile("assets/favicon.svg") && hasFile("assets/og-image.svg"), 7),
-    check("Aanvraagformulier werkt zonder backend", /requestForm/.test(script) && /mailto:/.test(script), 6),
-    check("Geen automatische live upload", !/ftp|sftp|netlify\s+deploy|fetch\(|XMLHttpRequest|PUT|POST/i.test(script), 10),
+    check("hero_present", "Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10, "visualFoundation", true),
+    check("hero_visual_present", "Hero visual aanwezig", /class="[^"]*hero/i.test(html) && /<img[^>]+src=/i.test(html), 12, "visualFoundation"),
+    check("contact_bar_present", "Contact direct zichtbaar", /class="[^"]*contact-bar/i.test(html) && /(Direct bellen|Contactformulier|Afspraak)/i.test(html), 10, "conversion"),
+    check("primary_cta_present", "CTA aanwezig", /class="[^"]*button/i.test(html) && /(contact|advies|afspraak|kennismaking|offerte)/i.test(html), 10, "conversion", true),
+    check("services_section_present", "Dienstensectie aanwezig", /id="diensten"|Diensten|Onze aanpak/i.test(html), 10, "content", true),
+    check("minimum_section_count", "Minimaal vijf secties", sectionCount >= 5, 10, "visualFoundation"),
+    check("package_page_count", "Pakket pagina-aantal klopt", htmlPageCount >= packageRules.pages.length, 12, "technical", true),
+    check("minimum_service_count", "Minimaal drie diensten", serviceCardCount >= 3, 8, "content"),
+    check("minimum_benefit_count", "Minimaal drie voordelen", benefitCount >= 3, 8, "content"),
+    check("process_present", "Werkwijze aanwezig", /id="werkwijze"|Zo werkt|Werkwijze/i.test(html), 8, "content"),
+    check("trust_present", "Reviews of vertrouwen aanwezig", /id="reviews"|review|vertrouwen/i.test(html), 8, "conversion"),
+    check("contact_section_present", "Contactsectie aanwezig", /id="contact"|mailto:|tel:/i.test(html), 10, "conversion", true),
+    check("footer_present", "Footer aanwezig", /<footer/i.test(html), 8, "visualFoundation"),
+    check("meta_title_present", "Meta title aanwezig", /<title>[^<]{8,}<\/title>/i.test(html), 7, "technical"),
+    check("meta_description_present", "Meta description aanwezig", /<meta\s+name="description"\s+content="[^"]{20,}"/i.test(html), 7, "technical"),
+    check("responsive_viewport_present", "Responsive viewport aanwezig", /<meta\s+name="viewport"/i.test(html), 7, "technical", true),
+    check("no_lorem_ipsum", "Geen lorem ipsum", !/lorem ipsum|dolor sit amet/i.test(html), 8, "content", true),
+    check("no_placeholders", "Geen lege placeholders", !/\[placeholder\]|\{\{|\}\}|TODO|Preview wordt voorbereid|Voorbeeldreview|Vervang deze later/i.test(html), 8, "content", true),
+    check("no_internal_ai_terms", "Geen interne AI-termen", !/\bAI\b|Codex/i.test(html), 8, "content"),
+    check("business_name_present", "Bedrijfsnaam aanwezig", businessName && html.toLowerCase().includes(businessName.toLowerCase()), 7, "content", true),
+    check("cta_has_label", "CTA niet leeg", />\s*(Plan|Vraag|Neem|Bel|Start|Bekijk)[^<]+</i.test(html), 4, "conversion", true),
+    check("html_document_valid", "HTML basis klopt", /<!doctype html>/i.test(html) && /<\/html>/i.test(html) && /<\/body>/i.test(html), 6, "technical", true),
+    check("script_static_safe", "Script statisch veilig", script ? !/document\.write|eval\(|fetch\(/i.test(script) : true, 4, "technical", true),
+    check("industry_content_present", "Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())) || /branche|diensten/i.test(html), 8, "content"),
+    check("preview_has_substance", "Geen kale preview", css.length > 3500 && html.length > 6000, 10, "visualFoundation"),
+    check("css_present", "CSS aanwezig", css.length > 1200, 6, "technical", true),
+    check("local_assets_present", "Lokale assets aanwezig", assetCount >= 4 && hasFile("assets/hero.svg") && hasFile("assets/logo.svg"), 10, "visualFoundation"),
+    check("seo_files_present", "SEO pakket aanwezig", hasFile("sitemap.xml") && hasFile("robots.txt") && hasFile(".htaccess"), 8, "technical"),
+    check("social_assets_present", "Favicon en social preview aanwezig", hasFile("assets/favicon.svg") && hasFile("assets/og-image.svg"), 7, "visualFoundation"),
+    check("request_form_fallback", "Aanvraagformulier werkt zonder backend", /requestForm/.test(script) && /mailto:/.test(script), 6, "conversion"),
+    check("no_automatic_deploy", "Geen automatische live upload", !/ftp|sftp|netlify\s+deploy|fetch\(|XMLHttpRequest|PUT|POST/i.test(script), 10, "technical", true),
   ];
-  const maxScore = checks.reduce((sum, item) => sum + item.weight, 0);
-  const earned = checks.reduce((sum, item) => sum + (item.passed ? item.weight : 0), 0);
-  const score = Math.round((earned / maxScore) * 100);
+  const renderValidation = validateGeneratedPackage(generatedPackage);
+  const gate = summarizeQualityGate({ checks, renderValidation });
   return {
-    score,
-    passed: score >= 70,
-    status: score >= 70 ? "completed" : "quality_failed",
-    summary: score >= 70 ? "Preview klaar voor interne controle." : "Preview heeft aandacht nodig voordat deze klantklaar is.",
+    ...gate,
     checks,
     packageId,
     industryId,
     packageChecks: buildPackageChecks({ packageId, generatedPackage, html, files }),
     industryChecks: buildIndustryChecks({ industryId, generatedPackage, html }),
-    renderValidation: validateGeneratedPackage(generatedPackage),
+    renderValidation,
   };
 }
 
@@ -817,7 +827,6 @@ function normalizeBuildJob(row = {}) {
     websiteId: cleanText(row.website_id),
     demoJourneyId: cleanText(row.demo_journey_id),
     leadId: cleanText(row.lead_id),
-    customerId: cleanText(row.customer_id),
     status: cleanText(row.status),
     currentStep: cleanText(row.current_step),
     progress: Number(row.progress || 0),
@@ -910,8 +919,8 @@ function isBuildStatus(value = "") {
   return BUILD_STATUSES.has(cleanText(value));
 }
 
-function check(label, passed, weight) {
-  return { label, passed: Boolean(passed), weight };
+function check(id, label, passed, weight, category, critical = false) {
+  return { id, label, passed: Boolean(passed), weight, category, critical };
 }
 
 function fileContent(files, path) {
@@ -1366,6 +1375,11 @@ function isHolisticProfile(profile = {}) {
   return /holistisch|energetisch|wellness|coach/.test(text);
 }
 
+function isBeautyProfile(profile = {}) {
+  const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""}`.toLowerCase();
+  return /beauty|schoonheid|salon|kapper|verzorging/.test(text);
+}
+
 function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter) {
   const defaults = {
     quickActionTitle: "Afspraak inplannen",
@@ -1447,6 +1461,36 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       subPageText: "presenteert hier extra informatie over sessies, werkwijze en persoonlijke afstemming.",
       subPageIntro: "kan deze pagina later aanvullen met echte praktijkinformatie en zorgvuldig verzamelde ervaringen.",
       footerLabel: "Persoonlijke en energetische begeleiding",
+    };
+  }
+  if (isBeautyProfile(profile)) {
+    return {
+      ...defaults,
+      quickActionTitle: "Behandeling plannen",
+      quickActionText: "Kies een passend moment",
+      contactActionTitle: "Persoonlijk huidadvies",
+      contactActionText: "Vertel kort waar uw huid behoefte aan heeft",
+      servicesEyebrow: "Behandelingen en advies",
+      servicesTitle: "Ontdek welke behandeling bij u past.",
+      portfolioEyebrow: "Behandeling in beeld",
+      portfolioTitle: "Rustige aandacht en deskundige verzorging.",
+      portfolioCopy: "Kies een behandeling om de aanpak en het verwachte verloop te bekijken.",
+      benefitsEyebrow: "Persoonlijke verzorging",
+      benefitsTitle: "Een verzorgde eerste indruk die vertrouwen geeft.",
+      benefitsText: "De pagina maakt behandelingen, persoonlijk advies en de route naar een afspraak helder en uitnodigend.",
+      processEyebrow: "Zo werkt het",
+      processTitle: "Van huidvraag naar een behandeling die past.",
+      reviewsEyebrow: "Ervaringen",
+      reviewsTitle: "Vertrouwen begint met aandacht en duidelijkheid.",
+      contactEyebrow: "Afspraak of huidadvies",
+      contactTitle: "Vertel waar u naar zoekt en plan een passend moment.",
+      projectLabel: "Interesse in",
+      messageLabel: "Waar kunnen we u mee helpen?",
+      messagePlaceholder: "Vertel kort welke behandeling of welk advies u zoekt en welk contactmoment prettig is.",
+      subPageEyebrow: "Behandelingen en huidverzorging",
+      subPageText: "presenteert hier extra informatie over behandelingen, advies en persoonlijke verzorging.",
+      subPageIntro: "kan deze pagina later aanvullen met echte saloninformatie, foto's en zorgvuldig verzamelde ervaringen.",
+      footerLabel: "Behandelingen, huidadvies en persoonlijke verzorging",
     };
   }
   if (isCarpentryProfile(profile)) {
@@ -1830,7 +1874,9 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
 
 function renderCss() {
   const css = `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:20px;align-items:center;padding:12px clamp(20px,3.4vw,52px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-size:19px;font-weight:900}.brand img{width:46px;height:46px;object-fit:contain}.site-header nav{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 18px}.site-header nav a,.nav-phone{text-decoration:none;font-size:14px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 18px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 70px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.pricing-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading,.portfolio-panel{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;text-decoration:none;background:#111}.project-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.74),rgba(0,0,0,.08))}.project-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.project-tile:hover img{transform:scale(1.045)}.project-tile span,.project-tile h3,.project-tile p{position:relative;z-index:1}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.pricing-section{display:grid;grid-template-columns:.78fr 1.22fr;gap:38px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.pricing-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.pricing-card{display:grid;gap:12px;padding:26px;border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.pricing-card span{color:var(--accent);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}.pricing-card strong{font-size:clamp(34px,4vw,54px);line-height:1;color:var(--ink)}.pricing-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.portfolio-panel{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.portfolio-panel[hidden]{display:none}.portfolio-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.portfolio-item{position:relative;min-height:210px;overflow:hidden;color:#fff;background:#111}.portfolio-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.portfolio-item strong{position:absolute;left:18px;right:18px;bottom:18px;z-index:1;font-size:20px}.portfolio-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),transparent)}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p,.portfolio-panel p,.pricing-section p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.source-website-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;padding:clamp(64px,7vw,110px) 0;border-top:1px solid var(--line)}.source-highlights{margin:0;padding:0;list-style:none;display:grid;gap:12px}.source-highlights li{padding:18px 20px;background:#fff;border-left:4px solid var(--accent);box-shadow:0 16px 40px rgba(17,24,39,.06);font-weight:800;line-height:1.5}.source-image-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.source-image-strip img{width:100%;height:260px;object-fit:cover;background:#111}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-source-link{display:inline-flex;margin-top:14px;color:var(--accent);font-weight:950;text-decoration:none}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:22px;overflow:hidden;color:#fff;background:#111}.gallery-grid article::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06))}.gallery-grid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-grid strong{position:relative;z-index:1;font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer div{display:grid;gap:6px}.site-footer strong{color:#fff}.site-footer nav{display:flex;flex-wrap:wrap;gap:12px 18px}.site-footer nav a{color:rgba(255,255,255,.74);text-decoration:none}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card,.section-heading .pricing-card{padding:28px}.section-heading .service-card img{width:100%;height:190px;object-fit:cover;margin:-28px -28px 24px;width:calc(100% + 56px)}@media(max-width:1100px){.service-grid,.pricing-card-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:auto 1fr auto;padding:10px clamp(18px,3vw,42px)}.site-header nav{justify-content:flex-end}.nav-phone{display:none}.portfolio-panel,.pricing-section{grid-template-columns:1fr}.portfolio-gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}.service-grid,.pricing-card-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form,.portfolio-gallery,.source-image-strip{grid-template-columns:1fr}.site-header{grid-template-columns:1fr auto}.brand img{width:40px;height:40px}.site-header nav{grid-column:1/-1;overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;padding-bottom:2px}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}.site-footer{display:grid}h1{font-size:clamp(42px,15vw,68px)}}`;
-  return css;
+  const tabletSafetyCss = `@media(max-width:820px){.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}}`;
+  const responsiveSafetyCss = `body{overflow-x:hidden}.site-header>*{min-width:0}.hero-copy{width:100%;max-width:860px;min-width:0}@media(max-width:760px){.section-band{width:min(1160px,calc(100% - 32px))}.site-header{grid-template-columns:minmax(0,1fr);gap:12px;padding:10px 16px}.brand{min-width:0}.brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav-cta{grid-column:1/-1;width:100%}.site-header nav{grid-column:1/-1;width:100%;overflow:visible;flex-wrap:wrap;justify-content:flex-start}.hero{min-width:0;padding:56px 22px}.hero-copy{max-width:100%;min-width:0}.hero-actions{display:grid;grid-template-columns:1fr}.hero-actions .button{width:100%;max-width:100%}.hero-proof{display:grid;grid-template-columns:1fr;width:100%}.hero-proof span{width:100%;min-width:0}.contact-bar{width:calc(100% - 32px)}h1{font-size:clamp(36px,11vw,48px);overflow-wrap:anywhere}}`;
+  return `${css}${tabletSafetyCss}${responsiveSafetyCss}`;
 }
 
 function renderScript({ businessName, email, services, industryProfile = null, siteAssets = [] }) {
