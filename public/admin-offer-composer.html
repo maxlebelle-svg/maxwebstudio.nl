@@ -61,6 +61,11 @@
         </aside>
       </div>
     </div>
+    <dialog class="document-preview-dialog" id="document-preview-dialog" aria-labelledby="document-preview-title">
+      <div class="dialog-toolbar"><div><span id="document-preview-meta">Documentinzage</span><h2 id="document-preview-title">Document bekijken</h2></div><button type="button" id="close-document-preview" aria-label="Document sluiten">×</button></div>
+      <iframe id="document-preview-frame" title="Inhoud van het geselecteerde document"></iframe>
+      <div class="document-preview-actions"><button class="button primary" id="done-document-preview" type="button">Gelezen</button></div>
+    </dialog>
     <dialog class="mail-preview-dialog" id="mail-preview"><div class="dialog-toolbar"><div><span>Exacte serverweergave</span><strong id="preview-subject"></strong></div><button type="button" id="close-preview" aria-label="Voorbeeld sluiten">×</button></div><iframe id="preview-frame" title="Voorbeeld van de definitieve e-mail" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe><div class="manual-fallback"><label for="manual-mail-text">Handmatige fallback<textarea id="manual-mail-text" readonly></textarea></label><button class="button secondary" id="copy-manual-mail" type="button">Mailtekst kopiëren</button></div></dialog>
     <dialog class="definitive-send-dialog" id="definitive-send-dialog" role="dialog" aria-modal="true" aria-labelledby="definitive-send-title" aria-describedby="definitive-send-warning">
       <div class="dialog-toolbar"><div><span>Laatste controle</span><h2 id="definitive-send-title">Voorstel definitief verzenden?</h2></div><button type="button" id="close-definitive-send" aria-label="Verzending annuleren">×</button></div>
