@@ -565,11 +565,19 @@ async function getBrowserReviewQueueResponse(context, payload) {
   });
   const jobs = rows
     .map(normalizeBuildJob)
-    .filter((job) => job.qualityReport?.passed === true
-      && job.qualityReport?.readiness?.customerPreview !== true
-      && ["completed", "browser_review_required"].includes(job.currentStep)
-      && Boolean(job.previewUrl)
-      && isUsableGeneratedPackage(job.generatedPackage))
+    .filter((job) => {
+      const firstReviewRequired = job.currentStep === "completed"
+        && job.qualityReport?.browserReview?.required === true
+        && job.qualityReport?.browserReview?.status === "not_run"
+        && job.qualityReport?.readiness?.reason === "browser_review_required";
+      const repairedBuildRequiresRecheck = job.currentStep === "browser_review_required"
+        && job.qualityReport?.browserRepair?.status === "awaiting_recheck";
+      return job.qualityReport?.passed === true
+        && job.qualityReport?.readiness?.customerPreview !== true
+        && (firstReviewRequired || repairedBuildRequiresRecheck)
+        && Boolean(job.previewUrl)
+        && isUsableGeneratedPackage(job.generatedPackage);
+    })
     .slice(0, requestedLimit)
     .map(sanitizeBuildJob);
   return jsonResponse(200, {
