@@ -227,12 +227,13 @@ async function startChrome() {
   const profile = path.join(outputRoot, `.chrome-${Date.now()}`);
   await mkdir(profile, { recursive: true });
   const child = spawn(executable, [
-    "--headless=new", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage", "--remote-allow-origins=*",
+    "--headless=new", "--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage",
+    "--no-first-run", "--no-default-browser-check", "--remote-allow-origins=*", "--remote-debugging-address=127.0.0.1",
     `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, "about:blank",
   ], { stdio: ["ignore", "ignore", "pipe"] });
   let stderr = "";
   child.stderr.on("data", (chunk) => { stderr += String(chunk).slice(-2000); });
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
     if (child.exitCode !== null) throw new Error(`Chrome stopte tijdens starten: ${stderr}`);
     try {
       const response = await fetch(`http://127.0.0.1:${port}/json/version`);
@@ -241,7 +242,7 @@ async function startChrome() {
     await delay(100);
   }
   child.kill("SIGTERM");
-  throw new Error("Headless Chrome werd niet tijdig beschikbaar.");
+  throw new Error(`Headless Chrome werd niet tijdig beschikbaar. ${stderr.trim()}`.trim());
 }
 
 async function findChrome() {
