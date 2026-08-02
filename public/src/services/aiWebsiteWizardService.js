@@ -25,6 +25,8 @@ export const AI_WEBSITE_WIZARD_INTAKE_FIELDS = Object.freeze([
   "notes",
 ]);
 
+export const WEBSITE_BRIEF_SCHEMA_VERSION = "mws.website-brief.v1";
+
 const REQUIRED_INTAKE_FIELDS = Object.freeze([
   "companyName",
   "industry",
@@ -365,8 +367,71 @@ function sentence(value, fallback) {
   return sanitizeText(value) || fallback;
 }
 
+export function buildWebsiteBriefFromIntake(input = {}, options = {}) {
+  const intake = normalizeIntake(input);
+  return {
+    schemaVersion: WEBSITE_BRIEF_SCHEMA_VERSION,
+    source: {
+      kind: "ai_website_wizard_intake",
+      rawBriefing: "",
+      createdAt: sanitizeText(options.createdAt) || new Date().toISOString(),
+    },
+    identity: {
+      businessName: intake.companyName,
+      contactName: "",
+    },
+    business: {
+      industry: intake.industry,
+      audience: intake.audience,
+      region: intake.region,
+      services: splitList(intake.services),
+      uniqueValue: intake.uniqueValue,
+      goals: splitList(intake.customerGoal),
+      toneOfVoice: intake.toneOfVoice,
+    },
+    brand: {
+      desiredStyle: intake.desiredStyle,
+      colorPreference: intake.colorPreference,
+      colors: {},
+      blockedColors: [],
+      logoAsset: "",
+    },
+    site: {
+      websiteUrl: intake.existingWebsite,
+      desiredPages: splitList(intake.desiredPages),
+      primaryCta: intake.primaryCta,
+      secondaryCta: "",
+      packageType: "",
+    },
+    seo: {
+      keywords: splitList(intake.seoKeywords),
+      serviceArea: intake.region,
+    },
+    contact: {
+      email: "",
+      phone: "",
+      summary: intake.contactDetails,
+    },
+    research: {
+      competitors: splitList(intake.competitors),
+      websiteAnalysis: null,
+      googleBusiness: null,
+    },
+    links: {
+      customerId: intake.customerId,
+      websiteId: intake.websiteId,
+      projectId: intake.projectId,
+    },
+    constraints: {
+      notes: intake.notes,
+      forbiddenClaims: [],
+    },
+  };
+}
+
 export function generateWizardDraftOutput(input = {}) {
   const intake = normalizeIntake(input);
+  const generatedAt = new Date().toISOString();
   const company = sentence(intake.companyName, "dit bedrijf");
   const industry = sentence(intake.industry, "deze branche");
   const audience = sentence(intake.audience, "klanten die snel vertrouwen willen krijgen");
@@ -402,8 +467,9 @@ export function generateWizardDraftOutput(input = {}) {
   ];
 
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     generator: "local_template_mock",
+    websiteBrief: buildWebsiteBriefFromIntake(intake, { createdAt: generatedAt }),
     homepageStructure: pages.map((page, index) => ({
       section: page,
       purpose: index === 0 ? "Direct vertrouwen en conversie opbouwen" : `${page} ondersteunt de klantreis richting ${primaryCta}`,
@@ -514,6 +580,7 @@ export function getWizardDeveloperSummary() {
 
 export const aiWebsiteWizardService = {
   AI_WEBSITE_WIZARD_INTAKE_FIELDS,
+  WEBSITE_BRIEF_SCHEMA_VERSION,
   getAiWebsiteWizardArchitecture,
   getAiWebsiteWizardReadiness,
   getWizardDeveloperSummary,
@@ -525,6 +592,7 @@ export const aiWebsiteWizardService = {
   validateWizardIntake,
   saveWizardIntake,
   getWizardIntakeSummary,
+  buildWebsiteBriefFromIntake,
   generateWizardDraftOutput,
   generateAndSaveWizardDraftOutput,
   clearWizardDrafts,

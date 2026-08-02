@@ -14,6 +14,12 @@ const { prepareImageEditorPackage } = require("./_preview-editor-image");
 const { prepareTextEditorPackage } = require("./_preview-editor-text");
 const { randomUUID, createHash } = require("crypto");
 const {
+  applyAutomaticBrowserRepairs,
+  artifactHashForPackage,
+  processBrowserReview,
+} = require("./website-factory/browser-repair-loop");
+const { authenticateFactoryBrowserWorker } = require("./website-factory/github-actions-oidc");
+const {
   buildLogs,
   buildWebsitePackage,
   hydrateMissingDemoImageAssets,
@@ -60,12 +66,17 @@ const PACKAGE_SUPABASE_TIMEOUT_MS = 30000;
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
 
-  const adminCheck = await verifyAdmin(event, jsonResponse, {
-    module: "website_factory",
-    action: event.httpMethod.toLowerCase(),
-    allowedRoles: staffRoles,
-    allowedStatuses: ["active", "invited"],
-  });
+  const earlyAction = requestedAction(event);
+  const workerCheck = await authenticateFactoryBrowserWorker(event, earlyAction);
+  if (workerCheck.attempted && !workerCheck.success) {
+    return jsonResponse(401, { success: false, code: workerCheck.code, error: "Website Factory worker-identiteit is niet geldig." });
+  }
+  const adminCheck = workerCheck.success ? workerCheck : await verifyAdmin(event, jsonResponse, {
+      module: "website_factory",
+      action: event.httpMethod.toLowerCase(),
+      allowedRoles: staffRoles,
+      allowedStatuses: ["active", "invited"],
+    });
   if (!adminCheck.success) return adminCheck.response;
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -91,8 +102,10 @@ async function handler(event) {
     if (action === "run_build_job") return runBuildJobResponse(context, payload);
     if (action === "get_build_status") return getBuildStatusResponse(context, payload);
     if (action === "get_build_history") return getBuildHistoryResponse(context, payload);
+    if (action === "get_browser_review_queue") return getBrowserReviewQueueResponse(context, payload);
     if (action === "generate_website_package") return generatePackageResponse(context, payload);
     if (action === "run_quality_check") return qualityCheckResponse(context, payload);
+    if (action === "submit_browser_review") return submitBrowserReviewResponse(context, payload);
     if (action === "create_preview_version") return createPreviewVersionResponse(context, payload);
     if (action === "update_demo_journey_preview") return updateJourneyPreviewResponse(context, payload);
     if (action === "start_onboarding_pipeline") return startOnboardingPipelineResponse(context, payload);
@@ -135,6 +148,16 @@ async function handler(event) {
         : "Website Factory kon niet worden verwerkt.",
       setupRequired: missing,
     }));
+  }
+}
+
+function requestedAction(event = {}) {
+  if (event.httpMethod === "GET") return cleanText(event.queryStringParameters?.action || "get_build_history");
+  try {
+    const payload = JSON.parse(event.body || "{}");
+    return cleanText(payload?.action);
+  } catch {
+    return "";
   }
 }
 
@@ -521,6 +544,42 @@ async function getBuildHistoryResponse(context, payload) {
   return jsonResponse(200, { success: true, ...history });
 }
 
+async function getBrowserReviewQueueResponse(context, payload) {
+  if (!managerRoles.has(cleanText(context.admin?.role))) {
+    const error = new Error("Alleen Website Factory-beheerders kunnen de centrale browserwachtrij uitlezen.");
+    error.status = 403;
+    error.code = "BROWSER_QUEUE_MANAGER_REQUIRED";
+    throw error;
+  }
+  const requestedLimit = Math.max(1, Math.min(10, Number(payload.limit || 5)));
+  const query = new URLSearchParams({
+    select: BUILD_JOB_RUNTIME_FIELDS,
+    status: "in.(completed,quality_check)",
+    order: "updated_at.asc",
+    limit: String(requestedLimit * 3),
+  });
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+    timeoutMs: PACKAGE_SUPABASE_TIMEOUT_MS,
+  });
+  const jobs = rows
+    .map(normalizeBuildJob)
+    .filter((job) => job.qualityReport?.passed === true
+      && job.qualityReport?.readiness?.customerPreview !== true
+      && ["completed", "browser_review_required"].includes(job.currentStep)
+      && Boolean(job.previewUrl)
+      && isUsableGeneratedPackage(job.generatedPackage))
+    .slice(0, requestedLimit)
+    .map(sanitizeBuildJob);
+  return jsonResponse(200, {
+    success: true,
+    schemaVersion: "mws.browser-review-queue.v1",
+    jobs,
+    count: jobs.length,
+  });
+}
+
 async function generatePackageResponse(context, payload) {
   const journey = payload.journey || await readJourney(context, payload.demoJourneyId || payload.demo_journey_id);
   if (!journey) return jsonResponse(404, { success: false, error: "Demo-klantreis niet gevonden." });
@@ -545,6 +604,157 @@ async function generatePackageResponse(context, payload) {
 async function qualityCheckResponse(context, payload) {
   const qualityReport = runQualityCheck({ generatedPackage: payload.generatedPackage || payload.generated_package || {}, journey: payload.journey || {} });
   return jsonResponse(200, { success: true, qualityReport });
+}
+
+async function submitBrowserReviewResponse(context, payload) {
+  const result = await submitBrowserReview(context, payload);
+  return jsonResponse(200, { success: true, ...result });
+}
+
+async function submitBrowserReview(context, payload = {}) {
+  const jobId = cleanText(payload.jobId || payload.job_id);
+  if (!jobId) {
+    const error = new Error("Build job id ontbreekt voor browsercontrole.");
+    error.status = 400;
+    throw error;
+  }
+  const row = await readBuildJobRuntimeById(context, jobId);
+  if (!row) {
+    const error = new Error("Build job niet gevonden voor browsercontrole.");
+    error.status = 404;
+    throw error;
+  }
+  const job = normalizeBuildJob(row);
+  const journeyRow = await readJourney(context, job.demoJourneyId);
+  if (!journeyRow) {
+    const error = new Error("Demo-klantreis voor browsercontrole ontbreekt.");
+    error.status = 404;
+    throw error;
+  }
+  assertCanSeeJourney(journeyRow, context.admin);
+  if (!isUsableGeneratedPackage(job.generatedPackage) || job.qualityReport?.passed !== true) {
+    const error = new Error("De statische Quality Gate moet slagen voordat de browsercontrole kan worden verwerkt.");
+    error.status = 409;
+    error.code = "STATIC_QUALITY_REQUIRED";
+    throw error;
+  }
+
+  const evidence = payload.evidence && typeof payload.evidence === "object" ? payload.evidence : {};
+  const processed = processBrowserReview({
+    staticReport: job.qualityReport,
+    evidence,
+    generatedPackage: job.generatedPackage,
+    previousQualityReport: job.qualityReport,
+  });
+  if (processed.report.blockers.some((item) => item.id === "artifact_hash_mismatch")) {
+    const error = new Error("Het browserbewijs hoort niet bij de actuele websitebuild.");
+    error.status = 409;
+    error.code = "BROWSER_ARTIFACT_MISMATCH";
+    error.expectedArtifactHash = artifactHashForPackage(job.generatedPackage);
+    throw error;
+  }
+
+  const previewVersion = await readPreviewVersionRuntimeByBuildJobId(context, job.id);
+  if (processed.report.passed) {
+    const completedRecord = {
+      status: "completed",
+      current_step: "completed",
+      progress: 100,
+      preview_score: processed.report.score,
+      quality_report: processed.qualityReport,
+      error_message: null,
+      build_logs: buildLogs(job.buildLogs, {
+        step: "browser_review_passed",
+        message: `Browsercontrole geslaagd met score ${processed.report.score}. Klantpreview is vrijgegeven.`,
+      }),
+    };
+    await patchBuildJob(context, job.id, completedRecord);
+    if (previewVersion?.id) {
+      await patchPreviewVersion(context, previewVersion.id, {
+        preview_score: processed.report.score,
+        quality_report: processed.qualityReport,
+        metadata: {
+          ...(previewVersion.metadata || {}),
+          browserReviewStatus: "passed",
+          browserReviewedAt: processed.report.reviewedAt,
+          customerPreviewReady: true,
+        },
+        updated_at: new Date().toISOString(),
+      });
+    }
+    return {
+      buildJob: sanitizeBuildJob(normalizeBuildJob({ ...row, ...completedRecord })),
+      browserReview: processed.report,
+      browserRepair: processed.browserRepair,
+      customerPreviewReady: true,
+    };
+  }
+
+  const repair = applyAutomaticBrowserRepairs({ generatedPackage: job.generatedPackage, browserRepair: processed.browserRepair });
+  const retryAvailable = processed.browserRepair.retryAvailable && repair.changed;
+  const repairedStaticReport = repair.changed
+    ? runQualityCheck({ generatedPackage: repair.generatedPackage, journey: mapJourney(journeyRow) })
+    : job.qualityReport;
+  const nextArtifactHash = artifactHashForPackage(repair.generatedPackage);
+  const nextBrowserRepair = {
+    ...processed.browserRepair,
+    status: retryAvailable ? "awaiting_recheck" : "manual_review_required",
+    retryAvailable,
+    applied: repair.applied,
+    artifactHash: nextArtifactHash,
+  };
+  const nextQualityReport = {
+    ...repairedStaticReport,
+    browserReview: processed.report,
+    browserRepair: nextBrowserRepair,
+    readiness: { internalPreview: repairedStaticReport.passed === true, customerPreview: false, reason: retryAvailable ? "browser_recheck_required" : "browser_review_failed" },
+  };
+  const nextRecord = {
+    status: retryAvailable ? "quality_check" : "quality_failed",
+    current_step: retryAvailable ? "browser_review_required" : "browser_review_failed",
+    progress: retryAvailable ? 88 : 92,
+    preview_score: processed.report.score,
+    quality_report: nextQualityReport,
+    ...(repair.changed ? { generated_package: repair.generatedPackage } : {}),
+    error_message: retryAvailable
+      ? `Automatische reparatie toegepast. Browsercontrole ${nextBrowserRepair.attempts + 1} is vereist.`
+      : "Browsercontrole blijft afgekeurd en vereist handmatige beoordeling.",
+    build_logs: buildLogs(job.buildLogs, {
+      step: retryAvailable ? "browser_repair_applied" : "browser_review_failed",
+      message: retryAvailable
+        ? `Automatische browserreparatie ${nextBrowserRepair.attempts}/${nextBrowserRepair.maximumAttempts} toegepast: ${repair.applied.join(", ")}.`
+        : "Browsercontrole kon niet automatisch worden hersteld.",
+      blockers: processed.report.blockers.map((item) => item.id),
+    }),
+  };
+  await patchBuildJob(context, job.id, nextRecord);
+  if (previewVersion?.id) {
+    await patchPreviewVersion(context, previewVersion.id, {
+      ...(repair.changed ? {
+        generated_package: repair.generatedPackage,
+        package_checksum: nextArtifactHash,
+      } : {}),
+      preview_score: processed.report.score,
+      quality_report: nextQualityReport,
+      metadata: {
+        ...(previewVersion.metadata || {}),
+        browserReviewStatus: nextBrowserRepair.status,
+        browserReviewedAt: processed.report.reviewedAt,
+        customerPreviewReady: false,
+        browserRepair: nextBrowserRepair,
+      },
+      updated_at: new Date().toISOString(),
+    });
+  }
+  return {
+    buildJob: sanitizeBuildJob(normalizeBuildJob({ ...row, ...nextRecord })),
+    browserReview: processed.report,
+    browserRepair: nextBrowserRepair,
+    customerPreviewReady: false,
+    repaired: repair.changed,
+    appliedRepairs: repair.applied,
+    nextArtifactHash,
+  };
 }
 
 async function createPreviewVersionResponse(context, payload) {
@@ -1419,6 +1629,7 @@ function compactPackageMetadata(generatedPackage = null) {
   return {
     fileCount: files.length,
     entryFile: cleanText(generatedPackage.entryFile || generatedPackage.meta?.entryFile || "index.html"),
+    artifactHash: artifactHashForPackage(generatedPackage),
     industryIntelligence: {
       industry: cleanText(intelligence.industry),
       subcategory: cleanText(intelligence.subcategory),
