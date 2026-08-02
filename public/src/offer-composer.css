@@ -14,3 +14,24 @@
 @media(max-width:720px){.commercial-preflight-card{padding:18px}}
 
 .summary-card .summary-heading{display:grid;gap:5px;padding-bottom:15px;border-bottom:1px solid var(--oc-line)}.summary-card .summary-heading span{color:var(--oc-muted);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.summary-card .summary-heading strong{font-size:1.08rem;line-height:1.3;overflow-wrap:anywhere}
+/* De algemene admin-toast blijft actief totdat de echte Composer-load klaar is. */
+.offer-composer-page .toast.is-loading .toast-progress {
+  width: 48%;
+  opacity: 0.9;
+  transform-origin: center;
+  animation: composer-loading-progress 1.35s ease-in-out infinite;
+}
+
+@keyframes composer-loading-progress {
+  0% { transform: translateX(-115%) scaleX(0.55); }
+  50% { transform: translateX(55%) scaleX(1); }
+  100% { transform: translateX(215%) scaleX(0.55); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offer-composer-page .toast.is-loading .toast-progress {
+    width: 100%;
+    animation: none;
+    transform: none;
+  }
+}
