@@ -24,6 +24,7 @@ const state = {
   quantities: {},
   customPrices: {},
   paymentChoice: 'none',
+  discountPercentage: 0,
   selectedDemoId: routeContext.demoJourneyId,
   selectedFactoryProjectId: routeContext.factoryProjectId,
   selectedDocumentTypes: [],
@@ -45,7 +46,7 @@ const state = {
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','document-preview-dialog','document-preview-title','document-preview-meta','document-preview-frame','close-document-preview','done-document-preview','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','discount-percentage','document-options','document-preview-dialog','document-preview-title','document-preview-meta','document-preview-frame','close-document-preview','done-document-preview','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-before-discount','sum-discount-label','sum-discount','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once-before-discount','confirm-discount-label','confirm-discount','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -173,6 +174,7 @@ function bindEvents() {
   elements.careOptions.addEventListener('change', (event) => selectSingle(event, 'careProductId'));
   elements.paymentOptions = document.getElementById('payment-options');
   elements.paymentOptions.addEventListener('change', (event) => { if (event.target.name === 'payment') { state.paymentChoice = event.target.value; changed(); } });
+  elements.discountPercentage.addEventListener('change', () => { state.discountPercentage = Number(elements.discountPercentage.value); changed(); });
   elements.demoOptions.addEventListener('change', (event) => { if (event.target.name === 'demo') { state.selectedDemoId = event.target.value; markDirty(); renderPreviewAvailability(); } });
   elements.addonOptions.addEventListener('change', handleAddonChange);
   elements.addonOptions.addEventListener('input', handleCustomInput);
@@ -239,6 +241,7 @@ function renderAll() {
   elements.websiteCatalogVersion.textContent = state.data.catalog.version;
   elements.catalogChecksum.textContent = `SHA-256 ${state.data.catalog.checksum.slice(0, 16)}…`;
   elements.definitiveStagingWarning.hidden = !state.data?.capabilities?.stagingMail;
+  elements.discountPercentage.value = String(state.discountPercentage);
   renderRelationship(); renderFactory(); renderDemos(); renderCatalog(); renderDocuments(); renderHistory(); renderSummary(); renderReadiness(); renderStatus();
 }
 
@@ -345,7 +348,9 @@ function templateDocumentPreview(document) {
   const company = relationship.companyName || relationship.contactName || 'Nog geen relatiegegevens';
   const proposalReference = storedVersion?.version_number ? `Voorstelversie ${storedVersion.version_number}` : 'Concept · nog niet als versie opgeslagen';
   const snapshotChecksum = snapshot?.checksum ? `${snapshot.checksum.slice(0, 24)}…` : 'Wordt bij het opslaan vastgelegd';
-  const scopeRows = lines.length ? lines.map((line) => `<tr><td><strong>${escapeHtml(`${line.quantity || 1}× ${line.productName}`)}</strong><small>${escapeHtml(line.productDescription || '')}${line.componentType === 'recurring' ? ' · per maand' : ' · eenmalig'}</small></td><td>${escapeHtml(line.bindingState === 'binding' ? money(line.subtotalExVatCents, { monthly: line.componentType === 'recurring' }) : 'Nog te bevestigen')}</td><td>${escapeHtml(line.bindingState === 'binding' ? money(line.totalInclVatCents, { monthly: line.componentType === 'recurring' }) : 'Nog te bevestigen')}</td></tr>`).join('') : '<tr><td colspan="3">Maak eerst een productkeuze om de actuele inhoud te zien.</td></tr>';
+  const productRows = lines.length ? lines.map((line) => `<tr><td><strong>${escapeHtml(`${line.quantity || 1}× ${line.productName}`)}</strong><small>${escapeHtml(line.productDescription || '')}${line.componentType === 'recurring' ? ' · per maand' : ' · eenmalig'}</small></td><td>${escapeHtml(line.bindingState === 'binding' ? money(line.subtotalExVatCents, { monthly: line.componentType === 'recurring' }) : 'Nog te bevestigen')}</td><td>${escapeHtml(line.bindingState === 'binding' ? money(line.totalInclVatCents, { monthly: line.componentType === 'recurring' }) : 'Nog te bevestigen')}</td></tr>`).join('') : '<tr><td colspan="3">Maak eerst een productkeuze om de actuele inhoud te zien.</td></tr>';
+  const discountRow = Number(snapshot?.discountPercentage || 0) > 0 ? `<tr><td><strong>Handmatige korting (${snapshot.discountPercentage}%)</strong><small>Alleen over de eenmalige onderdelen; maandelijkse kosten blijven ongewijzigd.</small></td><td>− ${escapeHtml(money(snapshot.discountExVatCents))}</td><td>− ${escapeHtml(money(snapshot.discountExVatCents + Math.round(snapshot.discountExVatCents * Number(snapshot.vatRate || 21) / 100)))}</td></tr>` : '';
+  const scopeRows = `${productRows}${discountRow}`;
   const common = `<section><h2>Relatie en zakelijk karakter</h2><dl><div><dt>Bedrijf</dt><dd>${escapeHtml(company)}</dd></div><div><dt>Contactpersoon</dt><dd>${escapeHtml(relationship.contactName || '—')}</dd></div><div><dt>E-mail</dt><dd>${escapeHtml(effectiveRecipientEmail() || relationship.email || '—')}</dd></div><div><dt>KvK-nummer</dt><dd>${escapeHtml(relationship.kvkNumber || 'Nog te bevestigen bij zakelijk akkoord')}</dd></div></dl><p class="muted">Deze offerte is opgesteld voor een klant die handelt in de uitoefening van een beroep of bedrijf.</p></section><section><h2>Scope van dit voorstel</h2><table class="scope-table"><thead><tr><th>Onderdeel en aantal</th><th>Excl. btw</th><th>Incl. btw</th></tr></thead><tbody>${scopeRows}</tbody></table><p class="muted">Alleen bindend bevestigde onderdelen en bedragen behoren tot deze offerteversie. Een inhoudelijke wijziging vereist een nieuwe versie.</p></section>`;
   const quote = `<section class="quote-intro"><div class="agreement-status">Zakelijke offerte · ${escapeHtml(proposalReference)}</div><h2>Voorstel voor ${escapeHtml(company)}</h2><p>Een helder overzicht van de afgesproken scope, prijsopbouw, betaalkeuze, geldigheid en gekoppelde documenten.</p></section>${common}<section><h2>Prijsopbouw</h2><dl><div><dt>Eenmalig excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeExVatCents) : '—')}</dd></div><div><dt>Btw eenmalig</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeVatCents) : '—')}</dd></div><div><dt>Eenmalig incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeInclVatCents) : '—')}</dd></div><div><dt>Per maand excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringExVatCents, { monthly: true }) : '—')}</dd></div><div><dt>Btw per maand</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringVatCents, { monthly: true }) : '—')}</dd></div><div><dt>Per maand incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringInclVatCents, { monthly: true }) : '—')}</dd></div></dl></section><section><h2>Betaalafspraak</h2><dl><div><dt>Gekozen betaalroute</dt><dd>${escapeHtml(paymentChoiceLabel(snapshot?.paymentChoice))}</dd></div><div><dt>Nu te betalen excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowExVatCents) : '—')}</dd></div><div><dt>Btw over bedrag nu</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowVatCents) : '—')}</dd></div><div><dt>Nu te betalen incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowInclVatCents) : '—')}</dd></div><div><dt>Resterend eenmalig excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.remainingExVatCents) : '—')}</dd></div></dl><p class="muted">Acceptatie van de offerte start niet automatisch een betaling. Facturatie en betaling volgen de gekoppelde overeenkomst en voorwaarden.</p></section><section><h2>Geldigheid en integriteit</h2><dl><div><dt>Referentie</dt><dd>${escapeHtml(proposalReference)}</dd></div><div><dt>Offerteweergave</dt><dd>${escapeHtml(document.versionCode)}</dd></div><div><dt>Geldig tot en met</dt><dd>${escapeHtml(snapshot?.validUntil ? formatDateOnly(snapshot.validUntil) : '—')}</dd></div><div><dt>Voorstelchecksum</dt><dd class="checksum-value">${escapeHtml(snapshotChecksum)}</dd></div></dl><p class="notice"><strong>Controleerbare versie.</strong> De definitieve offerte verwijst naar één onveranderlijke voorstelversie. Bij digitaal akkoord worden versie, documentchecksums, bedragen, tijdstip en beschikbare technische bewijsgegevens vastgelegd.</p></section><section><h2>Gekoppelde documenten</h2><ol><li><strong>Overeenkomsttemplate · zakelijke overeenkomst</strong><span>Legt partijen, uitvoering, betaling, intellectueel eigendom en acceptatie vast.</span></li><li><strong>Algemene voorwaarden · versie 2026-08 B2B</strong><span>Vullen de concrete scope en prijsafspraken aan.</span></li><li><strong>Hosting- en onderhoudsvoorwaarden</strong><span>Gelden wanneer een doorlopende hosting- of onderhoudsdienst is opgenomen.</span></li><li><strong>Privacyverklaring · versie 2026-08</strong><span>Beschrijft de verwerking van persoonsgegevens en staat naast de contractuele documentvolgorde.</span></li></ol></section><section class="acceptance"><div class="agreement-status">Zakelijke akkoordverklaring</div><h2>Wat gebeurt er bij acceptatie?</h2><p>De klant controleert eerst scope, prijzen, betaalafspraak, geldigheid en de gekoppelde documenten. Het akkoord wordt vervolgens aan precies deze voorstelversie gekoppeld; een wijziging vraagt om een nieuwe versie.</p><p class="notice"><strong>Conceptweergave.</strong> Sla het voorstel eerst als onveranderlijke versie op. Pas daarna kan deze offerteweergave definitief aan de klant worden aangeboden.</p></section>`;
   const recurringTerms = Number(snapshot?.recurringExVatCents || 0) > 0
@@ -367,6 +372,9 @@ function renderSummary() {
   const snapshot = state.snapshot;
   elements.summaryVersion.textContent = snapshot ? `Catalogus ${snapshot.catalogVersion}` : state.calculating ? 'Berekenen…' : 'Maak een productkeuze';
   elements.summaryLines.innerHTML = snapshot?.lines?.map((line) => `<div class="summary-line"><span>${escapeHtml(line.productName)}${line.componentType === 'recurring' ? ' · per maand' : ''}</span><strong>${line.bindingState === 'binding' ? money(line.totalInclVatCents, { monthly: line.componentType === 'recurring' }) : 'Te bevestigen'}</strong></div>`).join('') || '';
+  setText('sumOnceBeforeDiscount', snapshot && money(snapshot.oneTimeBeforeDiscountExVatCents));
+  if (elements.sumDiscountLabel) elements.sumDiscountLabel.textContent = `Korting${snapshot ? ` (${snapshot.discountPercentage}%)` : ''}`;
+  setText('sumDiscount', snapshot && `− ${money(snapshot.discountExVatCents)}`);
   setText('sumOnceEx', snapshot && money(snapshot.oneTimeExVatCents)); setText('sumOnceVat', snapshot && money(snapshot.oneTimeVatCents)); setText('sumOnceIncl', snapshot && money(snapshot.oneTimeInclVatCents)); setText('sumMonthEx', snapshot && money(snapshot.recurringExVatCents, { monthly: true })); setText('sumMonthIncl', snapshot && money(snapshot.recurringInclVatCents, { monthly: true })); setText('sumDue', snapshot && money(snapshot.dueNowInclVatCents)); setText('sumRemaining', snapshot && money(snapshot.remainingExVatCents));
   elements.summaryWarning.textContent = snapshot?.hasNonBindingLines ? 'Dit voorstel bevat nog een vanaf- of op-aanvraagprijs en kan niet gereed voor controle worden gemaakt.' : '';
   renderPreviewAvailability();
@@ -486,7 +494,7 @@ async function calculate() {
   if (!selections.length) { state.snapshot = null; renderSummary(); renderDocuments(); renderReadiness(); return; }
   state.calculating = true; renderSummary();
   try {
-    const data = await request('POST', { action: 'prepare_snapshot', paymentChoice: state.paymentChoice, selections });
+    const data = await request('POST', { action: 'prepare_snapshot', paymentChoice: state.paymentChoice, discountPercentage: state.discountPercentage, selections });
     state.snapshot = data.snapshot;
     renderDocuments(); renderSummary(); renderReadiness();
   } catch (error) {
@@ -512,6 +520,7 @@ async function saveDraft() {
       demoJourneyId: state.selectedDemoId || null,
       factoryProjectId: state.selectedFactoryProjectId || null,
       paymentChoice: state.paymentChoice,
+      discountPercentage: state.discountPercentage,
       selections: selectionsFromState(state, state.data.actor),
       documents,
       changeReason: elements.changeReason.value.trim() || null,
@@ -586,6 +595,9 @@ function openDefinitiveSendDialog() {
   elements.confirmDemo.textContent = details.demoName;
   elements.confirmWebsite.textContent = details.websiteName;
   elements.confirmCare.textContent = details.careName;
+  elements.confirmOnceBeforeDiscount.textContent = money(details.oneTimeBeforeDiscountExVatCents);
+  elements.confirmDiscountLabel.textContent = `Korting (${details.discountPercentage}%)`;
+  elements.confirmDiscount.textContent = `− ${money(details.discountExVatCents)}`;
   elements.confirmOnce.textContent = money(details.oneTimeExVatCents);
   elements.confirmMonthly.textContent = money(details.recurringExVatCents, { monthly: true });
   elements.confirmPaymentLabel.textContent = details.paymentLabel;
