@@ -19,7 +19,7 @@ const {
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
-const TERMS_VERSION = "algemene-voorwaarden-2026-08";
+const TERMS_VERSION = "algemene-voorwaarden-2026-08-b2b";
 const PACKAGE_CATALOG = LEGACY_PACKAGE_CATALOG;
 const OPTION_CATALOG = LEGACY_OPTION_CATALOG;
 
@@ -112,6 +112,9 @@ exports.handler = async (event) => {
         acceptedAt: input.termsAcceptedAt,
         ipAddress: input.ipAddress,
         termsVersion: TERMS_VERSION,
+        businessPurposeConfirmed: input.businessPurposeConfirmed,
+        businessPurposeConfirmedAt: input.businessPurposeConfirmedAt,
+        kvkNumber: input.kvkNumber,
       },
     });
 
@@ -125,6 +128,8 @@ exports.handler = async (event) => {
       terms: {
         acceptedAt: input.termsAcceptedAt,
         version: TERMS_VERSION,
+        businessPurposeConfirmed: input.businessPurposeConfirmed,
+        businessPurposeConfirmedAt: input.businessPurposeConfirmedAt,
       },
     });
   } catch (error) {
@@ -178,6 +183,7 @@ function validatePayload(payload = {}, event = {}) {
   const selectedOptions = Array.isArray(payload.options) && !publicCheckout ? payload.options.map(cleanText).filter(Boolean) : [];
   const invalidOptions = selectedOptions.filter((key) => !OPTION_CATALOG[key]);
   const paymentChoice = cleanText(payload.paymentChoice || payload.payment_choice || "deposit").toLowerCase() === "full" ? "full" : "deposit";
+  const businessPurposeConfirmed = payload.businessPurposeConfirmed === true || payload.business_purpose_confirmed === true;
   if (!packageConfig && !productIds.length) throwValidation("Kies minimaal één product of dienst.");
   if (publicCheckout && packageKey && !WEBSITE_PRODUCT_IDS.includes(packageKey)) throwValidation("Kies een geldig websitepakket.");
   if (publicCheckout && packageKey && !productIds.includes(packageKey)) productIds.unshift(packageKey);
@@ -191,6 +197,7 @@ function validatePayload(payload = {}, event = {}) {
     orderId: cleanText(payload.orderId) || `order_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
     name: cleanText(payload.name || payload.customerName),
     company: cleanText(payload.company || payload.companyName),
+    kvkNumber: cleanText(payload.kvkNumber || payload.kvk_number).replace(/\D/g, ""),
     email: cleanText(payload.email || payload.customerEmail).toLowerCase(),
     phone: cleanText(payload.phone || payload.customerPhone),
     domain: cleanDomain(payload.domain || payload.website),
@@ -204,11 +211,18 @@ function validatePayload(payload = {}, event = {}) {
     paymentChoice,
     termsAccepted: Boolean(payload.termsAccepted || payload.terms_accepted),
     termsAcceptedAt: cleanText(payload.termsAcceptedAt) || new Date().toISOString(),
+    businessPurposeConfirmed,
+    businessPurposeConfirmedAt: businessPurposeConfirmed
+      ? (cleanText(payload.businessPurposeConfirmedAt || payload.business_purpose_confirmed_at) || new Date().toISOString())
+      : "",
     ipAddress: cleanText(payload.ipAddress || header(event, "x-nf-client-connection-ip") || header(event, "client-ip") || header(event, "x-forwarded-for")).split(",")[0],
     notes: cleanText(payload.notes),
   };
   if (!value.name) throwValidation("Vul een klantnaam in.");
+  if (publicCheckout && !value.company) throwValidation("Vul je bedrijfsnaam in.");
   if (!value.company) value.company = value.name;
+  if (publicCheckout && !/^\d{8}$/.test(value.kvkNumber)) throwValidation("Vul een geldig KvK-nummer van 8 cijfers in.");
+  if (publicCheckout && !value.businessPurposeConfirmed) throwValidation("Bevestig dat je deze overeenkomst uitsluitend zakelijk sluit.");
   if (!emailPattern.test(value.email)) throwValidation("Vul een geldig e-mailadres in.");
   if (!value.phone) throwValidation("Vul je telefoonnummer in.");
   if (!value.termsAccepted) throwValidation("Accepteer de algemene voorwaarden voordat je doorgaat.");
@@ -259,7 +273,9 @@ function calculateTotals(input) {
 
 async function ensureCommercialProfile(config, input) {
   const existing = await fetchSingle(config, "profiles", "id,auth_user_id,name,company,email,phone,website,package,role,status,metadata", `email=eq.${encodeURIComponent(input.email)}`);
-  const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId };
+  const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId, termsVersion: TERMS_VERSION };
+  if (input.kvkNumber) metadata.kvkNumber = input.kvkNumber;
+  if (input.businessPurposeConfirmed) Object.assign(metadata, { businessPurposeConfirmed: true, businessPurposeConfirmedAt: input.businessPurposeConfirmedAt });
   if (input.testOrder) metadata.environment = "test";
   const record = {
     id: existing?.id || undefined,
@@ -283,7 +299,9 @@ async function ensureCommercialCustomer(config, input, profile) {
     ? `profile_id=eq.${encodeURIComponent(profile.id)}`
     : `email=eq.${encodeURIComponent(input.email)}`;
   const existing = await fetchSingle(config, "customers", "id,profile_id,auth_user_id,name,company,email,phone,website,package,status,portal_status,metadata", filter);
-  const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId };
+  const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId, termsVersion: TERMS_VERSION };
+  if (input.kvkNumber) metadata.kvkNumber = input.kvkNumber;
+  if (input.businessPurposeConfirmed) Object.assign(metadata, { businessPurposeConfirmed: true, businessPurposeConfirmedAt: input.businessPurposeConfirmedAt });
   if (input.testOrder) metadata.environment = "test";
   return upsertRecord(config, "customers", {
     id: existing?.id || undefined,
@@ -324,6 +342,7 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
     customerId: customer.id,
     customerName: input.name,
     customerCompany: input.company,
+    customerKvkNumber: input.kvkNumber,
     packageKey: input.packageKey,
     packageLabel: input.packageLabel,
     paymentChoice: input.paymentChoice,
@@ -341,6 +360,9 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
       acceptedAt: input.termsAcceptedAt,
       ipAddress: input.ipAddress,
       version: TERMS_VERSION,
+      businessPurposeConfirmed: input.businessPurposeConfirmed,
+      businessPurposeConfirmedAt: input.businessPurposeConfirmedAt,
+      kvkNumber: input.kvkNumber,
     },
     lines,
     subtotal: totals.subtotal,
@@ -623,3 +645,5 @@ function parsePayload(body) {
 function jsonResponse(statusCode, body) {
   return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(body) };
 }
+
+exports._private = { validatePayload };
