@@ -491,3 +491,4 @@ function jsonResponse(statusCode, body) {
 }
 
 exports._test = { buildWelcomeEmailHtml, invitationStatus, isProductionEnvironment, publicAuthContext, linkCustomerAccess };
+exports._internal = { ensureCustomerAuthContext, createInviteOrResetLink, buildMailPreview, buildWelcomeEmailHtml, updateCustomerInvitationStatus, publicAuthContext };

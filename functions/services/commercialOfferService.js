@@ -15,6 +15,7 @@ const { DEFAULT_VALIDITY_DAYS, defaultValidityDate } = require("./commercialOffe
 
 const PAYMENT_CHOICES = new Set(["fixed_deposit", "full", "none"]);
 const DISCOUNT_PERCENTAGES = new Set([0, 10, 15, 20, 25, 50, 75]);
+const OFFER_PURPOSES = new Set(["personal_proposal", "definitive_offer"]);
 const CUSTOM_PRICE_ROLES = new Set(["super_admin"]);
 
 function buildOfferVersion(input = {}, actor = {}) {
@@ -24,6 +25,8 @@ function buildOfferVersion(input = {}, actor = {}) {
   if (!PAYMENT_CHOICES.has(paymentChoice)) throw validation("Ongeldige betaalkeuze.");
   const discountPercentage = integer(input.discountPercentage ?? 0, "Ongeldig kortingspercentage.");
   if (!DISCOUNT_PERCENTAGES.has(discountPercentage)) throw validation("Kies een toegestaan kortingspercentage.");
+  const offerPurpose = clean(input.offerPurpose || "personal_proposal").toLowerCase();
+  if (!OFFER_PURPOSES.has(offerPurpose)) throw validation("Kies of dit een persoonlijk voorstel of definitieve offerte is.");
 
   const selectedIds = selections.map((entry) => clean(entry.productId));
   if (new Set(selectedIds).size !== selectedIds.length) throw validation("Een product mag maar één keer in een voorstel staan.");
@@ -61,6 +64,7 @@ function buildOfferVersion(input = {}, actor = {}) {
     currency: CURRENCY,
     vatRate: VAT_RATE,
     validUntil,
+    offerPurpose,
     paymentChoice,
     discountPercentage,
     ...totals,
@@ -179,5 +183,6 @@ module.exports = {
   catalogRegistrationPayload,
   PAYMENT_CHOICES,
   DISCOUNT_PERCENTAGES,
+  OFFER_PURPOSES,
   _private: { validityDate: (days, now) => days === DEFAULT_VALIDITY_DAYS ? defaultValidityDate(now) : null, DEFAULT_VALIDITY_DAYS },
 };

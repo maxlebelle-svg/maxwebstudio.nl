@@ -91,6 +91,27 @@ async function createSmokeTestTransaction(config, input) {
   });
 }
 
+async function createCommercialOfferTransaction(config, input) {
+  return signhostRequest(config, "/api/transaction/", {
+    method:"POST",
+    contentType:"application/json",
+    body:JSON.stringify({
+      Signers:[{
+        Email:input.signerEmail,
+        Language:"nl-NL",
+        Verifications:[verification(input.signerPhone ? "PhoneNumber" : "Scribble", input.signerPhone, input.signerName)],
+        SendSignRequest:true,
+        SignRequestSubject:`Onderteken de definitieve offerte voor ${input.companyName}`,
+        SignRequestMessage:"Controleer de offerte en gekoppelde voorwaarden. Na ondertekening ontvang je automatisch toegang tot het klantportaal.",
+        SendSignConfirmation:true,
+        DaysToRemind:3,
+      }],
+      SendEmailNotifications:true,
+      Reference:clean(input.reference).slice(0,100),
+    }),
+  });
+}
+
 function verification(method, phone, name) {
   if (method === "PhoneNumber") {
     const number = normalizePhone(phone);
@@ -172,6 +193,28 @@ function buildSmokeTestMetadata(transaction, input) {
   };
 }
 
+function buildCommercialOfferMetadata(transaction, input) {
+  const signers = Array.isArray(transaction?.Signers) ? transaction.Signers : [];
+  const signer = signerId(signers, input.signerEmail, 0);
+  if (!signer) throw coded("SIGNHOST_SIGNERS_INVALID", 502, "Signhost gaf geen geldige ondertekenaar terug.");
+  return {
+    DisplayName:`Definitieve offerte ${clean(input.reference)}`,
+    Signers:{ [signer]:{ FormSets:["CustomerSignature"] } },
+    FormSets:{ CustomerSignature:{
+      Naam:singleLine(input.signaturePage, 70, 602, 220),
+      Functie:singleLine(input.signaturePage, 70, 622, 220),
+      Handtekening:{ Type:"Signature", Location:{ PageNumber:input.signaturePage, Left:70, Top:650, Width:455, Height:78 } },
+    } },
+  };
+}
+
+function transactionSignUrl(transaction) {
+  const signer = Array.isArray(transaction?.Signers) ? transaction.Signers[0] : null;
+  const raw = clean(signer?.SignUrl || signer?.signUrl || transaction?.SignUrl || transaction?.signUrl);
+  if (!raw) return "";
+  try { const parsed=new URL(raw); return parsed.protocol === "https:" && !parsed.username && !parsed.password ? parsed.toString() : ""; } catch { return ""; }
+}
+
 function singleLine(page, left, top, width) {
   return { Type:"SingleLine", Location:{ PageNumber:page, Left:left, Top:top, Width:width, Height:12 } };
 }
@@ -238,8 +281,10 @@ function coded(code, status, message) { return Object.assign(new Error(message),
 module.exports = {
   API_BASE,
   buildSmokeTestMetadata,
+  buildCommercialOfferMetadata,
   createTransaction,
   createSmokeTestTransaction,
+  createCommercialOfferTransaction,
   buildAgreementMetadata,
   downloadReceipt,
   downloadSignedPdf,
@@ -247,6 +292,7 @@ module.exports = {
   signhostConfig,
   signhostRequest,
   startTransaction,
+  transactionSignUrl,
   uploadPdf,
   uploadFileMetadata,
   validatePostback,

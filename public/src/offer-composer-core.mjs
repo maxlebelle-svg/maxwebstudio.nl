@@ -169,6 +169,7 @@ export function stateFromSnapshot(snapshot = {}) {
     careProductId,
     addOnIds: productIds.filter((id) => id !== websiteProductId && id !== careProductId),
     paymentChoice: snapshot.paymentChoice || 'none',
+    offerPurpose: snapshot.offerPurpose || 'personal_proposal',
     discountPercentage: Number(snapshot.discountPercentage || 0),
     quantities: Object.fromEntries((snapshot.lines || []).map((line) => [line.productId, line.quantity || 1])),
   };
