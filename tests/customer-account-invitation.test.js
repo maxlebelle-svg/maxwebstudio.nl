@@ -25,6 +25,25 @@ test("customer flow hergebruikt Auth-user en profile en gebruikt provider-idempo
   assert.match(source, /profiles\?on_conflict=auth_user_id/);
   assert.match(source, /resolution=merge-duplicates/);
   assert.match(source, /customer\.account\.invitation:\$\{input\.customerId\}:\$\{actionKey\}/);
+  assert.match(source, /linkCustomerAccess\(supabaseUrl, serviceRoleKey, input\.customerId, authUser\.id, profile\.id/);
+});
+
+test("customer account wordt expliciet en conflictveilig aan auth en profile gekoppeld", async () => {
+  const previousFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), options });
+    if (!options.method) return { ok: true, json: async () => [{ id: "customer-1", auth_user_id: null, profile_id: null, portal_status: "prepared" }] };
+    return { ok: true, json: async () => [{ id: "customer-1", auth_user_id: "auth-1", profile_id: "profile-1", portal_status: "invited" }] };
+  };
+  try {
+    const linked = await customerAccount._test.linkCustomerAccess("https://example.supabase.co", "service", "customer-1", "auth-1", "profile-1", false);
+    assert.equal(linked.id, "customer-1");
+    const patch = JSON.parse(calls[1].options.body);
+    assert.deepEqual({ authUserId: patch.auth_user_id, profileId: patch.profile_id, portalStatus: patch.portal_status }, { authUserId: "auth-1", profileId: "profile-1", portalStatus: "invited" });
+  } finally {
+    global.fetch = previousFetch;
+  }
 });
 
 test("customer accountroute resolveert uitsluitend canonieke customerId en faalt zonder mailbaar record", () => {

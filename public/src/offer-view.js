@@ -12,6 +12,7 @@ const title = document.getElementById("quote-page-title");
 const subtitle = document.getElementById("quote-page-subtitle");
 const card = document.getElementById("quote-card");
 let acceptanceKey = globalThis.crypto?.randomUUID?.() || `quote-acceptance-${quoteId}-${Date.now()}`;
+let portalAccessOutcome = null;
 
 const money = (value, currency = "EUR") => new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -189,7 +190,16 @@ function acceptanceSection(quote) {
       element("p", "", `Versie ${quote.acceptance.quoteVersion} en totaal ${money(quote.acceptance.total, quote.acceptance.currency)} zijn onveranderlijk aan dit akkoord gekoppeld.`),
       element("small", "", `Bewijsreferentie ${quote.acceptance.quoteChecksum || quote.checksum}`),
     );
-    wrap.append(notice);
+    const access = element("div", "offer-portal-access");
+    access.append(
+      element("strong", "", "Je klantportaal is direct beschikbaar."),
+      element("p", "", portalAccessOutcome?.emailSent
+        ? "We hebben ook een bevestiging met de portaal-link naar je e-mailadres gestuurd."
+        : "Je bent al veilig ingelogd en kunt meteen verder. Er worden nooit wachtwoorden per e-mail verstuurd."),
+      actionLink("Ga naar mijn klantportaal", portalAccessOutcome?.url || "klantportaal.html", "button primary"),
+    );
+    if (portalAccessOutcome?.emailWarning) access.append(element("small", "", portalAccessOutcome.emailWarning));
+    wrap.append(notice, access);
     return wrap;
   }
 
@@ -239,6 +249,7 @@ function acceptanceSection(quote) {
         expectedChecksum: quote.checksum,
         idempotencyKey: acceptanceKey,
       });
+      portalAccessOutcome = data.portalAccess || { ready: true, url: "/klantportaal.html", emailSent: false };
       renderQuote(data.quote);
     } catch (error) {
       feedback.textContent = error.message || "Akkoord kon niet worden vastgelegd.";
