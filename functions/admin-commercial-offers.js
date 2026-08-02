@@ -371,6 +371,7 @@ async function loadHistory(type, id, requestedOfferId, config) {
 }
 
 function mapRelationship(type, record) {
+  const metadata = record.metadata && typeof record.metadata === "object" ? record.metadata : {};
   return {
     type,
     id: record.id,
@@ -379,6 +380,7 @@ function mapRelationship(type, record) {
     email: clean(record.email).toLowerCase(),
     phone: clean(record.phone),
     website: clean(record.website || record.website_url),
+    kvkNumber: clean(record.kvk_number || record.kvk || metadata.kvkNumber),
     missing: [!clean(record.company_name || record.company || record.name) && "bedrijfsnaam", !clean(record.contact_name || record.name) && "contactpersoon", !clean(record.email) && "e-mailadres", !clean(record.phone) && "telefoonnummer"].filter(Boolean),
   };
 }
