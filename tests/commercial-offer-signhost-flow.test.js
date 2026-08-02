@@ -26,14 +26,25 @@ test("mail keeps personal interest and definitive Signhost actions explicitly se
   assert.throws(()=>buildCommercialOfferMail({relationship:relation,demo,snapshot:snapshot(),mode:"definitive",interestUrl:"https://maxwebstudio.nl/interesse"}),/ondertekenlink/i);
 });
 
-test("generated definitive offer is a two-page PDF with pinned business evidence",()=>{
+test("generated definitive offer is a branded three-page PDF with pinned business evidence",()=>{
   const value=snapshot();const pdf=generateCommercialOfferPdf({offerId:"12345678-1234-4234-8234-123456789abc",versionNumber:3,snapshot:value,relationship:relation,documents:[{document_type:"general_terms",version_code:"algemene-voorwaarden-2026-08-b2b",checksum_sha256:"a".repeat(64)}],signerName:"Jan Jansen",signerRole:"Eigenaar"});
-  assert.equal(pdf.pageCount,2);assert.equal(pdf.signaturePage,2);assert.equal(pdf.bytes.subarray(0,5).toString(),"%PDF-");assert.match(pdf.bytes.subarray(-20).toString("latin1"),/%%EOF/);assert.match(pdf.bytes.toString("latin1"),/consumentenherroepingsrecht/);
+  const source=pdf.bytes.toString("latin1");
+  assert.equal(pdf.pageCount,3);assert.equal(pdf.signaturePage,3);assert.equal(pdf.bytes.subarray(0,5).toString(),"%PDF-");assert.match(pdf.bytes.subarray(-20).toString("latin1"),/%%EOF/);
+  assert.match(source,/Max Webstudio/);assert.match(source,/BUILD BETTER ONLINE/);assert.match(source,/Duidelijk vastgelegd/);assert.match(source,/DIGITALE HANDTEKENING VIA SIGNHOST/);
+  assert.match(source,/algemene-voorwaarden-2026-08-b2b/);assert.doesNotMatch(source,/consumentenherroepingsrecht/i);
+});
+
+test("long definitive offers keep every line and move the Signhost field to the actual final page",()=>{
+  const value=snapshot();
+  const lines=Array.from({length:12},(_,index)=>({...value.lines[0],productName:`Onderdeel ${String(index+1).padStart(2,"0")}`,productDescription:`Beschrijving ${index+1}`}));
+  const pdf=generateCommercialOfferPdf({offerId:"12345678-1234-4234-8234-123456789abc",versionNumber:4,snapshot:{...value,lines},relationship:relation,documents:[],signerName:"Jan Jansen",signerRole:"Eigenaar"});
+  const source=pdf.bytes.toString("latin1");
+  assert.equal(pdf.pageCount,4);assert.equal(pdf.signaturePage,4);assert.match(source,/Onderdeel 01/);assert.match(source,/Onderdeel 12/);assert.match(source,/4 \/ 4/);
 });
 
 test("Signhost metadata gives exactly the customer signer a signature field on the final page",()=>{
-  const metadata=buildCommercialOfferMetadata({Signers:[{Id:"signer-1",Email:relation.email}]},{signerEmail:relation.email,signaturePage:2,reference:"MWS-003"});
-  assert.deepEqual(metadata.Signers,{"signer-1":{FormSets:["CustomerSignature"]}});assert.equal(metadata.FormSets.CustomerSignature.Handtekening.Location.PageNumber,2);
+  const metadata=buildCommercialOfferMetadata({Signers:[{Id:"signer-1",Email:relation.email}]},{signerEmail:relation.email,signaturePage:3,reference:"MWS-003"});
+  assert.deepEqual(metadata.Signers,{"signer-1":{FormSets:["CustomerSignature"]}});assert.equal(metadata.FormSets.CustomerSignature.Handtekening.Location.PageNumber,3);
   assert.equal(transactionSignUrl({Signers:[{SignUrl:"https://signhost.example/sign/abc"}]}),"https://signhost.example/sign/abc");assert.equal(transactionSignUrl({SignUrl:"javascript:bad"}),"");
 });
 
