@@ -331,3 +331,14 @@ test("41 Composer shows a top-right progress notification until initial loading 
   assert.match(css, /\.offer-composer-page \.toast\.is-loading \.toast-progress/);
   assert.match(css, /@keyframes composer-loading-progress/);
 });
+
+test("42 every bound document can be opened and inspected before selection", () => {
+  for (const id of ["document-preview-dialog", "document-preview-frame", "close-document-preview"]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(browser, /data-document-preview="\$\{document\.documentType\}"/);
+  assert.match(browser, /href="\$\{escapeHtml\(sourceUrl\)\}" target="_blank" rel="noopener"/);
+  assert.match(browser, /elements\.documentPreviewFrame\.srcdoc = templateDocumentPreview\(document\)/);
+  assert.match(browser, /document\.documentType === 'quote' \? quote : agreement/);
+  assert.match(browser, /url\.protocol === 'https:'/);
+  assert.match(css, /\.document-preview-button/);
+  assert.match(css, /\.document-preview-dialog/);
+});

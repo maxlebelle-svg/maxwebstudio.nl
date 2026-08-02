@@ -45,7 +45,7 @@ const state = {
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','document-preview-dialog','document-preview-title','document-preview-meta','document-preview-frame','close-document-preview','done-document-preview','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -183,6 +183,9 @@ function bindEvents() {
     state.selectedDocumentTypes = [...elements.documentOptions.querySelectorAll('[data-document-type]:checked')].map((item) => item.dataset.documentType);
     markDirty(); renderReadiness();
   });
+  elements.closeDocumentPreview.addEventListener('click', closeDocumentPreview);
+  elements.doneDocumentPreview.addEventListener('click', closeDocumentPreview);
+  elements.documentPreviewDialog.addEventListener('click', (event) => { if (event.target === elements.documentPreviewDialog) closeDocumentPreview(); });
   elements.offerTitle.addEventListener('input', markDirty);
   elements.changeReason.addEventListener('input', renderReadiness);
   elements.saveDraft.addEventListener('click', saveDraft);
@@ -295,7 +298,63 @@ function renderAddOns() {
 function renderDocuments() {
   const docs = activeDocuments();
   for (const document of docs) if (document.required && !state.selectedDocumentTypes.includes(document.documentType)) state.selectedDocumentTypes.push(document.documentType);
-  elements.documentOptions.innerHTML = docs.map((document) => `<label class="document-row"><input type="checkbox" data-document-type="${document.documentType}" ${state.selectedDocumentTypes.includes(document.documentType) ? 'checked' : ''}/><div><strong>${escapeHtml(document.name)}</strong><p>Versie ${escapeHtml(document.versionCode)} · ingangsdatum ${escapeHtml(document.effectiveFrom)}${document.required ? ' · verplicht' : ''}</p><span class="checksum">✓ ${escapeHtml(document.checksumSha256.slice(0, 20))}…</span></div><span class="classification">${escapeHtml(document.checksumStatus)}</span></label>`).join('');
+  elements.documentOptions.innerHTML = docs.map((document) => {
+    const inputId = `document-${document.documentType}`;
+    const sourceUrl = safeDocumentUrl(document.sourceUrl);
+    const previewAction = sourceUrl
+      ? `<a class="document-preview-button" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener" aria-label="${escapeHtml(document.name)} bekijken">Bekijken</a>`
+      : `<button class="document-preview-button" type="button" data-document-preview="${document.documentType}" aria-label="${escapeHtml(document.name)} bekijken">Bekijken</button>`;
+    return `<article class="document-row"><input id="${inputId}" type="checkbox" data-document-type="${document.documentType}" ${state.selectedDocumentTypes.includes(document.documentType) ? 'checked' : ''}/><label class="document-copy" for="${inputId}"><strong>${escapeHtml(document.name)}</strong><p>Versie ${escapeHtml(document.versionCode)} · ingangsdatum ${escapeHtml(document.effectiveFrom)}${document.required ? ' · verplicht' : ''}</p><span class="checksum">✓ ${escapeHtml(document.checksumSha256.slice(0, 20))}…</span></label><div class="document-row-actions"><span class="classification">${escapeHtml(document.checksumStatus)}</span>${previewAction}</div></article>`;
+  }).join('');
+  elements.documentOptions.querySelectorAll('[data-document-preview]').forEach((button) => button.addEventListener('click', openDocumentPreview));
+}
+
+function openDocumentPreview(event) {
+  const documentType = event.currentTarget.dataset.documentPreview;
+  const document = activeDocuments().find((item) => item.documentType === documentType);
+  if (!document) return;
+  elements.documentPreviewTitle.textContent = document.name;
+  elements.documentPreviewMeta.textContent = `Versie ${document.versionCode} · ingangsdatum ${document.effectiveFrom}`;
+  elements.documentPreviewFrame.title = `Inhoud van ${document.name}`;
+  elements.documentPreviewFrame.removeAttribute('src');
+  elements.documentPreviewFrame.srcdoc = templateDocumentPreview(document);
+  elements.documentPreviewDialog.showModal();
+  elements.closeDocumentPreview.focus();
+}
+
+function closeDocumentPreview() {
+  if (!elements.documentPreviewDialog.open) return;
+  elements.documentPreviewDialog.close();
+  elements.documentPreviewFrame.removeAttribute('src');
+  elements.documentPreviewFrame.srcdoc = '';
+}
+
+function safeDocumentUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value, window.location.origin);
+    return url.protocol === 'https:' ? url.href : '';
+  } catch { return ''; }
+}
+
+function templateDocumentPreview(document) {
+  const relationship = state.data?.relationship || {};
+  const snapshot = state.snapshot;
+  const lines = snapshot?.lines || [];
+  const company = relationship.companyName || relationship.contactName || 'Nog geen relatiegegevens';
+  const scopeRows = lines.length ? lines.map((line) => `<tr><td><strong>${escapeHtml(line.productName)}</strong><small>${escapeHtml(line.productDescription || '')}${line.componentType === 'recurring' ? ' · per maand' : ''}</small></td><td>${escapeHtml(String(line.quantity || 1))}</td><td>${escapeHtml(line.bindingState === 'binding' ? money(line.totalInclVatCents, { monthly: line.componentType === 'recurring' }) : 'Nog te bevestigen')}</td></tr>`).join('') : '<tr><td colspan="3">Maak eerst een productkeuze om de actuele inhoud te zien.</td></tr>';
+  const common = `<section><h2>Relatie</h2><dl><div><dt>Bedrijf</dt><dd>${escapeHtml(company)}</dd></div><div><dt>Contactpersoon</dt><dd>${escapeHtml(relationship.contactName || '—')}</dd></div><div><dt>E-mail</dt><dd>${escapeHtml(effectiveRecipientEmail() || relationship.email || '—')}</dd></div></dl></section><section><h2>Scope van dit voorstel</h2><table><thead><tr><th>Onderdeel</th><th>Aantal</th><th>Bedrag incl. btw</th></tr></thead><tbody>${scopeRows}</tbody></table></section>`;
+  const quote = `${common}<section><h2>Samenvatting en betaling</h2><dl><div><dt>Eenmalig totaal incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeInclVatCents) : '—')}</dd></div><div><dt>Maandelijks incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringInclVatCents, { monthly: true }) : '—')}</dd></div><div><dt>Nu te betalen incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowInclVatCents) : '—')}</dd></div><div><dt>Geldig tot en met</dt><dd>${escapeHtml(snapshot?.validUntil ? formatDateOnly(snapshot.validUntil) : '—')}</dd></div></dl></section>`;
+  const agreement = `${common}<section><h2>Onderdelen van de overeenkomst</h2><ol><li><strong>Partijen en voorstelreferentie</strong><span>De geselecteerde relatie en de immutable voorstelversie.</span></li><li><strong>Scope en levering</strong><span>De hierboven genoemde producten en diensten vormen de afgebakende opdracht.</span></li><li><strong>Betaling</strong><span>${escapeHtml(paymentChoiceLabel(snapshot?.paymentChoice))}; exacte bedragen volgen uit de opgeslagen voorstelversie.</span></li><li><strong>Toepasselijke documenten</strong><span>Algemene voorwaarden, eventuele hosting- en onderhoudsvoorwaarden en de privacyverklaring.</span></li></ol><p class="notice">Dit is de leesweergave van het interne overeenkomstsjabloon. De definitieve overeenkomst wordt pas gevuld vanuit een opgeslagen voorstelversie.</p></section>`;
+  return documentPreviewShell(document.name, document.documentType === 'quote' ? quote : agreement);
+}
+
+function paymentChoiceLabel(value) {
+  return ({ fixed_deposit: 'vaste catalogusaanbetaling', full: 'volledige betaling', none: 'nog geen betaalkeuze' })[value] || 'nog geen betaalkeuze';
+}
+
+function documentPreviewShell(title, content) {
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{margin:0;background:#f4f7fa;color:#10283a;font:16px/1.55 Inter,Arial,sans-serif}.page{max-width:850px;margin:auto;padding:42px 28px 70px}.brand{color:#147ca0;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}h1{margin:.3rem 0 2rem;font-size:clamp(2rem,5vw,3.3rem)}section{margin:18px 0;padding:24px;border:1px solid #d6e1e8;border-radius:16px;background:white}h2{margin:0 0 14px;font-size:1.2rem}dl{display:grid;gap:9px;margin:0}dl div{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #edf1f4;padding-bottom:8px}dt{color:#617483}dd{margin:0;font-weight:750;text-align:right}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #edf1f4}th:last-child,td:last-child{text-align:right}td small,ol span{display:block;color:#617483;font-weight:400}.notice{padding:14px;border-radius:10px;background:#eef8fb;color:#31586b}ol{display:grid;gap:12px;padding-left:22px}@media(max-width:600px){.page{padding:24px 12px}section{padding:18px}dl div{display:block}dd{text-align:left}th:nth-child(2),td:nth-child(2){display:none}}</style></head><body><main class="page"><span class="brand">Max Webstudio · documentinzage</span><h1>${escapeHtml(title)}</h1>${content}</main></body></html>`;
 }
 
 function renderSummary() {
