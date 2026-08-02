@@ -51,6 +51,30 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
 });
 
+test("Silverado proposal mail shows the storefront and restaurant portal as separate verified actions", () => {
+  const demo = {
+    ...base.demo,
+    type: "food",
+    storefrontUrl: "https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord",
+    restaurantPortalUrl: "https://max-webstudio-food-demo.netlify.app/admin/food",
+  };
+  const mail = buildCommercialOfferMail({ ...base, demo, mode: "preview" });
+  assert.match(mail.html, />Bekijk de bestelpagina</);
+  assert.match(mail.html, />Open het restaurantportaal</);
+  assert.match(mail.html, /href="https:\/\/max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord"/);
+  assert.match(mail.html, /href="https:\/\/max-webstudio-food-demo\.netlify\.app\/admin\/food"/);
+  assert.match(mail.text, /Bestelpagina voor klanten:/);
+  assert.match(mail.text, /Restaurantportaal voor beheer:/);
+  assert.doesNotMatch(mail.html, />Demo op computer bekijken</);
+  const preview = endpoint.publicMail(mail);
+  assert.equal(preview.storefrontUrl, demo.storefrontUrl);
+  assert.equal(preview.restaurantPortalUrl, demo.restaurantPortalUrl);
+});
+
+test("an incomplete food proposal fails closed before email delivery", () => {
+  assert.throws(() => buildCommercialOfferMail({ ...base, demo: { ...base.demo, type: "food", storefrontUrl: base.demo.mobileUrl }, mode: "test" }), /restaurant-demo mist/i);
+});
+
 test("offer validity is server-side, immutable, fourteen calendar days and fail-closed", () => {
   const manipulated = offerService.buildOfferVersion({
     paymentChoice: "fixed_deposit",
@@ -427,13 +451,16 @@ test("relative stored demo links become safe absolute production mail links", ()
     const demo = endpoint.mapDemo({
       id: "33333333-3333-4333-8333-333333333333",
       business_name: "Emmeloord Rotishop",
-      preview_url: "/preview/emmeloord-rotishop",
+      preview_url: "/preview/emmerloord-rotishop",
       preview_package: {},
     });
-    assert.equal(demo.desktopUrl, "https://maxwebstudio.nl/preview/emmeloord-rotishop");
-    assert.equal(demo.mobileUrl, demo.desktopUrl);
+    assert.equal(demo.desktopUrl, "https://maxwebstudio.nl/preview/emmerloord-rotishop");
+    assert.equal(demo.type, "food");
+    assert.equal(demo.storefrontUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
+    assert.equal(demo.restaurantPortalUrl, endpoint.SILVERADO_FOOD_DEMO.restaurantPortalUrl);
+    assert.equal(demo.mobileUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
     assert.match(demo.qrCodeUrl, /^https:\/\/maxwebstudio\.nl\/api\/commercial-offer-qr\?target=/);
-    assert.match(decodeURIComponent(demo.qrCodeUrl), /https:\/\/maxwebstudio\.nl\/preview\/emmeloord-rotishop/);
+    assert.match(decodeURIComponent(demo.qrCodeUrl), /max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord/);
     assert.doesNotThrow(() => buildCommercialOfferMail({ ...base, demo, mode: "preview" }));
   } finally {
     if (previousUrl === undefined) delete process.env.URL; else process.env.URL = previousUrl;
@@ -444,9 +471,11 @@ test("relative stored demo links become safe absolute production mail links", ()
 test("proposal mail uses the canonical Max Webstudio dark branding", () => {
   const mail = buildCommercialOfferMail({ ...base, mode: "test" });
   assert.match(mail.html, /supported-color-schemes/);
-  assert.match(mail.html, /max-webstudio-logo-mark\.svg/);
+  assert.match(mail.html, /assets\/maxwebstudio-logo-mark\.png/);
   assert.match(mail.html, /class="mws-card"/);
   assert.match(mail.html, /#061626/);
+  assert.match(mail.html, /bgcolor="#061626"/);
+  assert.doesNotMatch(mail.html, /rgba\(/);
   assert.match(mail.html, /wa\.me\/31851302326/);
   assert.match(mail.html, /@media\(max-width:620px\)/);
 });

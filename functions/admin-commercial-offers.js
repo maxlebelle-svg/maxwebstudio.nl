@@ -11,6 +11,10 @@ const { normalizeValidityDate, expiryIso, isExpired } = require("./services/comm
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const WRITE_ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "sales"];
 const PHASE_B_TRANSITIONS = new Set(["ready_for_review", "revoked", "superseded"]);
+const SILVERADO_FOOD_DEMO = Object.freeze({
+  storefrontUrl: "https://max-webstudio-food-demo.netlify.app/food/silverado-roti-shop-emmeloord",
+  restaurantPortalUrl: "https://max-webstudio-food-demo.netlify.app/admin/food",
+});
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(204, {});
@@ -289,7 +293,7 @@ async function loadMailContext(offerVersionId, actor, config, options = {}) {
 }
 
 function publicMail(mail) {
-  return { subject: mail.subject, html: mail.html, text: mail.text, desktopUrl: mail.desktopUrl, mobileUrl: mail.mobileUrl, qrCodeUrl: mail.qrCodeUrl, disclaimer: mail.disclaimer, validUntil: mail.validUntil };
+  return { subject: mail.subject, html: mail.html, text: mail.text, desktopUrl: mail.desktopUrl, mobileUrl: mail.mobileUrl, storefrontUrl: mail.storefrontUrl, restaurantPortalUrl: mail.restaurantPortalUrl, qrCodeUrl: mail.qrCodeUrl, disclaimer: mail.disclaimer, validUntil: mail.validUntil };
 }
 
 function offerExpiry(snapshot = {}) {
@@ -382,20 +386,36 @@ function mapRelationship(type, record) {
 function mapDemo(row) {
   const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
   const desktopUrl = absolutePreviewUrl(row.preview_url);
-  const mobileUrl = absolutePreviewUrl(meta.mobileUrl) || desktopUrl;
-  const qrTarget = absolutePreviewUrl(meta.qrTarget) || mobileUrl;
+  const foodDemo = isSilveradoFoodDemo(row, desktopUrl);
+  const storefrontUrl = foodDemo ? SILVERADO_FOOD_DEMO.storefrontUrl : "";
+  const restaurantPortalUrl = foodDemo ? SILVERADO_FOOD_DEMO.restaurantPortalUrl : "";
+  const mobileUrl = storefrontUrl || absolutePreviewUrl(meta.mobileUrl) || desktopUrl;
+  const qrTarget = storefrontUrl || absolutePreviewUrl(meta.qrTarget) || mobileUrl;
   return {
     id: row.id,
     name: clean(row.business_name || meta.name || "Demo"),
-    type: clean(meta.factoryType || meta.type || "website"),
+    type: foodDemo ? "food" : clean(meta.factoryType || meta.type || "website"),
     desktopUrl,
     mobileUrl,
+    storefrontUrl,
+    restaurantPortalUrl,
     qrTarget,
     qrCodeUrl: signedQrCodeUrl(qrTarget),
     status: clean(row.demo_status),
     expiresAt: clean(meta.expiresAt),
     updatedAt: row.updated_at,
   };
+}
+
+function isSilveradoFoodDemo(row = {}, desktopUrl = "") {
+  const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
+  const saved = meta.savedDemoSite || meta.saved_demo_site || {};
+  const identity = [row.business_name, row.preview_url, desktopUrl, meta.name, saved.businessName, saved.websiteUrl]
+    .map(clean)
+    .join(" ")
+    .toLowerCase();
+  const knownPreview = identity.includes("/preview/emmerloord-rotishop") || identity.includes("/preview/emmeloord-rotishop");
+  return knownPreview || (identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop")));
 }
 
 function signedQrCodeUrl(target) {
@@ -526,4 +546,4 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
-exports._private = { PHASE_B_TRANSITIONS, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, safePreviewUrl, absolutePreviewUrl, signedQrCodeUrl, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };
+exports._private = { PHASE_B_TRANSITIONS, SILVERADO_FOOD_DEMO, buildOfferVersion, validateDocuments, assertRelationshipAccess, assertLinkedResources, mapRelationship, mapDemo, isSilveradoFoodDemo, safePreviewUrl, absolutePreviewUrl, signedQrCodeUrl, phaseD1Enabled, isStagingDeployment, sha256, publicMail, offerExpiry, resolveDispatchRecipient };
