@@ -54,6 +54,7 @@ async function init() {
   bindCommercialPreflight();
   if (!routeContext.valid) return waitForRelationship();
   bindEvents();
+  const loadingToast = startComposerLoadToast();
   try {
     state.data = await request('GET', null, routeContext);
     state.recipientEmail = String(state.data.relationship?.email || '').trim();
@@ -62,9 +63,16 @@ async function init() {
     renderAll();
     if (selectedIds().length) await calculate();
     elements.composerApp.setAttribute('aria-busy', 'false');
+    loadingToast?.update('Voorstel Composer is klaar voor gebruik.', 'success', { duration: 3200 });
   } catch (error) {
+    loadingToast?.update('Voorstel Composer kon niet worden geladen.', 'error', { duration: 7000 });
     fatal(error.message || 'De Voorstel Composer kon niet veilig worden geladen.');
   }
+}
+
+function startComposerLoadToast() {
+  if (typeof window.showToast !== 'function') return null;
+  return window.showToast('Voorstelgegevens en prijzen laden…', 'info', { loading: true, persistent: true });
 }
 
 function waitForRelationship() {
