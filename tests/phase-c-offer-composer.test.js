@@ -273,6 +273,10 @@ test("33 document registry checksums match the published local documents", () =>
     const expected = documents.DOCUMENTS.find((doc) => doc.documentType === type).checksumSha256;
     assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(root, file))).digest("hex"), expected);
   }
+  const generalTerms = documents.DOCUMENTS.find((doc) => doc.documentType === "general_terms");
+  assert.equal(generalTerms.versionCode, "algemene-voorwaarden-2026-08");
+  assert.equal(generalTerms.effectiveFrom, "2026-08-02");
+  assert.match(read("functions/commercial-order.js"), /TERMS_VERSION = "algemene-voorwaarden-2026-08"/);
 });
 
 test("34 Phase D1 adds mail only and no signature, payment or external QR provider", () => {
