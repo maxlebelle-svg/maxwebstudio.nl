@@ -65,6 +65,20 @@ test("The deployed Signhost template is a real unsigned PDF", () => {
   assert.doesNotMatch(pdf.toString("latin1"), /FormXob\.edf35082acc3c16872083ee79456e2ad/);
 });
 
+test("Signhost smoke test can safely fall back to the public checksum-pinned test PDF", () => {
+  assert.equal(
+    smoke.publicTemplateUrl({ URL:"https://maxwebstudio.nl" }),
+    "https://maxwebstudio.nl/documents/max-webstudio-signhost-technische-test.pdf",
+  );
+  assert.equal(
+    smoke.publicTemplateUrl({ DEPLOY_PRIME_URL:"https://deploy-preview-34--maxwebstudionl.netlify.app" }),
+    "https://deploy-preview-34--maxwebstudionl.netlify.app/documents/max-webstudio-signhost-technische-test.pdf",
+  );
+  assert.throws(() => smoke.publicTemplateUrl({ URL:"http://maxwebstudio.nl" }), /veilige URL/i);
+  assert.match(read("functions/admin-signhost-smoke-test.js"), /path === TEMPLATE_PATH/);
+  assert.match(read("functions/admin-signhost-smoke-test.js"), /TEMPLATE_SHA256/);
+});
+
 test("Signed artifacts stay quarantined until malware scanning succeeds", () => {
   const endpoint = read("functions/signhost-postback.js");
   assert.match(endpoint, /status:"quarantined"/);
