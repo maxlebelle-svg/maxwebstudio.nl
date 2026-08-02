@@ -19,7 +19,7 @@ const {
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
-const TERMS_VERSION = "algemene-voorwaarden-2026-07";
+const TERMS_VERSION = "algemene-voorwaarden-2026-08";
 const PACKAGE_CATALOG = LEGACY_PACKAGE_CATALOG;
 const OPTION_CATALOG = LEGACY_OPTION_CATALOG;
 
