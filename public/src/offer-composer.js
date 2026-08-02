@@ -11,6 +11,7 @@ import {
   selectionsFromState,
   stateFromSnapshot,
   statusLabel,
+  validRecipientEmail,
 } from './offer-composer-core.mjs';
 
 const endpoint = '/api/admin-commercial-offers';
@@ -40,10 +41,11 @@ const state = {
   revokeInterestPending: false,
   revokeInterestTrigger: null,
   preflightPending: false,
+  recipientEmail: '',
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -54,6 +56,7 @@ async function init() {
   bindEvents();
   try {
     state.data = await request('GET', null, routeContext);
+    state.recipientEmail = String(state.data.relationship?.email || '').trim();
     state.selectedDocumentTypes = state.data.documents.filter((document) => document.required).map((document) => document.documentType);
     hydrateExistingOffer();
     renderAll();
@@ -224,14 +227,24 @@ function renderAll() {
   elements.catalogVersion.textContent = state.data.catalog.version;
   elements.websiteCatalogVersion.textContent = state.data.catalog.version;
   elements.catalogChecksum.textContent = `SHA-256 ${state.data.catalog.checksum.slice(0, 16)}…`;
+  elements.definitiveStagingWarning.hidden = !state.data?.capabilities?.stagingMail;
   renderRelationship(); renderFactory(); renderDemos(); renderCatalog(); renderDocuments(); renderHistory(); renderSummary(); renderReadiness(); renderStatus();
 }
 
 function renderRelationship() {
   const relation = state.data.relationship;
-  const values = [['Type', relation.type === 'lead' ? 'Lead' : 'Klant'], ['Bedrijf', relation.companyName || 'Ontbreekt'], ['Contactpersoon', relation.contactName || 'Ontbreekt'], ['E-mail', relation.email || 'Ontbreekt'], ['Telefoon', relation.phone || 'Ontbreekt'], ['Website', relation.website || 'Niet ingevuld']];
-  elements.relationshipCard.innerHTML = values.map(([label, value], index) => `<div class="${index > 3 ? 'wide' : ''}"><span>${escapeHtml(label)}</span><strong class="${value === 'Ontbreekt' ? 'missing' : ''}">${escapeHtml(value)}</strong></div>`).join('');
-  if (!relation.email) showMessage('E-mailadres ontbreekt. Conceptopslag blijft mogelijk; toekomstige mailstappen blijven geblokkeerd.', 'warning');
+  const values = [['Type', relation.type === 'lead' ? 'Lead' : 'Klant'], ['Bedrijf', relation.companyName || 'Ontbreekt'], ['Contactpersoon', relation.contactName || 'Ontbreekt'], ['Opgeslagen e-mail', relation.email || 'Ontbreekt'], ['Telefoon', relation.phone || 'Ontbreekt'], ['Website', relation.website || 'Niet ingevuld']];
+  elements.relationshipCard.innerHTML = values.map(([label, value], index) => `<div class="${index > 3 ? 'wide' : ''}"><span>${escapeHtml(label)}</span><strong class="${value === 'Ontbreekt' ? 'missing' : ''}">${escapeHtml(value)}</strong></div>`).join('') + `<label class="relation-recipient wide" for="relationship-recipient-email"><span>Verzendadres</span><input id="relationship-recipient-email" type="email" inputmode="email" autocomplete="email" maxlength="320" value="${escapeHtml(state.recipientEmail)}" placeholder="naam@bedrijf.nl" aria-describedby="relationship-recipient-help"/><small id="relationship-recipient-help">Dit adres ontvangt de definitieve klantmail. De lead of klant wordt niet aangepast.</small></label>`;
+  const input = document.getElementById('relationship-recipient-email');
+  input.addEventListener('input', () => {
+    state.recipientEmail = input.value;
+    input.setAttribute('aria-invalid', String(Boolean(input.value.trim()) && !validRecipientEmail(input.value)));
+    renderReadiness();
+  });
+  input.addEventListener('blur', () => {
+    if (input.value.trim() && !validRecipientEmail(input.value)) showMessage('Vul een geldig verzendadres in.', 'warning');
+  });
+  if (!state.recipientEmail) showMessage('E-mailadres ontbreekt. Vul hieronder het verzendadres voor deze offerte in.', 'warning');
 }
 
 function renderFactory() {
@@ -287,8 +300,9 @@ function renderSummary() {
 }
 
 function renderReadiness() {
-  const readiness = composerReadiness({ snapshot: state.snapshot, documents: activeDocuments(), selectedDocumentTypes: state.selectedDocumentTypes, email: state.data?.relationship?.email });
-  const savedDraft = state.currentVersionId && state.currentVersionStatus === 'draft' && !state.dirty;
+  const readiness = composerReadiness({ snapshot: state.snapshot, documents: activeDocuments(), selectedDocumentTypes: state.selectedDocumentTypes, email: effectiveRecipientEmail() });
+  const savedCurrentVersion = Boolean(currentVersion() && !state.dirty);
+  const savedDraft = savedCurrentVersion && state.currentVersionStatus === 'draft';
   elements.readyReview.disabled = !(readiness.readyForReview && savedDraft);
   elements.revokeVersion.disabled = !(state.currentVersionId && ['draft', 'ready_for_review'].includes(state.currentVersionStatus));
   elements.readinessList.innerHTML = [
@@ -296,15 +310,38 @@ function renderReadiness() {
     [!readiness.nonBinding, 'Alle prijzen zijn bindend bevestigd'],
     [readiness.missingDocuments.length === 0, 'Alle verplichte documenten zijn gekoppeld'],
     [readiness.invalidChecksums.length === 0, 'Alle documentchecksums zijn geldig'],
-    [savedDraft, 'Actuele inhoud is als immutable conceptversie opgeslagen'],
+    [savedCurrentVersion, 'Actuele inhoud is als immutable versie opgeslagen'],
   ].map(([ok, label]) => `<div class="${ok ? 'ok' : 'blocked'}">${ok ? '✓' : '○'} ${escapeHtml(label)}</div>`).join('');
   renderPreviewAvailability();
 }
 
 function renderHistory() {
   const offers = state.data?.history || [];
-  const versions = offers.flatMap((offer) => (offer.versions || []).map((version) => ({ ...version, offerTitle: offer.title, current: offer.current_version_id === version.id })));
-  elements.versionHistory.innerHTML = versions.length ? versions.map((version) => `<article class="version-item"><header><strong>Versie ${version.version_number} · ${escapeHtml(version.offerTitle)}</strong><span class="classification ${version.status}">${escapeHtml(statusLabel(version.status))}</span></header><dl><div><dt>Aangemaakt</dt><dd>${escapeHtml(formatDate(version.created_at))}</dd></div><div><dt>Actor</dt><dd>${escapeHtml(version.created_by_profile_id || 'Onbekend')}</dd></div><div><dt>Catalogus</dt><dd>${escapeHtml(version.catalog_version)}</dd></div><div><dt>Eenmalig</dt><dd>${money(Number(version.one_time_incl_vat_cents))}</dd></div><div><dt>Per maand</dt><dd>${money(Number(version.recurring_incl_vat_cents), { monthly: true })}</dd></div><div><dt>Documenten</dt><dd>${version.documents?.length || 0}</dd></div><div><dt>Maatwerk</dt><dd>${version.lines?.some((line) => line.price_classification === 'custom') ? 'Ja' : 'Nee'}</dd></div><div><dt>Reden</dt><dd>${escapeHtml(version.lifecycle_reason || version.internal_change_reason || '—')}</dd></div></dl></article>`).join('') : '<p>Nog geen opgeslagen versies voor deze relatie.</p>';
+  const versions = offers.flatMap((offer) => (offer.versions || []).map((version) => ({ ...version, offerId: offer.id, offerTitle: offer.title, demoJourneyId: offer.demo_journey_id, factoryProjectId: offer.factory_project_id, current: offer.current_version_id === version.id })));
+  elements.versionHistory.innerHTML = versions.length ? versions.map((version) => `<article class="version-item ${version.id === state.currentVersionId ? 'selected' : ''}"><header><strong>Versie ${version.version_number} · ${escapeHtml(version.offerTitle)}</strong><span class="classification ${version.status}">${escapeHtml(statusLabel(version.status))}</span></header><dl><div><dt>Aangemaakt</dt><dd>${escapeHtml(formatDate(version.created_at))}</dd></div><div><dt>Actor</dt><dd>${escapeHtml(version.created_by_profile_id || 'Onbekend')}</dd></div><div><dt>Catalogus</dt><dd>${escapeHtml(version.catalog_version)}</dd></div><div><dt>Eenmalig</dt><dd>${money(Number(version.one_time_incl_vat_cents))}</dd></div><div><dt>Per maand</dt><dd>${money(Number(version.recurring_incl_vat_cents), { monthly: true })}</dd></div><div><dt>Documenten</dt><dd>${version.documents?.length || 0}</dd></div><div><dt>Maatwerk</dt><dd>${version.lines?.some((line) => line.price_classification === 'custom') ? 'Ja' : 'Nee'}</dd></div><div><dt>Reden</dt><dd>${escapeHtml(version.lifecycle_reason || version.internal_change_reason || '—')}</dd></div></dl><button type="button" class="version-select" data-offer-id="${version.offerId}" data-version-id="${version.id}">${version.current ? (version.id === state.currentVersionId ? 'Geselecteerd voorstel' : 'Dit voorstel kiezen') : 'Oude bewijsversie bekijken'}</button></article>`).join('') : '<p>Nog geen opgeslagen versies voor deze relatie.</p>';
+  elements.versionHistory.querySelectorAll('.version-select').forEach((button) => button.addEventListener('click', selectHistoryVersion));
+}
+
+function selectHistoryVersion(event) {
+  const offer = (state.data?.history || []).find((item) => item.id === event.currentTarget.dataset.offerId);
+  const version = offer?.versions?.find((item) => item.id === event.currentTarget.dataset.versionId);
+  if (!offer || !version) return;
+  if (offer.current_version_id !== version.id) {
+    showMessage('Dit is een oude bewijsversie. Alleen de actuele versie van een voorstel kan veilig worden verzonden.', 'warning');
+    return;
+  }
+  Object.assign(state, stateFromSnapshot(version.snapshot || {}));
+  state.snapshot = version.snapshot || null;
+  state.currentOfferId = offer.id;
+  state.currentVersionId = version.id;
+  state.currentVersionStatus = version.status;
+  state.selectedDemoId = offer.demo_journey_id || '';
+  state.selectedFactoryProjectId = offer.factory_project_id || '';
+  state.selectedDocumentTypes = (version.documents || []).map((document) => document.document_type);
+  state.dirty = false;
+  elements.offerTitle.value = offer.title || 'Websitevoorstel';
+  renderAll();
+  showMessage(`Versie ${version.version_number} van ${offer.title} is geselecteerd voor controle en verzending.`, 'success');
 }
 
 function renderStatus() {
@@ -322,7 +359,7 @@ function renderPreviewAvailability() {
   const activeInterestTokens = (version?.interestTokens || []).filter((token) => !token.confirmed_at && !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
   elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
   elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
-  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed)) && previewed && tested && state.data?.relationship?.email && state.data?.capabilities?.definitiveSend);
+  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend);
   elements.revokeInterest.disabled = !(activeInterestTokens.length && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
   elements.interestAccessSummary.textContent = activeInterestTokens.length
     ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}`
@@ -431,7 +468,7 @@ async function transition(targetStatus) {
 }
 
 async function reloadContext() {
-  state.data = await request('GET', null, { ...routeContext, offerId: state.currentOfferId });
+  state.data = await request('GET', null, { relationshipType: routeContext.relationshipType, relationshipId: routeContext.relationshipId });
   const version = currentVersion();
   if (version) state.currentVersionStatus = version.status;
   renderHistory(); renderStatus(); renderReadiness();
@@ -449,7 +486,10 @@ async function openPreview() {
     elements.mailPreview.showModal();
     await reloadContext();
     showMessage('Het exacte servervoorbeeld is gecontroleerd en in de audittrail vastgelegd.', 'success');
-  } catch (error) { showMessage(error.message, 'error'); }
+  } catch (error) {
+    showMessage(error.message, 'error');
+    elements.composerMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
   finally { renderPreviewAvailability(); }
 }
 
@@ -467,7 +507,7 @@ async function sendTestMail() {
 function openDefinitiveSendDialog() {
   if (elements.definitiveSend.disabled || state.definitiveRequestPending) return;
   const demo = (state.data.demos || []).find((item) => item.id === state.selectedDemoId) || {};
-  const details = definitiveConfirmationDetails({ relationship: state.data.relationship, demo, snapshot: state.snapshot });
+  const details = definitiveConfirmationDetails({ relationship: { ...state.data.relationship, email: effectiveRecipientEmail() }, demo, snapshot: state.snapshot });
   elements.confirmCompany.textContent = details.companyName;
   elements.confirmRecipient.textContent = details.maskedEmail;
   elements.confirmDemo.textContent = details.demoName;
@@ -596,7 +636,7 @@ async function sendDefinitiveMail() {
   elements.confirmDefinitiveSend.textContent = 'Veilig verzenden…';
   elements.definitiveSendResult.textContent = 'De server controleert de actuele status en verstuurt maximaal één e-mail…';
   try {
-    await request('POST', { action: 'definitive_send', offerVersionId: state.currentVersionId, actionKey: state.definitiveActionKey });
+    await request('POST', { action: 'definitive_send', offerVersionId: state.currentVersionId, actionKey: state.definitiveActionKey, recipientEmail: effectiveRecipientEmail() });
     await reloadContext();
     elements.definitiveSendResult.textContent = 'Verzending bevestigd.';
     elements.definitiveSendDialog.close();
@@ -635,6 +675,7 @@ function activeDocuments() {
 }
 
 function selectedIds() { return [state.websiteProductId, state.careProductId, ...state.addOnIds].filter(Boolean); }
+function effectiveRecipientEmail() { return String(state.recipientEmail || '').trim().toLowerCase(); }
 function currentVersion() { return state.data?.history?.flatMap((offer) => offer.versions || []).find((version) => version.id === state.currentVersionId); }
 function productChoice(product, name, selected) { const once = product.components.find((item) => item.type === 'one_time'); const recurring = product.components.find((item) => item.type === 'recurring'); return `<label class="choice-card"><input type="radio" name="${name}" value="${product.id}" ${selected === product.id ? 'checked' : ''}/><strong>${escapeHtml(product.name)}</strong><span>${escapeHtml(product.description)}</span><small>${escapeHtml(classificationLabel(product.classification))}</small><span class="choice-price">${once ? money(once.amountExVatCents ?? once.startingAmountExVatCents) : money(recurring?.amountExVatCents ?? recurring?.startingAmountExVatCents, { monthly: true })} excl. btw${product.fixedDepositExVatCents ? ` · aanbetaling ${money(product.fixedDepositExVatCents)}` : ''}</span></label>`; }
 function choiceNone(name, label, checked) { return `<label class="choice-card"><input type="radio" name="${name}" value="" ${checked ? 'checked' : ''}/><strong>${label}</strong><span>Geen keuze voor deze categorie.</span><span class="choice-price">${money(0)}</span></label>`; }
