@@ -17,7 +17,7 @@ const DOCUMENTS = Object.freeze([
   template("agreement", "Overeenkomsttemplate", "commercial-agreement-2026-08-b2b", "commercial-agreement-v2", AGREEMENT_TEMPLATE_V2, true, "2026-08-02"),
   published("general_terms", "Algemene voorwaarden", "algemene-voorwaarden-2026-08-b2b", `${SITE_URL}/algemene-voorwaarden.html`, "c5056d92262129818f8b0f3c0aa6e68472fc31223f8eec961b10d1dc239e6616", true, false, "2026-08-02"),
   published("hosting_maintenance_terms", "Hosting- en onderhoudsvoorwaarden", "hosting-onderhoud-2026-08", `${SITE_URL}/hosting-onderhoud-voorwaarden.html`, "2799b1b442d3759377beeaa09f7b35048a3810039fcd11aed59badebc39593b5", false, true, "2026-08-02"),
-  published("privacy_policy", "Privacyverklaring", "privacyverklaring-2026-07", `${SITE_URL}/privacyverklaring.html`, "bf9d304f1dbff5dabf08af716751d78c11605a199ba39a8482fb1d16fc85b0f0", true),
+  published("privacy_policy", "Privacyverklaring", "privacyverklaring-2026-08", `${SITE_URL}/privacyverklaring.html`, "ce05bdd9beb453af58e57be890d433c48f1d6865c6a403924961d77e7694f0f2", true, false, "2026-08-02"),
 ]);
 
 function template(documentType, name, versionCode, templateCode, canonicalTemplate, required, effectiveFrom = "2026-07-30") {
