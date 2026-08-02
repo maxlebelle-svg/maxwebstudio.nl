@@ -349,3 +349,24 @@ test("42 every bound document can be opened and inspected before selection", () 
   assert.match(css, /\.document-preview-button/);
   assert.match(css, /\.document-preview-dialog/);
 });
+
+test("43 agreement template is a complete B2B contract bound to an immutable proposal version", () => {
+  const agreement = documents.DOCUMENTS.find((document) => document.documentType === "agreement");
+  assert.equal(agreement.versionCode, "commercial-agreement-2026-08-b2b");
+  assert.equal(agreement.templateCode, "commercial-agreement-v2");
+  assert.equal(agreement.effectiveFrom, "2026-08-02");
+  assert.match(agreement.checksumSha256, /^[a-f0-9]{64}$/);
+  for (const phrase of [
+    "Uitsluitend zakelijke overeenkomst",
+    "Voorstelreferentie en integriteit",
+    "Afspraken over de uitvoering",
+    "Toepasselijke documenten en volgorde",
+    "Zakelijke akkoordverklaring",
+    "bevoegde vertegenwoordiger",
+  ]) assert.match(browser, new RegExp(phrase));
+  assert.match(browser, /snapshot\.checksum/);
+  assert.match(browser, /storedVersion\?\.version_number/);
+  assert.match(browser, /relationship\.kvkNumber/);
+  assert.match(endpoint, /kvkNumber: clean\(record\.kvk_number \|\| record\.kvk \|\| metadata\.kvkNumber\)/);
+  assert.match(browser, /Conceptweergave/);
+});
