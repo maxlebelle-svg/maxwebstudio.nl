@@ -38,7 +38,10 @@ test("Factory exposes only eligible builds through the browser review queue", ()
   assert.match(endpoint, /BROWSER_QUEUE_MANAGER_REQUIRED/);
   assert.match(endpoint, /managerRoles\.has\(cleanText\(context\.admin\?\.role\)\)/);
   assert.match(endpoint, /qualityReport\?\.readiness\?\.customerPreview !== true/);
-  assert.match(endpoint, /\["completed", "browser_review_required"\]\.includes\(job\.currentStep\)/);
+  assert.match(endpoint, /qualityReport\?\.browserReview\?\.required === true/);
+  assert.match(endpoint, /qualityReport\?\.browserReview\?\.status === "not_run"/);
+  assert.match(endpoint, /qualityReport\?\.readiness\?\.reason === "browser_review_required"/);
+  assert.match(endpoint, /qualityReport\?\.browserRepair\?\.status === "awaiting_recheck"/);
   assert.match(endpoint, /isUsableGeneratedPackage\(job\.generatedPackage\)/);
 });
 
