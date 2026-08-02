@@ -19,16 +19,17 @@ const retryableStatusMigration = fs.readFileSync(path.join(root, "supabase/migra
 function buildQuick(journey = {}, briefing = "") {
   const generatedPackage = buildWebsitePackage({
     journey: { businessName: "FatTrek", packageType: "starter", ...journey },
-    briefing: briefing || "Branche: outdoor en reizen\nPlaats: Almere\nDoel: relevante aanvragen",
+    briefing: briefing || "Branche: hovenier\nPlaats: Almere\nDiensten: Tuinontwerp, Tuinaanleg, Tuinonderhoud\nDoel: relevante aanvragen",
     version: 1,
   });
   return { generatedPackage, quality: runQualityCheck({ generatedPackage, journey }) };
 }
 
-test("new lead can build with only a business name", () => {
+test("new lead with only a business name is blocked until the branche is known", () => {
   const { generatedPackage, quality } = buildQuick({}, "Doel: relevante aanvragen");
   assert.equal(generatedPackage.businessName, "FatTrek");
-  assert.equal(quality.passed, true);
+  assert.equal(quality.passed, false);
+  assert.ok(quality.blockingChecks.some((item) => item.id === "industry_context_specific"));
 });
 
 test("package persistence has a bounded extended timeout and retryable status is deployable", () => {
@@ -72,7 +73,7 @@ test("valid website with failed scan still builds from briefing data", () => {
   const { generatedPackage, quality } = buildQuick({
     websiteUrl: "https://fattrek.nl",
     websiteAnalysis: { ok: false, error: "scan_failed" },
-  }, "Branche: outdoor en reizen\nPlaats: Almere");
+  }, "Branche: hovenier\nPlaats: Almere\nDiensten: Tuinontwerp, Tuinaanleg, Tuinonderhoud");
   assert.equal(generatedPackage.meta.websiteUrl, "https://fattrek.nl");
   assert.equal(generatedPackage.meta.currentWebsite.sourceUrl, "");
   assert.equal(quality.passed, true);
@@ -309,7 +310,7 @@ test("normal build stores one renderable preview version after Hero validation",
   const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
   const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
   const job = { id: jobId, demo_journey_id: journeyId, status: "queued", current_step: "queued", progress: 5, preview_version: 1, build_logs: [], created_by: "admin-id" };
-  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "Branche: outdoor en reizen", created_by: "admin-id" };
+  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "Branche: hovenier\nDiensten: Tuinontwerp, Tuinaanleg, Tuinonderhoud", created_by: "admin-id" };
   const previewWrites = [];
   const jobWrites = [];
   const previousFetch = global.fetch;

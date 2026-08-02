@@ -1723,6 +1723,10 @@ function deriveFactoryServerState({ journey = null, latestJob = null, activeVers
   const approved = previewRenderable && (cleanText(activeVersion?.status) === "approved" || Boolean(cleanText(activeVersion?.approvedAt)));
   const hasBuildContext = Boolean(latestJob?.id || previewStored);
   const briefingReady = hasBuildContext || Boolean(cleanText(journey?.generatedBriefing));
+  const intelligence = journey?.previewPackage?.websiteIntelligencePackage || journey?.previewPackage?.websiteIntelligence || null;
+  const researchReady = Boolean(intelligence && (cleanText(intelligence.lastScannedAt) || intelligence.aiBriefing || intelligence.websiteIntelligence || intelligence.websiteScanRaw));
+  const qualityReport = latestJob?.qualityReport || activeVersion?.qualityReport || {};
+  const customerPreviewReady = qualityReport?.readiness?.customerPreview === true;
   const state = !briefingReady
     ? "briefing_required"
     : buildRunning
@@ -1743,8 +1747,8 @@ function deriveFactoryServerState({ journey = null, latestJob = null, activeVers
   return {
     state,
     briefingReady,
-    researchReady: hasBuildContext || Boolean(journey?.previewPackage?.websiteIntelligence || journey?.previewPackage?.websiteIntelligencePackage),
-    scanReady: hasBuildContext || Boolean(journey?.previewPackage?.websiteIntelligence || journey?.previewPackage?.websiteIntelligencePackage),
+    researchReady,
+    scanReady: researchReady,
     buildRunning,
     buildRetryable,
     buildFailed,
@@ -1752,6 +1756,8 @@ function deriveFactoryServerState({ journey = null, latestJob = null, activeVers
     previewStored,
     previewRenderable,
     previewEditable,
+    internalPreviewReady: previewRenderable,
+    customerPreviewReady,
     published,
     approved,
     feedbackCount: Number(activeVersion?.feedbackCount || 0),
@@ -2139,6 +2145,10 @@ function mapJourney(row = {}) {
     generatedBriefing: cleanText(row.generated_briefing),
     previewUrl: cleanText(row.preview_url),
     previewPackage: row.preview_package && typeof row.preview_package === "object" ? row.preview_package : null,
+    intake: row.intake_json && typeof row.intake_json === "object" ? row.intake_json : row.preview_package?.intake || null,
+    intakeSummary: cleanText(row.intake_summary || row.preview_package?.intakeSummary),
+    intakeCompleteness: Number(row.intake_completeness || row.preview_package?.intakeCompleteness || 0),
+    assetMetadata: Array.isArray(row.asset_metadata) ? row.asset_metadata : row.preview_package?.assetMetadata || [],
     packageType: cleanText(row.preview_package?.meta?.packageType || row.preview_package?.packageType || ""),
     internalNotes: cleanText(row.internal_notes),
     assignedTo: cleanText(row.assigned_to),

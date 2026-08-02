@@ -4,6 +4,7 @@ const WEBSITE_BRIEF_SCHEMA_VERSION = "mws.website-brief.v1";
 
 function buildWebsiteBrief({ journey = {}, briefing = "" } = {}) {
   const supplied = object(journey.websiteBrief || journey.website_brief);
+  const intake = object(journey.intake || journey.intake_json || journey.previewPackage?.intake || journey.preview_package?.intake || journey.previewPackage?.factoryInput?.intake);
   const suppliedBusiness = object(supplied.business);
   const suppliedBrand = object(supplied.brand);
   const suppliedSite = object(supplied.site);
@@ -18,7 +19,7 @@ function buildWebsiteBrief({ journey = {}, briefing = "" } = {}) {
   const brief = {
     schemaVersion: WEBSITE_BRIEF_SCHEMA_VERSION,
     source: {
-      kind: text(supplied.source?.kind) || (Object.keys(supplied).length ? "structured_intake" : "legacy_briefing"),
+      kind: text(supplied.source?.kind) || (Object.keys(supplied).length ? "structured_intake" : Object.keys(intake).length ? "factory_intake" : "legacy_briefing"),
       rawBriefing,
       createdAt: text(supplied.source?.createdAt),
     },
@@ -27,17 +28,19 @@ function buildWebsiteBrief({ journey = {}, briefing = "" } = {}) {
       contactName: text(supplied.identity?.contactName || journey.contactName || journey.contact_name),
     },
     business: {
-      industry: text(suppliedBusiness.industry) || extractField(rawBriefing, ["Branche/regio", "Branche"]),
-      audience: text(suppliedBusiness.audience),
-      region: text(suppliedBusiness.region) || extractField(rawBriefing, ["Regio", "Plaats", "Werkgebied"]),
-      services: list(suppliedBusiness.services),
-      uniqueValue: text(suppliedBusiness.uniqueValue),
-      goals: list(suppliedBusiness.goals),
-      toneOfVoice: text(suppliedBusiness.toneOfVoice),
+      industry: text(suppliedBusiness.industry) || intakeIndustry(intake.branch) || extractField(rawBriefing, ["Branche/regio", "Branche"]),
+      audience: text(suppliedBusiness.audience) || intakeAudience(intake.audience),
+      region: text(suppliedBusiness.region || intake.regionText) || extractField(rawBriefing, ["Regio", "Plaats", "Werkgebied"]),
+      services: list(suppliedBusiness.services).length
+        ? list(suppliedBusiness.services)
+        : intakeServices(intake.services).length ? intakeServices(intake.services) : list(extractField(rawBriefing, ["Diensten", "Services", "Aanbod"])),
+      uniqueValue: text(suppliedBusiness.uniqueValue || intake.internalRemark),
+      goals: list(suppliedBusiness.goals).length ? list(suppliedBusiness.goals) : list(intakeGoal(intake.goal)),
+      toneOfVoice: text(suppliedBusiness.toneOfVoice) || list(intake.style).map(humanize).join(", "),
     },
     brand: {
-      desiredStyle: text(suppliedBrand.desiredStyle),
-      colorPreference: text(suppliedBrand.colorPreference),
+      desiredStyle: text(suppliedBrand.desiredStyle) || list(intake.style).map(humanize).join(", "),
+      colorPreference: text(suppliedBrand.colorPreference) || list(intake.colors).map(humanize).join(", "),
       colors: palette(suppliedBrand.colors),
       blockedColors: list(suppliedBrand.blockedColors),
       logoAsset: text(suppliedBrand.logoAsset),
@@ -45,9 +48,9 @@ function buildWebsiteBrief({ journey = {}, briefing = "" } = {}) {
     site: {
       websiteUrl: text(suppliedSite.websiteUrl || journey.websiteUrl || journey.website_url),
       desiredPages: list(suppliedSite.desiredPages),
-      primaryCta: text(suppliedSite.primaryCta) || extractField(rawBriefing, ["CTA", "CTA's", "CTA voorkeur", "Call to action"]),
+      primaryCta: text(suppliedSite.primaryCta) || intakeCta(intake.cta) || extractField(rawBriefing, ["CTA", "CTA's", "CTA voorkeur", "Call to action"]),
       secondaryCta: text(suppliedSite.secondaryCta),
-      packageType: text(suppliedSite.packageType || journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name),
+      packageType: text(suppliedSite.packageType || intake.package || journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name),
     },
     seo: {
       keywords: list(suppliedSeo.keywords),
@@ -75,6 +78,70 @@ function buildWebsiteBrief({ journey = {}, briefing = "" } = {}) {
   };
 
   return deepFreeze(brief);
+}
+
+const INTAKE_INDUSTRIES = Object.freeze({
+  boomverzorging: "Boomverzorging en boombeheer",
+  hovenier: "Hovenier en tuinonderhoud",
+  rijschool: "Rijschool",
+  installatiebedrijf: "Installatiebedrijf",
+  tegelzetbedrijf: "Tegelzetbedrijf",
+  bouwbedrijf: "Bouwbedrijf",
+  horeca: "Horeca en restaurant",
+  automotive: "Autobedrijf en garage",
+  schoonmaakbedrijf: "Schoonmaakbedrijf",
+  verhuisbedrijf: "Verhuisbedrijf",
+  zakelijk: "Zakelijke dienstverlening",
+});
+
+const INTAKE_SERVICES = Object.freeze({
+  bomen_snoeien: "Bomen snoeien",
+  boom_snoeien: "Bomen snoeien",
+  boominspectie: "Boominspectie",
+  bomen_verwijderen: "Bomen verwijderen",
+  boom_verwijderen: "Bomen verwijderen",
+  stormschade: "Stormschade en veiligheid",
+  stobben_frezen: "Stobben frezen",
+  boomadvies: "Boomadvies en beheer",
+  boomverzorging: "Boomverzorging",
+});
+
+const INTAKE_CTAS = Object.freeze({
+  quote: "Vraag vrijblijvend een offerte aan",
+  appointment: "Plan een afspraak",
+  call: "Bel direct",
+  whatsapp: "Stuur een WhatsApp-bericht",
+  contact: "Neem contact op",
+  free_appointment: "Plan een vrijblijvende afspraak",
+  route: "Bekijk de route",
+  book: "Boek direct",
+  trial: "Plan een proefafspraak",
+});
+
+function intakeIndustry(value) {
+  const key = text(value).toLowerCase();
+  return INTAKE_INDUSTRIES[key] || humanize(key);
+}
+
+function intakeServices(value) {
+  return list(value).map((item) => INTAKE_SERVICES[text(item).toLowerCase()] || humanize(item));
+}
+
+function intakeAudience(value) {
+  return ({ particulier: "Particulieren", zakelijk: "Zakelijke klanten", beide: "Particulieren en zakelijke klanten", premium: "Premium klanten" })[text(value).toLowerCase()] || humanize(value);
+}
+
+function intakeGoal(value) {
+  return ({ leads: "Meer gerichte aanvragen", appointment: "Meer afspraken", call: "Meer telefoongesprekken", whatsapp: "Meer WhatsApp-gesprekken", trust: "Meer vertrouwen", portfolio: "Werk en resultaten tonen", information: "Diensten duidelijk uitleggen" })[text(value).toLowerCase()] || humanize(value);
+}
+
+function intakeCta(value) {
+  return INTAKE_CTAS[text(value).toLowerCase()] || humanize(value);
+}
+
+function humanize(value) {
+  const clean = text(value).replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return clean ? `${clean.charAt(0).toUpperCase()}${clean.slice(1)}` : "";
 }
 
 function websiteBriefToFactoryBriefing(brief = {}) {

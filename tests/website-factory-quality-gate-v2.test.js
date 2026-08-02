@@ -71,6 +71,51 @@ test("quality checks expose stable identifiers, categories and criticality", () 
   assert.equal(report.checks.find((item) => item.id === "hero_visual_present").category, "visualFoundation");
 });
 
+test("tree-care output is specific, packaged locally and never falls back to generic sales copy", () => {
+  const generated = buildWebsitePackage({
+    journey: { businessName: "Boomverzorging Drenthe", websiteUrl: "https://boomverzorgingdrenthe.nl", packageType: "starter" },
+    version: 2,
+  });
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Boomverzorging Drenthe" } });
+  const imagePaths = generated.files.filter((file) => /^assets\/.+\.(?:jpe?g|png|webp)$/i.test(file.path)).map((file) => file.path);
+
+  assert.equal(generated.meta.industryId, "boomverzorging");
+  assert.equal(generated.meta.industryProfile, "boomverzorging");
+  assert.ok(generated.meta.contentQuality.classificationConfidence >= 0.8);
+  assert.deepEqual(generated.meta.services.slice(0, 3), ["Bomen snoeien", "Boominspectie", "Bomen verwijderen"]);
+  assert.match(html, /Bomen snoeien/);
+  assert.match(html, /Boominspectie/);
+  assert.match(html, /Vraag een boominspectie aan/);
+  assert.match(html, /Vakkundig boomwerk voor iedere situatie/);
+  assert.match(html, /Boominspectie aanvragen/);
+  assert.doesNotMatch(html, /Een lokale specialist die online direct professioneel overkomt|Bekijk producten|Maakt praktisch duidelijk wat er gebeurt|huidadvies|huidvraag|behandeling plannen|persoonlijke verzorging/i);
+  assert.match(html, /data-mws-field="secondary-cta" href="#diensten"/);
+  assert.ok(imagePaths.length >= 5);
+  assert.ok(imagePaths.every((path) => path.startsWith("assets/boomverzorging-")));
+  assert.equal(report.passed, true);
+  assert.equal(report.checks.find((item) => item.id === "industry_context_specific").passed, true);
+  assert.equal(report.checks.find((item) => item.id === "no_cross_industry_copy").passed, true);
+});
+
+test("unknown companies are blocked instead of receiving a polished-looking generic preview", () => {
+  const generated = buildWebsitePackage({ journey: { businessName: "Voorbeeldbedrijf" }, version: 1 });
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Voorbeeldbedrijf" } });
+
+  assert.equal(report.passed, false);
+  assert.equal(report.readiness.customerPreview, false);
+  assert.ok(report.blockingChecks.some((item) => item.id === "industry_context_specific"));
+  assert.ok(report.blockingChecks.some((item) => item.id === "no_generic_fallback_copy"));
+});
+
+test("publication backend rejects an unapproved Factory version but keeps manual ZIP compatibility", () => {
+  assert.throws(
+    () => require("../functions/admin-preview-publication")._private.assertCustomerPreviewQualityReady({ generated_package: { meta: { previewSource: "factory_build" } }, quality_report: { readiness: { customerPreview: false }, browserReview: { status: "not_run" } } }),
+    (error) => error.code === "PREVIEW_QUALITY_NOT_APPROVED" && error.status === 409,
+  );
+  assert.equal(require("../functions/admin-preview-publication")._private.assertCustomerPreviewQualityReady({ generated_package: { meta: { previewSource: "manual_zip" } } }), true);
+});
+
 test("beauty output uses treatment language and includes the mobile overflow safeguards", () => {
   const generated = buildWebsitePackage({
     journey: { businessName: "Studio Morgen", packageType: "starter" },

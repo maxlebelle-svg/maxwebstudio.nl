@@ -171,6 +171,28 @@ const INDUSTRY_PROFILES = [
       ["Afspraak rondmaken", "De klant weet direct wanneer de auto klaar is of welke vervolgstap nodig is."],
     ],
   }),
+  profile("tree-care", ["boomverzorging", "boomverzorger", "boombeheer", "boomspecialist", "arborist", "boominspectie", "bomen snoeien", "boom snoeien", "bomen kappen", "boom kappen", "stobben frezen", "stormschade"], {
+    label: "Boomverzorging en boombeheer",
+    colors: { ink: "#152019", brand: "#28543a", accent: "#d19a47", soft: "#f2f4ed", dark: "#193324" },
+    hero: "Gezonde bomen, veilig verzorgd en vakkundig beheerd.",
+    intro: "Voor particulieren, bedrijven en beheerders die bomen veilig willen laten inspecteren, snoeien, verzorgen of verwijderen.",
+    eyebrow: "Boomverzorging, veiligheid en duurzaam beheer",
+    cta: "Vraag een boominspectie aan",
+    secondaryCta: "Bekijk de diensten",
+    services: ["Bomen snoeien", "Boominspectie", "Bomen verwijderen", "Stormschade en veiligheid", "Stobben frezen", "Boomadvies en beheer"],
+    benefits: [
+      ["Veilig uitgevoerd", "De aanpak begint met een duidelijke beoordeling van boom, omgeving en bereikbaarheid."],
+      ["Vakkundig boomwerk", "Snoei, verzorging en verwijdering worden afgestemd op de situatie en het gewenste resultaat."],
+      ["Duidelijke afspraken", "U weet vooraf welke werkzaamheden nodig zijn en hoe het terrein wordt achtergelaten."],
+      ["Lokaal en betrokken", "Korte lijnen maken inspectie, planning en uitvoering overzichtelijk."],
+    ],
+    process: [
+      ["Situatie bespreken", "Vertel om welke boom of bomen het gaat en wat u wilt laten beoordelen."],
+      ["Inspectie en advies", "De situatie, veiligheid en passende werkwijze worden vooraf duidelijk in kaart gebracht."],
+      ["Werk inplannen", "U ontvangt een heldere aanpak en planning voor het boomwerk."],
+      ["Veilig uitvoeren", "Het werk wordt zorgvuldig uitgevoerd en de werkplek wordt netjes achtergelaten."],
+    ],
+  }),
   profile("garden", ["hovenier", "tuin", "tuinaanleg", "groen", "buitenruimte"], {
     label: "Tuin en buitenruimte",
     colors: { ink: "#17231b", brand: "#2f5d45", accent: "#d4a24a", soft: "#f2f4ed", dark: "#243b2d" },
@@ -326,6 +348,17 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const heroImage = demoImageAssets.hero || resolveDemoImageAsset({ businessName, industry, services, briefing: industrySignals });
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
+  const genericServiceLabels = new Set(["advies", "uitvoering", "service", "onderhoud", "contact", "maatwerk", "projecten"]);
+  const specificServices = services.filter((service) => !genericServiceLabels.has(cleanText(service).toLowerCase()));
+  const factoryIndustrySpecific = !["", "local"].includes(cleanText(factoryConfig.industry.id).toLowerCase());
+  const contentQuality = {
+    classificationConfidence: Math.max(Number(intelligenceProfile.confidence || 0), factoryIndustrySpecific ? 0.72 : 0),
+    industrySpecific: factoryIndustrySpecific || (intelligenceProfile.subcategory !== "neutrale-lokale-dienstverlener" && Number(intelligenceProfile.confidence || 0) >= 0.45),
+    specificServiceCount: specificServices.length,
+    specificServices,
+    genericFallbackUsed: !factoryIndustrySpecific && intelligenceProfile.subcategory === "neutrale-lokale-dienstverlener",
+    inputSignalCount: inputSignals,
+  };
   const templateSections = packageRules.sections;
   const pages = packageRules.pages;
   const siteUrl = normalizeSiteUrl(websiteUrl, businessName);
@@ -398,6 +431,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     visualDirection: "premium industry landing page",
     templateSections,
     lowInputWarning,
+    contentQuality,
     warnings: lowInputWarning ? ["Weinig klantinput beschikbaar; premium branchecopy en veilige demo-assets gebruikt."] : [],
     customerWishes: combinedBriefing,
     sourceWebsiteContent: currentWebsiteText,
@@ -662,6 +696,9 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const htmlPageCount = files.filter((file) => file.path.endsWith(".html")).length;
   const assetCount = files.filter((file) => file.path.startsWith("assets/")).length;
   const hasFile = (path) => files.some((file) => file.path === path);
+  const contentQuality = generatedPackage.meta?.contentQuality || {};
+  const genericFallbackCopy = /Een lokale specialist die online direct professioneel overkomt|Service, vertrouwen en contact/i.test(html);
+  const crossIndustryCopyClean = industryId !== "boomverzorging" || !/huidadvies|huidvraag|behandeling plannen|behandelingen en advies|persoonlijke verzorging/i.test(html);
   const checks = [
     check("hero_present", "Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10, "visualFoundation", true),
     check("hero_visual_present", "Hero visual aanwezig", /class="[^"]*hero/i.test(html) && /<img[^>]+src=/i.test(html), 12, "visualFoundation"),
@@ -686,10 +723,14 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
     check("cta_has_label", "CTA niet leeg", />\s*(Plan|Vraag|Neem|Bel|Start|Bekijk)[^<]+</i.test(html), 4, "conversion", true),
     check("html_document_valid", "HTML basis klopt", /<!doctype html>/i.test(html) && /<\/html>/i.test(html) && /<\/body>/i.test(html), 6, "technical", true),
     check("script_static_safe", "Script statisch veilig", script ? !/document\.write|eval\(|fetch\(/i.test(script) : true, 4, "technical", true),
-    check("industry_content_present", "Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())) || /branche|diensten/i.test(html), 8, "content"),
+    check("industry_content_present", "Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())), 8, "content", true),
+    check("industry_context_specific", "Branche betrouwbaar herkend", contentQuality.industrySpecific === true, 12, "content", true),
+    check("services_are_specific", "Minimaal twee concrete diensten", Number(contentQuality.specificServiceCount || 0) >= 2, 10, "content", true),
+    check("no_generic_fallback_copy", "Geen generieke noodcopy", contentQuality.genericFallbackUsed !== true && !genericFallbackCopy, 10, "content", true),
+    check("no_cross_industry_copy", "Geen tekst uit een andere branche", crossIndustryCopyClean, 12, "content", true),
     check("preview_has_substance", "Geen kale preview", css.length > 3500 && html.length > 6000, 10, "visualFoundation"),
     check("css_present", "CSS aanwezig", css.length > 1200, 6, "technical", true),
-    check("local_assets_present", "Lokale assets aanwezig", assetCount >= 4 && hasFile("assets/hero.svg") && hasFile("assets/logo.svg"), 10, "visualFoundation"),
+    check("local_assets_present", "Lokale assets aanwezig", assetCount >= 4 && files.some((file) => /^assets\/(?:[^/]+-)?hero\.(?:avif|gif|jpe?g|png|webp|svg)$/i.test(file.path)) && hasFile("assets/logo.svg"), 10, "visualFoundation"),
     check("seo_files_present", "SEO pakket aanwezig", hasFile("sitemap.xml") && hasFile("robots.txt") && hasFile(".htaccess"), 8, "technical"),
     check("social_assets_present", "Favicon en social preview aanwezig", hasFile("assets/favicon.svg") && hasFile("assets/og-image.svg"), 7, "visualFoundation"),
     check("request_form_fallback", "Aanvraagformulier werkt zonder backend", /requestForm/.test(script) && /mailto:/.test(script), 6, "conversion"),
@@ -971,6 +1012,7 @@ function extractServices(text = "", industry = "") {
   if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return ["Badkamer betegelen", "Vloertegels", "Wandtegels", "Natuursteen", "Voeg- en kitwerk"];
   if (/autoairco|auto-airco|auto airco/.test(normalized)) return ["Airco service", "Airco onderhoud", "Diagnose", "Reparatie", "Afspraak maken"];
   if (/autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return ["Onderhoud", "APK", "Diagnose", "Reparatie", "Occasions"];
+  if (/boomverzorg|boomverzorger|boombeheer|boomspecialist|arborist|boominspectie|bomen?\s+(?:snoeien|kappen|rooien|verwijderen)|stobben?\s+frezen|stormschade/.test(normalized)) return ["Bomen snoeien", "Boominspectie", "Bomen verwijderen", "Stormschade en veiligheid", "Stobben frezen", "Boomadvies en beheer"];
   if (/timmer|timmerwerk|timmerwerken|timmerbedrijf|timmerman|zolder|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn/.test(normalized)) return ["Zolderverbouwing", "Dakkapel afwerking", "Vliering plaatsen", "Overkapping en tuinhuis", "Gevelbekleding", "Kozijnen en maatwerk"];
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return ["Renovatie", "Maatwerk", "Projectbegeleiding"];
   if (/restaurant|horeca|cafe|catering/.test(normalized)) return ["Menu", "Reserveren", "Catering"];
@@ -998,6 +1040,7 @@ function inferIndustry(text = "", businessName = "") {
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return "rijschool";
   if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return "tegelwerk en betegeling";
   if (/autoairco|auto-airco|auto airco|autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return "automotive";
+  if (/boomverzorg|boomverzorger|boombeheer|boomspecialist|arborist|boominspectie|bomen?\s+(?:snoeien|kappen|rooien|verwijderen)|stobben?\s+frezen|stormschade/.test(normalized)) return "boomverzorging en boombeheer";
   if (/timmer|timmerwerk|timmerwerken|timmerbedrijf|timmerman|zolder|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn/.test(normalized)) return "timmerwerk en maatwerk";
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return "bouw en renovatie";
   if (/restaurant|horeca|cafe/.test(normalized)) return "horeca";
@@ -1190,10 +1233,10 @@ function serviceSpecificDemoAsset({ service = "", industryProfile = {}, demoImag
 function serviceImageRoleForText(serviceText = "", profileKey = "") {
   const text = `${serviceText} ${profileKey}`;
   if (/contact|bel|whatsapp|afspraak|reserver|boeken|aanmeld|inschrijf|intake|kennismaking|offerte|aanvraag/.test(text)) return "contact";
-  if (/advies|consult|controle|diagnose|inspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan|tegel|voeg|kit|natuursteen/.test(text)) return "detail";
+  if (/advies|consult|controle|diagnose|inspectie|boominspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan|tegel|voeg|kit|natuursteen/.test(text)) return "detail";
   if (/team|begeleiding|instruct|persoonlijk|coaching|praktijk|behandeling|therapie|mondzorg/.test(text)) return "team";
-  if (/project|portfolio|renovatie|aanbouw|dak|dakkapel|zolder|vliering|overkapping|tuinhuis|gevel|houtwerk|kozijn|tuinontwerp|aanleg|nieuwbouw|woning|verkoop|badkamer|vloer|wand/.test(text)) return "project";
-  if (/uitvoering|reparatie|onderhoud|apk|airco|installatie|laadpaal|warmtepomp|storing|storingen|lekkage|cv|service|spoed/.test(text)) return "service-alt";
+  if (/project|portfolio|renovatie|aanbouw|dak|dakkapel|zolder|vliering|overkapping|tuinhuis|gevel|houtwerk|kozijn|tuinontwerp|aanleg|boomverwijder|boom kappen|bomen kappen|nieuwbouw|woning|verkoop|badkamer|vloer|wand/.test(text)) return "project";
+  if (/uitvoering|reparatie|onderhoud|snoei|stobben|stormschade|apk|airco|installatie|laadpaal|warmtepomp|storing|storingen|lekkage|cv|service|spoed/.test(text)) return "service-alt";
   if (/resultaat|review|vertrouwen|garantie|geslaagd|preventie|nazorg/.test(text)) return "review";
   if (/menu|lunch|diner|arrangement|private dining|kamer|verblijf|interieur|sfeer/.test(text)) return "project-alt";
   return "service";
@@ -1377,7 +1420,12 @@ function isHolisticProfile(profile = {}) {
 
 function isBeautyProfile(profile = {}) {
   const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""}`.toLowerCase();
-  return /beauty|schoonheid|salon|kapper|verzorging/.test(text);
+  return /beauty|schoonheid|salon|kapper|huidverzorging/.test(text);
+}
+
+function isTreeCareProfile(profile = {}) {
+  const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""}`.toLowerCase();
+  return /boomverzorging|boombeheer|boomspecialist|tree-care|arborist/.test(text);
 }
 
 function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter) {
@@ -1424,6 +1472,36 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     subPageIntro: "kan deze pagina later aanvullen met echte cases, foto's en klantreacties.",
     footerLabel: packageRules.label,
   };
+  if (isTreeCareProfile(profile)) {
+    return {
+      ...defaults,
+      quickActionTitle: "Boominspectie aanvragen",
+      quickActionText: "Beschrijf de boom en de situatie",
+      contactActionTitle: "Offerte voor boomwerk",
+      contactActionText: "Ontvang een duidelijke aanpak en planning",
+      servicesEyebrow: "Boomverzorging en veiligheid",
+      servicesTitle: "Vakkundig boomwerk voor iedere situatie.",
+      portfolioEyebrow: "Werk in beeld",
+      portfolioTitle: "Bekijk de aanpak per boomdienst.",
+      portfolioCopy: "Kies een dienst om de werkwijze en een passende projectpresentatie te bekijken.",
+      benefitsEyebrow: "Veilig en zorgvuldig",
+      benefitsTitle: "Boomwerk met aandacht voor mens, omgeving en boom.",
+      benefitsText: "De pagina maakt inspectie, advies, uitvoering en de route naar een heldere offerte concreet.",
+      processEyebrow: "Zo werken we",
+      processTitle: "Van eerste beoordeling naar veilig uitgevoerd boomwerk.",
+      reviewsEyebrow: "Vertrouwen",
+      reviewsTitle: "Duidelijke afspraken en een veilige uitvoering.",
+      contactEyebrow: "Boomwerk bespreken",
+      contactTitle: "Vertel om welke boom het gaat en ontvang gericht advies.",
+      projectLabel: "Gewenste boomdienst",
+      messageLabel: "Wat is de situatie?",
+      messagePlaceholder: "Beschrijf de boom, de locatie, eventuele schade of risico's en wanneer u geholpen wilt worden.",
+      subPageEyebrow: "Boomverzorging en boombeheer",
+      subPageText: "presenteert hier extra informatie over inspectie, snoei, verwijdering en duurzaam boombeheer.",
+      subPageIntro: "kan deze pagina later aanvullen met echte projecten, certificeringen en klantreacties.",
+      footerLabel: "Boomverzorging, veiligheid en duurzaam boombeheer",
+    };
+  }
   if (isHolisticProfile(profile)) {
     return {
       ...defaults,
@@ -1605,6 +1683,8 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const demoCopy = demoCopyForIndustry(profile, packageRules);
   const navLinks = navigationLinks(packageRules, profile).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
   const phoneHref = phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact";
+  const secondaryCtaLabel = profile.secondaryCta || "Bel direct";
+  const secondaryCtaHref = /bel|telefoon|whatsapp|direct/i.test(secondaryCtaLabel) ? phoneHref : "#diensten";
   const emailHref = email ? `mailto:${escapeHtml(email)}` : "#contact";
   const cityLine = extractLocationText(industry) || "uw regio";
   const logoAsset = assetPath(siteAssets, "logo", "");
@@ -1754,7 +1834,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <p data-mws-field="description">${escapeHtml(profile.intro || description)}</p>
           <div class="hero-actions">
             <a class="button" data-mws-field="primary-cta" href="#contact">${escapeHtml(cta)}</a>
-            <a class="button secondary" data-mws-field="secondary-cta" href="${escapeHtml(phoneHref)}">${escapeHtml(profile.secondaryCta || "Bel direct")}</a>
+            <a class="button secondary" data-mws-field="secondary-cta" href="${escapeHtml(secondaryCtaHref)}">${escapeHtml(secondaryCtaLabel)}</a>
           </div>
           <div class="hero-proof">
             <span><strong>${services.length}</strong> specialisaties</span>
@@ -1939,6 +2019,15 @@ if (form) {
 
 function serviceText(service, profile = {}) {
   const text = String(service || "").toLowerCase();
+  if (/boominspectie|boomcontrole/.test(text)) return "Brengt conditie, veiligheid en benodigde maatregelen helder in beeld, met praktisch advies voor de volgende stap.";
+  if (/bomen? snoeien|snoeiwerk/.test(text)) return "Beschrijft zorgvuldig snoeiwerk voor gezonde groei, veiligheid en behoud van de natuurlijke vorm van de boom.";
+  if (/bomen? (?:verwijderen|rooien|kappen)/.test(text)) return "Legt uit hoe een boom gecontroleerd en veilig wordt verwijderd, ook op plekken met beperkte werkruimte.";
+  if (/stormschade/.test(text)) return "Maakt duidelijk hoe risicovolle takken en beschadigde bomen snel worden beoordeeld en veiliggesteld.";
+  if (/stobben?|stronken?/.test(text)) return "Laat zien hoe achtergebleven stronken netjes worden uitgefreesd, zodat de ruimte weer bruikbaar wordt.";
+  if (/boomadvies|boombeheer/.test(text)) return "Geeft eigenaren een concreet plan voor duurzaam beheer, veiligheid en onderhoud op de langere termijn.";
+  if (/tuinontwerp/.test(text)) return "Vertaalt wensen, gebruik en sfeer naar een doordacht tuinplan dat past bij de woning en de beschikbare ruimte.";
+  if (/tuinaanleg|aanleg/.test(text) && /tuin|aanleg/.test(text)) return "Laat zien hoe ontwerp, grondwerk, beplanting en afwerking samenkomen in een verzorgde buitenruimte.";
+  if (/tuinonderhoud/.test(text)) return "Maakt concreet welk periodiek onderhoud nodig is om de tuin gezond, veilig en verzorgd te houden.";
   if (/airco/.test(text)) return "Laat direct zien wat de aircoservice inhoudt, wanneer klanten moeten langskomen en hoe ze snel een afspraak maken.";
   if (/diagnose|controle|inspectie|check/.test(text)) return "Geeft bezoekers vertrouwen door duidelijk te maken hoe de controle werkt en welke vervolgstap logisch is.";
   if (/reparatie|uitvoering|onderhoud|apk|service|storing|spoed/.test(text)) return "Maakt praktisch duidelijk wat er gebeurt, hoe snel klanten geholpen worden en hoe ze contact opnemen.";
@@ -2010,6 +2099,7 @@ function displayIndustryLabel(subcategory = "", fallback = "") {
     restaurant: "Restaurant",
     timmerbedrijf: "Timmerbedrijf",
     installatiebedrijf: "Installatiebedrijf",
+    boomverzorging: "Boomverzorging en boombeheer",
     webshop: "Webshop",
     advies: "Zakelijke dienstverlening",
     "neutrale-lokale-dienstverlener": "Lokale specialist",

@@ -21225,6 +21225,11 @@
           ["reviews", "Reviews verzamelen", "Social proof zichtbaar inzetten."],
         ];
         const branchPresets = {
+          boomverzorging: {
+            goals: ["leads", "call", "trust", "portfolio", "appointment"],
+            ctas: ["quote", "call", "whatsapp", "free_appointment"],
+            services: [["bomen_snoeien", "Bomen snoeien"], ["boominspectie", "Boominspectie"], ["bomen_verwijderen", "Bomen verwijderen"], ["stormschade", "Stormschade en veiligheid"], ["stobben_frezen", "Stobben frezen"], ["boomadvies", "Boomadvies en beheer"], ["kroonverankering", "Kroonverankering"], ["aanplant", "Aanplant en nazorg"]],
+          },
           automotive: {
             goals: ["appointment", "call", "trust", "route", "leads", "portfolio"],
             ctas: ["appointment", "call", "quote", "whatsapp", "route", "more_info"],
@@ -21435,7 +21440,7 @@
         const factoryContextRequestGuard = factoryContextSync.createRequestGuard();
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["tegelzetbedrijf", "Tegelzetbedrijf / tegelwerk"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["boomverzorging", "Boomverzorging / boombeheer"], ["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["tegelzetbedrijf", "Tegelzetbedrijf / tegelwerk"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
           { key: "goal", label: "Hoofddoel website", helper: "Kies wat de website vooral moet opleveren voor deze klant.", required: true, type: "single", options: baseGoalOptions },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
           { key: "addOns", label: "Extra producten & services", helper: "Vink alles aan wat we kunnen meepakken in aanbod, preview of upsell.", type: "multi", wide: true, options: addOnOptions },
@@ -22451,6 +22456,11 @@
         function normalizeServiceValues(labels = []) {
           const text = ensureArrayValue(labels).join(" ").toLowerCase();
           const values = [];
+          if (/boomverzorg|boomverzorger|arborist|boominspect/.test(text)) values.push("boominspectie", "boomadvies");
+          if (/snoei/.test(text)) values.push("bomen_snoeien");
+          if (/kappen|rooien|verwijder/.test(text)) values.push("bomen_verwijderen");
+          if (/storm/.test(text)) values.push("stormschade");
+          if (/stob|stronk/.test(text)) values.push("stobben_frezen");
           if (/maatwerk/.test(text)) values.push("maatwerk");
           if (/project/.test(text)) values.push("projecten");
           if (/onderhoud/.test(text)) values.push("onderhoud");
@@ -22675,6 +22685,7 @@
 
         function inferBranchFromLead(lead = {}) {
           const text = [lead.industry, lead.companyName, lead.websiteUrl, lead.notes, lead.demoBriefing].filter(Boolean).join(" ").toLowerCase();
+          if (/boomverzorg|boomverzorger|boombeheer|boomspecialist|arborist|boominspect|bomen?\s+(?:snoeien|kappen|rooien|verwijderen)|stobben?\s+frezen|stormschade/.test(text)) return "boomverzorging";
           if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(text)) return "rijschool";
           if (/tandarts|mondzorg|orthodont|dental/.test(text)) return "tandarts";
           if (/fysio|fysiotherapie|revalidatie|sportzorg/.test(text)) return "fysiotherapie";
@@ -23829,8 +23840,11 @@
           const feedbackCount = authoritative ? Number(authoritative.feedbackCount || 0) : Number(activeVersion?.feedbackCount || 0);
           const hasBuildContext = Boolean(latestJob?.id || previewStored);
           const briefingReady = authoritative ? authoritative.briefingReady === true : hasBuildContext || Boolean(currentJourney?.generatedBriefing);
-          const researchReady = authoritative ? authoritative.researchReady === true : hasBuildContext || Boolean(currentJourney?.previewPackage?.websiteIntelligence || currentJourney?.previewPackage?.websiteIntelligencePackage);
-          const scanReady = authoritative ? authoritative.scanReady === true : hasBuildContext || researchReady;
+          const intelligence = currentJourney?.previewPackage?.websiteIntelligencePackage || currentJourney?.previewPackage?.websiteIntelligence || null;
+          const researchReady = authoritative ? authoritative.researchReady === true : Boolean(intelligence && (intelligence.lastScannedAt || intelligence.aiBriefing || intelligence.websiteIntelligence || intelligence.websiteScanRaw));
+          const scanReady = authoritative ? authoritative.scanReady === true : researchReady;
+          const qualityReport = latestJob?.qualityReport || activeVersion?.qualityReport || {};
+          const customerPreviewReady = authoritative ? authoritative.customerPreviewReady === true : qualityReport?.readiness?.customerPreview === true;
           const buildCompleted = authoritative ? authoritative.buildCompleted === true : jobStatus === "completed" && previewRenderable;
           const state = authoritative?.state || (!briefingReady
             ? "briefing_required"
@@ -23879,6 +23893,8 @@
             previewStored,
             previewRenderable,
             previewEditable,
+            internalPreviewReady: previewRenderable,
+            customerPreviewReady,
             published,
             approved,
             feedbackCount,
@@ -24632,6 +24648,19 @@
             const error = lastFactoryActionError || new Error("De demo-aanvraag is niet opgeslagen. Probeer opnieuw.");
             error.code = "DEMO_JOURNEY_SAVE_INCOMPLETE";
             throw error;
+          }
+          if (validWebsite && !currentWebsiteIntelligencePackage()?.lastScannedAt) {
+            await analyzeWebsiteForFactory();
+            if (!currentWebsiteIntelligencePackage()?.lastScannedAt) {
+              const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
+              const manualContextReady = inferredBranch !== "zakelijk"
+                || (String(intakeState.branch || "") !== "zakelijk" && ensureArrayValue(intakeState.services).length >= 2);
+              if (!manualContextReady) {
+                const error = new Error("De website-analyse is nog niet voltooid en branche-informatie ontbreekt. Kies minimaal de branche en twee concrete diensten; daarna kan de Factory veilig verder.");
+                error.code = "FACTORY_RESEARCH_REQUIRED";
+                throw error;
+              }
+            }
           }
           if (!elements.briefing?.value) elements.briefing.value = buildBriefing();
           const result = await generatePreview(currentPackageType(), { surface: "quick" });
@@ -25805,11 +25834,12 @@
           }
         }
 
-        function buildStatusLabel(status = "", capability = previewCapabilityState()) {
+        function buildStatusLabel(status = "", capability = previewCapabilityState(), customerPreviewReady = false) {
           if (status === "completed") {
             if (!capability.versionStored) return "Build klaar, previewversie ontbreekt";
             if (!capability.renderable) return "Build klaar, previewbron ontbreekt";
-            return capability.editorAvailable ? "Preview klaar en bewerkbaar" : "Preview klaar, bewerkmodus niet beschikbaar";
+            if (customerPreviewReady) return capability.editorAvailable ? "Klantpreview klaar en bewerkbaar" : "Klantpreview klaar";
+            return capability.editorAvailable ? "Interne preview · controle nodig" : "Interne preview · controle nodig, niet bewerkbaar";
           }
           return ({
             queued: "In wachtrij",
@@ -25831,21 +25861,21 @@
           const absoluteUrl = absolutePreviewUrl(previewUrl);
           const previewToken = journey?.previewToken || latest?.previewToken || activeVersion?.previewToken || "";
           const packageMeta = latest?.generatedPackage?.meta || activeVersion?.generatedPackage?.meta || latestPackageMeta();
+          const qualityReport = latest?.qualityReport || activeVersion?.qualityReport || {};
+          const customerPreviewReady = qualityReport.readiness?.customerPreview === true;
           const generatedPages = Array.isArray(packageMeta.generatedPages) ? packageMeta.generatedPages : [];
           const generatedSections = Array.isArray(packageMeta.generatedSections || packageMeta.templateSections) ? (packageMeta.generatedSections || packageMeta.templateSections) : [];
           const activeBuildError = ["retryable", "failed", "quality_failed"].includes(String(latest?.status || "").toLowerCase()) ? latest?.errorMessage || "" : "";
           if (elements.buildState) {
-            elements.buildState.textContent = latest ? buildStatusLabel(latest.status, capability) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
+            elements.buildState.textContent = latest ? buildStatusLabel(latest.status, capability, customerPreviewReady) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
           }
           if (elements.buildProgress) {
             elements.buildProgress.style.width = `${Math.max(0, Math.min(100, Number(latest?.progress || 0)))}%`;
           }
           if (elements.buildDetails) {
             const score = latest?.previewScore ?? activeVersion?.previewScore;
-            const qualityReport = latest?.qualityReport || activeVersion?.qualityReport || {};
             const browserReview = qualityReport.browserReview || {};
             const browserRepair = qualityReport.browserRepair || {};
-            const customerPreviewReady = qualityReport.readiness?.customerPreview === true;
             const browserStatus = browserReview.status === "passed"
               ? "Geslaagd"
               : browserRepair.status === "awaiting_recheck"
@@ -25854,7 +25884,7 @@
                   ? "Handmatige controle nodig"
                   : "Nog niet uitgevoerd";
             elements.buildDetails.innerHTML = [
-              ["Website Factory", latest ? buildStatusLabel(latest.status, capability) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
+              ["Website Factory", latest ? buildStatusLabel(latest.status, capability, customerPreviewReady) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
               ["Websitepakket", packageMeta.packageLabel || packageLabel(currentPackageType())],
               ["Brancheprofiel", packageMeta.industryName || packageMeta.industryProfileLabel || "-"],
               ["Aantal pagina's", generatedPages.length ? String(generatedPages.length) : "-"],
@@ -26905,11 +26935,14 @@
         function imageState() {
           const uploaded = document.querySelectorAll("#demo-intake-assets .demo-intake-asset").length;
           const scanned = document.querySelectorAll("#factory-media-review > div.is-ready").length;
+          const runtime = window.WebsiteFactoryRuntime?.getState?.() || {};
+          const generatedPackage = runtime.buildHistory?.latestJob?.generatedPackage || runtime.buildHistory?.activeVersion?.generatedPackage || {};
+          const generated = (generatedPackage.files || []).filter((file) => /^assets\/.+\.(?:avif|gif|jpe?g|png|webp|svg)$/i.test(String(file?.path || "")) && !/(?:logo|favicon|og-image)\./i.test(String(file?.path || ""))).length;
           const photoCopy = text('[data-intake-question="photoStatus"] .factory-field-summary strong', "");
-          const needsImages = !uploaded && !scanned && !/eigen foto|website pakken|beschikbaar/i.test(photoCopy);
-          const required = Math.max(uploaded + scanned, needsImages ? 3 : 1);
-          const available = Math.min(required, uploaded + scanned);
-          return { required, available, uploaded, scanned, missing: Math.max(0, required - available), generated: 0 };
+          const needsImages = !uploaded && !scanned && !generated && !/eigen foto|website pakken|beschikbaar/i.test(photoCopy);
+          const required = Math.max(uploaded + scanned + generated, needsImages ? 3 : 1);
+          const available = Math.min(required, uploaded + scanned + generated);
+          return { required, available, uploaded, scanned, missing: Math.max(0, required - available), generated };
         }
 
         function guidedState() {
@@ -26925,9 +26958,9 @@
                 ? pipeline.errorMessage || "Build mislukt"
                 : pipeline.buildCompleted ? "Preview klaar" : "Nog niet gestart";
           const previewState = pipeline.previewEditable
-            ? "Preview klaar en bewerkbaar"
+            ? pipeline.customerPreviewReady ? "Klantpreview vrijgegeven" : "Interne preview bewerkbaar · kwaliteitscontrole loopt"
             : pipeline.previewRenderable
-              ? "Preview klaar"
+              ? pipeline.customerPreviewReady ? "Klantpreview vrijgegeven" : "Interne preview · nog niet deelbaar"
               : pipeline.previewStored ? "Preview opgeslagen, bron niet renderbaar" : "Nog geen preview";
           const savedDemo = currentJourney.savedDemoSite || currentJourney.previewPackage?.savedDemoSite || currentJourney.previewPackage?.saved_demo_site;
           return {
@@ -26942,7 +26975,9 @@
             buildReady: Boolean(pipeline.buildCompleted),
             buildRunning: Boolean(pipeline.buildRunning),
             buildBlocked,
-            previewReady: Boolean(pipeline.previewRenderable),
+            previewReady: Boolean(pipeline.customerPreviewReady),
+            internalPreviewReady: Boolean(pipeline.previewRenderable),
+            customerPreviewReady: Boolean(pipeline.customerPreviewReady),
             previewEditable: Boolean(pipeline.previewEditable),
             retryable: Boolean(pipeline.retryable),
             nextStep: pipeline.nextStep || "Briefing",
@@ -26962,7 +26997,7 @@
             ["SEO", state.scanReady ? "Automatisch ingevuld" : "Niet gestart", state.scanSummary, "⌕", "seo"],
             ["Mail", text("#demo-journey-mail-state", "Niet gestart"), "Bestaande e-mailflow", "✉", "mail"],
             ["Project", state.buildState, text("#factory-cockpit-package", "Websitepakket"), "⌘", "project"],
-            ["Preview", state.previewReady ? "Klaar" : "Wachtend", state.previewState, "◉", "preview"],
+            ["Preview", state.previewReady ? "Klaar voor klant" : state.internalPreviewReady ? "Interne controle" : "Wachtend", state.previewState, "◉", "preview"],
             ["Timeline", state.feedback ? "Feedback ontvangen" : "Actueel", state.feedback ? "Open feedback" : "Geen open feedback", "◷", "timeline"],
           ];
           const signature = JSON.stringify(cards);
@@ -27003,7 +27038,7 @@
             ["Research", state.researchReady, state.briefingReady && !state.researchReady, "Compleet", "Wachtend"],
             ["Scan", state.scanReady, state.researchReady && !state.scanReady, "Voltooid", "Wachtend"],
             ["Build", state.buildReady, state.buildRunning || (state.scanReady && !state.buildReady && !state.buildBlocked), state.buildState, "Nog niet gestart"],
-            ["Preview", state.previewReady, state.buildReady && !state.previewReady, "Klaar", "Wachtend"],
+            ["Preview", state.previewReady, state.internalPreviewReady && !state.previewReady, "Klaar voor klant", state.internalPreviewReady ? "Kwaliteitscontrole" : "Wachtend"],
             ["Feedback", Boolean(state.feedback), state.previewReady && !state.feedback, "Ontvangen", "Wachtend"],
             ["Live zetten", /verkocht|definitieve|live/i.test(value("#demo-journey-status")), false, "Voltooid", "Nog niet gestart"],
           ];

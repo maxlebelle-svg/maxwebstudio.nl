@@ -62,6 +62,18 @@ const ACTIVE_LEGACY_IMAGE_SLOTS = Object.freeze([
 ]);
 
 const demoImageGroups = Object.freeze([
+  customGroup("boomverzorging", "Boomverzorging", ["boomverzorging-demo"], ["boomverzorging", "boomverzorger", "boombeheer", "boomspecialist", "arborist", "boominspectie", "bomen snoeien", "bomen kappen", "stobben frezen", "stormschade"], {
+    hero: "roles/hero.jpg",
+    service: "roles/hero.jpg",
+    team: "roles/hero.jpg",
+    project: "roles/removal.jpg",
+    contact: "roles/inspection.jpg",
+    "service-alt": "roles/removal.jpg",
+    "project-alt": "roles/removal.jpg",
+    detail: "roles/inspection.jpg",
+    review: "roles/inspection.jpg",
+    background: "roles/hero.jpg",
+  }),
   group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
   customGroup("tegelzetbedrijf", "Tegelzetbedrijf", ["tegelzetbedrijf-demo"], ["tegel", "tegelzet", "tegelzetter", "tegelwerk", "vloertegel", "wandtegel", "badkamertegel", "natuursteen", "voegwerk", "kitwerk"], {
     hero: { fileName: "badkamer-natuursteen.jpg", sourceGroupSlug: "quantumbouw" },

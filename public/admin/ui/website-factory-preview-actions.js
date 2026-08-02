@@ -152,13 +152,17 @@
     const relationshipType = hasCustomer ? "customer" : hasLead ? "lead" : "";
     const relationshipId = relationshipType === "customer" ? customerId : relationshipType === "lead" ? leadId : "";
     const manual = sourceType === SOURCE_MANUAL;
+    const qualityReport = version.qualityReport && typeof version.qualityReport === "object"
+      ? version.qualityReport
+      : version.quality_report && typeof version.quality_report === "object" ? version.quality_report : {};
+    const customerPreviewReady = manual || (qualityReport?.readiness?.customerPreview === true && qualityReport?.browserReview?.status === "passed");
     const published = Boolean(previewVersionId && publishedPreviewVersionId === previewVersionId);
     const publicPreviewUrl = published ? safePublicPreviewUrl({ publicPreviewSlug, publicPreviewUrl: input.publicPreviewUrl, siteOrigin: input.siteOrigin }) : "";
     const technicalShareUrl = safeShareUrl({ previewUrl, previewVersionId, sourceType, previewToken: version.previewToken || version.preview_token, siteOrigin: input.siteOrigin });
     const shareUrl = publicPreviewUrl || technicalShareUrl;
     const shareEnabled = serverStored && Boolean(shareUrl);
     const demoEnabled = serverStored && hasRepositoryScope;
-    const publishEnabled = serverStored && shareEnabled && hasRepositoryScope && Boolean(relationshipId)
+    const publishEnabled = serverStored && customerPreviewReady && shareEnabled && hasRepositoryScope && Boolean(relationshipId)
       && (relationshipType === "lead" || manual || UUID_PATTERN.test(websiteId));
     const saved = Boolean(previewVersionId && savedPreviewVersionId === previewVersionId);
     const versionLabel = `${manual ? "Handmatige ZIP" : "Website Factory"} · V${Number(version.version || 1)}`;
@@ -167,6 +171,7 @@
     else if (!serverStored) explanation = "Selecteer eerst een verwerkte previewversie.";
     else if (!hasRepositoryScope) explanation = "Koppel de preview eerst aan een demo-aanvraag.";
     else if (!relationshipId) explanation = "Selecteer eerst een lead of klant.";
+    else if (!customerPreviewReady) explanation = "Wacht tot de inhoudelijke en browsercontrole volledig groen zijn voordat u deze preview deelt.";
 
     return {
       previewVersionId,
@@ -190,6 +195,7 @@
       serverStored,
       demoEnabled,
       publishEnabled,
+      customerPreviewReady,
       activateEnabled: relationshipType === "customer" && manual && publishEnabled && !published && version.active !== true && version.isActive !== true,
       saved,
       published,

@@ -30,7 +30,7 @@ function manualUrl(id = IDS.manual) {
 
 function context(overrides = {}) {
   return actions.actionContext({
-    version: { id: IDS.factory, version: 2, sourceType: "factory_build", previewUrl: factoryUrl(), renderable: true },
+    version: { id: IDS.factory, version: 2, sourceType: "factory_build", previewUrl: factoryUrl(), renderable: true, qualityReport: { readiness: { customerPreview: true }, browserReview: { status: "passed" } } },
     previewUrl: factoryUrl(),
     demoJourneyId: IDS.journey,
     customerId: IDS.customer,
@@ -69,6 +69,12 @@ test("5 processed ZIP can be sent to the customer portal", () => {
 
 test("6 Factory can still be sent to the customer portal", () => {
   assert.equal(context().publishEnabled, true);
+});
+
+test("6b Factory cannot be shared before content and browser quality are approved", () => {
+  const result = context({ version: { id: IDS.factory, version: 3, sourceType: "factory_build", previewUrl: factoryUrl(), renderable: true, qualityReport: { readiness: { customerPreview: false }, browserReview: { status: "not_run" } } } });
+  assert.equal(result.publishEnabled, false);
+  assert.match(result.explanation, /inhoudelijke en browsercontrole/i);
 });
 
 test("7 viewing a version has no activation side effect", () => {

@@ -19,6 +19,7 @@ const PACKAGE_ALIASES = {
 };
 
 const INDUSTRY_ALIASES = [
+  ["boomverzorging", /\b(boomverzorging|boomverzorger|boombeheer|boomspecialist|arborist|boominspectie|bomen?\s+(?:snoeien|kappen|rooien|verwijderen)|stobben?\s+frezen|stormschade)\b/i],
   ["tegelzetter", /\b(tegel|tegels|tegelzet|tegelzetter|tegelzetbedrijf|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk)\b/i],
   ["autobedrijf", /\b(autoairco|auto-airco|auto airco|autobedrijf|garage|automotive|occasion|apk|autoservice|diagnose|reparatie)\b/i],
   ["timmerwerk", /\b(timmerwerk|timmerwerken|timmerbedrijf|timmerman|maatwerk|zolder|zolderverbouwing|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn|kozijnen)\b/i],
