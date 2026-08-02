@@ -91,6 +91,7 @@ function sanitizeQuote(row = {}, lines = [], checksum = "", acceptance = null) {
     quoteNumber: cleanText(row.quote_number) || "Offerte",
     projectId: cleanText(row.project_id),
     websiteId: cleanText(row.website_id),
+    type: cleanText(row.type),
     title: cleanText(row.title) || "Offerte",
     proposal: cleanText(row.proposal),
     status,
@@ -98,6 +99,7 @@ function sanitizeQuote(row = {}, lines = [], checksum = "", acceptance = null) {
     checksum: cleanText(checksum),
     quoteDate: cleanText(row.quote_date || row.created_at),
     validUntil,
+    sentAt: cleanText(row.sent_at),
     subtotal: Number(row.subtotal || 0),
     vat: Number(row.vat || 0),
     total: Number(row.total || 0),
@@ -113,6 +115,8 @@ function sanitizeQuote(row = {}, lines = [], checksum = "", acceptance = null) {
     })),
     acceptable: !acceptance && status === "sent" && Boolean(validDate && validDate.getTime() >= Date.now())
       && !row.archived_at && !row.deleted_at && !replaced,
+    acceptanceStatement: ACCEPTANCE_STATEMENT,
+    acceptanceStatementVersion: ACCEPTANCE_STATEMENT_VERSION,
     acceptance: acceptance ? sanitizeAcceptance(acceptance) : null,
   };
 }

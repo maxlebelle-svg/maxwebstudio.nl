@@ -375,3 +375,26 @@ test("43 agreement template is a complete B2B contract bound to an immutable pro
   assert.match(browser, /overflow-x:hidden/);
   assert.match(browser, /overflow-wrap:anywhere/);
 });
+
+test("44 offer view template shows complete B2B scope, pricing, payment and integrity", () => {
+  const quote = documents.DOCUMENTS.find((document) => document.documentType === "quote");
+  assert.equal(quote.versionCode, "offer-view-2026-08-b2b");
+  assert.equal(quote.templateCode, "offer-view-v2");
+  assert.equal(quote.effectiveFrom, "2026-08-02");
+  assert.match(quote.checksumSha256, /^[a-f0-9]{64}$/);
+  for (const phrase of [
+    "Zakelijke offerte",
+    "Relatie en zakelijk karakter",
+    "Prijsopbouw",
+    "Betaalafspraak",
+    "Geldigheid en integriteit",
+    "Gekoppelde documenten",
+    "Wat gebeurt er bij acceptatie",
+  ]) assert.match(browser, new RegExp(phrase));
+  assert.match(browser, /snapshot\.oneTimeExVatCents/);
+  assert.match(browser, /snapshot\.oneTimeVatCents/);
+  assert.match(browser, /snapshot\.recurringInclVatCents/);
+  assert.match(browser, /snapshot\.dueNowInclVatCents/);
+  assert.match(browser, /snapshot\.remainingExVatCents/);
+  assert.match(browser, /snapshotChecksum/);
+});

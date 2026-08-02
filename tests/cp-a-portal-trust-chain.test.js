@@ -199,6 +199,9 @@ test("quote reads and acceptance are owner-bound, versioned and replay-safe", as
     const getBody = JSON.parse(get.body);
     assert.equal(getBody.quote.acceptance.id, ids.acceptance);
     assert.equal(getBody.quote.total, 1210);
+    assert.equal(getBody.quote.acceptanceStatementVersion, "quote_acceptance_nl_v1");
+    assert.match(getBody.quote.acceptanceStatement, /specifieke offerteversie/);
+    assert.match(getBody.quote.acceptanceStatement, /Dit is geen betaling/);
   } finally {
     global.fetch = previousFetch;
     restore();
