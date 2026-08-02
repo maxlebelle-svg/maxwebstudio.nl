@@ -38,7 +38,9 @@ jobs:
           fi
       - name: Controleer wachtende Factory-previews
         if: steps.config.outputs.ready == 'true'
-        run: node scripts/website-factory-browser-worker.mjs
+        run: |
+          "$CHROME_BIN" --version
+          node scripts/website-factory-browser-worker.mjs
       - name: Bewaar screenshots en bewijsrapporten
         if: always() && steps.config.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
