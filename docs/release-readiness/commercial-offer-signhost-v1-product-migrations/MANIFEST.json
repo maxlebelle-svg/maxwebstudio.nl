@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-signhost-v1-2026-08-02",
+  "release": "Max Webstudio definitive commercial offer signing",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/signhost-commercial-offers",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260802213000_commercial_offer_signhost.sql"
+  ],
+  "scope": [
+    "version-scoped Signhost access and transaction evidence",
+    "private unsigned, signed and receipt PDF storage",
+    "provider-postback-only signed offer transition"
+  ],
+  "explicitlyExcluded": [
+    "automatic payment collection",
+    "automatic invoice creation",
+    "automatic subscription creation"
+  ]
+}

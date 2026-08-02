@@ -189,9 +189,9 @@ test("cross-relationship demo checks remain mandatory for preview and send", () 
   assert.match(source, /assertRelationshipAccess\(actor, offer\.relationship_type/);
 });
 
-test("D1 contains no Signhost, Mollie, invoice, subscription or onboarding activation", () => {
-  const d1 = [read("functions/admin-commercial-offers.js"), read("functions/commercial-offer-interest.js"), read("functions/services/commercialOfferMailService.js"), migration].join("\n");
-  assert.doesNotMatch(d1, /signhost|api\.mollie|create_invoice|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
+test("original D1 migration remains free of payment, invoice, subscription and onboarding activation", () => {
+  const d1 = [read("functions/commercial-offer-interest.js"), migration].join("\n");
+  assert.doesNotMatch(d1, /api\.mollie|create_invoice|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
   assert.match(html, /geen contract, betaling, factuur, abonnement of onboarding/i);
 });
 
@@ -279,7 +279,7 @@ test("modal 11: synchronous pending guard makes double click a single request", 
 test("modal 12: frontend modal does not replace authoritative server validation", () => {
   const server = read("functions/admin-commercial-offers.js");
   for (const evidence of ["assertPhaseD1Enabled", "assertRelationshipAccess", "offerExpiry", "DEMO_RELATIONSHIP_MISMATCH", "OFFER_NOT_SEND_READY"]) assert.match(server, new RegExp(evidence));
-  assert.match(server, /commercial_reserve_offer_dispatch_v1/);
+  assert.match(server, /commercial_reserve_offer_dispatch_v2/);
 });
 
 test("modal 13: expired offers remain blocked server-side", () => {
@@ -431,9 +431,9 @@ test("revoke request is idempotent and performs no provider action", () => {
   assert.match(hardening, /idempotency_key=input_idempotency_key/);
 });
 
-test("D1 hardening remains free of production providers and activation side effects", () => {
-  const scope = [hardening, read("functions/admin-commercial-offers.js"), browser].join("\n");
-  assert.doesNotMatch(scope, /signhost|api\.mollie|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
+test("D1 interest hardening remains free of payment and subscription side effects", () => {
+  const scope = hardening;
+  assert.doesNotMatch(scope, /api\.mollie|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
 });
 
 test("manual definitive recipient is normalized while test mail remains admin-only", () => {

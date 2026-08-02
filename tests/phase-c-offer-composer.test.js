@@ -321,19 +321,21 @@ test("33 document registry checksums match the published local documents", () =>
   assert.match(read("functions/commercial-order.js"), /TERMS_VERSION = "algemene-voorwaarden-2026-08-b2b"/);
 });
 
-test("34 Phase D1 adds mail only and no signature, payment or external QR provider", () => {
+test("34 Composer adds the certified Signhost offer route without payment or external QR providers", () => {
   const phaseC = html + browser + endpoint + read("public/src/offer-composer-core.mjs");
-  assert.doesNotMatch(phaseC, /api\.mollie|signhost|api\.qrserver|quickchart/i);
-  assert.match(endpoint, /providersEnabled:\s*false/);
+  assert.doesNotMatch(phaseC, /api\.mollie|api\.qrserver|quickchart/i);
+  assert.match(phaseC, /definitive_offer/);
+  assert.match(endpoint, /signhostCommercialEnabled/);
   assert.match(endpoint, /silverado-demo-qr\.svg/);
 });
 
-test("35 GET context is read-only while all writes use bounded Phase B RPCs", () => {
+test("35 GET context is read-only while writes use bounded RPCs or token revocation", () => {
   assert.match(endpoint, /event\.httpMethod === "GET" \? "read" : "write"/);
   assert.match(endpoint, /if \(event\.httpMethod === "GET"\)/);
   assert.match(endpoint, /commercial_create_offer_version_v1/);
   assert.match(endpoint, /commercial_transition_offer_version_v1/);
-  assert.doesNotMatch(endpoint, /method:\s*"(?:PUT|PATCH|DELETE)"/);
+  assert.doesNotMatch(endpoint, /method:\s*"(?:PUT|DELETE)"/);
+  assert.match(endpoint, /commercial_offer_signing_access_tokens/);
 });
 
 test("36 safe route parsing rejects fabricated or malformed relationship ids", async () => {
