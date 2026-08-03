@@ -29,5 +29,6 @@ test("employee admin login uses the scoped responsive studio design", () => {
   assert.match(styles, /url\("assets\/admin-login-studio\.png"\)/);
   assert.match(styles, /@media \(min-width: 681px\) and \(max-height: 820px\)/);
   assert.match(styles, /@media \(max-width: 680px\)/);
+  assert.match(styles, /input:-webkit-autofill/);
   assert.ok(fs.existsSync(path.join(projectRoot, "public/assets/admin-login-studio.png")));
 });
