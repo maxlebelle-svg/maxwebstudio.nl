@@ -1102,6 +1102,7 @@ function mergeUnique(...groups) {
 function isUsableServiceLabel(value = "") {
   const text = cleanText(value);
   if (!text) return false;
+  if (/^(?:envelope|mail|e-mail|email|telefoon|phone|facebook|instagram|linkedin|youtube|tiktok|menu|home)$/i.test(text)) return false;
   if (/^https?:\/\//i.test(text) || /^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(text)) return false;
   if (/^(naam|branche|regio|website|contact|telefoon|e-mail|email|bedrijf|doelgroep|output|cta|call to action)\s*:/i.test(text)) return false;
   if (text.length > 70) return false;

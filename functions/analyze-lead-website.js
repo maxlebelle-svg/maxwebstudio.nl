@@ -690,6 +690,8 @@ function inferRegion(text, contactData = {}) {
   const address = contactData.addresses?.[0] || "";
   const match = address.match(/[1-9]\d{3}\s?[A-Z]{2}\s+([A-ZÀ-Ÿ][a-zà-ÿ.' -]{2,40})/);
   if (match) return cleanExtractedText(match[1]);
+  const namedRegion = String(text || "").match(/\b(Drenthe|Groningen|Friesland|Fryslân|Overijssel|Gelderland|Flevoland|Utrecht|Noord-Holland|Zuid-Holland|Zeeland|Noord-Brabant|Limburg)\b/i);
+  if (namedRegion) return titleCase(namedRegion[1]);
   if (/landelijk/.test(text)) return "Landelijk";
   if (/regio/.test(text)) return "Regionaal";
   return "Lokaal";

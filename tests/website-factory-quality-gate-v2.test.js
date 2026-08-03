@@ -144,7 +144,7 @@ test("website research keeps source categories and real social profiles in the g
       websiteAnalysis: {
         currentWebsite: {
           title: "Boomverzorging Drenthe",
-          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Eikenprocessierups"],
           socialUrls: [
             "https://www.facebook.com/boomverzorgingdrenthe",
             "https://www.instagram.com/boomverzorgingdrenthe/",
@@ -153,7 +153,7 @@ test("website research keeps source categories and real social profiles in the g
         aiBriefing: {
           industry: "Boomverzorging",
           region: "Oosterhesselen, Drenthe",
-          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Eikenprocessierups"],
         },
       },
       websiteBrief: { business: { region: "Oosterhesselen, Drenthe" } },
@@ -169,6 +169,7 @@ test("website research keeps source categories and real social profiles in the g
   assert.match(html, />Stobbenfrezen</);
   assert.match(html, />Eikenprocessierups</);
   assert.doesNotMatch(html, /<h3>Boomverzorging Drenthe<\/h3>/);
+  assert.doesNotMatch(html, /<h3>Envelope<\/h3>/);
   assert.match(html, /Werkgebied: Drenthe/);
   assert.match(html, /services-count-6/);
   assert.match(html, /https:\/\/www\.facebook\.com\/boomverzorgingdrenthe/);
