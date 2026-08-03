@@ -13,6 +13,7 @@ test("klantlogin gebruikt de herkenbare klantportaalpresentatie zonder de andere
   assert.match(login, /Bekijk de voortgang, geef feedback, deel bestanden/);
   assert.match(login, /Max Webstudio Klantportaal/);
   assert.match(login, /data-auth-panel-trigger="request">Toegang aanvragen/);
+  assert.match(login, /portal-client-return[^>]*data-auth-panel-trigger="real">Terug naar inloggen/);
   assert.match(login, /function isFoodPortalRequest\(\)/);
   assert.match(login, /Admin login Max Webstudio\./);
 });

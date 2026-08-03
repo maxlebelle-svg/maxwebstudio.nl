@@ -1,4 +1,5 @@
 .portal-client-access,
+.portal-client-return,
 .portal-client-panel-heading {
   display: none;
 }
@@ -178,6 +179,10 @@
   font-size: 14px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.portal-body.is-client-login .portal-client-return {
+  display: inline-flex;
 }
 
 .portal-body.is-client-login .portal-client-access:hover,
