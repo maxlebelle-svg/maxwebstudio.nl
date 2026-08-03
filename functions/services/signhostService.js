@@ -92,6 +92,8 @@ async function createSmokeTestTransaction(config, input) {
 }
 
 async function createCommercialOfferTransaction(config, input) {
+  const returnUrl = commercialOfferReturnUrl();
+  if (!returnUrl) throw coded("SIGNHOST_RETURN_URL_INVALID", 503, "De veilige terugkeerpagina na ondertekening is niet geconfigureerd.");
   return signhostRequest(config, "/api/transaction/", {
     method:"POST",
     contentType:"application/json",
@@ -105,11 +107,27 @@ async function createCommercialOfferTransaction(config, input) {
         SignRequestMessage:`Beste ${input.signerName || "klant"}, controleer en onderteken de definitieve offerte. Na ondertekening zetten we de afgesproken betaling en projectoverdracht automatisch klaar.`,
         SendSignConfirmation:true,
         DaysToRemind:3,
+        ReturnUrl:returnUrl,
       }],
       SendEmailNotifications:true,
       Reference:`MWS-OFFER-${clean(input.offerVersionId).slice(0,36)}`,
     }),
   });
+}
+
+function commercialOfferReturnUrl(env = process.env) {
+  const raw = clean(env.URL || env.SITE_URL);
+  try {
+    const url = new URL(raw);
+    const allowedHosts = new Set(["maxwebstudio.nl", "maxwebstudio-staging.netlify.app"]);
+    if (url.protocol !== "https:" || url.username || url.password || url.port || !allowedHosts.has(url.hostname.toLowerCase())) return "";
+    url.pathname = "/offerte-ondertekening-voltooid";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 function verification(method, phone, name) {
@@ -288,6 +306,7 @@ module.exports = {
   API_BASE,
   buildCommercialOfferMetadata,
   buildSmokeTestMetadata,
+  commercialOfferReturnUrl,
   createCommercialOfferTransaction,
   createTransaction,
   createSmokeTestTransaction,

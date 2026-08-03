@@ -5,7 +5,7 @@ const path = require("node:path");
 const { buildOfferVersion } = require("../functions/services/commercialOfferService");
 const { buildCommercialOfferMail } = require("../functions/services/commercialOfferMailService");
 const { generateCommercialOfferPdf } = require("../functions/services/commercialOfferPdfService");
-const { buildCommercialOfferMetadata, transactionSignUrl } = require("../functions/services/signhostService");
+const { buildCommercialOfferMetadata, commercialOfferReturnUrl, transactionSignUrl } = require("../functions/services/signhostService");
 
 const root=path.join(__dirname,"..");
 const read=file=>fs.readFileSync(path.join(root,file),"utf8");
@@ -49,6 +49,31 @@ test("Signhost metadata gives exactly the customer signer a signature field on t
   const metadata=buildCommercialOfferMetadata({Signers:[{Id:"signer-1",Email:relation.email}]},{signerEmail:relation.email,signaturePage:3,reference:"MWS-003"});
   assert.deepEqual(metadata.Signers,{"signer-1":{FormSets:["CustomerSignature"]}});assert.equal(metadata.FormSets.CustomerSignature.Handtekening.Location.PageNumber,3);
   assert.equal(transactionSignUrl({Signers:[{SignUrl:"https://signhost.example/sign/abc"}]}),"https://signhost.example/sign/abc");assert.equal(transactionSignUrl({SignUrl:"javascript:bad"}),"");
+});
+
+test("commercial Signhost return URL is pinned to approved Max Webstudio hosts",()=>{
+  assert.equal(commercialOfferReturnUrl({URL:"https://maxwebstudio.nl"}),"https://maxwebstudio.nl/offerte-ondertekening-voltooid");
+  assert.equal(commercialOfferReturnUrl({URL:"https://maxwebstudio-staging.netlify.app/anything?x=1#old"}),"https://maxwebstudio-staging.netlify.app/offerte-ondertekening-voltooid");
+  assert.equal(commercialOfferReturnUrl({URL:"https://attacker.example"}),"");
+  assert.equal(commercialOfferReturnUrl({URL:"http://maxwebstudio.nl"}),"");
+  assert.equal(commercialOfferReturnUrl({URL:"https://maxwebstudio.nl:444"}),"");
+  const service=read("functions/services/signhostService.js");
+  assert.match(service,/ReturnUrl:returnUrl/);
+  assert.match(service,/SIGNHOST_RETURN_URL_INVALID/);
+});
+
+test("branded completion page never treats return parameters as proof",()=>{
+  const page=read("public/offerte-ondertekening-voltooid.html");
+  assert.match(page,/Max Webstudio/);
+  assert.match(page,/wordt verwerkt/i);
+  assert.match(page,/niet opnieuw te ondertekenen/i);
+  assert.match(page,/sh_signerstatus/);
+  assert.match(page,/history\.replaceState/);
+  assert.doesNotMatch(page,/fetch\(|XMLHttpRequest|localStorage|sessionStorage/);
+  assert.doesNotMatch(page,/sh_transactionid|sh_signerid/);
+  const netlify=read("netlify.toml");
+  assert.match(netlify,/from = "\/offerte-ondertekening-voltooid"[\s\S]*to = "\/offerte-ondertekening-voltooid\.html"/);
+  assert.match(netlify,/for = "\/offerte-ondertekening-voltooid\*"[\s\S]*X-Robots-Tag = "noindex, nofollow, noarchive"/);
 });
 
 test("migration makes provider postback the only signed finalizer and keeps artifacts private",()=>{
