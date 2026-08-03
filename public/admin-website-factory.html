@@ -24394,13 +24394,14 @@
         }
 
         function googleReviewPayloadFromLead(lead = {}) {
-          const meta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
-          const reviews = Array.isArray(lead.googleReviews) ? lead.googleReviews : Array.isArray(meta.googleReviews) ? meta.googleReviews : [];
+          const normalizedLead = lead && typeof lead === "object" ? lead : {};
+          const meta = normalizedLead.metadata && typeof normalizedLead.metadata === "object" ? normalizedLead.metadata : {};
+          const reviews = Array.isArray(normalizedLead.googleReviews) ? normalizedLead.googleReviews : Array.isArray(meta.googleReviews) ? meta.googleReviews : [];
           return {
             googleReviews: reviews,
-            googleRating: lead.googleRating || meta.googleRating || meta.rating || "",
-            googleRatingTotal: lead.googleRatingTotal || meta.googleRatingTotal || meta.userRatingsTotal || "",
-            googleMapsUrl: lead.googleMapsUrl || meta.googleMapsUrl || "",
+            googleRating: normalizedLead.googleRating || meta.googleRating || meta.rating || "",
+            googleRatingTotal: normalizedLead.googleRatingTotal || meta.googleRatingTotal || meta.userRatingsTotal || "",
+            googleMapsUrl: normalizedLead.googleMapsUrl || meta.googleMapsUrl || "",
           };
         }
 

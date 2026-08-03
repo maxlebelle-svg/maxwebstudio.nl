@@ -44,6 +44,12 @@ test("new lead can build with business name and industry", () => {
   assert.ok(generatedPackage.meta.services.length >= 3);
 });
 
+test("quick build tolerates a missing selected lead when projecting Google review data", () => {
+  assert.match(factoryHtml, /const normalizedLead = lead && typeof lead === "object" \? lead : \{\};/);
+  assert.match(factoryHtml, /Array\.isArray\(normalizedLead\.googleReviews\)/);
+  assert.doesNotMatch(factoryHtml, /Array\.isArray\(lead\.googleReviews\)/);
+});
+
 test("explicit no-website context skips website use", () => {
   assert.deepEqual(normalizeWebsiteInput("fattrek.nl", { intent: "none", explicitNoWebsite: true }), {
     url: "", kind: "none", shouldScan: false, warning: "", fallbackAllowed: true,
