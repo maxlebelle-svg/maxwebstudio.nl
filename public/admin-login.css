@@ -180,6 +180,15 @@
   color: rgba(198, 212, 229, 0.42);
 }
 
+.admin-login-page .admin-login-field input:-webkit-autofill,
+.admin-login-page .admin-login-field input:-webkit-autofill:hover,
+.admin-login-page .admin-login-field input:-webkit-autofill:focus {
+  border-radius: 8px;
+  -webkit-box-shadow: 0 0 0 1000px #071321 inset;
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+}
+
 .admin-login-page .admin-password-toggle {
   display: grid;
   width: 40px;
