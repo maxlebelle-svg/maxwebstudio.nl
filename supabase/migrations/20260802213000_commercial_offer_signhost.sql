@@ -114,7 +114,7 @@ begin
     update public.commercial_offer_versions set status='signed',signed_at=coalesce(signed_at,clock_timestamp()),updated_at=clock_timestamp() where id=tx.offer_version_id;
     update public.commercial_offers set status='signed',updated_at=clock_timestamp() where id=tx.offer_id;
     insert into public.commercial_offer_events(offer_id,offer_version_id,event_type,actor_role,previous_status,new_status,idempotency_key,safe_metadata)
-    values(tx.offer_id,tx.offer_version_id,'offer.signed','signhost_webhook',version_record.status,'signed','signhost:'||tx.id||':signed',jsonb_build_object('provider','signhost','transactionIdSha256',encode(digest(tx.provider_transaction_id,'sha256'),'hex'),'receiptStored',true))
+    values(tx.offer_id,tx.offer_version_id,'offer.signed','signhost_webhook',version_record.status,'signed','signhost:'||tx.id||':signed',jsonb_build_object('provider','signhost','transactionIdSha256',encode(extensions.digest(tx.provider_transaction_id,'sha256'),'hex'),'receiptStored',true))
     on conflict(offer_id,idempotency_key) do nothing;
   end if;
   return jsonb_build_object('signed',input_status='signed','duplicate',false,'offerId',tx.offer_id,'offerVersionId',tx.offer_version_id);

@@ -8,48 +8,42 @@ begin
      or pg_catalog.to_regclass('public.commercial_offer_versions') is null
      or pg_catalog.to_regclass('public.commercial_offer_events') is null
      or pg_catalog.to_regclass('public.commercial_offer_interest_tokens') is null
+     or pg_catalog.to_regclass('public.commercial_offer_signing_access_tokens') is null
+     or pg_catalog.to_regclass('public.commercial_offer_signing_transactions') is null
+     or pg_catalog.to_regprocedure('public.commercial_finalize_offer_signature_v1(uuid,text,integer,text,text,text,text)') is null
      or pg_catalog.to_regclass('public.customers') is null
      or pg_catalog.to_regclass('public.invoices') is null
      or pg_catalog.to_regclass('public.projects') is null
      or pg_catalog.to_regclass('public.factory_projects') is null then
-    raise exception using errcode='55000', message='Commercial phase 2 prerequisites are missing.';
+    raise exception using errcode='55000', message='Commercial Signhost or phase 2 prerequisites are missing.';
   end if;
 end
 $preflight$;
 
-create table public.commercial_offer_signing_transactions (
-  id uuid primary key default gen_random_uuid(),
-  offer_id uuid not null references public.commercial_offers(id) on delete restrict,
-  offer_version_id uuid not null references public.commercial_offer_versions(id) on delete restrict,
-  provider text not null default 'signhost' check (provider='signhost'),
-  provider_transaction_id text unique,
-  provider_file_id uuid not null default gen_random_uuid(),
-  provider_status integer,
-  signer_name text not null check (char_length(btrim(signer_name)) between 1 and 180),
-  signer_email text not null check (char_length(btrim(signer_email)) between 3 and 320),
-  status text not null default 'creating' check (status in (
-    'creating','waiting_for_signer','signed_pending_processing','completed',
+-- Extend the canonical customer-link Signhost transaction instead of creating a
+-- second, incompatible table. Both entry routes retain their own authorization
+-- evidence while sharing provider postback and fulfilment state.
+alter table public.commercial_offer_signing_transactions
+  add column signing_origin text not null default 'customer_link',
+  add column requested_by_profile_id uuid references public.profiles(id) on delete restrict,
+  add column requested_by_auth_user_id uuid references auth.users(id) on delete restrict;
+
+alter table public.commercial_offer_signing_transactions
+  alter column access_token_id drop not null,
+  alter column signer_role drop not null,
+  alter column authority_confirmed_at drop not null;
+
+alter table public.commercial_offer_signing_transactions
+  drop constraint commercial_offer_signing_transactions_status_check,
+  add constraint commercial_offer_signing_transactions_status_check check (status in (
+    'creating','waiting_for_signer','signed','signed_pending_processing','completed',
     'rejected','expired','cancelled','failed'
   )),
-  request_idempotency_key text not null unique check (char_length(request_idempotency_key) between 16 and 180),
-  requested_by_profile_id uuid not null references public.profiles(id) on delete restrict,
-  requested_by_auth_user_id uuid not null references auth.users(id) on delete restrict,
-  requested_at timestamptz,
-  signed_at timestamptz,
-  last_postback_at timestamptz,
-  signed_document_path text,
-  receipt_path text,
-  signed_document_sha256 text check (signed_document_sha256 is null or signed_document_sha256 ~ '^[a-f0-9]{64}$'),
-  receipt_sha256 text check (receipt_sha256 is null or receipt_sha256 ~ '^[a-f0-9]{64}$'),
-  failure_code text,
-  created_at timestamptz not null default clock_timestamp(),
-  updated_at timestamptz not null default clock_timestamp(),
-  constraint commercial_offer_signing_version_unique unique (offer_version_id)
-);
-
-create index commercial_offer_signing_provider_idx
-  on public.commercial_offer_signing_transactions(provider,provider_transaction_id)
-  where provider_transaction_id is not null;
+  add constraint commercial_offer_signing_origin_check check (
+    (signing_origin='customer_link' and access_token_id is not null and signer_role is not null and authority_confirmed_at is not null)
+    or
+    (signing_origin='staff_direct' and requested_by_profile_id is not null and requested_by_auth_user_id is not null)
+  );
 
 create table public.commercial_offer_fulfilment_runs (
   id uuid primary key default gen_random_uuid(),
@@ -115,7 +109,7 @@ begin
   if not exists(select 1 from public.commercial_offer_interest_tokens where offer_version_id=version_record.id and confirmed_at is not null and revoked_at is null) then
     raise exception using errcode='23514',message='Customer interest must be confirmed before signature.';
   end if;
-  if char_length(btrim(coalesce(input_signer_name,''))) not between 1 and 180
+  if char_length(btrim(coalesce(input_signer_name,''))) not between 2 and 160
      or input_signer_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
      or char_length(input_idempotency_key) not between 16 and 180 then
     raise exception using errcode='22023',message='Signature reservation input is invalid.';
@@ -125,9 +119,12 @@ begin
     return jsonb_build_object('signingId',signing_record.id,'status',signing_record.status,'providerTransactionId',signing_record.provider_transaction_id,'providerFileId',signing_record.provider_file_id,'duplicate',true);
   end if;
   insert into public.commercial_offer_signing_transactions(
-    offer_id,offer_version_id,signer_name,signer_email,request_idempotency_key,requested_by_profile_id,requested_by_auth_user_id
+    offer_id,offer_version_id,signing_origin,signer_name,signer_email_sha256,idempotency_key,
+    provider_file_id,requested_by_profile_id,requested_by_auth_user_id
   ) values (
-    offer_record.id,version_record.id,btrim(input_signer_name),lower(btrim(input_signer_email)),input_idempotency_key,input_actor_profile_id,input_actor_auth_user_id
+    offer_record.id,version_record.id,'staff_direct',btrim(input_signer_name),
+    encode(extensions.digest(lower(btrim(input_signer_email)),'sha256'),'hex'),input_idempotency_key,
+    gen_random_uuid()::text,input_actor_profile_id,input_actor_auth_user_id
   ) returning * into signing_record;
   insert into public.commercial_offer_events(offer_id,offer_version_id,event_type,actor_profile_id,actor_auth_user_id,actor_role,previous_status,new_status,idempotency_key,safe_metadata)
   values(offer_record.id,version_record.id,'offer.signature_requested',input_actor_profile_id,input_actor_auth_user_id,actor_role,version_record.status,version_record.status,input_idempotency_key || ':event',jsonb_build_object('provider','signhost'));

@@ -8,11 +8,16 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const fulfilment = require("../functions/services/commercialOfferFulfilmentService")._private;
 const signhost = require("../functions/services/signhostService");
 
-test("phase 2 migration creates isolated signing and idempotent fulfilment state", () => {
+test("phase 2 extends the canonical Signhost transaction and adds idempotent fulfilment state", () => {
+  const signhostSql = read("supabase/migrations/20260802213000_commercial_offer_signhost.sql");
   const sql = read("supabase/migrations/20260802230000_commercial_offer_phase_2_fulfilment.sql");
-  assert.match(sql, /create table public\.commercial_offer_signing_transactions/i);
-  assert.match(sql, /unique \(offer_version_id\)/i);
-  assert.match(sql, /provider_transaction_id text unique/i);
+  assert.match(signhostSql, /create table public\.commercial_offer_signing_transactions/i);
+  assert.doesNotMatch(sql, /create table public\.commercial_offer_signing_transactions/i);
+  assert.match(sql, /alter table public\.commercial_offer_signing_transactions/i);
+  assert.match(sql, /signing_origin text not null default 'customer_link'/i);
+  assert.match(sql, /signing_origin='staff_direct'/i);
+  assert.match(sql, /encode\(extensions\.digest\(lower\(btrim\(input_signer_email\)\),'sha256'\),'hex'\)/i);
+  assert.doesNotMatch(sql, /\bsigner_email\s+text\b/i);
   assert.match(sql, /create table public\.commercial_offer_fulfilment_runs/i);
   assert.match(sql, /constraint commercial_offer_fulfilment_version_unique unique \(offer_version_id\)/i);
   assert.match(sql, /commercial_claim_signed_fulfilment_v1/i);

@@ -54,7 +54,7 @@ async function readState(query, actor, config) {
   const [version, interest, signings, fulfilments] = await Promise.all([
     rest(config, `commercial_offer_versions?select=id,offer_id,version_number,status,has_non_binding_lines,due_now_incl_vat_cents&id=eq.${offer.current_version_id}&limit=1`).then((rows) => rows[0] || null),
     rest(config, `commercial_offer_interest_tokens?select=id,confirmed_at,revoked_at&offer_version_id=eq.${offer.current_version_id}&confirmed_at=not.is.null&revoked_at=is.null&limit=1`).then((rows) => rows[0] || null),
-    rest(config, `commercial_offer_signing_transactions?select=id,status,provider_status,signer_name,signer_email,requested_at,signed_at,failure_code,updated_at&offer_version_id=eq.${offer.current_version_id}&limit=1`),
+    rest(config, `commercial_offer_signing_transactions?select=id,status,provider_status,signer_name,signing_origin,requested_at,signed_at,failure_code,updated_at&offer_version_id=eq.${offer.current_version_id}&limit=1`),
     rest(config, `commercial_offer_fulfilment_runs?select=id,status,customer_id,invoice_id,project_id,factory_project_id,checkout_url_created_at,production_handover_at,last_error_code,updated_at&offer_version_id=eq.${offer.current_version_id}&limit=1`),
   ]);
   return {
@@ -69,7 +69,7 @@ async function requestSignature(input, actor, config) {
   const context = await loadSigningContext(offerVersionId, actor, config);
   const signerName = clean(input.signerName || context.relationship.contactName || context.relationship.companyName);
   const signerEmail = clean(input.signerEmail || context.relationship.email).toLowerCase();
-  if (!validEmail(signerEmail) || !signerName || signerName.length > 180) throw problem(400, "SIGNER_INVALID", "Controleer de naam en het e-mailadres van de ondertekenaar.");
+  if (!validEmail(signerEmail) || signerName.length < 2 || signerName.length > 160) throw problem(400, "SIGNER_INVALID", "Controleer de naam en het e-mailadres van de ondertekenaar.");
   const reservation = await rpc(config, "commercial_reserve_signature_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,

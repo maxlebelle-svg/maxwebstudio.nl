@@ -6,8 +6,8 @@
     {
       "order": 1,
       "path": "supabase/migrations/20260802213000_commercial_offer_signhost.sql",
-      "bytes": 10248,
-      "sha256": "dedc07727344ba3cd05e6c5c6fe6d3019cc8b6f0f3bd85d59f00595b517ffd34"
+      "bytes": 10259,
+      "sha256": "dfd081a432bdf3e8e4a3033e30861d03fa653e4a363f074ef893731af2652931"
     }
   ]
 }

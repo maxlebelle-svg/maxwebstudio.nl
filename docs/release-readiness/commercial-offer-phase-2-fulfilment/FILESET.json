@@ -6,8 +6,8 @@
     {
       "order": 1,
       "path": "supabase/migrations/20260802230000_commercial_offer_phase_2_fulfilment.sql",
-      "bytes": 16128,
-      "sha256": "1f8bf9680d51436049b33309087324c51511270447c2548a032cd34e67dca866"
+      "bytes": 16090,
+      "sha256": "e52fe76d3322348f36caf35a121e22a55c0e313cc1a09e9b1b12cece4b52f75d"
     }
   ]
 }

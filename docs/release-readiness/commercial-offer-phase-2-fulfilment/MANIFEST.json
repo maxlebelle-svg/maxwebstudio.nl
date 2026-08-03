@@ -2,16 +2,20 @@
   "schemaVersion": 1,
   "releaseIdentifier": "commercial-offer-phase-2-fulfilment-2026-08-02",
   "release": "Max Webstudio signed commercial offer fulfilment",
-  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "status": "DEPLOYED_TO_PRODUCTION_WITH_SEPARATE_AUTHORIZATION",
   "category": "existing-only/product",
   "sourceBranch": "main",
   "remoteExecutionAuthorizedByThisManifest": false,
   "requiresSeparateRemoteExecutionAuthorization": true,
+  "separateRemoteExecutionAuthorized": true,
+  "productionAppliedAt": "2026-08-03T19:32:49Z",
   "migrationCount": 1,
   "executionOrder": [
     "supabase/migrations/20260802230000_commercial_offer_phase_2_fulfilment.sql"
   ],
   "scope": [
+    "one shared Signhost transaction for customer-link and staff-direct entry routes",
+    "hashed signer email evidence without persistent plaintext email",
     "idempotent post-signature fulfilment state",
     "automatic due-now invoice and Mollie payment request",
     "payment-gated Factory production handoff"
