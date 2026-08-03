@@ -22454,6 +22454,33 @@
             || null;
         }
 
+        function factoryWebsiteAnalysisPayload() {
+          const packageData = currentWebsiteIntelligencePackage();
+          if (!packageData) return null;
+          const scan = packageData.websiteScanRaw && typeof packageData.websiteScanRaw === "object"
+            ? packageData.websiteScanRaw
+            : {};
+          const homepage = scan.currentWebsite || scan.homepage || {};
+          const aiBriefing = packageData.aiBriefing && typeof packageData.aiBriefing === "object"
+            ? packageData.aiBriefing
+            : {};
+          const contact = packageData.extractedContactData && typeof packageData.extractedContactData === "object"
+            ? packageData.extractedContactData
+            : {};
+          const unique = (items = []) => [...new Set(items.map((item) => String(item || "").trim()).filter(Boolean))];
+          return {
+            ...scan,
+            currentWebsite: {
+              ...homepage,
+              services: unique([...(homepage.services || []), ...(aiBriefing.services || [])]),
+              socialUrls: unique([...(homepage.socialUrls || []), ...(contact.socialUrls || [])]),
+            },
+            aiBriefing,
+            researchPackage: packageData.researchPackage || null,
+            extractedContactData: contact,
+          };
+        }
+
         function normalizeServiceValues(labels = []) {
           const text = ensureArrayValue(labels).join(" ").toLowerCase();
           const values = [];
@@ -24416,7 +24443,7 @@
             intakeSummary: buildIntakeBriefingSection(),
             intakeCompleteness: intake.percent,
             assetMetadata: intake.assets,
-            websiteAnalysis: currentWebsiteIntelligencePackage()?.websiteScanRaw || currentWebsiteIntelligencePackage()?.websiteIntelligence || null,
+            websiteAnalysis: factoryWebsiteAnalysisPayload(),
             websiteIntelligencePackage: currentWebsiteIntelligencePackage(),
             ...googleReviewPayloadFromLead(lead),
             ...extra,

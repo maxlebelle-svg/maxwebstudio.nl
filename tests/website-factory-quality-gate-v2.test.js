@@ -135,6 +135,44 @@ test("service click galleries use static packaged images instead of broken runti
   assert.equal(report.checks.find((item) => item.id === "static_portfolio_images").passed, true);
 });
 
+test("website research keeps source categories and real social profiles in the generated site", () => {
+  const generated = buildWebsitePackage({
+    journey: {
+      businessName: "Boomverzorging Drenthe",
+      websiteUrl: "https://boomverzorgingdrenthe.nl",
+      packageType: "starter",
+      websiteAnalysis: {
+        currentWebsite: {
+          title: "Boomverzorging Drenthe",
+          services: ["Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
+          socialUrls: [
+            "https://www.facebook.com/boomverzorgingdrenthe",
+            "https://www.instagram.com/boomverzorgingdrenthe/",
+          ],
+        },
+        aiBriefing: {
+          industry: "Boomverzorging",
+          services: ["Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
+        },
+      },
+    },
+    briefing: "Branche: Boomverzorging in Drenthe\nCTA: Vraag vrijblijvend een offerte aan",
+    version: 8,
+  });
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Boomverzorging Drenthe" } });
+
+  assert.deepEqual(generated.meta.services.slice(0, 6), ["Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"]);
+  assert.match(html, />Rooien</);
+  assert.match(html, />Stobbenfrezen</);
+  assert.match(html, /https:\/\/www\.facebook\.com\/boomverzorgingdrenthe/);
+  assert.match(html, /https:\/\/www\.instagram\.com\/boomverzorgingdrenthe\//);
+  assert.match(html, /sameAs/);
+  assert.doesNotMatch(html, /\"Duidelijk, professioneel|\"De belangrijkste informatie/);
+  assert.equal(report.checks.find((item) => item.id === "source_social_links_preserved").passed, true);
+  assert.equal(report.passed, true);
+});
+
 test("unknown companies are blocked instead of receiving a polished-looking generic preview", () => {
   const generated = buildWebsitePackage({ journey: { businessName: "Voorbeeldbedrijf" }, version: 1 });
   const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Voorbeeldbedrijf" } });
