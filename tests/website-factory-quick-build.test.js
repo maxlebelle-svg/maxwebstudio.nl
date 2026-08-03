@@ -58,6 +58,11 @@ test("starting a replacement build is immediate and preserves existing preview v
   assert.match(resetFlow, /Bestaande previewversies blijven veilig bewaard/);
 });
 
+test("replacement builds refresh website research instead of reusing stale categories", () => {
+  assert.match(factoryHtml, /if \(validWebsite\) \{\s*await analyzeWebsiteForFactory\(\)/);
+  assert.doesNotMatch(factoryHtml, /validWebsite && !currentWebsiteIntelligencePackage\(\)\?\.lastScannedAt/);
+});
+
 test("explicit no-website context skips website use", () => {
   assert.deepEqual(normalizeWebsiteInput("fattrek.nl", { intent: "none", explicitNoWebsite: true }), {
     url: "", kind: "none", shouldScan: false, warning: "", fallbackAllowed: true,

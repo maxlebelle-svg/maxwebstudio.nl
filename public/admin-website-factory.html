@@ -24714,7 +24714,9 @@
             error.code = "DEMO_JOURNEY_SAVE_INCOMPLETE";
             throw error;
           }
-          if (validWebsite && !currentWebsiteIntelligencePackage()?.lastScannedAt) {
+          // Every replacement build must use a fresh source scan; cached research may still contain
+          // old navigation labels, social-icon names or categories from an earlier Factory version.
+          if (validWebsite) {
             await analyzeWebsiteForFactory();
             if (!currentWebsiteIntelligencePackage()?.lastScannedAt) {
               const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
