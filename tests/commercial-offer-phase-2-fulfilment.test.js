@@ -65,6 +65,7 @@ test("admin composer exposes signature only after confirmed interest", () => {
   assert.match(endpoint, /request_signature/);
   assert.match(endpoint, /commercial_reserve_signature_v1/);
   assert.match(endpoint, /SIGNABLE_DOCUMENT_INTEGRITY_FAILED/);
+  assert.doesNotMatch(endpoint, /commercial_offer_signing_transactions\?select=[^`]*signing_origin/);
   assert.match(ui, /if \(!state\.interestConfirmed\)/);
   assert.match(ui, /Naar Signhost sturen/);
   assert.match(html, /offer-composer-phase2\.js/);
