@@ -66,6 +66,11 @@
   status = 200
 
 [[redirects]]
+  from = "/betaling-verwerken"
+  to = "/betaling-verwerken.html"
+  status = 200
+
+[[redirects]]
   from = "/admin-assets"
   to = "/admin-assets.html"
   status = 200
@@ -212,6 +217,14 @@
 
 [[headers]]
   for = "/offerte-ondertekening-voltooid*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0, must-revalidate"
+    Referrer-Policy = "no-referrer"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), browsing-topics=()"
+
+[[headers]]
+  for = "/betaling-verwerken*"
   [headers.values]
     Cache-Control = "no-store, max-age=0, must-revalidate"
     Referrer-Policy = "no-referrer"

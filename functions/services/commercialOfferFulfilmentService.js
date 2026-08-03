@@ -1,5 +1,6 @@
 const crypto = require("node:crypto");
 const { rest } = require("./partnerOnboardingAccessService");
+const { createCommercialOfferReturnToken } = require("./signhostService");
 
 async function fulfilSignedCommercialOffer(context, providerTransactionId, providerStatus) {
   assertEnabled();
@@ -226,7 +227,7 @@ async function ensureMolliePayment(context, invoice, identity, commercial, payme
     body: JSON.stringify({
       amount: { currency: "EUR", value: payment.total.toFixed(2) },
       description: `${invoice.invoice_number} - ${identity.company || identity.name}`.slice(0, 255),
-      redirectUrl: `${config.siteUrl}/bedankt.html?order=${encodeURIComponent(orderId(claim.offerVersionId))}&invoice=${encodeURIComponent(invoice.id)}`,
+      redirectUrl: `${config.siteUrl}/betaling-verwerken?status=${encodeURIComponent(createCommercialOfferReturnToken(claim.signingId))}`,
       webhookUrl: `${config.siteUrl}/.netlify/functions/mollie-webhook`,
       metadata: {
         source: "commercial_order", orderId: orderId(claim.offerVersionId), invoiceId: invoice.id,

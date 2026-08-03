@@ -42,7 +42,7 @@ exports.handler = async (event) => {
     const unsignedPath=`${details.offer.id}/${details.version.id}/definitieve-offerte.pdf`;
     await storageUpload(context,unsignedPath,pdf.bytes);
     const provider=signhostConfig();
-    const providerTx=await createCommercialOfferTransaction(provider,{signerEmail:details.signerEmail,signerName,signerPhone:normalizedPhone,companyName:details.relationship.companyName,reference:pdf.reference});
+    const providerTx=await createCommercialOfferTransaction(provider,{signerEmail:details.signerEmail,signerName,signerPhone:normalizedPhone,companyName:details.relationship.companyName,reference:pdf.reference,signingTransactionId:id});
     const providerId=clean(providerTx.Id||providerTx.id);
     if(!providerId) throw coded("SIGNHOST_TRANSACTION_INVALID",502,"Signhost gaf geen geldige transactie terug.");
     await uploadFileMetadata(provider,providerId,fileId,buildCommercialOfferMetadata(providerTx,{signerEmail:details.signerEmail,signaturePage:pdf.signaturePage,reference:pdf.reference}));

@@ -92,7 +92,8 @@ async function createSmokeTestTransaction(config, input) {
 }
 
 async function createCommercialOfferTransaction(config, input) {
-  const returnUrl = commercialOfferReturnUrl();
+  const returnToken = createCommercialOfferReturnToken(input.signingTransactionId);
+  const returnUrl = commercialOfferReturnUrl(process.env, returnToken);
   if (!returnUrl) throw coded("SIGNHOST_RETURN_URL_INVALID", 503, "De veilige terugkeerpagina na ondertekening is niet geconfigureerd.");
   return signhostRequest(config, "/api/transaction/", {
     method:"POST",
@@ -115,18 +116,39 @@ async function createCommercialOfferTransaction(config, input) {
   });
 }
 
-function commercialOfferReturnUrl(env = process.env) {
+function commercialOfferReturnUrl(env = process.env, returnToken = "") {
   const raw = clean(env.URL || env.SITE_URL);
   try {
     const url = new URL(raw);
     const allowedHosts = new Set(["maxwebstudio.nl", "maxwebstudio-staging.netlify.app"]);
     if (url.protocol !== "https:" || url.username || url.password || url.port || !allowedHosts.has(url.hostname.toLowerCase())) return "";
     url.pathname = "/offerte-ondertekening-voltooid";
-    url.search = "";
+    url.search = returnToken ? `?status=${encodeURIComponent(returnToken)}` : "";
     url.hash = "";
     return url.toString();
   } catch {
     return "";
+  }
+}
+
+function createCommercialOfferReturnToken(signingTransactionId, env = process.env) {
+  const id = clean(signingTransactionId).toLowerCase();
+  const secret = clean(env.SIGNHOST_POSTBACK_SHARED_SECRET);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id) || secret.length < 24) {
+    throw coded("SIGNHOST_RETURN_TOKEN_INVALID", 503, "De beveiligde terugkeerstatus is niet geconfigureerd.");
+  }
+  const signature = crypto.createHmac("sha256", secret).update(`commercial-offer-return:v1:${id}`).digest("hex");
+  return `${id}.${signature}`;
+}
+
+function verifyCommercialOfferReturnToken(value, env = process.env) {
+  const match = clean(value).toLowerCase().match(/^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.([0-9a-f]{64})$/);
+  if (!match) return { valid:false, signingTransactionId:"" };
+  try {
+    const expected = createCommercialOfferReturnToken(match[1], env).split(".")[1];
+    return { valid:safeEqual(match[2], expected), signingTransactionId:match[1] };
+  } catch {
+    return { valid:false, signingTransactionId:"" };
   }
 }
 
@@ -307,6 +329,7 @@ module.exports = {
   buildCommercialOfferMetadata,
   buildSmokeTestMetadata,
   commercialOfferReturnUrl,
+  createCommercialOfferReturnToken,
   createCommercialOfferTransaction,
   createTransaction,
   createSmokeTestTransaction,
@@ -321,5 +344,6 @@ module.exports = {
   uploadPdf,
   uploadFileMetadata,
   validatePostback,
+  verifyCommercialOfferReturnToken,
   verification,
 };

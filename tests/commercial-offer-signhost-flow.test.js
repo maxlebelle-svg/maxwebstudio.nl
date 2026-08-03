@@ -5,7 +5,7 @@ const path = require("node:path");
 const { buildOfferVersion } = require("../functions/services/commercialOfferService");
 const { buildCommercialOfferMail } = require("../functions/services/commercialOfferMailService");
 const { generateCommercialOfferPdf } = require("../functions/services/commercialOfferPdfService");
-const { buildCommercialOfferMetadata, commercialOfferReturnUrl, transactionSignUrl } = require("../functions/services/signhostService");
+const { buildCommercialOfferMetadata, commercialOfferReturnUrl, createCommercialOfferReturnToken, transactionSignUrl, verifyCommercialOfferReturnToken } = require("../functions/services/signhostService");
 
 const root=path.join(__dirname,"..");
 const read=file=>fs.readFileSync(path.join(root,file),"utf8");
@@ -62,6 +62,16 @@ test("commercial Signhost return URL is pinned to approved Max Webstudio hosts",
   assert.match(service,/SIGNHOST_RETURN_URL_INVALID/);
 });
 
+test("commercial return status uses a signed opaque transaction reference",()=>{
+  const env={URL:"https://maxwebstudio.nl",SIGNHOST_POSTBACK_SHARED_SECRET:"test-secret-that-is-long-enough-for-hmac"};
+  const id="11111111-1111-4111-8111-111111111111";
+  const token=createCommercialOfferReturnToken(id,env);
+  assert.match(token,new RegExp(`^${id}\\.[a-f0-9]{64}$`));
+  assert.deepEqual(verifyCommercialOfferReturnToken(token,env),{valid:true,signingTransactionId:id});
+  assert.equal(verifyCommercialOfferReturnToken(`${id}.${"0".repeat(64)}`,env).valid,false);
+  assert.equal(commercialOfferReturnUrl(env,token),`https://maxwebstudio.nl/offerte-ondertekening-voltooid?status=${token}`);
+});
+
 test("branded completion page never treats return parameters as proof",()=>{
   const page=read("public/offerte-ondertekening-voltooid.html");
   assert.match(page,/Max Webstudio/);
@@ -69,7 +79,9 @@ test("branded completion page never treats return parameters as proof",()=>{
   assert.match(page,/niet opnieuw te ondertekenen/i);
   assert.match(page,/sh_signerstatus/);
   assert.match(page,/history\.replaceState/);
-  assert.doesNotMatch(page,/fetch\(|XMLHttpRequest|localStorage|sessionStorage/);
+  assert.match(page,/commercial-offer-completion-status/);
+  assert.match(page,/fetch\(/);
+  assert.doesNotMatch(page,/XMLHttpRequest|localStorage|sessionStorage/);
   assert.doesNotMatch(page,/sh_transactionid|sh_signerid/);
   const netlify=read("netlify.toml");
   assert.match(netlify,/from = "\/offerte-ondertekening-voltooid"[\s\S]*to = "\/offerte-ondertekening-voltooid\.html"/);
