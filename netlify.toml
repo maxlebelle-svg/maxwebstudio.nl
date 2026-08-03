@@ -7,6 +7,7 @@
 
 [functions."website-factory"]
   included_files = [
+    "public/assets/demo-images/library/boomverzorging/**",
     "public/assets/demo-images/library/bouwbedrijf/**",
     "public/assets/demo-images/library/financieel-adviseur/**",
     "public/assets/demo-images/library/holistisch/**",
@@ -14,6 +15,7 @@
 
 [functions."demo-journey"]
   included_files = [
+    "public/assets/demo-images/library/boomverzorging/**",
     "public/assets/demo-images/library/bouwbedrijf/**",
     "public/assets/demo-images/library/financieel-adviseur/**",
     "public/assets/demo-images/library/holistisch/**",
@@ -21,6 +23,7 @@
 
 [functions."admin-preview-image-assets"]
   included_files = [
+    "public/assets/demo-images/library/boomverzorging/**",
     "public/assets/demo-images/library/*/hero.png",
     "public/assets/demo-images/library/holistisch/natuur-coaching.png",
     "public/assets/demo-images/library/quantumbouw/badkamer-natuursteen.jpg",
