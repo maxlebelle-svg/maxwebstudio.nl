@@ -95,11 +95,6 @@
   letter-spacing: -0.055em;
 }
 
-.portal-body.is-client-login .portal-auth-card h1::after {
-  color: #2878ff;
-  content: ".";
-}
-
 .portal-body.is-client-login #login-intro {
   max-width: 500px;
   margin: 0 auto;
