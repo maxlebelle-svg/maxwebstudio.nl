@@ -1,0 +1,321 @@
+.portal-client-access,
+.portal-client-panel-heading {
+  display: none;
+}
+
+.portal-body.is-client-login {
+  position: relative;
+  min-height: 100svh;
+  background:
+    linear-gradient(90deg, rgba(1, 8, 20, 0.46) 0%, rgba(1, 8, 20, 0.18) 48%, rgba(1, 8, 20, 0.08) 100%),
+    url("assets/client-login-studio.png") center / cover fixed no-repeat,
+    #020a18;
+}
+
+.portal-body.is-client-login::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 25% 42%, rgba(18, 92, 255, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(1, 6, 16, 0.08), rgba(1, 6, 16, 0.38));
+}
+
+.portal-body.is-client-login .portal-auth-shell {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1460px);
+  min-height: 100svh;
+  padding: clamp(24px, 4vw, 64px);
+}
+
+.portal-body.is-client-login .portal-auth-shell-wide:not(.is-developer-mode) {
+  grid-template-columns: minmax(0, 570px);
+  justify-content: start;
+}
+
+.portal-body.is-client-login .portal-auth-card {
+  gap: clamp(20px, 2.6vh, 30px);
+  padding: clamp(28px, 4vw, 48px);
+  overflow: hidden;
+  border: 1px solid rgba(61, 128, 255, 0.6);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(25, 105, 255, 0.16), transparent 34%),
+    linear-gradient(155deg, rgba(8, 27, 58, 0.94), rgba(2, 13, 31, 0.97));
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(28, 99, 255, 0.08) inset;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.portal-body.is-client-login .brand {
+  justify-content: center;
+  gap: 12px;
+}
+
+.portal-body.is-client-login .brand-mark {
+  width: 58px;
+  height: 58px;
+}
+
+.portal-body.is-client-login .brand-mark rect {
+  fill: #030d20;
+  stroke: #2878ff;
+}
+
+.portal-body.is-client-login .brand-mark .brand-spark {
+  stroke: #2c7cff;
+}
+
+.portal-body.is-client-login .brand > span {
+  font-size: clamp(17px, 2vw, 22px);
+  letter-spacing: -0.025em;
+}
+
+.portal-body.is-client-login .brand > span::first-line {
+  color: #fff;
+}
+
+.portal-body.is-client-login .section-kicker {
+  display: none;
+}
+
+.portal-body.is-client-login .portal-auth-card > div:nth-of-type(1) {
+  text-align: center;
+}
+
+.portal-body.is-client-login .portal-auth-card h1 {
+  max-width: 500px;
+  margin: 0 auto 14px;
+  font-size: clamp(2.45rem, 4.2vw, 4.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.portal-body.is-client-login .portal-auth-card h1::after {
+  color: #2878ff;
+  content: ".";
+}
+
+.portal-body.is-client-login #login-intro {
+  max-width: 500px;
+  margin: 0 auto;
+  color: rgba(235, 243, 255, 0.72);
+  font-size: clamp(14px, 1.4vw, 16px);
+  line-height: 1.65;
+}
+
+.portal-body.is-client-login .portal-login-status-card,
+.portal-body.is-client-login .portal-auth-tabs {
+  display: none;
+}
+
+.portal-body.is-client-login .portal-auth-panel {
+  gap: 18px;
+}
+
+.portal-body.is-client-login .portal-login-form {
+  gap: 17px;
+}
+
+.portal-body.is-client-login .portal-login-form label {
+  gap: 8px;
+  color: rgba(239, 246, 255, 0.82);
+  font-size: 14px;
+}
+
+.portal-body.is-client-login .portal-login-form input,
+.portal-body.is-client-login .portal-login-form select {
+  min-height: 56px;
+  border-color: rgba(151, 184, 230, 0.36);
+  border-radius: 12px;
+  background: rgba(2, 13, 31, 0.64);
+}
+
+.portal-body.is-client-login .portal-login-form input:focus,
+.portal-body.is-client-login .portal-login-form select:focus {
+  border-color: rgba(48, 126, 255, 0.92);
+  outline: 3px solid rgba(40, 120, 255, 0.16);
+}
+
+.portal-body.is-client-login .portal-password-toggle {
+  border-color: rgba(151, 184, 230, 0.28);
+  border-radius: 9px;
+}
+
+.portal-body.is-client-login .portal-login-form .button {
+  width: 100%;
+  min-height: 56px;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.portal-body.is-client-login .portal-login-form .button.primary {
+  border: 1px solid rgba(112, 168, 255, 0.34);
+  color: #fff;
+  background: linear-gradient(135deg, #3f8cff, #1764ed);
+  box-shadow: 0 16px 36px rgba(12, 82, 222, 0.36);
+}
+
+.portal-body.is-client-login .portal-login-form .button.secondary {
+  border-color: rgba(151, 184, 230, 0.32);
+  color: rgba(239, 246, 255, 0.82);
+  background: rgba(3, 16, 37, 0.48);
+}
+
+.portal-body.is-client-login .portal-client-access {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  color: #3986ff;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.portal-body.is-client-login .portal-client-access:hover,
+.portal-body.is-client-login .portal-client-access:focus-visible {
+  color: #75aaff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.portal-body.is-client-login .portal-client-panel-heading {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.portal-body.is-client-login .portal-client-panel-heading p,
+.portal-body.is-client-login .portal-client-panel-heading h2,
+.portal-body.is-client-login .portal-client-panel-heading span {
+  margin: 0;
+}
+
+.portal-body.is-client-login .portal-client-panel-heading p {
+  color: #3986ff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.portal-body.is-client-login .portal-client-panel-heading h2 {
+  color: #fff;
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  letter-spacing: -0.04em;
+}
+
+.portal-body.is-client-login .portal-client-panel-heading span {
+  color: rgba(235, 243, 255, 0.68);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.portal-body.is-client-login .portal-login-unavailable {
+  border-color: rgba(45, 124, 255, 0.4);
+  border-radius: 14px;
+  background: rgba(4, 21, 48, 0.68);
+}
+
+.portal-body.is-client-login .portal-login-unavailable .button {
+  width: 100%;
+  justify-content: center;
+}
+
+.portal-body.is-client-login .portal-message {
+  min-height: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.portal-body.is-client-login .portal-message:empty {
+  display: none;
+}
+
+@media (min-width: 681px) and (max-height: 820px) {
+  .portal-body.is-client-login .portal-auth-shell {
+    align-items: start;
+    padding-block: 20px;
+  }
+
+  .portal-body.is-client-login .portal-auth-card {
+    gap: 16px;
+    padding: 24px 30px;
+  }
+
+  .portal-body.is-client-login .brand-mark {
+    width: 46px;
+    height: 46px;
+  }
+
+  .portal-body.is-client-login .portal-auth-card h1 {
+    font-size: clamp(2.25rem, 7vh, 3.5rem);
+  }
+
+  .portal-body.is-client-login .portal-login-form {
+    gap: 12px;
+  }
+
+  .portal-body.is-client-login .portal-login-form input,
+  .portal-body.is-client-login .portal-login-form .button {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 680px) {
+  .portal-body.is-client-login {
+    background-position: 66% center;
+    background-attachment: scroll;
+  }
+
+  .portal-body.is-client-login::before {
+    background: rgba(1, 8, 20, 0.58);
+  }
+
+  .portal-body.is-client-login .portal-auth-shell {
+    align-items: start;
+    padding: 14px;
+  }
+
+  .portal-body.is-client-login .portal-auth-card {
+    margin-block: 0;
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .portal-body.is-client-login .brand {
+    align-items: center;
+  }
+
+  .portal-body.is-client-login .brand-mark {
+    width: 48px;
+    height: 48px;
+  }
+
+  .portal-body.is-client-login .brand > span {
+    max-width: 190px;
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .portal-body.is-client-login .portal-auth-card h1 {
+    font-size: clamp(2.2rem, 11vw, 3.2rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-body.is-client-login *,
+  .portal-body.is-client-login *::before,
+  .portal-body.is-client-login *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
