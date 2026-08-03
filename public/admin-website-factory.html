@@ -24765,17 +24765,6 @@
         };
 
         async function resetDemoForRegeneration() {
-          const hasExistingOutput = Boolean(
-            journey?.previewUrl
-            || elements.briefing?.value
-            || buildHistory.latestJob
-            || (buildHistory.previewVersions || []).length
-          );
-          const confirmed = window.confirm(hasExistingOutput
-            ? "Oude demo-preview en websiteplan losmaken? Daarna kun je de briefing opnieuw invullen en een verbeterde preview genereren."
-            : "Briefing leegmaken zodat je opnieuw kunt invoeren?");
-          if (!confirmed) return;
-
           await withJourneyLock("regenerate_demo", [elements.regenerateDemo, elements.regeneratePreview, elements.generatePreview, elements.generateBriefing, elements.save, elements.nextStepPrimary], async () => {
             const selectedPackage = currentPackageType();
             intakeState = selectedPackage ? { package: selectedPackage } : {};
@@ -24797,42 +24786,20 @@
             }
 
             if (journey?.id) {
-              setMessage(elements.message, "Oude demo resetten...", "info");
-              try {
-                const data = await apiRequest(endpoint, "PATCH", collectPayload({
-                  id: journey.id,
-                  demoJourneyId: journey.id,
-                  demoStatus: "aanvraag_ontvangen",
-                  generatedBriefing: "",
-                  previewUrl: "",
-                  feedback: "",
-                  intake: intakeState,
-                  intakeSummary: "",
-                  intakeCompleteness: 0,
-                  assetMetadata: [],
-                }));
-                journey = data.demoJourney || data.journey || journey;
-                if (journey) {
-                  journey.generatedBriefing = "";
-                  journey.previewUrl = "";
-                  journey.feedback = "";
-                  journey.previewPackage = {};
-                  journey.assetMetadata = [];
-                  journey.intake = intakeState;
-                  journey.intakeCompleteness = 0;
-                }
-                events = Array.isArray(data.events) ? data.events : events;
-              } catch (error) {
-                setMessage(elements.message, error.message || "Demo resetten is niet gelukt.", "error");
-                return;
-              }
+              journey.generatedBriefing = "";
+              journey.previewUrl = "";
+              journey.feedback = "";
+              journey.previewPackage = {};
+              journey.assetMetadata = [];
+              journey.intake = intakeState;
+              journey.intakeCompleteness = 0;
             }
 
             renderIntakeFields();
             renderIntake();
             renderJourney();
             document.getElementById("demo-journey-intake")?.scrollIntoView({ behavior: "smooth", block: "center" });
-            setMessage(elements.message, "Demo is klaargezet om opnieuw in te vullen. Vul de verbeterde briefing in en genereer daarna opnieuw het websiteplan en de preview.", "success");
+            setMessage(elements.message, "Nieuwe build klaar om in te vullen. Bestaande previewversies blijven veilig bewaard.", "success");
           });
         }
 

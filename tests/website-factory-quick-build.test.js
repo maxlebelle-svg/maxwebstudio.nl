@@ -50,6 +50,14 @@ test("quick build tolerates a missing selected lead when projecting Google revie
   assert.doesNotMatch(factoryHtml, /Array\.isArray\(lead\.googleReviews\)/);
 });
 
+test("starting a replacement build is immediate and preserves existing preview versions", () => {
+  const resetFlow = factoryHtml.match(/async function resetDemoForRegeneration\(\) \{([\s\S]*?)\n        \}\n\n        async function saveDemoSite/)?.[1] || "";
+  assert.ok(resetFlow);
+  assert.doesNotMatch(resetFlow, /window\.confirm/);
+  assert.doesNotMatch(resetFlow, /apiRequest\(endpoint, "PATCH"/);
+  assert.match(resetFlow, /Bestaande previewversies blijven veilig bewaard/);
+});
+
 test("explicit no-website context skips website use", () => {
   assert.deepEqual(normalizeWebsiteInput("fattrek.nl", { intent: "none", explicitNoWebsite: true }), {
     url: "", kind: "none", shouldScan: false, warning: "", fallbackAllowed: true,
