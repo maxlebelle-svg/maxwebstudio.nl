@@ -200,3 +200,19 @@ test("guided layout has desktop, tablet and mobile responsive rules", () => {
   assert.match(styles, /@media\(max-width:1024px\)/);
   assert.match(styles, /@media\(max-width:768px\)/);
 });
+
+test("quick build keeps inferred services available after the asynchronous website scan", () => {
+  const quickBuild = factory.slice(factory.indexOf("async function quickBuild"), factory.indexOf("window.WebsiteFactoryRuntime = {"));
+  assert.match(quickBuild, /let inferredServices = \[\];/);
+  assert.match(quickBuild, /inferredServices = normalizeServiceValues/);
+  assert.match(quickBuild, /await analyzeWebsiteForFactory\(\);[\s\S]*if \(inferredServices\.length >= 2\) intakeState\.services = inferredServices/);
+  assert.doesNotMatch(quickBuild, /const inferredServices = normalizeServiceValues/);
+});
+
+test("build history links every completed job to its stored preview version", () => {
+  const renderBuildStatus = factory.slice(factory.indexOf("function renderBuildStatus()"), factory.indexOf("function renderProjectWorkspace()"));
+  assert.match(renderBuildStatus, /const versions = buildHistory\.previewVersions \|\| \[\]/);
+  assert.match(renderBuildStatus, /version\?\.buildJobId[\s\S]*job\.id/);
+  assert.match(renderBuildStatus, /Number\(version\?\.version \|\| 0\) === Number\(job\.previewVersion \|\| 0\)/);
+  assert.doesNotMatch(renderBuildStatus, /job === latest \? capability : \{ versionStored: false/);
+});

@@ -24682,11 +24682,12 @@
           if (elements.notes) elements.notes.value = notes;
 
           const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
+          let inferredServices = [];
           if (inferredBranch !== "zakelijk") {
             const branchChanged = String(intakeState.branch || "") !== inferredBranch;
             const preset = branchPresets[inferredBranch] || {};
             const presetServices = ensureArrayValue(preset.services).map((item) => Array.isArray(item) ? item[0] : item).filter(Boolean);
-            const inferredServices = normalizeServiceValues([businessName, wishes, notes]).filter((service) => presetServices.includes(service));
+            inferredServices = normalizeServiceValues([businessName, wishes, notes]).filter((service) => presetServices.includes(service));
             intakeState.branch = inferredBranch;
             if (inferredServices.length >= 2) {
               intakeState.services = inferredServices;
@@ -25900,6 +25901,7 @@
 
         function renderBuildStatus() {
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
+          const versions = buildHistory.previewVersions || [];
           const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
           const capability = previewCapabilityState();
           const previewUrl = journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "";
@@ -25956,7 +25958,15 @@
               <div class="sales-timeline-item factory-history-item">
                 <span class="sales-timeline-dot ${job.status === "completed" ? "is-active" : ""}"></span>
                 <div>
-                  <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status, job === latest ? capability : { versionStored: false, renderable: false, editorAvailable: false })}`)}</strong>
+                  <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status, (() => {
+                    const linkedVersion = versions.find((version) => String(version?.buildJobId || "") === String(job.id || ""))
+                      || versions.find((version) => Number(version?.version || 0) === Number(job.previewVersion || 0));
+                    return {
+                      versionStored: Boolean(linkedVersion?.id),
+                      renderable: linkedVersion?.renderable === true,
+                      editorAvailable: linkedVersion?.editorAvailable === true,
+                    };
+                  })())}`)}</strong>
                   <small>${escapeHtml(`Score ${Number.isFinite(Number(job.previewScore)) ? job.previewScore : "-"} / 100 · ${job.currentStep || "build"}`)}</small>
                   <small>${escapeHtml(formatDate(job.finishedAt || job.updatedAt || job.createdAt))}</small>
                 </div>
