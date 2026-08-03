@@ -287,7 +287,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
   const legacyIndustry = explicitIndustry || inferIndustry(industrySignals, businessName);
-  const sourceWebsiteServices = mergeUnique(currentWebsite.services, websiteAnalysis?.aiBriefing?.services).filter(isUsableServiceLabel);
+  const sourceWebsiteServices = mergeUnique(currentWebsite.services, websiteAnalysis?.aiBriefing?.services)
+    .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName));
   const requestedServices = websiteBrief.business.services.length
     ? websiteBrief.business.services
     : extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), legacyIndustry);
@@ -333,7 +334,9 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     cta: adaptedIndustry.cta || legacyIndustryProfile.cta,
     services: adaptedIndustry.services.length ? adaptedIndustry.services : legacyIndustryProfile.services,
   };
-  const services = mergeUnique(adaptedIndustry.services, industryProfile.services).filter(isUsableServiceLabel).slice(0, 6);
+  const services = mergeUnique(adaptedIndustry.services, industryProfile.services)
+    .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName))
+    .slice(0, 6);
   const pricingPackages = extractPricingPackages({
     currentWebsite,
     briefing: combinedBriefing,
@@ -373,7 +376,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     role,
     packagedAssetMeta(siteAssets.find((item) => item.kind === role), asset),
   ]));
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite, googleReviews, googleRating, googleRatingTotal, googleMapsUrl });
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region: websiteBrief.business.region, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite, googleReviews, googleRating, googleRatingTotal, googleMapsUrl });
   const css = renderCss(colors);
   const script = renderScript({ businessName, email, services, industryProfile, siteAssets });
   const sitemap = renderSitemap({ siteUrl, pages });
@@ -1105,6 +1108,18 @@ function isUsableServiceLabel(value = "") {
   return /[a-zA-ZÀ-ÿ]/.test(text);
 }
 
+function isBusinessNameServiceLabel(value = "", businessName = "") {
+  const normalize = (input) => cleanText(input)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const serviceKey = normalize(value);
+  const businessKey = normalize(businessName);
+  return Boolean(serviceKey && businessKey && serviceKey === businessKey);
+}
+
 function extractLocationText(value = "") {
   const text = cleanText(value);
   const namedRegion = text.match(/\b(Drenthe|Groningen|Friesland|Fryslân|Overijssel|Gelderland|Flevoland|Utrecht|Noord-Holland|Zuid-Holland|Zeeland|Noord-Brabant|Limburg|Amsterdam|Rotterdam|Almere|Breda|Den Haag|Eindhoven|Alkmaar|Haarlem)\b/i);
@@ -1726,7 +1741,7 @@ function normalizeSocialLinks(values = []) {
   }).filter(Boolean).slice(0, 6);
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {}, googleReviews = [], googleRating = "", googleRatingTotal = "", googleMapsUrl = "" }) {
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region = "", industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {}, googleReviews = [], googleRating = "", googleRatingTotal = "", googleMapsUrl = "" }) {
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
   const demoCopy = demoCopyForIndustry(profile, packageRules);
   const navLinks = navigationLinks(packageRules, profile).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
@@ -1734,21 +1749,25 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const secondaryCtaLabel = profile.secondaryCta || "Bel direct";
   const secondaryCtaHref = /bel|telefoon|whatsapp|direct/i.test(secondaryCtaLabel) ? phoneHref : "#diensten";
   const emailHref = email ? `mailto:${escapeHtml(email)}` : "#contact";
-  const cityLine = extractLocationText(industry) || "uw regio";
+  const cityLine = extractLocationText(region || industry) || "uw regio";
   const logoAsset = assetPath(siteAssets, "logo", "");
   const faviconAsset = assetPath(siteAssets, "favicon", "");
   const ogAsset = assetPath(siteAssets, "og", "");
   const heroAsset = heroAssetPath(siteAssets, heroImage.src);
   const socialLinks = normalizeSocialLinks(currentWebsite.socialUrls);
   const socialLinkHtml = socialLinks.map((item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${businessName} op ${item.label}`)}">${escapeHtml(item.label)}</a>`).join("");
-  const serviceTiles = services.slice(0, packageRules.pages.length >= 7 ? 6 : 5).map((service, index) => `
+  const sourceDisplayableServiceCount = mergeUnique(currentWebsite.services)
+    .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName))
+    .length;
+  const displayedServices = services.slice(0, sourceDisplayableServiceCount >= 6 || packageRules.pages.length >= 7 ? 6 : 5);
+  const serviceTiles = displayedServices.map((service, index) => `
         <a class="project-tile service-card" href="#portfolio" data-service="${escapeHtml(service)}">
           <img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)} door ${escapeHtml(businessName)}" loading="lazy" />
           <span>${String(index + 1).padStart(2, "0")}</span>
           <h3>${escapeHtml(service)}</h3>
           <p>${escapeHtml(serviceText(service, profile))}</p>
         </a>`).join("");
-  const portfolioServices = services.slice(0, packageRules.pages.length >= 7 ? 6 : 5);
+  const portfolioServices = displayedServices;
   const portfolioGallerySets = portfolioServices.map((service, serviceIndex) => {
     const galleryServices = Array.from({ length: Math.min(3, portfolioServices.length) }, (_, offset) => portfolioServices[(serviceIndex + offset) % portfolioServices.length]);
     return `<div class="portfolio-gallery" data-portfolio-service="${escapeHtml(service)}" hidden>
@@ -1911,7 +1930,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
       <section class="section-band services-section" id="diensten" data-mws-section-id="home.services" data-mws-section-type="services" data-mws-section-label="Diensten">
         <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(demoCopy.servicesEyebrow)}</span>
         <h2 data-mws-field="title">${escapeHtml(demoCopy.servicesTitle)}</h2>
-        <div class="service-grid" data-mws-field="items">${serviceTiles}</div>
+        <div class="service-grid${displayedServices.length === 6 ? " services-count-6" : ""}"${displayedServices.length === 6 ? ' style="grid-template-columns:repeat(3,1fr)"' : ""} data-mws-field="items">${serviceTiles}</div>
       </section>
       ${pricingSection}
 
@@ -1969,7 +1988,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <label>Telefoonnummer<input name="telefoon" placeholder="Bijv. 06 12345678" /></label>
           <label>E-mailadres<input name="email" placeholder="uw@email.nl" /></label>
           <label>Gewenst contactmoment<input name="contactmoment" placeholder="Bijv. morgenmiddag" /></label>
-          <label class="wide">${escapeHtml(demoCopy.projectLabel)}<select name="project">${services.slice(0, 5).map((service) => `<option>${escapeHtml(service)}</option>`).join("")}</select></label>
+          <label class="wide">${escapeHtml(demoCopy.projectLabel)}<select name="project">${displayedServices.map((service) => `<option>${escapeHtml(service)}</option>`).join("")}</select></label>
           <label class="wide">${escapeHtml(demoCopy.messageLabel)}<textarea name="bericht" placeholder="${escapeHtml(demoCopy.messagePlaceholder)}"></textarea></label>
           <button type="submit">${escapeHtml(cta)}</button>
           <small>Na klikken opent uw mailprogramma met de aanvraag klaar om te versturen.</small>

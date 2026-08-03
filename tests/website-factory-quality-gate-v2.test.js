@@ -144,7 +144,7 @@ test("website research keeps source categories and real social profiles in the g
       websiteAnalysis: {
         currentWebsite: {
           title: "Boomverzorging Drenthe",
-          services: ["Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
           socialUrls: [
             "https://www.facebook.com/boomverzorgingdrenthe",
             "https://www.instagram.com/boomverzorgingdrenthe/",
@@ -152,9 +152,11 @@ test("website research keeps source categories and real social profiles in the g
         },
         aiBriefing: {
           industry: "Boomverzorging",
-          services: ["Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
+          region: "Oosterhesselen, Drenthe",
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"],
         },
       },
+      websiteBrief: { business: { region: "Oosterhesselen, Drenthe" } },
     },
     briefing: "Branche: Boomverzorging in Drenthe\nCTA: Vraag vrijblijvend een offerte aan",
     version: 8,
@@ -165,6 +167,10 @@ test("website research keeps source categories and real social profiles in the g
   assert.deepEqual(generated.meta.services.slice(0, 6), ["Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"]);
   assert.match(html, />Rooien</);
   assert.match(html, />Stobbenfrezen</);
+  assert.match(html, />Eikenprocessierups</);
+  assert.doesNotMatch(html, /<h3>Boomverzorging Drenthe<\/h3>/);
+  assert.match(html, /Werkgebied: Drenthe/);
+  assert.match(html, /services-count-6/);
   assert.match(html, /https:\/\/www\.facebook\.com\/boomverzorgingdrenthe/);
   assert.match(html, /https:\/\/www\.instagram\.com\/boomverzorgingdrenthe\//);
   assert.match(html, /sameAs/);
