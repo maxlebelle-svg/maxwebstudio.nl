@@ -14,6 +14,18 @@ test("definitive dispatch binds the verified server recipient before sending", (
   assert.match(admin, /signer_email: null/);
 });
 
+test("revocation invalidates legacy signing links before optional recipient cleanup", () => {
+  const admin = read("functions/admin-commercial-offers.js");
+  const revokeStart = admin.indexOf("async function revokeInterest");
+  const revokeEnd = admin.indexOf("async function loadMailContext", revokeStart);
+  const revoke = admin.slice(revokeStart, revokeEnd);
+  const invalidateAt = revoke.indexOf('JSON.stringify({ revoked_at: new Date().toISOString() })');
+  const cleanupAt = revoke.indexOf('JSON.stringify({ signer_email: null })');
+  assert.ok(invalidateAt >= 0, "revocation must update the legacy-safe revoked_at field");
+  assert.ok(cleanupAt > invalidateAt, "recipient cleanup must happen only after the link is invalidated");
+  assert.match(revoke, /catch \(error\)[\s\S]*recipient cleanup deferred/);
+});
+
 test("public signing uses only the token-bound recipient and clears it", () => {
   const signing = read("functions/commercial-offer-signing.js");
   assert.match(signing, /const signerEmail=clean\(access\.signer_email\)\.toLowerCase\(\)/);

@@ -275,7 +275,13 @@ async function revokeInterest(input, actor, config) {
     input_reason: reason,
     input_idempotency_key: boundedKey(input.actionKey),
   });
-  await rest(config, `commercial_offer_signing_access_tokens?offer_version_id=eq.${offerVersionId}&started_at=is.null&revoked_at=is.null`, { method: "PATCH", body: JSON.stringify({ revoked_at: new Date().toISOString(), signer_email: null }) });
+  const activeSigningTokens = `commercial_offer_signing_access_tokens?offer_version_id=eq.${offerVersionId}&started_at=is.null&revoked_at=is.null`;
+  await rest(config, activeSigningTokens, { method: "PATCH", body: JSON.stringify({ revoked_at: new Date().toISOString() }) });
+  try {
+    await rest(config, `commercial_offer_signing_access_tokens?offer_version_id=eq.${offerVersionId}&started_at=is.null&signer_email=not.is.null`, { method: "PATCH", body: JSON.stringify({ signer_email: null }) });
+  } catch (error) {
+    console.error("Revoked signing link recipient cleanup deferred", { offerVersionId, code: clean(error?.code) });
+  }
   const redaction = await rpc(config, "commercial_redact_offer_email_logs_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
