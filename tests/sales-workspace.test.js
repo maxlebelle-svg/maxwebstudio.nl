@@ -453,11 +453,41 @@ test("premium responsive contract behoudt desktopkolommen en mobiele detaildrawe
 
 test("handmatige leads kunnen vanuit het detail alsnog een website analyseren", () => {
   assert.match(salesHtml, /id="lead-website-analysis-url"/);
+  assert.match(salesHtml, /id="lead-website-save"/);
+  assert.match(salesHtml, /id="lead-website-remove"/);
+  assert.match(salesHtml, /saveSelectedLeadWebsite/);
+  assert.match(salesHtml, /websiteUrl \}, \{ id: lead\.id \}/);
+  assert.match(salesHtml, /Website blijvend opgeslagen bij deze lead/);
   assert.match(salesHtml, /analysisWebsite \|\| lead\?\.websiteUrl/);
   assert.match(salesHtml, /websiteUrl: target\.url,[\s\S]+websiteAnalysis: analysis/);
   assert.match(salesHtml, /analysisUrl\?\.addEventListener\("input"/);
   assert.match(salesHtml, /Vul hierboven de website URL in om deze handmatige lead te analyseren/);
   assert.match(salesHtml, /Object\.assign\(lead, updates\);[\s\S]+renderLeadfinderList\(\)/);
+});
+
+test("handmatige leadinvoer ondersteunt meerdere telefoonnummers", () => {
+  [salesHtml, leadGeneratorHtml].forEach((html) => {
+    assert.match(html, /id="leadfinder-add-phone"/);
+    assert.match(html, /id="leadfinder-additional-phones"/);
+    assert.match(html, /\+ Extra telefoonnummer/);
+    assert.match(html, /function readLeadfinderPhoneNumbers\(\)/);
+    assert.match(html, /phoneNumbers: readLeadfinderPhoneNumbers\(\)/);
+    assert.match(html, /const existingPhones = new Set\(leadPhoneNumbers\(lead\)/);
+  });
+  assert.match(salesCss, /\.lead-additional-phone-row[\s\S]+grid-template-columns: minmax\(0, 1fr\) auto/);
+});
+
+test("website-analyse toont de begeleide Max Webstudio-flow en echte categorieën", () => {
+  for (const label of ["Website toevoegen", "Opslaan bij lead", "Analyseren", "Optioneel indelen", "Gesynchroniseerd"]) {
+    assert.match(salesHtml, new RegExp(label));
+  }
+  assert.match(salesHtml, /Website opslaan en analyseren/);
+  assert.match(salesHtml, /id="lead-website-analysis-smart-view"/);
+  assert.match(salesHtml, /MANUAL_SMART_VIEWS/);
+  assert.match(salesHtml, /saveAndAnalyzeSelectedLeadWebsite/);
+  assert.match(salesHtml, /saveSelectedLeadSmartView\("analysis"\)/);
+  assert.match(salesCss, /\.sales-analysis-flow[\s\S]+repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(salesCss, /\.sales-analysis-grouping[\s\S]+#061a35/);
 });
 
 test("website-analyse is server-side leidend voor de opgeslagen website score", () => {
@@ -478,6 +508,25 @@ test("website-analyse is server-side leidend voor de opgeslagen website score", 
     { update: true, existingLead: { lead_score: 70, metadata: {} } },
   );
   assert.equal(Object.hasOwn(unrelatedUpdate, "lead_score"), false);
+});
+
+test("website van een bestaande lead blijft staan en kan alleen expliciet worden verwijderd", () => {
+  const admin = { id: "11111111-1111-4111-8111-111111111111", email: "lisanne@example.test", role: "sales_partner" };
+  const existingLead = { website: "https://bestaand.nl", normalized_domain: "bestaand.nl", metadata: { websiteUrl: "https://bestaand.nl" } };
+  const unrelatedUpdate = leadsApi._test.leadPayload({ notes: "Alleen een notitie" }, admin, { update: true, existingLead });
+  assert.equal(Object.hasOwn(unrelatedUpdate, "website"), false);
+  assert.equal(Object.hasOwn(unrelatedUpdate, "normalized_domain"), false);
+
+  const websiteUpdate = leadsApi._test.leadPayload({ websiteUrl: "https://nieuw.nl/pagina" }, admin, { update: true, existingLead });
+  assert.equal(websiteUpdate.website, "https://nieuw.nl/pagina");
+  assert.equal(websiteUpdate.normalized_domain, "nieuw.nl");
+  assert.equal(websiteUpdate.metadata.websiteUrl, "https://nieuw.nl/pagina");
+
+  const removal = leadsApi._test.leadPayload({ websiteUrl: "" }, admin, { update: true, existingLead });
+  assert.equal(removal.website, "");
+  assert.equal(removal.normalized_domain, null);
+  assert.equal(removal.metadata.websiteUrl, null);
+  assert.equal(removal.metadata.normalizedDomain, null);
 });
 
 test("lead-detail blijft in normale documentflow zonder overlappende kaarten", () => {

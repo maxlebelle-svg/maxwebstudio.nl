@@ -294,7 +294,7 @@ def build():
         ["Vestigingsnummer", "000041331192"],
         ["Startdatum vestiging", "06-12-2018"],
         ["Adres", "Kompas 32, 1319DJ Almere"],
-        ["Telefoon", "0611621859 / 0616217771"],
+        ["Telefoon", "085 130 5282"],
         ["E-mail", "max@maxwebstudio.nl"],
         ["Domeinen", "wittetandjes.nl, imperiumbands.com, www.lebellebox.com"],
         ["Toegevoegde handelsnaam", "Vanaf 24-06-2026 wordt handelsnaam Max Webstudio gevoerd."],
@@ -306,7 +306,7 @@ def build():
         ["Pakket", "Prijs ex. btw", "Aanbetaling ex. btw", "Restbedrag ex. btw"],
         ["Starter Site", "EUR 495", "EUR 150", "EUR 345"],
         ["Business Website", "EUR 995", "EUR 300", "EUR 695"],
-        ["Premium Growth", "EUR 1.750", "EUR 500", "EUR 1.250"],
+        ["Growth Website", "EUR 1.750", "EUR 500", "EUR 1.250"],
     ], [4.2 * cm, 3.3 * cm, 3.8 * cm, 3.9 * cm]))
     story.append(Spacer(1, 8))
     story.append(table([
@@ -454,7 +454,7 @@ def build():
         ["Product", "Commissie", "Opmerking"],
         ["Starter Site / One Pager", "Nog vaststellen", "Bijlage invullen voordat iemand start."],
         ["Business Website", "Nog vaststellen", "Bijlage invullen voordat iemand start."],
-        ["Premium Growth", "Nog vaststellen", "Bijlage invullen voordat iemand start."],
+        ["Growth Website", "Nog vaststellen", "Bijlage invullen voordat iemand start."],
         ["Hosting / onderhoud", "Nog vaststellen", "Eenmalig, recurrent of geen commissie bepalen."],
         ["Logo / SEO / Google Bedrijfsprofiel", "Nog vaststellen", "Toekomstige uitbreidingen mogelijk."],
         ["AI Chatbot / AI Voice", "Nog vaststellen", "Apart productbeleid toevoegen zodra live."],
@@ -647,7 +647,7 @@ def build():
         ["Product", "Percentage / bedrag", "Moment van uitbetaling", "Uitzonderingen"],
         ["Starter Site", "", "", ""],
         ["Business Website", "", "", ""],
-        ["Premium Growth", "", "", ""],
+        ["Growth Website", "", "", ""],
         ["Care Basic", "", "", ""],
         ["Care Plus", "", "", ""],
         ["Care Growth", "", "", ""],

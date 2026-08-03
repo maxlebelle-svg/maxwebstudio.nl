@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "supabase/migrations/20260802230000_commercial_offer_phase_2_fulfilment.sql",
+      "bytes": 16128,
+      "sha256": "1f8bf9680d51436049b33309087324c51511270447c2548a032cd34e67dca866"
+    }
+  ]
+}

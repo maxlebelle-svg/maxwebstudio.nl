@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "release": "Commercial Offer Phase 2 fulfilment",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "executionOrder": [
+    "supabase/migrations/20260802230000_commercial_offer_phase_2_fulfilment.sql"
+  ],
+  "authority": [
+    "docs/release-readiness/commercial-offer-phase-2-fulfilment/MANIFEST.json"
+  ],
+  "remoteExecutionAuthorizedByThisManifest": false
+}

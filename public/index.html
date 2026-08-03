@@ -25,7 +25,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=8.0.0" />
+    <link rel="stylesheet" href="styles.css?v=8.0.4" />
     <script type="application/ld+json" data-company-json-ld>
       {
         "@context": "https://schema.org",
@@ -35,7 +35,7 @@
         "areaServed": "Nederland",
         "serviceType": "Website ontwikkeling",
         "email": "info@maxwebstudio.nl",
-        "telephone": "085 130 2326",
+        "telephone": "085 130 5282",
         "sameAs": ["https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek"]
       }
     </script>
@@ -58,7 +58,27 @@
         <a href="waarom-max-webstudio.html">Waarom Max</a>
         <a href="werkwijze.html">Werkwijze</a>
         <a href="/wijziging-doorgeven.html">Wijziging doorgeven</a>
-        <a href="/klant-login.html">Klantportaal</a>
+        <details class="login-dropdown">
+          <summary>Inloggen</summary>
+          <div class="login-dropdown-menu" aria-label="Kies een portaal">
+            <a href="/klant-login.html" target="_blank" rel="noopener noreferrer">
+              <span>Klant portaal</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+            <a href="https://max-webstudio-food-demo.netlify.app/admin/food" target="_blank" rel="noopener noreferrer">
+              <span>Food Portaal</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+            <a href="/webshop-login.html" target="_blank" rel="noopener noreferrer">
+              <span>Webshop portaal</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+            <a href="/admin-login.html" target="_blank" rel="noopener noreferrer">
+              <span>Admin portaal</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </details>
       </nav>
       <button class="header-cta calendly-trigger" type="button" data-calendly-open aria-label="Vraag gratis website-preview aan">
         Gratis preview
@@ -431,50 +451,59 @@
           <p>Je koopt geen techniek. Je koopt vertrouwen, duidelijkheid en een professionele route naar meer aanvragen.</p>
         </div>
         <div class="pricing-grid">
-          <article class="price-card">
+          <article class="price-card starter-card">
             <p>Starter</p>
             <h3>Starter Site</h3>
             <strong>€495</strong>
             <span>vanafprijs ex. btw</span>
-            <p class="price-outcome">Voor ondernemers die professioneel online willen beginnen.</p>
+            <p class="price-outcome">Voor een sterke eerste indruk en een duidelijke manier om contact op te nemen.</p>
+            <div class="price-divider" aria-hidden="true"></div>
             <ul>
-              <li>One-page website</li>
-              <li>Contactformulier</li>
-              <li>Basis SEO</li>
-              <li>Mobiel geoptimaliseerd</li>
-              <li>Aanbetaling €150</li>
+              <li>Complete one-page in jouw huisstijl</li>
+              <li>Sterke introductie van jouw bedrijf</li>
+              <li>Diensten, vertrouwen en contact helder in beeld</li>
+              <li>Contactformulier en WhatsApp</li>
+              <li>Mobiel geoptimaliseerd, snel en basis SEO</li>
+              <li>Persoonlijke begeleiding bij de livegang</li>
             </ul>
-            <a class="button secondary" href="betalen.html?website=starter_site">Kies Starter Site</a>
+            <a class="button secondary" href="betalen.html?website=starter_site">Start professioneel online</a>
+            <span class="price-deposit">Start met €150 aanbetaling</span>
           </article>
           <article class="price-card featured">
             <div class="price-badge">⭐ Meest gekozen</div>
             <h3>Business Website</h3>
             <strong>€995</strong>
             <span>vanafprijs ex. btw</span>
-            <p class="price-outcome">Voor bedrijven die meer vertrouwen en aanvragen willen.</p>
+            <p class="price-outcome">Voor een bedrijf dat vertrouwen wil winnen en structureel meer aanvragen wil.</p>
+            <div class="price-divider" aria-hidden="true"></div>
             <ul>
+              <li>Strategische intake over bedrijf en doelgroep</li>
               <li>Tot 5 professionele pagina's</li>
-              <li>Portfolio of dienstenpagina's</li>
-              <li>Aanvraagflow of veilige aanbetaling</li>
-              <li>SEO en conversiecopy</li>
-              <li>Aanbetaling €300</li>
+              <li>Dienstenpagina's of overtuigend portfolio</li>
+              <li>Klantgerichte structuur en sterke CTA's</li>
+              <li>Uitgebreide aanvraag- of offerteflow</li>
+              <li>SEO per pagina en volledige livegangbegeleiding</li>
             </ul>
-            <a class="button primary" href="betalen.html?website=business_website">Kies Business Website</a>
+            <a class="button primary" href="betalen.html?website=business_website">Ik wil meer aanvragen</a>
+            <span class="price-deposit">Start met €300 aanbetaling</span>
           </article>
           <article class="price-card">
             <p>Groei</p>
-            <h3>Premium Growth</h3>
+            <h3>Growth Website</h3>
             <strong>€1.750</strong>
             <span>vanafprijs ex. btw</span>
-            <p class="price-outcome">Voor ondernemers die actief willen doorgroeien.</p>
+            <p class="price-outcome">Voor een bedrijf dat de website als actieve en meetbare groeimotor wil inzetten.</p>
+            <div class="price-divider" aria-hidden="true"></div>
             <ul>
-              <li>Uitgebreide website</li>
-              <li>Strategie en funnels</li>
-              <li>Analytics dashboard</li>
-              <li>Onderhoudsplan klaarzetten</li>
-              <li>Aanbetaling €500</li>
+              <li>Positionering en persoonlijke groeistrategie</li>
+              <li>Tot 8 professioneel uitgewerkte pagina's</li>
+              <li>Premium ontwerp en complete online klantreis</li>
+              <li>Landingspagina met één conversieflow</li>
+              <li>Analytics en conversiemeting</li>
+              <li>Persoonlijk groeiplan voor na de livegang</li>
             </ul>
-            <a class="button secondary" href="betalen.html?website=premium_growth">Kies Premium Growth</a>
+            <a class="button secondary" href="betalen.html?website=premium_growth">Bouw mijn groeiplatform</a>
+            <span class="price-deposit">Start met €500 aanbetaling</span>
           </article>
         </div>
         <article class="maintenance-plan pricing-maintenance-card">
@@ -498,25 +527,62 @@
             <a class="button secondary" href="betalen.html?website=business_website&care=care_basic" data-care-package="Care Basic - €19,95/mnd">Kies Care Basic</a>
           </div>
         </article>
-        <article class="strippenkaart-card">
-          <div>
+        <section class="website-credit-section" aria-labelledby="website-credit-title">
+          <div class="website-credit-intro">
             <p class="section-kicker">Flexibel bijwerken</p>
-            <h3>Strippenkaart voor website-aanpassingen</h3>
-            <span>Koop vooraf 5 of 10 kleine wijzigingen en gebruik ze wanneer je website iets nieuws nodig heeft.</span>
+            <h3 id="website-credit-title">Je website actueel, zonder gedoe.</h3>
+            <p>Koop vooraf flexibel tegoed voor wijzigingen. Jij stuurt je verzoek door; wij regelen de aanpassing, controle én publicatie.</p>
+            <ul class="website-credit-usecases">
+              <li>Tekst, foto of video aanpassen</li>
+              <li>Actie, melding of nieuwe dienst plaatsen</li>
+              <li>Formulier of contactgegevens wijzigen</li>
+              <li>Visuele verbeteringen uitvoeren</li>
+            </ul>
+            <p class="website-credit-care-note">Perfect als aanvulling op Care: onderhoud blijft geregeld en je gebruikt je tegoed voor zichtbare wijzigingen.</p>
           </div>
-          <ul>
-            <li>Tekst of foto vervangen</li>
-            <li>Nieuwe actie, dienst of tijdelijke melding plaatsen</li>
-            <li>Kleine formulier- of contactgegevenswijziging</li>
-            <li>Handig naast Care Basic of voor losse piekmomenten</li>
-          </ul>
-          <a class="button secondary" href="/wijziging-doorgeven.html">Vraag strippenkaart aan</a>
-        </article>
+          <article class="website-credit-card website-credit-card-light">
+            <div>
+              <p class="website-credit-label">Voor af en toe</p>
+              <h3>Flex 5</h3>
+              <strong>€125</strong>
+              <span>ex. btw · eenmalig</span>
+              <p class="website-credit-outcome">Voor ondernemers die af en toe snel iets willen laten aanpassen.</p>
+            </div>
+            <div class="website-credit-divider" aria-hidden="true"></div>
+            <ul>
+              <li>5 credits van 15 minuten</li>
+              <li>1 uur en 15 minuten tegoed</li>
+              <li>Meestal binnen 2 werkdagen</li>
+              <li>12 maanden geldig</li>
+              <li>Controle en livegang inbegrepen</li>
+            </ul>
+            <a class="button secondary" href="/betalen.html?extra=website_tegoed_flex_5">Kies Flex 5</a>
+          </article>
+          <article class="website-credit-card website-credit-card-dark">
+            <div>
+              <div class="website-credit-badge">⭐ Meest gekozen</div>
+              <h3>Flex 10</h3>
+              <strong>€225</strong>
+              <span>ex. btw · eenmalig</span>
+              <p class="website-credit-outcome">Voor bedrijven die hun website regelmatig actueel en aantrekkelijk willen houden.</p>
+            </div>
+            <div class="website-credit-divider" aria-hidden="true"></div>
+            <ul>
+              <li>10 credits van 15 minuten</li>
+              <li>2,5 uur flexibel tegoed</li>
+              <li>Voorrang bij het inplannen</li>
+              <li>12 maanden geldig</li>
+              <li>Controle en livegang inbegrepen</li>
+            </ul>
+            <a class="button primary" href="/betalen.html?extra=website_tegoed_flex_10">Kies Flex 10</a>
+            <span class="website-credit-saving">Je bespaart €25</span>
+          </article>
+        </section>
+        <p class="website-credit-footnote">Je hoort vooraf hoeveel credits een aanvraag kost. Voor grotere uitbreidingen ontvang je altijd eerst een duidelijke prijsopgave.</p>
         <div class="pricing-trustbar" aria-label="Zekerheden bij Max Webstudio">
-          <span>Geen verborgen kosten</span>
-          <span>Persoonlijk contact</span>
-          <span>Gemiddeld binnen 5 werkdagen live</span>
-          <span>Recent opgeleverd: Quantumbouw</span>
+          <span>Persoonlijk afgestemd ontwerp</span>
+          <span>Afstemming en feedback vóór livegang</span>
+          <span>Pas live na jouw akkoord</span>
         </div>
         <div class="maintenance-client-cta">
           <span>Ben je al klant?</span>
@@ -605,8 +671,8 @@
               <span>Business Website</span>
               <strong>€300 aanbetaling</strong>
             </button>
-            <button class="checkout-option" type="button" data-checkout-package="Premium Growth">
-              <span>Premium Growth</span>
+            <button class="checkout-option" type="button" data-checkout-package="Growth Website">
+              <span>Growth Website</span>
               <strong>€500 aanbetaling</strong>
             </button>
           </div>
@@ -721,7 +787,7 @@
               <a class="button secondary contact-button" href="#projecten">Bekijk demo's</a>
             </div>
             <div class="lead-contact-options" aria-label="Direct contact">
-              <a href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">
+              <a href="https://wa.me/31851305282" target="_blank" rel="noopener" data-company-href="whatsapp">
                 <span class="contact-option-icon whatsapp-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" focusable="false">
                     <path d="M12.1 3.2a8.7 8.7 0 0 0-7.5 13.1L3.5 20.7l4.5-1.1a8.7 8.7 0 1 0 4.1-16.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
@@ -730,7 +796,7 @@
                 </span>
                 <span class="contact-option-copy"><span>WhatsApp</span><strong>Stuur direct een bericht</strong></span>
               </a>
-              <a href="tel:+31851302326" data-company-href="telephone">
+              <a href="tel:+31851305282" data-company-href="telephone">
                 <span class="contact-option-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" focusable="false">
                     <path d="M7.2 4.3 9.6 4c.6-.1 1.1.2 1.3.8l1 2.4c.2.5.1 1-.3 1.4l-1.2 1.1a10.8 10.8 0 0 0 4 4l1.1-1.2c.4-.4.9-.5 1.4-.3l2.4 1c.5.2.9.8.8 1.3l-.3 2.4c-.1.8-.8 1.4-1.6 1.4A14.5 14.5 0 0 1 5.8 5.9c0-.8.6-1.5 1.4-1.6Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -778,7 +844,7 @@
             <select name="package" id="package-select">
               <option>Business Website</option>
               <option>Starter Site</option>
-              <option>Premium Growth</option>
+              <option>Growth Website</option>
               <option>Hosting & onderhoud</option>
               <option>Meerwerk & groei</option>
               <option>Maatwerk / ik weet het nog niet</option>
@@ -852,8 +918,8 @@
         <span aria-hidden="true">📅</span>
         Gratis preview
       </button>
-      <a class="sticky-secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener" aria-label="WhatsApp Max" data-company-href="whatsapp">WhatsApp</a>
-      <a class="sticky-secondary" href="tel:+31851302326" aria-label="Bel direct" data-company-href="telephone">Bel</a>
+      <a class="sticky-secondary" href="https://wa.me/31851305282" target="_blank" rel="noopener" aria-label="WhatsApp Max" data-company-href="whatsapp">WhatsApp</a>
+      <a class="sticky-secondary" href="tel:+31851305282" aria-label="Bel direct" data-company-href="telephone">Bel</a>
     </div>
 
     <section class="cookie-consent" data-cookie-consent hidden aria-label="Cookievoorkeuren">
@@ -968,11 +1034,11 @@
           </nav>
           <div class="footer-contact">
             <h2>Contact</h2>
-            <a href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">
+            <a href="https://wa.me/31851305282" target="_blank" rel="noopener" data-company-href="whatsapp">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.1 3.2a8.7 8.7 0 0 0-7.5 13.1L3.5 20.7l4.5-1.1a8.7 8.7 0 1 0 4.1-16.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><path d="M9.2 8.1c-.2-.5-.4-.5-.7-.5h-.6c-.2 0-.6.1-.9.5-.3.3-1.1 1.1-1.1 2.6s1.1 3 1.3 3.2c.2.2 2.1 3.3 5.1 4.5 2.5 1 3 .8 3.5.7.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.1-1.4-.1-.1-.3-.2-.6-.4l-1.9-.9c-.3-.1-.5-.2-.7.2-.2.3-.8.9-1 1.1-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.5.1-.2.1-.4 0-.6l-.9-2.1Z" fill="currentColor"></path></svg>
               <span>WhatsApp</span>
             </a>
-            <a href="tel:+31851302326" data-company-href="telephone">
+            <a href="tel:+31851305282" data-company-href="telephone">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 4.3 9.6 4c.6-.1 1.1.2 1.3.8l1 2.4c.2.5.1 1-.3 1.4l-1.2 1.1a10.8 10.8 0 0 0 4 4l1.1-1.2c.4-.4.9-.5 1.4-.3l2.4 1c.5.2.9.8.8 1.3l-.3 2.4c-.1.8-.8 1.4-1.6 1.4A14.5 14.5 0 0 1 5.8 5.9c0-.8.6-1.5 1.4-1.6Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
               <span>Bellen</span>
             </a>
@@ -980,7 +1046,7 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.8 6.5h14.4c.9 0 1.6.7 1.6 1.6v7.8c0 .9-.7 1.6-1.6 1.6H4.8c-.9 0-1.6-.7-1.6-1.6V8.1c0-.9.7-1.6 1.6-1.6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><path d="m4.2 7.6 7.8 5.7 7.8-5.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
               <span>E-mail</span>
             </a>
-            <span data-company-text="phoneDisplay">085 130 2326</span>
+            <span data-company-text="phoneDisplay">085 130 5282</span>
             <div class="footer-socials" aria-label="Social media">
               <a href="https://www.youtube.com/channel/UC3JrbzXhQWtHU8zkW_w3a3w" target="_blank" rel="noopener noreferrer" aria-label="Max Webstudio op YouTube">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 8.1s-.2-1.5-.8-2.1c-.8-.8-1.7-.8-2.1-.9C16.2 4.9 12 4.9 12 4.9h0s-4.2 0-7.1.2c-.4.1-1.3.1-2.1.9C2.2 6.6 2 8.1 2 8.1S1.8 9.8 1.8 11.5v1.6c0 1.7.2 3.4.2 3.4s.2 1.5.8 2.1c.8.8 1.9.8 2.4.9 1.7.2 6.8.2 6.8.2s4.2 0 7.1-.2c.4-.1 1.3-.1 2.1-.9.6-.6.8-2.1.8-2.1s.2-1.7.2-3.4v-1.6c0-1.7-.2-3.4-.2-3.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><path d="m10 9.4 5 2.9-5 2.9V9.4Z" fill="currentColor"></path></svg>
@@ -1013,6 +1079,6 @@
     <script type="module" src="src/services/companySettingsDomService.js"></script>
     <script type="module" src="src/components/demoPortfolioEngine.js"></script>
     <script src="src/lead-intake-validation.js?v=1.0.1"></script>
-    <script src="script.js?v=7.9.8"></script>
+    <script src="script.js?v=7.9.9"></script>
   </body>
 </html>

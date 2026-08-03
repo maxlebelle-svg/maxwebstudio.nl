@@ -20,7 +20,7 @@ Snel professioneel online.
 Business Website EUR 995:
 Meer vertrouwen en meer aanvragen.
 
-Premium Growth EUR 1750:
+Growth Website EUR 1750:
 Website als verkoopmachine.
 
 ## 3. Package Verschillen
@@ -29,7 +29,7 @@ Starter is een compacte onepage met hero, diensten, korte positionering, CTA, co
 
 Business voegt meerdere pagina's, portfolio, reviews, FAQ, betere SEO en meer visuele assets toe. Dit pakket verkoopt vertrouwen.
 
-Premium Growth voegt groeimodules toe zoals cases, team, lead magnet, blog/landingpage-voorbereiding, premium animaties, schema en maximale performance-eisen. Dit pakket positioneert de website als verkoopmachine.
+Growth Website voegt groeimodules toe zoals cases, team, lead magnet, blog/landingpage-voorbereiding, premium animaties, schema en maximale performance-eisen. Dit pakket positioneert de website als verkoopmachine.
 
 ## 4. Componenten
 
@@ -74,7 +74,7 @@ Een lead kan beginnen met Starter en later worden uitgebreid met losse component
 
 ```text
 Starter + Portfolio + Reviews + FAQ -> Business
-Business + Cases + Team + Lead Magnet -> Premium Growth
+Business + Cases + Team + Lead Magnet -> Growth Website
 ```
 
 De Website Factory hoeft dan niet opnieuw ontworpen te worden. De config verandert, de generator bouwt opnieuw.

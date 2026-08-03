@@ -91,6 +91,27 @@ async function createSmokeTestTransaction(config, input) {
   });
 }
 
+async function createCommercialOfferTransaction(config, input) {
+  return signhostRequest(config, "/api/transaction/", {
+    method:"POST",
+    contentType:"application/json",
+    body:JSON.stringify({
+      Signers:[{
+        Email:input.signerEmail,
+        Language:"nl-NL",
+        Verifications:[verification("Scribble", "", input.signerName)],
+        SendSignRequest:true,
+        SignRequestSubject:"Onderteken je definitieve offerte van Max Webstudio",
+        SignRequestMessage:`Beste ${input.signerName || "klant"}, controleer en onderteken de definitieve offerte. Na ondertekening zetten we de afgesproken betaling en projectoverdracht automatisch klaar.`,
+        SendSignConfirmation:true,
+        DaysToRemind:3,
+      }],
+      SendEmailNotifications:true,
+      Reference:`MWS-OFFER-${clean(input.offerVersionId).slice(0,36)}`,
+    }),
+  });
+}
+
 function verification(method, phone, name) {
   if (method === "PhoneNumber") {
     const number = normalizePhone(phone);
@@ -172,6 +193,22 @@ function buildSmokeTestMetadata(transaction, input) {
   };
 }
 
+function buildCommercialOfferMetadata(transaction, input) {
+  const signers = Array.isArray(transaction?.Signers) ? transaction.Signers : [];
+  const signer = signerId(signers, input.signerEmail, 0);
+  if (!signer) throw coded("SIGNHOST_SIGNERS_INVALID", 502, "Signhost gaf geen geldige ondertekenaar terug.");
+  const pageNumber = Math.max(1, Math.min(250, Number(input.pageNumber) || 1));
+  return {
+    DisplayName:clean(input.displayName || "Definitieve offerte Max Webstudio").slice(0,180),
+    Signers:{ [signer]:{ FormSets:["CustomerSignature"] } },
+    FormSets:{
+      CustomerSignature:{
+        Handtekening:{ Type:"Signature", Location:{ PageNumber:pageNumber, Left:315, Top:735, Width:220, Height:38 } },
+      },
+    },
+  };
+}
+
 function singleLine(page, left, top, width) {
   return { Type:"SingleLine", Location:{ PageNumber:page, Left:left, Top:top, Width:width, Height:12 } };
 }
@@ -237,7 +274,9 @@ function coded(code, status, message) { return Object.assign(new Error(message),
 
 module.exports = {
   API_BASE,
+  buildCommercialOfferMetadata,
   buildSmokeTestMetadata,
+  createCommercialOfferTransaction,
   createTransaction,
   createSmokeTestTransaction,
   buildAgreementMetadata,

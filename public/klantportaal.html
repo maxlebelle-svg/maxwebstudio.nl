@@ -26,6 +26,7 @@
           <a href="#onboarding">Onboarding</a>
           <a href="#branding">Branding</a>
           <a href="#website">Mijn website</a>
+          <a href="#domeinen">Domeinen</a>
           <a href="#wijzigingen">Wijzigingen</a>
           <a href="#berichten">Berichten</a>
           <a href="#facturen">Facturen</a>
@@ -43,11 +44,11 @@
         </div>
         <div class="portal-sidebar-note" aria-label="Contact Max Webstudio">
           <span>Contact Max</span>
-          <strong data-company-text="phoneDisplay">085 130 2326</strong>
+          <strong data-company-text="phoneDisplay">085 130 5282</strong>
           <p><span data-company-text="primaryEmail">info@maxwebstudio.nl</span></p>
           <div class="portal-sidebar-auth">
-            <a class="button secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">WhatsApp</a>
-            <a class="button secondary" href="tel:+31851302326" data-company-href="telephone">Bellen</a>
+            <a class="button secondary" href="https://wa.me/31851305282" target="_blank" rel="noopener" data-company-href="whatsapp">WhatsApp</a>
+            <a class="button secondary" href="tel:+31851305282" data-company-href="telephone">Bellen</a>
           </div>
         </div>
       </aside>
@@ -486,6 +487,58 @@
         </article>
       </section>
 
+      <section class="admin-section portal-domain-shell" id="domeinen">
+        <div class="admin-section-heading portal-domain-page-head">
+          <div><p class="section-kicker">Mijn account</p><h2>Domeinen</h2><p>Alles rond je domeinnaam, verhuizing en technische koppeling.</p></div>
+          <span class="status-badge status-prepared" id="portal-domain-count">Laden</span>
+        </div>
+        <div class="portal-domain-progress" id="portal-domain-progress" aria-label="Voortgang domeinopdracht"></div>
+        <div class="portal-card-grid" id="portal-domain-request-list" aria-live="polite"></div>
+        <aside class="portal-domain-trust-note">
+          <div><span>Veilig geregeld</span><strong>Het domein blijft op jouw naam staan.</strong></div>
+          <p>We vragen nooit om het wachtwoord van je provideraccount. Een verhuiscode wordt beveiligd verwerkt.</p>
+        </aside>
+        <article class="admin-card customer-portal-card" id="portal-domain-form-card" hidden>
+          <div class="portal-form-heading">
+            <p class="section-kicker" id="portal-domain-form-kicker">Domeinopdracht</p>
+            <h3 id="portal-domain-form-title">Gegevens aanleveren</h3>
+            <p id="portal-domain-form-copy">Vul de gegevens in die nodig zijn om je domein veilig te regelen.</p>
+          </div>
+          <form class="admin-form portal-message-form" id="portal-domain-form">
+            <input name="requestId" type="hidden" />
+            <label>Wie wordt de domeinhouder?
+              <select name="holderType"><option value="company">Mijn bedrijf</option><option value="person">Ik persoonlijk</option></select>
+            </label>
+            <label>Naam domeinhouder<input name="holderName" type="text" autocomplete="name" required /></label>
+            <label>Officiële bedrijfsnaam<input name="companyName" type="text" autocomplete="organization" /></label>
+            <label class="admin-profile-wide">Adres<input name="address" type="text" autocomplete="street-address" required /></label>
+            <label>Postcode<input name="postalCode" type="text" autocomplete="postal-code" required /></label>
+            <label>Plaats<input name="city" type="text" autocomplete="address-level2" required /></label>
+            <label>Land<input name="country" type="text" autocomplete="country-name" value="Nederland" /></label>
+            <label>Telefoon<input name="phone" type="tel" autocomplete="tel" /></label>
+            <label>E-mailadres<input name="email" type="email" autocomplete="email" required /></label>
+            <label data-domain-types="transfer connection">Huidige domeinprovider<input name="currentRegistrar" type="text" placeholder="Bijvoorbeeld TransIP of Yourhosting" /></label>
+            <label data-domain-types="transfer connection">Wordt e-mail op dit domein gebruikt?
+              <select name="hasDomainEmail"><option value="">Kies een antwoord</option><option value="yes">Ja</option><option value="no">Nee</option><option value="unknown">Weet ik niet</option></select>
+            </label>
+            <label class="admin-profile-wide" data-domain-types="transfer connection">Bestaande mailboxen<textarea name="mailboxes" rows="3" placeholder="Eén e-mailadres per regel"></textarea></label>
+            <label data-domain-types="transfer">Gewenst verhuismoment<input name="transferTiming" type="text" placeholder="Zo snel mogelijk of gewenste datum" /></label>
+            <label data-domain-types="transfer">Verhuiscode<input name="transferCode" type="password" autocomplete="off" placeholder="Wordt beveiligd opgeslagen" /></label>
+            <label data-domain-types="transfer connection">Wat moet Max Webstudio beheren?
+              <select name="dnsScope"><option value="website_only">Alleen website</option><option value="website_and_email">Website en e-mail</option><option value="full_dns">Volledig DNS-beheer</option><option value="advice">Graag advies</option></select>
+            </label>
+            <label><input name="autoRenew" type="checkbox" /> Domein automatisch laten verlengen</label>
+            <label class="admin-profile-wide">Opmerking<textarea name="notes" rows="3" maxlength="2000"></textarea></label>
+            <label class="admin-profile-wide"><input name="approval" type="checkbox" required /> Ik bevestig dat deze gegevens kloppen en geef Max Webstudio toestemming om deze domeinopdracht uit te voeren.</label>
+            <div class="portal-actions admin-profile-wide">
+              <button class="button secondary" type="button" id="portal-domain-save">Concept opslaan</button>
+              <button class="button primary" type="submit">Gegevens indienen</button>
+              <span class="form-helper" id="portal-domain-status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </article>
+      </section>
+
       <section class="admin-section" id="wijzigingen">
         <div class="admin-section-heading"><div><p class="section-kicker">Wijzigingen</p><h2>Iets aanpassen? Geef het simpel door.</h2></div></div>
         <article class="portal-section-ai-card portal-ai-card" id="portal-change-guidance">
@@ -901,6 +954,14 @@
         const growthRecommendations = document.getElementById("portal-growth-recommendations");
         const growthUpsells = document.getElementById("portal-growth-upsells");
         const accountList = document.getElementById("portal-account");
+        const domainRequestList = document.getElementById("portal-domain-request-list");
+        const domainProgress = document.getElementById("portal-domain-progress");
+        const domainFormCard = document.getElementById("portal-domain-form-card");
+        const domainForm = document.getElementById("portal-domain-form");
+        const domainFormTitle = document.getElementById("portal-domain-form-title");
+        const domainFormCopy = document.getElementById("portal-domain-form-copy");
+        const domainCount = document.getElementById("portal-domain-count");
+        const domainStatus = document.getElementById("portal-domain-status");
         const fileList = document.getElementById("portal-files");
         const assetSummary = document.getElementById("portal-asset-summary");
         const assetToolbar = document.getElementById("portal-asset-toolbar");
@@ -980,6 +1041,7 @@
         let activeMessageThreadId = "";
         let activeMessageFilter = "all";
         let latestPortalMessages = [];
+        let clientDomainRequests = [];
         window.addEventListener("relationship-assets:updated", (event) => {
           portalRelationshipAssets = safeRelationshipAssets(event.detail?.assets || []);
           if (portalAssetRenderContext) renderAssetCenter(portalAssetRenderContext);
@@ -1011,6 +1073,10 @@
           website: {
             label: "Mijn website",
             sections: ["projectstatus", "mijn-website", "website-preview"],
+          },
+          domeinen: {
+            label: "Domeinen",
+            sections: ["domeinen"],
           },
           "website-overzicht": {
             label: "Website-overzicht",
@@ -1056,6 +1122,7 @@
           "portal-kpis": "dashboard",
           onboarding: "onboarding",
           branding: "branding",
+          domeinen: "domeinen",
           notificaties: "dashboard",
           "mijn-website": "website",
           "projectstatus": "website-overzicht",
@@ -1085,6 +1152,7 @@
           "wijzigingen",
           "berichten",
           "mijn-website",
+          "domeinen",
           "growth-dashboard",
           "account",
           "bestanden",
@@ -1310,6 +1378,203 @@
             return "";
           }
         }
+
+        async function clientDomainRequestApi(method = "GET", payload = null) {
+          const token = getPortalBearer();
+          if (!token) throw new Error("Log in om je domeinopdrachten te bekijken.");
+          const response = await fetch("/.netlify/functions/client-domain-requests", {
+            method,
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+              ...(payload ? { "Content-Type": "application/json" } : {}),
+            },
+            body: payload ? JSON.stringify(payload) : undefined,
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Domeinopdracht kon niet worden verwerkt.");
+          return data;
+        }
+
+        function clientDomainTypeLabel(type = "") {
+          return ({ registration: "Nieuwe domeinnaam", transfer: "Domein verhuizen", connection: "Domein koppelen" })[type] || "Domeinopdracht";
+        }
+
+        function clientDomainStatusLabel(status = "") {
+          return ({
+            draft: "Gegevens nodig", awaiting_customer: "Gegevens nodig", ready_for_review: "We controleren je aanvraag",
+            awaiting_approval: "Wacht op akkoord of betaling", scheduled: "Ingepland", in_progress: "In uitvoering",
+            technical_checks: "Technische controle", active: "Afgerond", needs_action: "Extra actie nodig",
+            failed: "Niet gelukt", cancelled: "Geannuleerd",
+          })[status] || status;
+        }
+
+        function customerCanEditDomainRequest(status = "") {
+          return ["draft", "awaiting_customer", "ready_for_review", "needs_action"].includes(status);
+        }
+
+        function clientDomainStage(status = "") {
+          if (["active"].includes(status)) return 3;
+          if (["scheduled", "in_progress", "technical_checks"].includes(status)) return 2;
+          if (["ready_for_review", "awaiting_approval"].includes(status)) return 1;
+          return 0;
+        }
+
+        function clientDomainPriority(request = {}) {
+          const rank = { needs_action: 0, awaiting_customer: 1, draft: 2, ready_for_review: 3, awaiting_approval: 4, scheduled: 5, in_progress: 6, technical_checks: 7, active: 8, failed: 9, cancelled: 10 };
+          return rank[request.status] ?? 11;
+        }
+
+        function renderClientDomainProgress(request) {
+          if (!request) {
+            domainProgress.replaceChildren();
+            domainProgress.hidden = true;
+            return;
+          }
+          const current = clientDomainStage(request.status);
+          const labels = ["Gegevens", "Controle", "Uitvoering", "Actief"];
+          domainProgress.hidden = false;
+          domainProgress.innerHTML = labels.map((label, index) => `
+            <div class="portal-domain-progress-step" data-state="${index < current ? "done" : index === current ? "current" : "upcoming"}">
+              <span>${index < current ? "✓" : index + 1}</span>
+              <div><strong>${label}</strong><small>${index < current ? "Afgerond" : index === current ? "Nu" : "Hierna"}</small></div>
+            </div>`).join("");
+        }
+
+        function renderClientDomainRequests() {
+          const ordered = [...clientDomainRequests].sort((a, b) => clientDomainPriority(a) - clientDomainPriority(b) || String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+          const primary = ordered[0] || null;
+          const needsCustomer = ordered.some((item) => ["awaiting_customer", "needs_action", "draft"].includes(item.status));
+          domainCount.textContent = needsCustomer ? "Actie nodig" : primary ? clientDomainStatusLabel(primary.status) : "Geen opdrachten";
+          domainCount.className = `status-badge ${needsCustomer ? "status-warning" : primary?.status === "active" ? "status-active" : "status-prepared"}`;
+          domainRequestList.replaceChildren();
+          renderClientDomainProgress(primary);
+          if (!ordered.length) {
+            domainRequestList.append(createEmpty("Nog geen domeinopdracht", "Zodra Max Webstudio een registratie, verhuizing of koppeling voor je klaarzet, verschijnt die hier."));
+            return;
+          }
+          ordered.forEach((request, index) => {
+            const card = document.createElement("article");
+            const editable = customerCanEditDomainRequest(request.status);
+            if (index === 0) {
+              card.className = "admin-card customer-portal-card portal-domain-primary-card";
+              const stage = clientDomainStage(request.status);
+              const title = stage === 0 ? "Lever je domeingegevens aan" : stage === 1 ? "Wij controleren je aanvraag" : stage === 2 ? "Je domeinopdracht is in uitvoering" : "Je domein is actief";
+              const copy = stage === 0 ? "We hebben nog een paar gegevens nodig om je domein veilig te regelen." : stage === 1 ? "Je gegevens zijn ontvangen. We controleren eigendom, verhuisbaarheid en e-mailimpact." : stage === 2 ? "We voeren de technische stappen uit en bewaken website, DNS, SSL en e-mail." : "De domeinopdracht en technische controles zijn afgerond.";
+              card.innerHTML = `<div class="portal-domain-primary-head">
+                <div class="portal-form-heading"><p class="section-kicker">${stage === 0 ? "Jouw volgende stap" : stage === 1 ? "Max Webstudio is aan zet" : "Voortgang"}</p><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p></div>
+                <span class="status-badge ${request.status === "active" ? "status-active" : ["awaiting_customer", "needs_action", "draft"].includes(request.status) ? "status-warning" : "status-prepared"}">${escapeHtml(request.domainName)}</span>
+              </div>
+              <div class="portal-domain-meta-grid">
+                <div><span>Opdracht</span><strong>${escapeHtml(clientDomainTypeLabel(request.requestType))}</strong></div>
+                <div><span>Domeinhouder</span><strong>${escapeHtml(request.customerPayload?.holderName || "Nog aanleveren")}</strong></div>
+                <div><span>E-mail</span><strong>${escapeHtml(({ yes: "Actief · wordt gecontroleerd", no: "Niet in gebruik", unknown: "Nog controleren" })[request.customerPayload?.hasDomainEmail] || "Nog controleren")}</strong></div>
+              </div>
+              <div class="portal-actions">
+                ${editable ? `<button class="button ${["awaiting_customer", "needs_action", "draft"].includes(request.status) ? "primary" : "secondary"}" type="button" data-domain-request-open="${escapeHtml(request.id)}">${request.customerSubmittedAt ? "Gegevens bekijken of aanvullen" : "Gegevens aanleveren"}</button>` : `<span class="portal-domain-passive-state">Geen actie van jou nodig</span>`}
+                <a class="button secondary" href="#berichten">Vraag stellen</a>
+              </div>`;
+            } else {
+              card.className = "portal-domain-compact-row";
+              card.innerHTML = `<div><strong>${escapeHtml(request.domainName)}</strong><small>${escapeHtml(clientDomainTypeLabel(request.requestType))}</small></div>
+                <span class="status-badge ${request.status === "active" ? "status-active" : "status-prepared"}">${escapeHtml(clientDomainStatusLabel(request.status))}</span>
+                <span>${request.completedAt ? `Afgerond ${escapeHtml(formatDate(request.completedAt))}` : `Bijgewerkt ${escapeHtml(formatDate(request.updatedAt))}`}</span>
+                ${editable ? `<button class="button secondary" type="button" data-domain-request-open="${escapeHtml(request.id)}">Bekijken</button>` : ""}`;
+            }
+            domainRequestList.append(card);
+          });
+        }
+
+        function setDomainFieldVisibility(type) {
+          domainForm.querySelectorAll("[data-domain-types]").forEach((field) => {
+            const visible = String(field.dataset.domainTypes || "").split(/\s+/).includes(type);
+            field.hidden = !visible;
+            field.querySelectorAll("input, select, textarea").forEach((control) => { control.disabled = !visible; });
+          });
+        }
+
+        function openClientDomainRequest(requestId) {
+          const request = clientDomainRequests.find((item) => item.id === requestId);
+          if (!request) return;
+          domainForm.reset();
+          domainForm.elements.requestId.value = request.id;
+          Object.entries(request.customerPayload || {}).forEach(([key, value]) => {
+            const control = domainForm.elements[key];
+            if (!control) return;
+            if (control.type === "checkbox") control.checked = value === true;
+            else control.value = Array.isArray(value) ? value.join("\n") : value || "";
+          });
+          domainForm.elements.country.value = request.customerPayload?.country || "Nederland";
+          domainForm.elements.transferCode.value = "";
+          domainForm.elements.transferCode.placeholder = request.hasTransferCode ? "Al veilig ontvangen; leeg laten om te behouden" : "Wordt beveiligd opgeslagen";
+          setDomainFieldVisibility(request.requestType);
+          domainFormTitle.textContent = request.domainName;
+          domainFormCopy.textContent = request.requestType === "registration"
+            ? "Vul de officiële gegevens van de domeinhouder in. We controleren daarna beschikbaarheid en kosten."
+            : request.requestType === "transfer"
+              ? "We slaan je verhuiscode veilig op en gebruiken die bij de registrar die de verhuizing uitvoert. Netlify verwerkt geen inkomende registrarverhuizingen; na de verhuizing kunnen we de DNS wel aan Netlify koppelen."
+              : "Vertel ons waar het domein nu staat en welke onderdelen wij mogen koppelen.";
+          domainStatus.textContent = "";
+          domainStatus.className = "form-helper";
+          domainFormCard.hidden = false;
+          domainFormCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function domainCustomerPayloadFromForm() {
+          const data = new FormData(domainForm);
+          return {
+            holderType: data.get("holderType"), holderName: data.get("holderName"), companyName: data.get("companyName"),
+            address: data.get("address"), postalCode: data.get("postalCode"), city: data.get("city"), country: data.get("country"),
+            phone: data.get("phone"), email: data.get("email"), currentRegistrar: data.get("currentRegistrar"),
+            hasDomainEmail: data.get("hasDomainEmail"), mailboxes: data.get("mailboxes"), transferTiming: data.get("transferTiming"),
+            dnsScope: data.get("dnsScope"), autoRenew: data.get("autoRenew") === "on", approval: data.get("approval") === "on", notes: data.get("notes"),
+          };
+        }
+
+        async function saveClientDomainRequest(action) {
+          const submitButton = domainForm.querySelector('button[type="submit"]');
+          const saveButton = document.getElementById("portal-domain-save");
+          submitButton.disabled = true;
+          saveButton.disabled = true;
+          domainStatus.textContent = action === "submit" ? "Gegevens veilig indienen..." : "Concept opslaan...";
+          domainStatus.className = "form-helper";
+          try {
+            const data = await clientDomainRequestApi("POST", {
+              action, requestId: domainForm.elements.requestId.value,
+              customerPayload: domainCustomerPayloadFromForm(), transferCode: domainForm.elements.transferCode.value,
+            });
+            clientDomainRequests = clientDomainRequests.map((item) => item.id === data.request.id ? data.request : item);
+            renderClientDomainRequests();
+            domainStatus.textContent = action === "submit" ? "Bedankt. Je gegevens zijn veilig ingediend." : "Je concept is opgeslagen.";
+            domainStatus.className = "form-helper success";
+            if (action === "submit") domainFormCard.hidden = true;
+          } catch (error) {
+            domainStatus.textContent = error.message || "Gegevens konden niet worden opgeslagen.";
+            domainStatus.className = "form-helper error";
+          } finally {
+            submitButton.disabled = false;
+            saveButton.disabled = false;
+          }
+        }
+
+        async function loadClientDomainRequests() {
+          try {
+            const data = await clientDomainRequestApi("GET");
+            clientDomainRequests = Array.isArray(data.requests) ? data.requests : [];
+            renderClientDomainRequests();
+          } catch (error) {
+            domainCount.textContent = "Niet geladen";
+            renderClientDomainProgress(null);
+            domainRequestList.replaceChildren(createEmpty("Domeinen konden niet laden", error.message || "Probeer het later opnieuw."));
+          }
+        }
+
+        domainRequestList.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-domain-request-open]");
+          if (button) openClientDomainRequest(button.dataset.domainRequestOpen);
+        });
+        domainForm.addEventListener("submit", (event) => { event.preventDefault(); saveClientDomainRequest("submit"); });
+        document.getElementById("portal-domain-save").addEventListener("click", () => saveClientDomainRequest("save"));
 
         function statusLabel(value = "") {
           const normalized = normalize(value);
@@ -5511,6 +5776,7 @@
         renderAccountExperience({ customer, websites, subscriptions, invoices });
 
         readinessList.replaceChildren();
+        await loadClientDomainRequests();
         activatePortalView({ focus: false, scroll: false });
       })();
     </script>

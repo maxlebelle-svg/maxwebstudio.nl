@@ -10,7 +10,7 @@ test("demo previews use the dedicated business WhatsApp Web route", () => {
   assert.match(demoSites, /id="demo-journey-send-business-whatsapp"/);
   assert.match(demoSites, /https:\/\/web\.whatsapp\.com\/send\?phone=/);
   assert.match(demoSites, /businessWhatsappPreviewUrl\(journey\?\.previewUrl/);
-  assert.match(demoSites, /085 130 2326 actief is/);
+  assert.match(demoSites, /085 130 5282 actief is/);
 });
 
 test("business WhatsApp preview message includes the active preview URL", () => {

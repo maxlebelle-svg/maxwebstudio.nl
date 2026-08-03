@@ -349,7 +349,14 @@
                 <label for="leadfinder-company">Bedrijfsnaam<input id="leadfinder-company" type="text" required /></label>
                 <label for="leadfinder-industry">Branche<input id="leadfinder-industry" type="text" placeholder="Bijv. bouwbedrijf, kapsalon of installatiebedrijf" /></label>
                 <label for="leadfinder-region">Plaats/regio<input id="leadfinder-region" type="text" /></label>
-                <label for="leadfinder-phone">Telefoon<input id="leadfinder-phone" type="tel" /></label>
+                <div class="lead-phone-fields admin-profile-wide">
+                  <div class="lead-phone-fields-heading">
+                    <label for="leadfinder-phone">Primair telefoonnummer<input id="leadfinder-phone" type="tel" autocomplete="tel" /></label>
+                    <button class="button secondary" id="leadfinder-add-phone" type="button">+ Extra telefoonnummer</button>
+                  </div>
+                  <div class="lead-additional-phones" id="leadfinder-additional-phones" aria-live="polite"></div>
+                  <small>Voeg bijvoorbeeld een vast en mobiel nummer toe. Het eerste nummer wordt gebruikt voor de snelle belactie.</small>
+                </div>
                 <label for="leadfinder-email">E-mail<input id="leadfinder-email" type="email" /></label>
                 <label for="leadfinder-website">Website URL<input id="leadfinder-website" type="url" placeholder="https://..." /></label>
                 <label for="leadfinder-website-status">Website-status<select id="leadfinder-website-status"></select></label>
@@ -2642,13 +2649,13 @@
         const invoicePresets = [
           { group: "Website totaal", label: "Starter Site", description: "Starter Site", price: 495 },
           { group: "Website totaal", label: "Business Website", description: "Business Website", price: 995 },
-          { group: "Website totaal", label: "Premium Growth", description: "Premium Growth", price: 1750 },
+          { group: "Website totaal", label: "Growth Website", description: "Growth Website", price: 1750 },
           { group: "Aanbetaling", label: "Aanbetaling Starter Site", description: "Aanbetaling Starter Site", price: 150 },
           { group: "Aanbetaling", label: "Aanbetaling Business Website", description: "Aanbetaling Business Website", price: 300 },
-          { group: "Aanbetaling", label: "Aanbetaling Premium Growth", description: "Aanbetaling Premium Growth", price: 500 },
+          { group: "Aanbetaling", label: "Aanbetaling Growth Website", description: "Aanbetaling Growth Website", price: 500 },
           { group: "Restbetaling", label: "Restbetaling Starter Site", description: "Restbetaling Starter Site", price: 345 },
           { group: "Restbetaling", label: "Restbetaling Business Website", description: "Restbetaling Business Website", price: 695 },
-          { group: "Restbetaling", label: "Restbetaling Premium Growth", description: "Restbetaling Premium Growth", price: 1250 },
+          { group: "Restbetaling", label: "Restbetaling Growth Website", description: "Restbetaling Growth Website", price: 1250 },
           { group: "Onderhoud & hosting", label: "Geen onderhoud", description: "Geen onderhoud", price: 0 },
           { group: "Onderhoud & hosting", label: "Care Basic", description: "Care Basic - Hosting, SSL, back-up en technische monitoring", price: 19.95 },
           { group: "Onderhoud & hosting", label: "Care Plus", description: "Care Plus - Basic + 15 minuten kleine wijzigingen per maand", price: 49 },
@@ -19420,6 +19427,8 @@
         industry: document.getElementById("leadfinder-industry"),
         region: document.getElementById("leadfinder-region"),
         phone: document.getElementById("leadfinder-phone"),
+        addPhone: document.getElementById("leadfinder-add-phone"),
+        additionalPhones: document.getElementById("leadfinder-additional-phones"),
         email: document.getElementById("leadfinder-email"),
         website: document.getElementById("leadfinder-website"),
         websiteStatus: document.getElementById("leadfinder-website-status"),
@@ -22269,6 +22278,7 @@
             lead.industry,
             lead.region,
             lead.phone,
+            ...(leadPhoneNumbers(lead)),
             lead.email,
             lead.websiteUrl,
             lead.notes,
@@ -22933,8 +22943,9 @@
         renderLeadOwnerAssignment(lead);
         renderLeadEditForm(lead);
         if (leadfinderElements.contactList) {
+          const phones = hasLead ? leadPhoneNumbers(lead) : [];
           renderLeadDetailRows(leadfinderElements.contactList, hasLead ? [
-            ["Telefoon", lead.phone || "-"],
+            [phones.length === 1 ? "Telefoon" : "Telefoonnummers", phones.join(" · ") || "-"],
             ["E-mail", lead.email || "-"],
             ["Website", lead.websiteUrl || "Geen website"],
             ["Google Maps", lead.googleMapsUrl || lead.googlePlaceId || "-"],
@@ -23143,12 +23154,14 @@
         }
         const address = String(leadfinderElements.editAddress?.value || "").trim();
         const existingMeta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+        const editedPrimaryPhone = leadfinderElements.editPhone?.value || "";
         const updates = {
           companyName: leadfinderElements.editCompany?.value || "",
           contactName: leadfinderElements.editContact?.value || "",
           industry: leadfinderElements.editIndustry?.value || "",
           region: leadfinderElements.editRegion?.value || "",
-          phone: leadfinderElements.editPhone?.value || "",
+          phone: editedPrimaryPhone,
+          phoneNumbers: leadPhoneNumbers({ phone: editedPrimaryPhone, phoneNumbers: leadPhoneNumbers(lead).slice(1) }),
           email: leadfinderElements.editEmail?.value || "",
           websiteUrl: leadfinderElements.editWebsite?.value || "",
           leadScore: Number(leadfinderElements.editScore?.value || lead.leadScore || 70),
@@ -23552,8 +23565,53 @@
         }
       }
 
+      function leadPhoneNumbers(lead = {}) {
+        const candidates = Array.isArray(lead.phoneNumbers)
+          ? lead.phoneNumbers
+          : Array.isArray(lead.metadata?.phoneNumbers)
+            ? lead.metadata.phoneNumbers
+            : [];
+        const values = [lead.phone, ...candidates].map((value) => String(value || "").trim()).filter(Boolean);
+        const seen = new Set();
+        return values.filter((value) => {
+          const key = normalizeComparablePhone(value);
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function readLeadfinderPhoneNumbers() {
+        return leadPhoneNumbers({
+          phone: leadfinderElements.phone?.value || "",
+          phoneNumbers: [...(leadfinderElements.additionalPhones?.querySelectorAll("input[data-lead-phone]") || [])].map((input) => input.value),
+        });
+      }
+
+      function addLeadfinderPhoneInput(value = "") {
+        if (!leadfinderElements.additionalPhones) return;
+        const currentCount = leadfinderElements.additionalPhones.querySelectorAll("[data-lead-phone-row]").length;
+        if (currentCount >= 9) {
+          setLeadfinderMessage("Je kunt maximaal 10 telefoonnummers per lead opslaan.", "warning");
+          return;
+        }
+        const row = document.createElement("div");
+        row.className = "lead-additional-phone-row";
+        row.dataset.leadPhoneRow = "";
+        row.innerHTML = `
+          <label>
+            <span>Extra telefoonnummer ${currentCount + 2}</span>
+            <input type="tel" data-lead-phone autocomplete="tel" value="${escapeHtml(value)}" />
+          </label>
+          <button class="lead-phone-remove" type="button" data-remove-lead-phone aria-label="Extra telefoonnummer verwijderen">Verwijderen</button>
+        `;
+        leadfinderElements.additionalPhones.appendChild(row);
+        row.querySelector("input")?.focus();
+      }
+
       function resetLeadfinderForm() {
         leadfinderElements.form?.reset();
+        if (leadfinderElements.additionalPhones) leadfinderElements.additionalPhones.innerHTML = "";
         if (leadfinderElements.websiteStatus) leadfinderElements.websiteStatus.value = "onbekend";
         if (leadfinderElements.callStatus) leadfinderElements.callStatus.value = "nieuw";
         if (leadfinderElements.score) {
@@ -23644,7 +23702,8 @@
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
           region: leadfinderElements.region?.value || "",
-          phone: leadfinderElements.phone?.value || "",
+          phone: readLeadfinderPhoneNumbers()[0] || "",
+          phoneNumbers: readLeadfinderPhoneNumbers(),
           email: leadfinderElements.email?.value || "",
           websiteUrl: leadfinderElements.website?.value || "",
           websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
@@ -23814,8 +23873,10 @@
       async function saveLeadCardContact(row, lead, button) {
         if (!row || !lead?.id) return;
         const readCardField = (field) => String(row.querySelector(`[data-lead-card-field="${field}"]`)?.value || "").trim();
+        const editedPrimaryPhone = readCardField("phone");
         const updates = {
-          phone: readCardField("phone"),
+          phone: editedPrimaryPhone,
+          phoneNumbers: leadPhoneNumbers({ phone: editedPrimaryPhone, phoneNumbers: leadPhoneNumbers(lead).slice(1) }),
           email: readCardField("email"),
           websiteUrl: readCardField("websiteUrl"),
         };
@@ -23841,11 +23902,12 @@
         const googlePlaceId = leadfinderElements.form?.dataset.googlePlaceId || "";
         const googleMapsUrl = leadfinderElements.form?.dataset.googleMapsUrl || "";
         const websiteUrl = leadfinderElements.website?.value || "";
-        const phone = leadfinderElements.phone?.value || "";
+        const phoneNumbers = readLeadfinderPhoneNumbers();
         const duplicate = getLeadfinderLeads().find((lead) => {
           const samePlace = googlePlaceId && lead.googlePlaceId === googlePlaceId;
           const sameWebsite = normalizeComparableUrl(lead.websiteUrl) && normalizeComparableUrl(lead.websiteUrl) === normalizeComparableUrl(websiteUrl);
-          const samePhone = normalizeComparablePhone(lead.phone) && normalizeComparablePhone(lead.phone) === normalizeComparablePhone(phone);
+          const existingPhones = new Set(leadPhoneNumbers(lead).map(normalizeComparablePhone).filter(Boolean));
+          const samePhone = phoneNumbers.some((phone) => existingPhones.has(normalizeComparablePhone(phone)));
           return samePlace || sameWebsite || samePhone;
         });
         if (duplicate) {
@@ -24269,6 +24331,15 @@
         restoreLeadfinderDetailFromUrl();
 
         leadfinderElements.form.addEventListener("submit", handleLeadfinderSubmit);
+        leadfinderElements.addPhone?.addEventListener("click", () => addLeadfinderPhoneInput());
+        leadfinderElements.additionalPhones?.addEventListener("click", (event) => {
+          const remove = event.target.closest("[data-remove-lead-phone]");
+          if (!remove) return;
+          remove.closest("[data-lead-phone-row]")?.remove();
+          [...leadfinderElements.additionalPhones.querySelectorAll("[data-lead-phone-row] span")].forEach((label, index) => {
+            label.textContent = `Extra telefoonnummer ${index + 2}`;
+          });
+        });
         leadfinderElements.reset?.addEventListener("click", () => {
           resetLeadfinderForm();
           setLeadfinderMessage("Formulier leeggemaakt.", "success");
@@ -24652,7 +24723,7 @@
         const websitePackages = [
           ["starter", "Starter Site (€495)"],
           ["business", "Business Website (€995)"],
-          ["premium", "Premium Growth (€1750)"],
+          ["premium", "Growth Website (€1750)"],
         ];
         const customerSteps = [
           "Aanvraag ontvangen",

@@ -91,6 +91,23 @@ function sanitizeScore(value) {
   return Math.max(0, Math.min(100, Math.round(parsed)));
 }
 
+function sanitizePhoneNumbers(lead = {}, metadata = {}) {
+  const candidates = [
+    lead.phone,
+    ...(Array.isArray(lead.phoneNumbers) ? lead.phoneNumbers : []),
+    ...(Array.isArray(lead.phone_numbers) ? lead.phone_numbers : []),
+    ...(Array.isArray(metadata.phoneNumbers) ? metadata.phoneNumbers : []),
+    ...(Array.isArray(metadata.phone_numbers) ? metadata.phone_numbers : []),
+  ];
+  const seen = new Set();
+  return candidates.map(sanitizeString).filter((phone) => {
+    const normalized = phone.replace(/[^\d+]/g, "").replace(/^0031/, "+31");
+    if (!normalized || seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  }).slice(0, 10);
+}
+
 function readJson(key, fallback = []) {
   if (typeof localStorage === "undefined") return fallback;
   try {
@@ -119,13 +136,15 @@ export function normalizeLeadFinderLead(lead = {}) {
       ? metadata.websiteAnalysis
       : null;
   const analysisScore = websiteAnalysis?.ok && Number.isFinite(Number(websiteAnalysis.score)) ? websiteAnalysis.score : null;
+  const phoneNumbers = sanitizePhoneNumbers(lead, metadata);
   return {
     id: sanitizeString(lead.id) || createId(),
     companyName: sanitizeString(lead.companyName || lead.company || lead.businessName),
     contactName: sanitizeString(lead.contactName || lead.contact || lead.contactPerson || lead.contact_person || lead.person || lead.name),
     industry: sanitizeString(lead.industry || lead.branche),
     region: sanitizeString(lead.region || lead.city || lead.plaats),
-    phone: sanitizeString(lead.phone),
+    phone: phoneNumbers[0] || "",
+    phoneNumbers,
     email: sanitizeString(lead.email),
     websiteUrl: sanitizeString(lead.websiteUrl || lead.website),
     websiteStatus,

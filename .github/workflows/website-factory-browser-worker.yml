@@ -1,0 +1,51 @@
+name: Website Factory browser review
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: website-factory-browser-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FACTORY_BASE_URL: ${{ vars.FACTORY_BASE_URL }}
+      FACTORY_BROWSER_OUTPUT_DIR: artifacts/factory-browser-review
+      CHROME_BIN: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Controleer workerconfiguratie
+        id: config
+        shell: bash
+        run: |
+          if [[ -n "$FACTORY_BASE_URL" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Worker overgeslagen: configureer FACTORY_BASE_URL als repository variable."
+          fi
+      - name: Controleer wachtende Factory-previews
+        if: steps.config.outputs.ready == 'true'
+        run: |
+          "$CHROME_BIN" --version
+          node scripts/website-factory-browser-worker.mjs
+      - name: Bewaar screenshots en bewijsrapporten
+        if: always() && steps.config.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-factory-browser-review-${{ github.run_id }}
+          path: artifacts/factory-browser-review
+          if-no-files-found: warn
+          retention-days: 30

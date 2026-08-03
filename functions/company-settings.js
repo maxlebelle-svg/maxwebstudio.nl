@@ -1,8 +1,8 @@
 const DEFAULT_COMPANY_SETTINGS = Object.freeze({
   companyName: "Max Webstudio",
-  phoneDisplay: "085 130 2326",
-  phoneInternational: "+31851302326",
-  whatsappNumber: "+31851302326",
+  phoneDisplay: "085 130 5282",
+  phoneInternational: "+31851305282",
+  whatsappNumber: "+31851305282",
   primaryEmail: "info@maxwebstudio.nl",
   websiteUrl: "https://www.maxwebstudio.nl",
 });
@@ -67,3 +67,34 @@ module.exports = {
   getMailtoLink,
   getCompanyDisplayValues,
 };
+
+module.exports.handler = async (event = {}) => {
+  const method = String(event.httpMethod || "GET").toUpperCase();
+  if (method === "OPTIONS") return companySettingsResponse(204, null);
+  if (method !== "GET") {
+    return companySettingsResponse(405, {
+      success: false,
+      error: "Methode niet toegestaan.",
+    });
+  }
+
+  return companySettingsResponse(200, {
+    success: true,
+    settings: getCompanySettings(),
+  });
+};
+
+function companySettingsResponse(statusCode, body) {
+  return {
+    statusCode,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=300, must-revalidate",
+      "X-Content-Type-Options": "nosniff",
+    },
+    body: statusCode === 204 ? "" : JSON.stringify(body),
+  };
+}

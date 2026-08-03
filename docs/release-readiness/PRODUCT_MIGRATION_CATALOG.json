@@ -91,6 +91,14 @@
     {
       "manifest": "docs/release-readiness/phase-d1-leads-demo-read-policy-hardening/MANIFEST.json",
       "fileset": "docs/release-readiness/phase-d1-leads-demo-read-policy-hardening/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/domain-request-workflow/MANIFEST.json",
+      "fileset": "docs/release-readiness/domain-request-workflow/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/commercial-offer-phase-2-fulfilment/MANIFEST.json",
+      "fileset": "docs/release-readiness/commercial-offer-phase-2-fulfilment/FILESET.json"
     }
   ]
 }

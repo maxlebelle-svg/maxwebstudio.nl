@@ -5,6 +5,7 @@ const { getCompanySettings } = require("./company-settings");
 const { createTimelineEvent } = require("./services/timelineService");
 const { createPaymentPaidService } = require("./journey/paymentPaid/service");
 const { resolvePaymentPaidContext } = require("./journey/paymentPaid/contextResolver");
+const domainRegistrar = require("./services/domainRegistrarService");
 const paymentPaidService = createPaymentPaidService();
 const { SUBSCRIPTION_FIELDS, canonicalSubscriptionPatch, subscriptionView } = require("./_canonical-finance");
 
@@ -68,13 +69,6 @@ exports.handler = async (event) => {
       environment: cleanText(payment.mode || payment.metadata?.environment).slice(0, 12),
     });
 
-    if (status === "paid") {
-      console.log("Max Webstudio payment received", {
-        paymentId: payment.id,
-        source: cleanText(payment.metadata?.source).slice(0, 60),
-      });
-    }
-
     if (isSubscriptionPayment(payment)) {
       await updateSubscriptionPaymentIfPresent(payment, mollieConfig.apiKey);
     } else {
@@ -97,23 +91,25 @@ function readMollieWebhookConfig() {
   const configuredTestKey = process.env.MOLLIE_TEST_API_KEY;
   const configuredDefaultKey = process.env.MOLLIE_API_KEY || getMollieApiKey();
   const livePaymentsAllowed = cleanText(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() === "true";
+  const domainLiveEnabled = isEnabled(process.env.DOMAIN_PAYMENT_AUTOMATION_ENABLED) && isEnabled(process.env.DOMAIN_PAYMENT_LIVE_ENABLED);
+  const domainLiveApiKey = domainLiveEnabled && cleanText(configuredDefaultKey).startsWith("live_") ? configuredDefaultKey : "";
   const apiKey = livePaymentsAllowed && mollieMode === "live"
     ? configuredDefaultKey
     : (configuredTestKey || (mollieMode === "test" ? configuredDefaultKey : ""));
   const testMode = isMollieTestMode(apiKey);
 
-  if (!apiKey) {
+  if (!apiKey && !domainLiveApiKey) {
     return { success: false, reason: "missing_key", mollieMode, testMode };
   }
 
-  if (!testMode && !livePaymentsAllowed) {
+  if (apiKey && !testMode && !livePaymentsAllowed && apiKey !== domainLiveApiKey) {
     return { success: false, reason: "test_mode_required", mollieMode, testMode };
   }
 
   return {
     success: true,
-    apiKey,
-    alternateTestApiKey: configuredTestKey && configuredTestKey !== apiKey ? configuredTestKey : "",
+    apiKey: apiKey || domainLiveApiKey,
+    alternateApiKeys: [...new Set([configuredTestKey, domainLiveApiKey].filter((key) => key && key !== (apiKey || domainLiveApiKey)))],
     mollieMode,
     testMode,
     livePaymentsAllowed,
@@ -121,18 +117,15 @@ function readMollieWebhookConfig() {
 }
 
 async function fetchMolliePaymentWithFallback(paymentId, mollieConfig) {
-  const primary = await fetchMolliePayment(paymentId, mollieConfig.apiKey);
-  if (
-    primary.response.ok
-    || !mollieConfig.alternateTestApiKey
-    || primary.response.status !== 404
-  ) {
-    return primary;
+  const keys = [mollieConfig.apiKey, ...(mollieConfig.alternateApiKeys || [])].filter(Boolean);
+  let primary = null;
+  for (const apiKey of keys) {
+    const result = await fetchMolliePayment(paymentId, apiKey);
+    if (!primary) primary = result;
+    if (result.response.ok) return result;
+    if (result.response.status !== 404) return result;
   }
-
-  const fallback = await fetchMolliePayment(paymentId, mollieConfig.alternateTestApiKey);
-  if (fallback.response.ok) fallback.usedFallbackTestKey = true;
-  return fallback.response.ok ? fallback : primary;
+  return primary;
 }
 
 async function fetchMolliePayment(paymentId, apiKey) {
@@ -187,8 +180,11 @@ async function updateInvoicePaymentIfPresent(payment) {
   const updatedInvoice = { ...invoice, ...patch };
   await safeCreateTimeline(paymentTimelineEvent(invoice, payment, mappedStatus));
   let commercialResult = null;
+  let domainPaymentResult = null;
   if (payment.status === "paid") {
     commercialResult = await finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment);
+    await finalizeSignedOfferFulfilmentIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment, commercialResult);
+    domainPaymentResult = await finalizeDomainOrderPaymentIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment);
   }
   console.log("Invoice payment status updated", {
     paymentId: payment.id,
@@ -197,10 +193,311 @@ async function updateInvoicePaymentIfPresent(payment) {
     invoiceStatus: mappedStatus,
   });
 
-  if (payment.status === "paid" && !invoice.paid_email_sent_at) {
+  if (payment.status === "paid" && !invoice.paid_email_sent_at && !domainPaymentResult?.recognized) {
     await dispatchPaidConfirmation(supabaseUrl, serviceRoleKey, updatedInvoice, payment, commercialResult);
   }
 }
+
+async function finalizeSignedOfferFulfilmentIfNeeded(supabaseUrl, serviceRoleKey, invoice = {}, payment = {}, commercialResult = null) {
+  const context = parseInvoiceContext(invoice.notes);
+  const offerVersionId = cleanText(payment.metadata?.commercialOfferVersionId || context.commercialOfferVersionId);
+  if (!uuidPattern(offerVersionId)) return null;
+  try {
+    const run = await fetchRecord(supabaseUrl, serviceRoleKey, "commercial_offer_fulfilment_runs", "id,status,customer_id,invoice_id,project_id,factory_project_id", `offer_version_id=eq.${encodeURIComponent(offerVersionId)}`);
+    if (!run?.id) return null;
+    const customerId = commercialResult?.customer?.id || run.customer_id || invoice.customer_id || null;
+    const projectId = commercialResult?.project?.id || run.project_id || null;
+    if (run.factory_project_id) {
+      const factory = await fetchRecord(supabaseUrl, serviceRoleKey, "factory_projects", "id,status,configuration", `id=eq.${encodeURIComponent(run.factory_project_id)}`);
+      if (factory?.id) {
+        const configuration = {
+          ...(factory.configuration || {}),
+          commercialOffer: {
+            ...((factory.configuration || {}).commercialOffer || {}),
+            paymentStatus: "paid",
+            molliePaymentId: cleanText(payment.id),
+            paidAt: cleanText(payment.paidAt) || new Date().toISOString(),
+            productionReleasedAt: new Date().toISOString(),
+          },
+        };
+        await patchRecord(supabaseUrl, serviceRoleKey, "factory_projects", factory.id, { status: ["intake", "ready", "paused"].includes(cleanText(factory.status)) ? "in_production" : factory.status, configuration, updated_at: new Date().toISOString() });
+      }
+    }
+    const result = await callRpc(supabaseUrl, serviceRoleKey, "commercial_finalize_fulfilment_v1", {
+      input_run_id: run.id,
+      input_status: "ready_for_production",
+      input_customer_id: customerId,
+      input_invoice_id: invoice.id,
+      input_project_id: projectId,
+      input_factory_project_id: run.factory_project_id || null,
+      input_error_code: null,
+    });
+    console.log("Signed commercial offer released to production", { offerVersionId, invoiceId: invoice.id, projectId, factoryProjectId: run.factory_project_id || "" });
+    return result;
+  } catch (error) {
+    console.error("Signed commercial offer production release failed", { offerVersionId, invoiceId: invoice.id, message: error.message });
+    return null;
+  }
+}
+
+async function finalizeDomainOrderPaymentIfNeeded(supabaseUrl, serviceRoleKey, invoice = {}, payment = {}) {
+  const context = parseInvoiceContext(invoice.notes);
+  if (cleanText(context.source) !== "domain_order") return { recognized: false };
+  const requestId = cleanText(context.domainRequestId || payment.metadata?.domainRequestId);
+  if (!uuidPattern(requestId)) {
+    console.error("Domain payment missing valid request id", { invoiceId: invoice.id, paymentId: cleanText(payment.id) });
+    return { recognized: true, completed: false };
+  }
+  try {
+    const request = await fetchRecord(supabaseUrl, serviceRoleKey, "domain_requests", "id,customer_id,website_id,domain_name,status,customer_payload,internal_metadata", `id=eq.${encodeURIComponent(requestId)}`);
+    if (!request?.id) throw new Error("Domeinopdracht bij betaling niet gevonden.");
+    const paidAt = cleanText(payment.paidAt) || new Date().toISOString();
+    const internalMetadata = {
+      ...(request.internal_metadata || {}),
+      payment: {
+        ...((request.internal_metadata || {}).payment || {}),
+        invoiceId: invoice.id,
+        paymentId: cleanText(payment.id),
+        status: "paid",
+        paidAt,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    const alreadyRecorded = cleanText((request.internal_metadata || {}).payment?.status) === "paid"
+      && cleanText((request.internal_metadata || {}).payment?.paymentId) === cleanText(payment.id);
+    if (!alreadyRecorded) {
+      await patchRecord(supabaseUrl, serviceRoleKey, "domain_requests", request.id, { status: "scheduled", internal_metadata: internalMetadata, updated_at: new Date().toISOString() });
+      await insertRecord(supabaseUrl, serviceRoleKey, "domain_request_events", {
+        domain_request_id: request.id,
+        customer_id: request.customer_id,
+        actor_type: "system",
+        event_type: "domain_payment_paid",
+        safe_metadata: { invoiceId: invoice.id, paymentId: cleanText(payment.id), paidAt },
+      });
+    }
+    const payload = request.customer_payload || {};
+    const customerEmail = cleanEmail(payload.email || context.customerEmail);
+    const customerName = cleanText(payload.holderName || payload.companyName || context.customerName || "klant");
+    const customerMail = buildDomainPaidEmail({ customerName, domainName: request.domain_name });
+    const customerResult = customerEmail ? await sendEmail({
+      to: customerEmail,
+      bcc: cleanEmail(process.env.DOMAIN_ORDER_ADMIN_EMAIL || process.env.ADMIN_EMAIL) || undefined,
+      subject: customerMail.subject,
+      html: customerMail.html,
+      text: customerMail.text,
+      templateKey: "domain_payment_received",
+      templateName: "Betaling domein ontvangen",
+      customerId: request.customer_id,
+      invoiceId: invoice.id,
+      triggeredBy: "mollie_webhook",
+      idempotencyKey: `domain.payment.received:${request.id}:${cleanText(payment.id)}`,
+      sensitiveContent: true,
+      metadata: { domainName: request.domain_name, domainRequestId: request.id, paymentId: cleanText(payment.id) },
+    }).catch((error) => ({ sent: false, warning: error.message })) : { sent: false };
+    if (customerResult.sent) await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, { paid_email_sent_at: new Date().toISOString(), email_last_error: null });
+    const registrationResult = await attemptAutomaticDomainRegistration(supabaseUrl, serviceRoleKey, { ...request, status: alreadyRecorded ? request.status : "scheduled", internal_metadata: internalMetadata }, invoice, payment);
+    const adminEmail = cleanEmail(process.env.DOMAIN_ORDER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "info@maxwebstudio.nl");
+    if (adminEmail && !registrationResult.enabled) {
+      const link = `${cleanText(process.env.SITE_URL || process.env.URL || "https://maxwebstudio.nl").replace(/\/$/, "")}/admin-domain-center.html?relationshipType=customer&relationshipId=${encodeURIComponent(request.customer_id)}&customerId=${encodeURIComponent(request.customer_id)}`;
+      await sendEmail({
+        to: adminEmail,
+        subject: `Domein betaald: ${request.domain_name}`,
+        html: `<p>De betaling voor <strong>${escapeHtml(request.domain_name)}</strong> is door Mollie bevestigd.</p><p>De opdracht staat klaar voor handmatige registratie bij Openprovider.</p><p><a href="${escapeHtml(link)}">Open in Domein Center</a></p>`,
+        text: `De betaling voor ${request.domain_name} is door Mollie bevestigd. Registreer het domein nu handmatig bij Openprovider.\n${link}`,
+        templateKey: "domain_payment_paid_admin",
+        templateName: "Domeinbetaling ontvangen",
+        customerId: request.customer_id,
+        invoiceId: invoice.id,
+        triggeredBy: "mollie_webhook",
+        idempotencyKey: `domain.payment.paid.admin:${request.id}:${cleanText(payment.id)}`,
+        suppressTimelineEvent: true,
+      });
+    }
+    console.log("Domain payment finalized", { requestId: request.id, invoiceId: invoice.id, paymentId: cleanText(payment.id), customerEmailSent: Boolean(customerResult.sent), registration: registrationResult.status });
+    return { recognized: true, completed: true, confirmationSent: Boolean(customerResult.sent), registration: registrationResult };
+  } catch (error) {
+    console.error("Domain payment finalization failed", { invoiceId: invoice.id, paymentId: cleanText(payment.id), message: error.message });
+    return { recognized: true, completed: false };
+  }
+}
+
+async function attemptAutomaticDomainRegistration(supabaseUrl, serviceRoleKey, request, invoice, payment) {
+  const config = domainRegistrar.registrationConfig(process.env, request.domain_name);
+  if (!config.enabled) return { enabled: false, status: "manual", warning: config.warning };
+  const existingStatus = cleanText(request.internal_metadata?.registration?.status);
+  if (["active", "requested"].includes(existingStatus)) return { enabled: true, status: existingStatus, duplicate: true };
+  if (["processing", "needs_action"].includes(existingStatus)) return { enabled: true, status: existingStatus, duplicate: true };
+
+  const startedAt = new Date().toISOString();
+  const processingMetadata = {
+    ...(request.internal_metadata || {}),
+    registration: { status: "processing", provider: "openprovider", startedAt, paymentId: cleanText(payment.id), invoiceId: invoice.id },
+  };
+  const claimed = await claimDomainRegistration(supabaseUrl, serviceRoleKey, request.id, processingMetadata);
+  if (!claimed) return { enabled: true, status: "already_claimed", duplicate: true };
+  await insertRecord(supabaseUrl, serviceRoleKey, "domain_request_events", {
+    domain_request_id: request.id,
+    customer_id: request.customer_id,
+    actor_type: "system",
+    event_type: "domain_registration_started",
+    safe_metadata: { provider: "openprovider", startedAt, invoiceId: invoice.id, paymentId: cleanText(payment.id) },
+  });
+
+  let providerResult = null;
+  try {
+    const result = providerResult = await domainRegistrar.registerDomain({
+      requestId: request.id,
+      domainName: request.domain_name,
+      autoRenew: request.customer_payload?.autoRenew !== false,
+      holder: request.customer_payload || {},
+    });
+    if (!result.enabled) throw registrationError("registrar_configuration_incomplete", result.warning || "Automatische registratie is onvolledig geconfigureerd.");
+    const completedAt = new Date().toISOString();
+    const status = result.active ? "active" : "technical_checks";
+    const registrationStatus = result.active ? "active" : "requested";
+    const registrationMetadata = {
+      ...processingMetadata,
+      registration: {
+        ...processingMetadata.registration,
+        status: registrationStatus,
+        domainId: result.domainId,
+        customerHandle: result.customerHandle,
+        providerStatus: result.providerStatus,
+        activationDate: result.activationDate,
+        expirationDate: result.expirationDate,
+        renewalDate: result.renewalDate,
+        completedAt,
+      },
+    };
+    const patch = { status, internal_metadata: registrationMetadata, updated_at: completedAt };
+    if (status === "active") patch.completed_at = completedAt;
+    await patchRecord(supabaseUrl, serviceRoleKey, "domain_requests", request.id, patch);
+    if (status === "active") await upsertDomainFromRegistration(supabaseUrl, serviceRoleKey, request, result, completedAt);
+    await insertRecord(supabaseUrl, serviceRoleKey, "domain_request_events", {
+      domain_request_id: request.id,
+      customer_id: request.customer_id,
+      actor_type: "system",
+      event_type: "domain_registration_succeeded",
+      safe_metadata: { provider: "openprovider", domainId: result.domainId, providerStatus: result.providerStatus, completedAt },
+    });
+    await sendDomainRegistrationResult(request, invoice, result, true).catch((error) => {
+      console.error("Domain registration success notification failed", { requestId: request.id, domainName: request.domain_name, message: error.message });
+    });
+    return { enabled: true, status: registrationStatus, domainId: result.domainId };
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const errorCode = providerResult?.domainId ? "registrar_post_registration_sync_failed" : safeRegistrarErrorCode(error);
+    const failedMetadata = {
+      ...processingMetadata,
+      registration: {
+        ...processingMetadata.registration,
+        status: "needs_action",
+        errorCode,
+        failedAt,
+        domainId: providerResult?.domainId || null,
+        customerHandle: providerResult?.customerHandle || null,
+        providerStatus: providerResult?.providerStatus || null,
+      },
+    };
+    await patchRecord(supabaseUrl, serviceRoleKey, "domain_requests", request.id, { status: "needs_action", internal_metadata: failedMetadata, updated_at: failedAt });
+    await insertRecord(supabaseUrl, serviceRoleKey, "domain_request_events", {
+      domain_request_id: request.id,
+      customer_id: request.customer_id,
+      actor_type: "system",
+      event_type: "domain_registration_needs_action",
+      safe_metadata: { provider: "openprovider", errorCode, failedAt },
+    });
+    await sendDomainRegistrationResult(request, invoice, { errorCode }, false);
+    console.error("Automatic domain registration needs action", { requestId: request.id, domainName: request.domain_name, errorCode });
+    return { enabled: true, status: "needs_action", errorCode };
+  }
+}
+
+async function claimDomainRegistration(supabaseUrl, serviceRoleKey, requestId, internalMetadata) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/domain_requests?id=eq.${encodeURIComponent(requestId)}&status=in.(scheduled,awaiting_approval)`, {
+    method: "PATCH",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({ status: "in_progress", internal_metadata: internalMetadata, updated_at: new Date().toISOString() }),
+  });
+  const data = await response.json().catch(() => []);
+  if (!response.ok) throw new Error(data?.message || data?.error || "Domeinregistratie kon niet veilig worden vergrendeld.");
+  return Array.isArray(data) ? data[0] || null : data;
+}
+
+async function upsertDomainFromRegistration(supabaseUrl, serviceRoleKey, request, result, completedAt) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/domains?on_conflict=customer_id,domain_name`, {
+    method: "POST",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", "Content-Profile": "public", Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+    customer_id: request.customer_id,
+    website_id: request.website_id || null,
+    source_request_id: request.id,
+    domain_name: request.domain_name,
+    status: "active",
+    legal_owner: cleanText(request.customer_payload?.holderName || request.customer_payload?.companyName),
+    auto_renew: request.customer_payload?.autoRenew !== false,
+    email_status: "not_configured",
+    registrar: "openprovider",
+    operational_metadata: { provider: "openprovider", registrarDomainId: result.domainId, providerStatus: result.providerStatus },
+    updated_at: completedAt,
+    }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || data.error || "Domeinasset kon niet worden opgeslagen.");
+  }
+}
+
+async function sendDomainRegistrationResult(request, invoice, result, succeeded) {
+  const adminEmail = cleanEmail(process.env.DOMAIN_ORDER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "info@maxwebstudio.nl");
+  const customerEmail = cleanEmail(request.customer_payload?.email);
+  const customerName = cleanText(request.customer_payload?.holderName || request.customer_payload?.companyName || "klant");
+  const link = `${cleanText(process.env.SITE_URL || process.env.URL || "https://maxwebstudio.nl").replace(/\/$/, "")}/admin-domain-center.html?relationshipType=customer&relationshipId=${encodeURIComponent(request.customer_id)}&customerId=${encodeURIComponent(request.customer_id)}`;
+  if (succeeded && customerEmail) {
+    const mail = buildDomainRegisteredEmail({ customerName, domainName: request.domain_name, requested: result.requested });
+    await sendEmail({
+      to: customerEmail,
+      bcc: adminEmail || undefined,
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+      templateKey: "domain_registration_completed",
+      templateName: "Domeinregistratie afgerond",
+      customerId: request.customer_id,
+      invoiceId: invoice.id,
+      triggeredBy: "mollie_webhook",
+      idempotencyKey: `domain.registration.completed:${request.id}:${result.domainId}`,
+      sensitiveContent: true,
+      metadata: { domainName: request.domain_name, domainRequestId: request.id, registrarDomainId: result.domainId },
+    });
+  }
+  if (adminEmail) {
+    await sendEmail({
+      to: adminEmail,
+      subject: succeeded ? `Domein automatisch geregistreerd: ${request.domain_name}` : `Actie nodig bij domeinregistratie: ${request.domain_name}`,
+      html: succeeded
+        ? `<p><strong>${escapeHtml(request.domain_name)}</strong> is automatisch bij Openprovider verwerkt.</p><p>Status: ${escapeHtml(result.providerStatus)}</p><p><a href="${escapeHtml(link)}">Open in Domein Center</a></p>`
+        : `<p>De automatische registratie van <strong>${escapeHtml(request.domain_name)}</strong> is veilig gestopt.</p><p>Controleer de opdracht handmatig in Domein Center. Foutcategorie: ${escapeHtml(result.errorCode)}</p><p><a href="${escapeHtml(link)}">Open in Domein Center</a></p>`,
+      text: succeeded
+        ? `${request.domain_name} is automatisch bij Openprovider verwerkt. Status: ${result.providerStatus}.\n${link}`
+        : `De automatische registratie van ${request.domain_name} is veilig gestopt. Controleer de opdracht handmatig. Foutcategorie: ${result.errorCode}.\n${link}`,
+      templateKey: succeeded ? "domain_registration_completed_admin" : "domain_registration_attention_admin",
+      templateName: succeeded ? "Domein automatisch geregistreerd" : "Actie nodig bij domeinregistratie",
+      customerId: request.customer_id,
+      invoiceId: invoice.id,
+      triggeredBy: "mollie_webhook",
+      idempotencyKey: `domain.registration.${succeeded ? "completed" : "attention"}.admin:${request.id}:${succeeded ? result.domainId : result.errorCode}`,
+      suppressTimelineEvent: true,
+    });
+  }
+}
+
+function safeRegistrarErrorCode(error) {
+  const code = cleanText(error?.code).toLowerCase();
+  return /^registrar_[a-z0-9_]{1,60}$/.test(code) ? code : "registrar_registration_failed";
+}
+
+function registrationError(code, message) { const error = new Error(message); error.code = code; return error; }
 
 async function dispatchPaidConfirmation(supabaseUrl, serviceRoleKey, invoice, payment, commercialResult) {
   try {
@@ -1228,6 +1525,47 @@ async function patchInvoice(supabaseUrl, serviceRoleKey, invoiceId, patch) {
   }
 }
 
+async function patchRecord(supabaseUrl, serviceRoleKey, table, id, patch) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify(patch),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || data.error || `${table} kon niet worden bijgewerkt.`);
+  }
+}
+
+async function insertRecord(supabaseUrl, serviceRoleKey, table, record) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+    method: "POST",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify(record),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || data.error || `${table} kon niet worden opgeslagen.`);
+  }
+}
+
+function buildDomainPaidEmail({ customerName, domainName }) {
+  const subject = `Betaling ontvangen voor ${domainName}`;
+  const text = `Beste ${customerName},\n\nWe hebben je betaling voor ${domainName} ontvangen. De domeinregistratie staat nu klaar voor uitvoering. Zodra de registratie bij de registrar is afgerond, ontvang je opnieuw bericht.\n\nMet vriendelijke groet,\nMax Webstudio`;
+  const html = `<!doctype html><html lang="nl"><body style="margin:0;background:#f4f7fb;font-family:Inter,Arial,sans-serif;color:#0f172a"><div style="max-width:620px;margin:0 auto;padding:32px 18px"><div style="padding:30px;border:1px solid #dbe6f0;border-radius:18px;background:#fff"><p style="margin:0 0 8px;color:#1594d0;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em">Max Webstudio · Betaling bevestigd</p><h1 style="margin:0 0 14px;font-size:25px">Betaling ontvangen</h1><p style="color:#52677a;line-height:1.65">Beste ${escapeHtml(customerName)}, we hebben je betaling voor <strong>${escapeHtml(domainName)}</strong> ontvangen. De domeinregistratie staat nu klaar voor uitvoering.</p><p style="color:#52677a;line-height:1.65">Zodra de registratie bij de registrar is afgerond, ontvang je opnieuw bericht.</p></div></div></body></html>`;
+  return { subject, text, html };
+}
+
+function buildDomainRegisteredEmail({ customerName, domainName, requested = false }) {
+  const subject = requested ? `Registratie van ${domainName} is aangevraagd` : `${domainName} is geregistreerd`;
+  const statusText = requested
+    ? "De aanvraag is bij de registry in behandeling. Zodra de registry de registratie activeert, werken we de status automatisch of handmatig bij."
+    : "De registratie bij Openprovider is geslaagd. Het domein staat op basis van de door jou aangeleverde houdergegevens geregistreerd.";
+  const text = `Beste ${customerName},\n\n${statusText}\n\nDomeinnaam: ${domainName}\n\nLet op: bij een .com-domein kan de domeinhouder nog een verificatiemail van Openprovider ontvangen. Rond die controle tijdig af.\n\nMet vriendelijke groet,\nMax Webstudio`;
+  const html = `<!doctype html><html lang="nl"><body style="margin:0;background:#f4f7fb;font-family:Inter,Arial,sans-serif;color:#0f172a"><div style="max-width:620px;margin:0 auto;padding:32px 18px"><div style="padding:30px;border:1px solid #dbe6f0;border-radius:18px;background:#fff"><p style="margin:0 0 8px;color:#1594d0;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em">Max Webstudio · Domeinregistratie</p><h1 style="margin:0 0 14px;font-size:25px">${escapeHtml(domainName)} ${requested ? "is aangevraagd" : "is geregistreerd"}</h1><p style="color:#52677a;line-height:1.65">Beste ${escapeHtml(customerName)}, ${escapeHtml(statusText)}</p><p style="margin:20px 0 0;color:#64748b;font-size:12px;line-height:1.6">Bij een .com-domein kan de domeinhouder nog een verificatiemail van Openprovider ontvangen. Rond die controle tijdig af.</p></div></div></body></html>`;
+  return { subject, text, html };
+}
+
 function mapMollieStatusToInvoiceStatus(status) {
   if (status === "paid") return "paid";
   if (status === "canceled") return "canceled";
@@ -1251,6 +1589,17 @@ function getPaymentId(event) {
 
   const params = new URLSearchParams(body);
   return params.get("id") || "";
+}
+
+async function callRpc(supabaseUrl, serviceRoleKey, name, body) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: { ...restHeaders(serviceRoleKey), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.error || `${name} kon niet worden uitgevoerd.`);
+  return data;
 }
 
 function restHeaders(serviceRoleKey) {
@@ -1315,6 +1664,14 @@ function cleanDomain(value = "") {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function isEnabled(value) {
+  return ["true", "1", "yes", "on"].includes(cleanText(value).toLowerCase());
+}
+
+function uuidPattern(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleanText(value));
 }
 
 function linkify(value) {

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "domain-request-workflow-2026-08-02",
+  "release": "Max Webstudio domain request workflow MVP",
+  "status": "APPROVED_FOR_EXISTING_ONLY_PRODUCT_CLASSIFICATION",
+  "category": "existing-only/product",
+  "sourceBranch": "working-tree",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260802120000_domain_request_workflow.sql"
+  ],
+  "scope": [
+    "create customer-owned domain requests",
+    "create append-only domain request events",
+    "create operational domain assets",
+    "keep browser roles out of domain workflow tables",
+    "support encrypted transfer-code storage through server functions"
+  ],
+  "explicitlyExcluded": [
+    "production execution",
+    "staging execution",
+    "registrar API integration",
+    "automatic domain purchase or transfer",
+    "automatic payment collection",
+    "provider credentials"
+  ]
+}

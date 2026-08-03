@@ -1,7 +1,7 @@
 const crypto = require("node:crypto");
 
 const CATALOG_KEY = "maxwebstudio-commercial";
-const CATALOG_VERSION = "2026-07-30.1";
+const CATALOG_VERSION = "2026-08-02.2";
 const CURRENCY = "EUR";
 const VAT_RATE = 21;
 
@@ -62,7 +62,7 @@ function product(id, code, name, description, category, classification, componen
 const PRODUCTS = {
   starter_site: fixed("starter_site", "WEB-STARTER", "Starter Site", "One-page website met contactformulier, basis SEO en mobiele optimalisatie.", "website", [component("sale", "one_time", 49500)], { fixedDepositExVatCents: 15000, sort: 10 }),
   business_website: fixed("business_website", "WEB-BUSINESS", "Business Website", "Website tot 5 pagina's met portfolio, aanvraagflow en SEO/conversiecopy.", "website", [component("sale", "one_time", 99500)], { fixedDepositExVatCents: 30000, sort: 20 }),
-  premium_growth: fixed("premium_growth", "WEB-PREMIUM", "Premium Growth", "Uitgebreide website met strategie, funnels, analytics en groeiplan.", "website", [component("sale", "one_time", 175000)], { fixedDepositExVatCents: 50000, sort: 30 }),
+  premium_growth: fixed("premium_growth", "WEB-PREMIUM", "Growth Website", "Uitgebreide website met positionering, groeistrategie, conversieflow, analytics en groeiplan.", "website", [component("sale", "one_time", 175000)], { fixedDepositExVatCents: 50000, sort: 30 }),
 
   logo_design: starting("logo_design", "BRAND-LOGO", "Logo laten ontwerpen", "Professioneel basislogo met bestanden voor website, socials en drukwerk.", "branding", [component("design", "one_time", null, { startingAmountExVatCents: 35000 })], { sort: 110 }),
   brand_identity: starting("brand_identity", "BRAND-HUISSTIJL", "Complete huisstijl", "Logo-uitwerking, kleuren, typografie en een compacte huisstijlhandleiding.", "branding", [component("design", "one_time", null, { startingAmountExVatCents: 89500 })], { sort: 120 }),
@@ -112,7 +112,9 @@ const PRODUCTS = {
   care_growth: fixed("care_growth", "CARE-GROWTH", "Care Growth", "Care Plus plus maandelijkse check en conversieadvies.", "care", [component("subscription", "recurring", 9900)], { dependencies: ["starter_site", "business_website", "premium_growth"], sort: 740 }),
   monitoring: fixed("monitoring", "CARE-MONITOR", "Technische monitoring", "Extra technische monitoring en rapportage.", "care", [component("subscription", "recurring", 1500)], { sort: 750 }),
   monthly_change_hours: starting("monthly_change_hours", "CARE-HOURS", "Maandelijkse wijzigingsuren", "Gereserveerde wijzigingsuren per maand.", "care", [component("subscription", "recurring", null, { startingAmountExVatCents: 19500 })], { sort: 760 }),
-  strippenkaart: onRequest("strippenkaart", "CARE-STRIP", "Strippenkaart websitewijzigingen", "Bundel van 5 of 10 wijzigingen; prijs wordt vooraf bevestigd.", "care", { sort: 770 }),
+  website_tegoed_flex_5: fixed("website_tegoed_flex_5", "SUPPORT-FLEX-5", "Website-tegoed Flex 5", "Vijf credits van vijftien minuten voor flexibele websitewijzigingen, inclusief controle en livegang.", "website_support", [component("credits", "one_time", 12500)], { sort: 770 }),
+  website_tegoed_flex_10: fixed("website_tegoed_flex_10", "SUPPORT-FLEX-10", "Website-tegoed Flex 10", "Tien credits van vijftien minuten voor flexibele websitewijzigingen, inclusief voorrang, controle en livegang.", "website_support", [component("credits", "one_time", 22500)], { sort: 780 }),
+  strippenkaart: onRequest("strippenkaart", "CARE-STRIP", "Strippenkaart websitewijzigingen (historisch)", "Historische productregel; vervangen door Website-tegoed Flex 5 en Flex 10.", "website_support", { active: false, publicVisible: false, publicCheckout: false, adminSelectable: false, sort: 790 }),
   custom_request: onRequest("custom_request", "CUSTOM-WISH", "Andere wens", "Persoonlijke prijs na beoordeling.", "custom", { sort: 810 }),
 };
 
@@ -134,7 +136,7 @@ function catalogSnapshot() {
     version: CATALOG_VERSION,
     currency: CURRENCY,
     vatRate: VAT_RATE,
-    validFrom: "2026-07-30",
+    validFrom: "2026-08-02",
     products: Object.values(PRODUCTS).sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id)),
   });
 }

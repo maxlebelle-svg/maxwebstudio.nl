@@ -9,8 +9,8 @@ Doel: in kaart brengen waar Max Webstudio bedrijfsgegevens nu hardcoded of dubbe
 | Veld | Gewenste waarde |
 | --- | --- |
 | Bedrijfsnaam | Max Webstudio |
-| Telefoon zichtbaar | 085 130 2326 |
-| Telefoon intern | +31851302326 |
+| Telefoon zichtbaar | 085 130 5282 |
+| Telefoon intern | +31851305282 |
 | WhatsApp | automatisch opbouwen vanuit telefoonnummer |
 | E-mail | nog centraal te bevestigen, huidige fallback is `info@maxwebstudio.nl` |
 | Website | `https://maxwebstudio.nl` |
@@ -26,7 +26,7 @@ De bedrijfsgegevens staan nu verspreid over drie hoofdgebieden:
 2. Admin/salesportaal: dezelfde bedrijfsinstellingen staan in veel gekloonde adminpagina's als lokale defaults en formulier-velden.
 3. Backend/Netlify Functions: e-mailadressen en WhatsApp-links staan deels als environment fallback en deels hardcoded in e-mailtemplates.
 
-Belangrijk: het huidige hardcoded telefoonnummer is vooral `het oude internationale 06-nummer` / `het oude WhatsApp-nummer`. Dat wijkt af van de gewenste centrale waarde `085 130 2326` / `+31851302326`.
+Belangrijk: het huidige hardcoded telefoonnummer is vooral `het oude internationale 06-nummer` / `het oude WhatsApp-nummer`. Dat wijkt af van de gewenste centrale waarde `085 130 5282` / `+31851305282`.
 
 ## Publieke Website
 
@@ -170,7 +170,7 @@ Dit is de beste plek om op voort te bouwen. De nieuwe Company Settings-laag moet
 | Functions gebruiken env fallbacks | Server-side bedrijfsgegevens moeten veilig en consistent worden opgelost. |
 | Facturen/offertes zijn financieel gevoelig | Oude facturen moeten blijven werken, ook als settings later veranderen. |
 | Logo staat inline op meerdere plekken | Kans op visuele verschillen tussen website, klantportaal en admin. |
-| Huidig telefoonnummer wijkt af | Centrale migratie moet bewust overschakelen naar `085 130 2326`. |
+| Huidig telefoonnummer wijkt af | Centrale migratie moet bewust overschakelen naar `085 130 5282`. |
 
 ## Conclusie
 
@@ -187,14 +187,14 @@ Uitgevoerd:
 | Centrale browser-veilige company settings service | Opgelost in `public/src/services/companySettingsService.js` |
 | DOM-helper voor publieke pagina's | Opgelost in `public/src/services/companySettingsDomService.js` |
 | Fallback defaults voor naam, telefoon, WhatsApp, e-mail en website | Opgelost |
-| Helper voor telefoonlink | Opgelost: `tel:+31851302326` |
-| Helper voor WhatsApp-link | Opgelost: `https://wa.me/31851302326` |
+| Helper voor telefoonlink | Opgelost: `tel:+31851305282` |
+| Helper voor WhatsApp-link | Opgelost: `https://wa.me/31851305282` |
 | Helper voor mailto-link | Opgelost |
 | Homepage contact-CTA's | Aangesloten via `data-company-*` attributen |
 | Homepage footer contactgegevens | Aangesloten via `data-company-*` attributen |
 | Homepage structured data | Aangesloten via `data-company-json-ld` |
-| Losse publieke WhatsApp/telefoonlinks | Oude Max Webstudio nummer vervangen door `31851302326` / `085 130 2326` |
-| Leadbevestiging e-mailtemplate | WhatsApp-link vervangen door `https://wa.me/31851302326` |
+| Losse publieke WhatsApp/telefoonlinks | Oude Max Webstudio nummer vervangen door `31851305282` / `085 130 5282` |
+| Leadbevestiging e-mailtemplate | WhatsApp-link vervangen door `https://wa.me/31851305282` |
 
 Nog open:
 

@@ -765,7 +765,7 @@
                 <button class="button secondary is-disabled" id="demo-journey-send-business-whatsapp" type="button" aria-disabled="true">Verstuur zakelijk</button>
                 <button class="button secondary is-disabled" id="demo-journey-open-portal" type="button" aria-disabled="true">Klantportaal openen</button>
               </div>
-              <p class="admin-muted-note">“Verstuur zakelijk” opent WhatsApp Web. Meld daar eenmalig aan met het zakelijke nummer 085 130 2326.</p>
+              <p class="admin-muted-note">“Verstuur zakelijk” opent WhatsApp Web. Meld daar eenmalig aan met het zakelijke nummer 085 130 5282.</p>
             </article>
           </div>
 
@@ -2741,13 +2741,13 @@
         const invoicePresets = [
           { group: "Website totaal", label: "Starter Site", description: "Starter Site", price: 495 },
           { group: "Website totaal", label: "Business Website", description: "Business Website", price: 995 },
-          { group: "Website totaal", label: "Premium Growth", description: "Premium Growth", price: 1750 },
+          { group: "Website totaal", label: "Growth Website", description: "Growth Website", price: 1750 },
           { group: "Aanbetaling", label: "Aanbetaling Starter Site", description: "Aanbetaling Starter Site", price: 150 },
           { group: "Aanbetaling", label: "Aanbetaling Business Website", description: "Aanbetaling Business Website", price: 300 },
-          { group: "Aanbetaling", label: "Aanbetaling Premium Growth", description: "Aanbetaling Premium Growth", price: 500 },
+          { group: "Aanbetaling", label: "Aanbetaling Growth Website", description: "Aanbetaling Growth Website", price: 500 },
           { group: "Restbetaling", label: "Restbetaling Starter Site", description: "Restbetaling Starter Site", price: 345 },
           { group: "Restbetaling", label: "Restbetaling Business Website", description: "Restbetaling Business Website", price: 695 },
-          { group: "Restbetaling", label: "Restbetaling Premium Growth", description: "Restbetaling Premium Growth", price: 1250 },
+          { group: "Restbetaling", label: "Restbetaling Growth Website", description: "Restbetaling Growth Website", price: 1250 },
           { group: "Onderhoud & hosting", label: "Geen onderhoud", description: "Geen onderhoud", price: 0 },
           { group: "Onderhoud & hosting", label: "Care Basic", description: "Care Basic - Hosting, SSL, back-up en technische monitoring", price: 19.95 },
           { group: "Onderhoud & hosting", label: "Care Plus", description: "Care Plus - Basic + 15 minuten kleine wijzigingen per maand", price: 49 },
@@ -21099,7 +21099,7 @@
         const websitePackages = [
           ["starter", "Starter Site (€495)"],
           ["business", "Business Website (€995)"],
-          ["premium", "Premium Growth (€1750)"],
+          ["premium", "Growth Website (€1750)"],
         ];
         const customerSteps = [
           "Aanvraag ontvangen",
@@ -23161,7 +23161,7 @@
           elements.sendBusinessWhatsapp?.addEventListener("click", (event) => {
             openActionUrl(event, elements.sendBusinessWhatsapp, "Genereer eerst een preview en voeg een geldig telefoonnummer toe.");
             if (elements.sendBusinessWhatsapp?.dataset?.url) {
-              setMessage(elements.message, "Zakelijke WhatsApp Web geopend. Controleer vóór verzenden dat 085 130 2326 actief is.", "success");
+              setMessage(elements.message, "Zakelijke WhatsApp Web geopend. Controleer vóór verzenden dat 085 130 5282 actief is.", "success");
             }
           });
           elements.openPortal?.addEventListener("click", (event) => openActionUrl(event, elements.openPortal, "Er is nog geen klantportaal gekoppeld."));

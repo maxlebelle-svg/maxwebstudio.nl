@@ -12,6 +12,11 @@ Status: invullen zonder waarden of secrets.
 | `RESEND_API_KEY` | E-mails via Resend | Netlify env |  |
 | `FROM_EMAIL` | Afzender e-mail | Netlify env |  |
 | `ADMIN_EMAIL` | Interne notificaties | Netlify env |  |
+| `DOMAIN_ORDER_ADMIN_EMAIL` | Optionele ontvanger voor nieuwe domeinreserveringen; valt terug op `ADMIN_EMAIL` | Netlify env |  |
+| `DOMAIN_PAYMENT_AUTOMATION_ENABLED` | Maakt automatisch een Mollie-betaallink na een ondersteunde domeinreservering | Netlify env | `false` totdat livegang is goedgekeurd |
+| `DOMAIN_PAYMENT_LIVE_ENABLED` | Extra veiligheidsschakelaar voor echte Mollie-domeinbetalingen | Netlify env | `false` totdat livegang is goedgekeurd |
+| `DOMAIN_REGISTRATION_AUTOMATION_ENABLED` | Start na een bevestigde Mollie-betaling automatisch de registratie bij Openprovider | Netlify env | `false` totdat een gecontroleerde registratieproef is goedgekeurd |
+| `DOMAIN_REGISTRATION_LIVE_ENABLED` | Extra veiligheidsschakelaar voor echte, betaalde domeinregistraties | Netlify env | `false` totdat een gecontroleerde registratieproef is goedgekeurd |
 | `LEAD_TO_EMAIL` | Leadontvanger | Netlify env |  |
 | `LEAD_FROM_EMAIL` | Lead-afzender | Netlify env |  |
 | `MOLLIE_API_KEY` | Mollie API server-side | Netlify env |  |
@@ -21,6 +26,10 @@ Status: invullen zonder waarden of secrets.
 | `DATA_PROVIDER_MODE` | local/supabase/hybrid mode | Netlify env of app settings |  |
 | `CLIENT_PORTAL_REDIRECT_URL` | Auth redirect klantportaal | Supabase/Auth settings |  |
 | `ADMIN_REDIRECT_URL` | Auth redirect admin | Supabase/Auth settings |  |
+| `OPENPROVIDER_USERNAME` | Registrar-API voor definitieve domeincontrole | Netlify env, nooit frontend |  |
+| `OPENPROVIDER_PASSWORD` | Registrar-API authenticatie | Netlify env, nooit frontend |  |
+| `OPENPROVIDER_IP` | Optionele vaste API-IP voor Openprovider | Netlify env |  |
+| `OPENPROVIDER_NAMESERVERS` | Minimaal twee, met komma's gescheiden nameservers voor automatische registraties | Netlify env | Eerst DNS-keuze bevestigen; geen nameservers raden |
 
 ## Regels
 

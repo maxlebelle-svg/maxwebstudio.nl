@@ -51,7 +51,7 @@ Inhoud:
 - aanvraagflow of Mollie aanbetaling
 - SEO en conversiecopy
 
-### Premium Growth
+### Growth Website
 
 Vanafprijs:
 
@@ -63,10 +63,12 @@ Aanbetaling:
 
 Inhoud:
 
-- uitgebreide website
-- strategie en funnels
-- analytics dashboard
-- onderhoudsplan klaarzetten
+- positionering en persoonlijke groeistrategie
+- tot 8 professioneel uitgewerkte pagina's
+- premium ontwerp en complete online klantreis
+- landingspagina met één conversieflow
+- analytics en conversiemeting
+- persoonlijk groeiplan voor na de livegang
 
 ## Onderhoudspakketten
 
@@ -124,4 +126,3 @@ Huidige onboarding bevat:
 - cookiebanner + AVG-configuratie: EUR 95 excl. btw
 
 Extra opties worden nog niet automatisch afgerekend.
-

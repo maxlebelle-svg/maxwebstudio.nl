@@ -2,9 +2,9 @@ import { STORAGE_KEYS } from "../config/storageKeys.js";
 
 export const DEFAULT_COMPANY_SETTINGS = Object.freeze({
   companyName: "Max Webstudio",
-  phoneDisplay: "085 130 2326",
-  phoneInternational: "+31851302326",
-  whatsappNumber: "+31851302326",
+  phoneDisplay: "085 130 5282",
+  phoneInternational: "+31851305282",
+  whatsappNumber: "+31851305282",
   primaryEmail: "info@maxwebstudio.nl",
   websiteUrl: "https://www.maxwebstudio.nl",
   logoMarkUrl: "/max-webstudio-logo-mark.svg",

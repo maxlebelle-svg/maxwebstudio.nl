@@ -694,6 +694,57 @@
   background: rgba(5, 20, 41, .72);
 }
 
+.sales-analysis-flow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sales-analysis-flow li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: .42rem;
+  min-width: 0;
+  color: #7893b8;
+}
+
+.sales-analysis-flow li > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(104, 145, 199, .34);
+  border-radius: 999px;
+  background: rgba(7, 27, 55, .86);
+  color: #8da7ca;
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.sales-analysis-flow li > strong {
+  overflow-wrap: anywhere;
+  font-size: .66rem;
+  line-height: 1.25;
+}
+
+.sales-analysis-flow li.is-active { color: #f1f7ff; }
+.sales-analysis-flow li.is-active > span {
+  border-color: #2e8cff;
+  background: linear-gradient(135deg, #0d70f4, #0758cf);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(46, 140, 255, .14);
+}
+.sales-analysis-flow li.is-complete { color: #c9dcf5; }
+.sales-analysis-flow li.is-complete > span {
+  border-color: rgba(46, 164, 255, .58);
+  background: rgba(24, 95, 174, .3);
+  color: #dff1ff;
+}
+
 .sales-analysis-url-control span {
   color: #dceaff;
   font-size: .72rem;
@@ -717,10 +768,125 @@
   line-height: 1.4;
 }
 
+.sales-analysis-url-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sales-analysis-grouping {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .65rem;
+  align-items: end;
+  padding: .8rem;
+  border: 1px solid rgba(61, 126, 215, .48);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(20, 66, 127, .72), rgba(6, 27, 55, .9));
+}
+
+.sales-analysis-grouping > div,
+.sales-analysis-grouping .admin-form-message { grid-column: 1 / -1; }
+.sales-analysis-grouping > div { display: grid; gap: .15rem; }
+.sales-analysis-grouping > div span,
+.sales-analysis-grouping label span {
+  color: #87a6ce;
+  font-size: .6rem;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.sales-analysis-grouping > div strong { color: #f1f7ff; font-size: .82rem; }
+.sales-analysis-grouping label { display: grid; gap: .35rem; }
+.sales-analysis-grouping select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(112, 157, 216, .34);
+  border-radius: 8px;
+  background: #061a35;
+  color: #eef6ff;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 750;
+}
+.sales-analysis-grouping .button { min-height: 42px; }
+.sales-analysis-grouping[data-current-view]:not([data-current-view="automatic"]) {
+  border-color: rgba(46, 164, 255, .72);
+  box-shadow: inset 3px 0 0 #2f8fff;
+}
+
+@media (max-width: 760px) {
+  .sales-analysis-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sales-analysis-grouping { grid-template-columns: 1fr; }
+  .sales-analysis-grouping > * { grid-column: 1 !important; }
+}
+
+@media (max-width: 420px) {
+  .sales-analysis-flow { grid-template-columns: 1fr; }
+}
+
 @container sales-detail (max-width: 460px) {
   .sales-workspace-detail-column .sales-premium-action-bar,
   .sales-workspace-detail-column .sales-premium-contact-list,
   .sales-workspace-detail-column .sales-detail-compact-list {
     grid-template-columns: 1fr !important;
+  }
+}
+.lead-phone-fields {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(76, 145, 255, 0.25);
+  border-radius: 14px;
+  background: rgba(5, 24, 52, 0.62);
+}
+
+.lead-phone-fields-heading,
+.lead-additional-phone-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.lead-phone-fields-heading label,
+.lead-additional-phone-row label {
+  min-width: 0;
+}
+
+.lead-phone-fields-heading .button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.lead-additional-phones {
+  display: grid;
+  gap: 9px;
+}
+
+.lead-phone-remove {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 113, 133, 0.38);
+  border-radius: 10px;
+  color: #ffd7dd;
+  background: rgba(92, 24, 42, 0.42);
+  cursor: pointer;
+}
+
+.lead-phone-fields > small {
+  color: #9eb4d3;
+  line-height: 1.45;
+}
+
+@media (max-width: 620px) {
+  .lead-phone-fields-heading,
+  .lead-additional-phone-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lead-phone-fields-heading .button,
+  .lead-phone-remove {
+    width: 100%;
   }
 }

@@ -1426,59 +1426,60 @@ h3 {
   margin-top: auto;
 }
 
-.strippenkaart-card {
+.website-credit-section {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1fr) auto;
-  gap: 24px;
-  align-items: center;
-  margin-top: 22px;
-  padding: 26px;
+  grid-template-columns: minmax(0, 1.05fr) repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+  margin-top: 28px;
+  padding: clamp(22px, 3vw, 38px);
   border: 1px solid rgba(21, 94, 239, 0.16);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(237, 244, 255, 0.86), rgba(255, 255, 255, 0.95)),
-    var(--white);
-  box-shadow: 0 16px 46px rgba(6, 18, 31, 0.06);
+  border-radius: 26px;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(6, 18, 31, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 78% 0%, rgba(25, 194, 255, 0.11), transparent 34%);
+  background-size: 32px 32px, 32px 32px, auto;
 }
 
-.strippenkaart-card h3 {
-  margin-bottom: 8px;
-  font-size: clamp(26px, 3vw, 36px);
-  line-height: 1.05;
-}
-
-.strippenkaart-card span,
-.strippenkaart-card li {
-  color: var(--muted);
-  line-height: 1.55;
-}
-
-.strippenkaart-card ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 18px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.strippenkaart-card li::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 10px;
-  border-radius: 999px;
-  background: var(--green);
-}
-
-.strippenkaart-card .button {
-  white-space: nowrap;
-}
+.website-credit-intro { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: clamp(4px, 1.4vw, 16px); }
+.website-credit-intro h3 { margin: 10px 0 14px; font-size: clamp(34px, 4vw, 52px); line-height: 0.98; letter-spacing: -0.045em; }
+.website-credit-intro > p:not(.section-kicker):not(.website-credit-care-note) { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.website-credit-usecases, .website-credit-card ul { display: grid; gap: 13px; padding: 0; margin: 22px 0; list-style: none; }
+.website-credit-usecases li, .website-credit-card li { display: flex; align-items: flex-start; gap: 11px; color: var(--ink); font-size: 15px; line-height: 1.5; }
+.website-credit-usecases li::before, .website-credit-card li::before { content: "✓"; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: 0 0 auto; margin-top: 1px; border-radius: 999px; color: #073f2c; background: rgba(43, 217, 130, 0.2); font-size: 13px; font-weight: 900; }
+.website-credit-care-note { padding-top: 16px; margin: auto 0 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.55; }
+.website-credit-card { display: flex; flex-direction: column; min-width: 0; min-height: 610px; padding: clamp(24px, 2.4vw, 32px); border-radius: 24px; box-shadow: 0 22px 62px rgba(6, 18, 31, 0.1); }
+.website-credit-card-light { border: 1px solid rgba(21, 94, 239, 0.18); background: linear-gradient(145deg, rgba(237, 244, 255, 0.98), rgba(255, 255, 255, 0.98) 54%); }
+.website-credit-card-dark { color: var(--white); transform: translateY(-8px); border: 1px solid var(--ink); background: radial-gradient(circle at 88% 7%, rgba(25, 194, 255, 0.25), transparent 31%), linear-gradient(145deg, #06121f, #0d2136); box-shadow: 0 30px 82px rgba(6, 18, 31, 0.24); }
+.website-credit-label { margin: 0; color: var(--blue); font-size: 12px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+.website-credit-badge { display: inline-flex; align-items: center; width: max-content; min-height: 34px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, 0.17); border-radius: 999px; background: rgba(255, 255, 255, 0.08); font-size: 12px; font-weight: 900; }
+.website-credit-card h3 { margin: 16px 0 0; font-size: clamp(30px, 3vw, 38px); letter-spacing: -0.035em; }
+.website-credit-card strong { display: block; margin-top: 20px; font-size: clamp(46px, 5vw, 64px); line-height: 0.95; letter-spacing: -0.045em; }
+.website-credit-card > div > span:not(.website-credit-badge) { display: block; margin-top: 9px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.website-credit-card-dark > div > span:not(.website-credit-badge) { color: rgba(255, 255, 255, 0.64); }
+.website-credit-outcome { min-height: 72px; margin: 16px 0 0; color: var(--blue); font-size: 14px; font-weight: 800; line-height: 1.5; }
+.website-credit-card-dark .website-credit-outcome { color: var(--cyan); }
+.website-credit-divider { width: 100%; height: 1px; margin: 22px 0; background: var(--line); }
+.website-credit-card-dark .website-credit-divider { background: rgba(255, 255, 255, 0.16); }
+.website-credit-card ul { margin-top: 0; }
+.website-credit-card-dark li { color: rgba(255, 255, 255, 0.82); }
+.website-credit-card-dark li::before { color: var(--green); background: rgba(43, 217, 130, 0.16); }
+.website-credit-card .button { width: 100%; margin-top: auto; text-align: center; }
+.website-credit-saving { display: block; margin-top: 11px; color: rgba(255, 255, 255, 0.62); font-size: 12px; font-weight: 700; text-align: center; }
+.website-credit-footnote { max-width: 820px; margin: 18px auto 0; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: center; }
 
 .price-card {
   display: flex;
   flex-direction: column;
+}
+
+.price-card.starter-card {
+  border-color: rgba(21, 94, 239, 0.22);
+  background:
+    linear-gradient(145deg, rgba(237, 244, 255, 0.96), rgba(255, 255, 255, 0.94) 54%),
+    var(--white);
 }
 
 .price-card.featured {
@@ -1496,6 +1497,31 @@ h3 {
   text-transform: uppercase;
 }
 
+.price-card .price-outcome {
+  min-height: 104px;
+  margin: 16px 0 0;
+  color: var(--blue);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+.price-card.featured .price-outcome {
+  color: var(--cyan);
+}
+
+.price-divider {
+  width: 100%;
+  height: 1px;
+  margin: 22px 0 26px;
+  background: var(--line);
+}
+
+.price-card.featured .price-divider {
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .price-card.featured p,
 .price-card.featured span,
 .price-card.featured li {
@@ -1511,24 +1537,119 @@ h3 {
 
 .price-card ul {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   padding: 0;
-  margin: 28px 0;
+  margin: 0 0 30px;
   list-style: none;
 }
 
+.price-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
 .price-card li::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 10px;
+  content: "✓";
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  margin-top: 1px;
   border-radius: 999px;
-  background: var(--green);
+  color: #073f2c;
+  background: rgba(43, 217, 130, 0.2);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.price-card.featured li {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.price-card.featured li::before {
+  color: var(--green);
+  background: rgba(43, 217, 130, 0.16);
 }
 
 .price-card .button {
   margin-top: auto;
+}
+
+.price-outcome {
+  min-height: 54px;
+  margin: 12px 0 4px;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.price-badge {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: 36px;
+  margin-bottom: 16px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.price-deposit {
+  display: block;
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.price-card.featured .price-deposit {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.pricing-trustbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.pricing-trustbar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.pricing-trustbar span::before {
+  content: "✓";
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  color: #073f2c;
+  background: rgba(43, 217, 130, 0.2);
+  font-size: 12px;
 }
 
 .steps {
@@ -2923,8 +3044,12 @@ h3 {
     position: static;
   }
 
-  .strippenkaart-card {
-    grid-template-columns: 1fr;
+  .website-credit-section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .website-credit-intro {
+    grid-column: 1 / -1;
   }
 }
 
@@ -2970,16 +3095,33 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .strippenkaart-card {
-    padding: 22px;
-  }
-
-  .strippenkaart-card ul {
+  .website-credit-section {
     grid-template-columns: 1fr;
+    padding: 16px;
   }
 
-  .strippenkaart-card .button {
-    width: 100%;
+  .website-credit-intro {
+    grid-column: auto;
+  }
+
+  .website-credit-card {
+    min-height: auto;
+  }
+
+  .website-credit-card-dark {
+    transform: none;
+  }
+
+  .website-credit-outcome {
+    min-height: auto;
+  }
+
+  .price-card .price-outcome {
+    min-height: auto;
+  }
+
+  .price-divider {
+    margin: 20px 0 24px;
   }
 
   .payment-form,

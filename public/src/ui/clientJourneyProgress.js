@@ -143,7 +143,7 @@ function renderNextStep(elements, progress) {
 function renderContact(elements, contact) {
   let target = elements.card.querySelector("[data-journey-contact]");
   if (!target) { target = document.createElement("aside"); target.dataset.journeyContact = "true"; target.className = "journey-contact-card"; elements.card.append(target); }
-  const safe = contact?.name ? contact : { name: "Team Max Webstudio", role: "Uw vaste webstudioteam", email: "info@maxwebstudio.nl", phone: "085 130 2326", photoUrl: null, fallback: true };
+  const safe = contact?.name ? contact : { name: "Team Max Webstudio", role: "Uw vaste webstudioteam", email: "info@maxwebstudio.nl", phone: "085 130 5282", photoUrl: null, fallback: true };
   target.replaceChildren();
   if (safe.photoUrl) { const image = document.createElement("img"); image.src = safe.photoUrl; image.alt = ""; image.loading = "lazy"; target.append(image); }
   else { const avatar = document.createElement("span"); avatar.className = "journey-contact-avatar"; avatar.textContent = safe.fallback ? "MW" : initials(safe.name); avatar.setAttribute("aria-hidden", "true"); target.append(avatar); }

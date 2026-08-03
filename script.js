@@ -30,7 +30,7 @@ const checkoutPackages = {
     deposit: "€300",
     paymentUrl: "betalen.html?website=business_website",
   },
-  "Premium Growth": {
+  "Growth Website": {
     deposit: "€500",
     paymentUrl: "betalen.html?website=premium_growth",
   },

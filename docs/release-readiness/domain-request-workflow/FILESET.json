@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "domain-request-workflow-2026-08-02",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260802120000_domain_request_workflow.sql",
+      "bytes": 4772,
+      "sha256": "9a7e40f07f5b697f6956db4452675a60b803aa5826ee3b88cbcc0c6be3d155ef"
+    }
+  ]
+}

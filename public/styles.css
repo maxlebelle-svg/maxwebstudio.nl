@@ -574,6 +574,190 @@ a {
   color: var(--ink);
 }
 
+.login-dropdown {
+  position: relative;
+}
+
+.login-dropdown summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  list-style: none;
+  transition: color 180ms ease;
+}
+
+.login-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.login-dropdown summary::after {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 180ms ease;
+}
+
+.login-dropdown summary:hover,
+.login-dropdown summary:focus-visible,
+.login-dropdown[open] summary {
+  color: var(--ink);
+}
+
+.login-dropdown summary:focus-visible {
+  outline: 3px solid rgba(21, 94, 239, 0.22);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+
+.login-dropdown[open] summary::after {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.login-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 18px);
+  right: -18px;
+  z-index: 30;
+  display: grid;
+  width: 230px;
+  padding: 8px;
+  border: 1px solid rgba(220, 228, 237, 0.95);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 55px rgba(6, 18, 31, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.login-dropdown-menu::before {
+  position: absolute;
+  right: 22px;
+  bottom: 100%;
+  width: 14px;
+  height: 14px;
+  border-top: 1px solid rgba(220, 228, 237, 0.95);
+  border-left: 1px solid rgba(220, 228, 237, 0.95);
+  background: rgba(255, 255, 255, 0.98);
+  content: "";
+  transform: translateY(7px) rotate(45deg);
+}
+
+.main-nav .login-dropdown-menu a {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 13px;
+  border-radius: 8px;
+  color: var(--ink);
+  white-space: nowrap;
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.main-nav .login-dropdown-menu a + a {
+  border-top: 1px solid rgba(220, 228, 237, 0.72);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.main-nav .login-dropdown-menu a:hover,
+.main-nav .login-dropdown-menu a:focus-visible {
+  color: var(--blue);
+  background: #edf4ff;
+  outline: none;
+  transform: translateX(2px);
+}
+
+.login-dropdown-menu a span:last-child {
+  color: var(--blue);
+  font-size: 15px;
+}
+
+.webshop-login-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(21, 94, 239, 0.16), transparent 34%),
+    radial-gradient(circle at 82% 80%, rgba(38, 199, 255, 0.14), transparent 30%),
+    linear-gradient(rgba(6, 18, 31, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.035) 1px, transparent 1px),
+    var(--paper);
+  background-size: auto, auto, 42px 42px, 42px 42px, auto;
+}
+
+.webshop-login-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px 20px;
+}
+
+.webshop-login-card {
+  width: min(100%, 570px);
+  padding: clamp(28px, 5vw, 52px);
+  border: 1px solid rgba(220, 228, 237, 0.96);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 28px 80px rgba(6, 18, 31, 0.14);
+  backdrop-filter: blur(18px);
+}
+
+.webshop-login-card .brand {
+  margin-bottom: 44px;
+  font-size: 18px;
+}
+
+.webshop-login-kicker {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.webshop-login-card h1 {
+  margin: 0 0 18px;
+  color: var(--ink);
+  font-size: clamp(34px, 7vw, 50px);
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+
+.webshop-login-card > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.webshop-login-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(21, 94, 239, 0.18);
+  border-radius: 10px;
+  background: #edf4ff;
+  color: var(--blue-dark);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.webshop-login-status span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 5px rgba(21, 94, 239, 0.12);
+}
+
 .header-cta,
 .button {
   display: inline-flex;
@@ -5977,66 +6161,223 @@ h3 {
   color: var(--ink);
 }
 
-.strippenkaart-card {
+.website-credit-section {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1fr) auto;
-  gap: 24px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1.05fr) repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
   max-width: 1180px;
-  margin: 22px auto 0;
-  padding: clamp(24px, 4vw, 34px);
+  margin: 28px auto 0;
+  padding: clamp(22px, 3vw, 38px);
   border: 1px solid rgba(21, 94, 239, 0.16);
-  border-radius: 24px;
-  background:
-    linear-gradient(135deg, rgba(237, 244, 255, 0.86), rgba(255, 255, 255, 0.95)),
-    var(--white);
-  box-shadow: 0 20px 58px rgba(6, 18, 31, 0.075);
+  border-radius: 26px;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(6, 18, 31, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 78% 0%, rgba(25, 194, 255, 0.11), transparent 34%);
+  background-size: 32px 32px, 32px 32px, auto;
 }
 
-.strippenkaart-card h3 {
-  margin-bottom: 8px;
-  font-size: clamp(26px, 3vw, 38px);
-  line-height: 1.05;
+.website-credit-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: clamp(4px, 1.4vw, 16px);
 }
 
-.strippenkaart-card span,
-.strippenkaart-card li {
-  color: var(--muted);
-  line-height: 1.55;
+.website-credit-intro h3 {
+  margin: 10px 0 14px;
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
 }
 
-.strippenkaart-card ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 18px;
-  padding: 0;
+.website-credit-intro > p:not(.section-kicker):not(.website-credit-care-note) {
   margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.website-credit-usecases,
+.website-credit-card ul {
+  display: grid;
+  gap: 13px;
+  padding: 0;
+  margin: 22px 0;
   list-style: none;
 }
 
-.strippenkaart-card li {
+.website-credit-usecases li,
+.website-credit-card li {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 11px;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.strippenkaart-card li::before {
+.website-credit-usecases li::before,
+.website-credit-card li::before {
   content: "✓";
   display: inline-grid;
   place-items: center;
-  width: 19px;
-  height: 19px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
-  margin-top: 2px;
+  margin-top: 1px;
   border-radius: 999px;
   color: #073f2c;
   background: rgba(43, 217, 130, 0.2);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.website-credit-care-note {
+  padding-top: 16px;
+  margin: auto 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.website-credit-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+  min-height: 610px;
+  padding: clamp(24px, 2.4vw, 32px);
+  border-radius: 24px;
+  box-shadow: 0 22px 62px rgba(6, 18, 31, 0.1);
+}
+
+.website-credit-card-light {
+  border: 1px solid rgba(21, 94, 239, 0.18);
+  background: linear-gradient(145deg, rgba(237, 244, 255, 0.98), rgba(255, 255, 255, 0.98) 54%);
+}
+
+.website-credit-card-dark {
+  color: var(--white);
+  transform: translateY(-8px);
+  border: 1px solid var(--ink);
+  background:
+    radial-gradient(circle at 88% 7%, rgba(25, 194, 255, 0.25), transparent 31%),
+    linear-gradient(145deg, #06121f, #0d2136);
+  box-shadow: 0 30px 82px rgba(6, 18, 31, 0.24);
+}
+
+.website-credit-label {
+  margin: 0;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.website-credit-badge {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   font-size: 12px;
   font-weight: 900;
 }
 
-.strippenkaart-card .button {
-  white-space: nowrap;
+.website-credit-card h3 {
+  margin: 16px 0 0;
+  font-size: clamp(30px, 3vw, 38px);
+  letter-spacing: -0.035em;
+}
+
+.website-credit-card strong {
+  display: block;
+  margin-top: 20px;
+  font-size: clamp(46px, 5vw, 64px);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+}
+
+.website-credit-card > div > span:not(.website-credit-badge) {
+  display: block;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.website-credit-card-dark > div > span:not(.website-credit-badge) {
+  color: rgba(255, 255, 255, 0.64);
+}
+
+.website-credit-outcome {
+  min-height: 72px;
+  margin: 16px 0 0;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.website-credit-card-dark .website-credit-outcome {
+  color: var(--cyan);
+}
+
+.website-credit-divider {
+  width: 100%;
+  height: 1px;
+  margin: 22px 0;
+  background: var(--line);
+}
+
+.website-credit-card-dark .website-credit-divider {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.website-credit-card ul {
+  margin-top: 0;
+}
+
+.website-credit-card-dark li {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.website-credit-card-dark li::before {
+  color: var(--green);
+  background: rgba(43, 217, 130, 0.16);
+}
+
+.website-credit-card .button {
+  width: 100%;
+  margin-top: auto;
+  text-align: center;
+}
+
+.website-credit-saving {
+  display: block;
+  margin-top: 11px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.website-credit-footnote {
+  max-width: 820px;
+  margin: 18px auto 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .price-card {
@@ -6044,14 +6385,21 @@ h3 {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  min-height: 640px;
-  padding: 30px;
+  min-height: 720px;
+  padding: clamp(30px, 3vw, 38px);
   border-radius: 24px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 251, 255, 0.86)),
     var(--white);
   box-shadow: 0 20px 58px rgba(6, 18, 31, 0.075);
   transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.price-card.starter-card {
+  border-color: rgba(21, 94, 239, 0.22);
+  background:
+    linear-gradient(145deg, rgba(237, 244, 255, 0.96), rgba(255, 255, 255, 0.94) 54%),
+    var(--white);
 }
 
 .price-outcome {
@@ -6111,6 +6459,31 @@ h3 {
   text-transform: uppercase;
 }
 
+.price-card .price-outcome {
+  min-height: 104px;
+  margin: 16px 0 0;
+  color: var(--blue);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+.price-card.featured .price-outcome {
+  color: var(--cyan);
+}
+
+.price-divider {
+  width: 100%;
+  height: 1px;
+  margin: 22px 0 26px;
+  background: var(--line);
+}
+
+.price-card.featured .price-divider {
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .price-card.featured span,
 .price-card.featured li {
   color: rgba(255, 255, 255, 0.74);
@@ -6149,35 +6522,60 @@ h3 {
 
 .price-card ul {
   display: grid;
-  gap: 13px;
+  gap: 16px;
   padding: 0;
-  margin: 30px 0;
+  margin: 0 0 30px;
   list-style: none;
 }
 
 .price-card li {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 13px;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.price-card.featured li {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .price-card li::before {
   content: "✓";
   display: inline-grid;
   place-items: center;
-  width: 19px;
-  height: 19px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
-  margin-top: 2px;
+  margin-top: 1px;
   border-radius: 999px;
   color: #073f2c;
   background: rgba(43, 217, 130, 0.2);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 900;
+}
+
+.price-card.featured li::before {
+  color: var(--green);
+  background: rgba(43, 217, 130, 0.16);
 }
 
 .price-card .button {
   margin-top: auto;
+}
+
+.price-deposit {
+  display: block;
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.price-card.featured .price-deposit {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .pricing-maintenance-card {
@@ -9932,6 +10330,101 @@ h3 {
     radial-gradient(circle at 88% 4%, rgba(25, 194, 255, 0.16), transparent 30%),
     radial-gradient(circle at 8% 10%, rgba(21, 94, 239, 0.18), transparent 28%),
     var(--ink);
+}
+
+.portal-body.is-food-portal {
+  --food-portal-accent: #e5aa54;
+  --food-portal-green: #8eb878;
+  position: relative;
+  background:
+    linear-gradient(110deg, rgba(3, 10, 8, 0.76), rgba(5, 13, 18, 0.54) 48%, rgba(3, 9, 7, 0.78)),
+    url("/assets/food/portal/food-portal-login-background.png") center / cover fixed no-repeat,
+    #07100d;
+}
+
+.portal-body.is-food-portal::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(7, 18, 15, 0.08), rgba(2, 7, 6, 0.58) 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.36));
+  content: "";
+  pointer-events: none;
+}
+
+.portal-body.is-food-portal .portal-auth-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.portal-body.is-food-portal .portal-auth-card {
+  border-color: rgba(229, 170, 84, 0.34);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(142, 184, 120, 0.12), transparent 34%),
+    linear-gradient(155deg, rgba(11, 25, 22, 0.94), rgba(6, 16, 19, 0.96));
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.54);
+  backdrop-filter: blur(20px);
+}
+
+.portal-body.is-food-portal .brand-mark rect {
+  fill: #0b1815;
+  stroke: rgba(229, 170, 84, 0.82);
+}
+
+.portal-body.is-food-portal .brand-mark .brand-spark {
+  stroke: var(--food-portal-accent);
+}
+
+.portal-body.is-food-portal .section-kicker {
+  color: var(--food-portal-accent);
+}
+
+.portal-body.is-food-portal .portal-login-status-card {
+  border-color: rgba(229, 170, 84, 0.34);
+  background:
+    linear-gradient(135deg, rgba(229, 170, 84, 0.14), rgba(142, 184, 120, 0.1)),
+    rgba(255, 255, 255, 0.055);
+}
+
+.portal-body.is-food-portal .portal-auth-tabs button:hover,
+.portal-body.is-food-portal .portal-auth-tabs button.is-active {
+  color: #07100d;
+  background: linear-gradient(135deg, #f0bc6e, #d89a43);
+}
+
+.portal-body.is-food-portal .portal-login-form input:focus,
+.portal-body.is-food-portal .portal-login-form select:focus {
+  border-color: rgba(229, 170, 84, 0.78);
+  outline: 3px solid rgba(229, 170, 84, 0.14);
+}
+
+.portal-body.is-food-portal .portal-login-form .button.primary {
+  color: #07100d;
+  background: linear-gradient(135deg, #f0bc6e, #d89a43);
+  box-shadow: 0 16px 34px rgba(132, 82, 23, 0.28);
+}
+
+.portal-body.is-food-portal .portal-password-toggle:hover,
+.portal-body.is-food-portal .portal-password-toggle:focus-visible,
+.portal-body.is-food-portal .portal-password-toggle.is-visible {
+  border-color: rgba(229, 170, 84, 0.72);
+  background: rgba(229, 170, 84, 0.18);
+}
+
+@media (max-width: 720px) {
+  .portal-body.is-food-portal {
+    background-position: 58% center;
+    background-attachment: scroll;
+  }
+
+  .portal-body.is-food-portal .portal-auth-shell {
+    padding: 14px;
+  }
+
+  .portal-body.is-food-portal .portal-auth-card {
+    padding: 24px 20px;
+  }
 }
 
 .portal-auth-shell,
@@ -24987,8 +25480,12 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     grid-template-columns: 1fr;
   }
 
-  .strippenkaart-card {
-    grid-template-columns: 1fr;
+  .website-credit-section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .website-credit-intro {
+    grid-column: 1 / -1;
   }
 
   .why-section {
@@ -25581,6 +26078,14 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     padding: 24px;
   }
 
+  .price-card .price-outcome {
+    min-height: auto;
+  }
+
+  .price-divider {
+    margin: 20px 0 24px;
+  }
+
   .price-card strong {
     font-size: clamp(40px, 13vw, 54px);
   }
@@ -25597,16 +26102,25 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     grid-template-columns: 1fr;
   }
 
-  .strippenkaart-card {
-    padding: 24px;
-  }
-
-  .strippenkaart-card ul {
+  .website-credit-section {
     grid-template-columns: 1fr;
+    padding: 16px;
   }
 
-  .strippenkaart-card .button {
-    width: 100%;
+  .website-credit-intro {
+    grid-column: auto;
+  }
+
+  .website-credit-card {
+    min-height: auto;
+  }
+
+  .website-credit-card-dark {
+    transform: none;
+  }
+
+  .website-credit-outcome {
+    min-height: auto;
   }
 
   .pricing-trustbar {
@@ -34503,3 +35017,51 @@ button.factory-status-tile{width:100%;min-width:0;text-align:left;cursor:pointer
 }
 @media(max-height:700px) and (min-width:721px){.cx2-preview-dialog .cx2-preview-header{padding-block:8px}.cx2-preview-devices{padding-block:6px}.cx2-preview-actions{padding-block:8px}.cx2-preview-action{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.cx2-preview-dialog,.cx2-preview-device,.cx2-preview-devices button,.cx2-preview-action,.cx2-preview-sheet-backdrop,.cx2-preview-sheet,.cx2-preview-loading>span,.cx2-welcome-primary[data-loading="true"]::before{animation:none;transition:none}}
+
+/* Domain workflow — task-first customer view */
+.portal-domain-shell{display:grid;gap:18px}
+.portal-domain-page-head{align-items:flex-end}
+.portal-domain-page-head h2{margin-bottom:7px}
+.portal-domain-page-head p:last-child{max-width:640px;margin:0;color:rgba(226,236,248,.62)}
+.portal-domain-progress{display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(6,24,42,.72)}
+.portal-domain-progress-step{position:relative;display:flex;align-items:center;gap:11px;min-height:76px;padding:15px 18px;color:rgba(226,236,248,.44)}
+.portal-domain-progress-step:not(:last-child)::after{content:"";position:absolute;top:50%;right:-1px;width:1px;height:34px;transform:translateY(-50%);background:rgba(148,163,184,.18)}
+.portal-domain-progress-step>span{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border:1px solid rgba(148,163,184,.28);border-radius:50%;font-size:12px;font-weight:900}
+.portal-domain-progress-step strong,.portal-domain-progress-step small{display:block}
+.portal-domain-progress-step small{margin-top:3px;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.portal-domain-progress-step[data-state="current"]{color:#f8fbff;background:rgba(14,116,144,.13)}
+.portal-domain-progress-step[data-state="current"]>span{border-color:rgba(56,189,248,.7);color:#e0f2fe;background:rgba(14,116,144,.4);box-shadow:0 0 0 5px rgba(56,189,248,.08)}
+.portal-domain-progress-step[data-state="done"]{color:rgba(226,236,248,.76)}
+.portal-domain-progress-step[data-state="done"]>span{border-color:rgba(34,197,94,.42);color:#bbf7d0;background:rgba(22,101,52,.35)}
+.portal-domain-primary-card{padding:clamp(22px,3vw,34px);border-color:rgba(56,189,248,.24);background:linear-gradient(145deg,rgba(10,38,64,.94),rgba(5,25,43,.98));box-shadow:0 24px 70px rgba(0,0,0,.18)}
+.portal-domain-primary-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}
+.portal-domain-primary-head .portal-form-heading{max-width:690px}
+.portal-domain-primary-head .status-badge{flex:0 0 auto}
+.portal-domain-meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin:24px 0;overflow:hidden;border:1px solid rgba(148,163,184,.16);border-radius:12px;background:rgba(148,163,184,.16)}
+.portal-domain-meta-grid>div{min-height:92px;padding:17px;background:rgba(7,27,47,.96)}
+.portal-domain-meta-grid span,.portal-domain-meta-grid strong{display:block}
+.portal-domain-meta-grid span{margin-bottom:7px;color:rgba(226,236,248,.48);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}
+.portal-domain-meta-grid strong{color:#edf7ff;font-size:14px;line-height:1.45}
+.portal-domain-passive-state{display:inline-flex;align-items:center;min-height:42px;color:rgba(226,236,248,.62);font-size:13px;font-weight:800}
+.portal-domain-compact-row{display:grid;grid-template-columns:minmax(170px,1fr) auto minmax(170px,.7fr) auto;gap:16px;align-items:center;padding:16px 18px;border:1px solid rgba(148,163,184,.15);border-radius:12px;background:rgba(7,27,47,.68)}
+.portal-domain-compact-row strong,.portal-domain-compact-row small{display:block}
+.portal-domain-compact-row small,.portal-domain-compact-row>span:not(.status-badge){margin-top:3px;color:rgba(226,236,248,.5);font-size:12px}
+.portal-domain-trust-note{display:flex;justify-content:space-between;gap:28px;align-items:center;padding:18px 20px;border:1px solid rgba(34,197,94,.2);border-radius:12px;background:rgba(20,83,45,.13)}
+.portal-domain-trust-note span,.portal-domain-trust-note strong{display:block}
+.portal-domain-trust-note span{margin-bottom:4px;color:#86efac;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.09em}
+.portal-domain-trust-note strong{color:#dcfce7}
+.portal-domain-trust-note p{max-width:580px;margin:0;color:rgba(220,252,231,.64);font-size:12px;line-height:1.55}
+@media(max-width:800px){
+  .portal-domain-progress{grid-template-columns:repeat(2,1fr)}
+  .portal-domain-progress-step:nth-child(2)::after{display:none}
+  .portal-domain-meta-grid{grid-template-columns:1fr}
+  .portal-domain-compact-row{grid-template-columns:1fr auto}
+  .portal-domain-compact-row>span:not(.status-badge){grid-column:1/-1}
+}
+@media(max-width:560px){
+  .portal-domain-progress{grid-template-columns:1fr}
+  .portal-domain-progress-step:not(:last-child)::after{top:auto;right:18px;bottom:0;left:18px;width:auto;height:1px;transform:none}
+  .portal-domain-primary-head,.portal-domain-trust-note{align-items:flex-start;flex-direction:column}
+  .portal-domain-compact-row{grid-template-columns:1fr}
+  .portal-domain-compact-row>span:not(.status-badge){grid-column:auto}
+}

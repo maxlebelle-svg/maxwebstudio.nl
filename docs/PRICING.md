@@ -22,7 +22,7 @@ Belangrijk: prijzen mogen niet worden aangepast zonder goedkeuring.
 - aanbetaling incl. 21% btw: EUR 363,00
 - restbedrag incl. 21% btw: EUR 840,95
 
-### Premium Growth
+### Growth Website
 
 - totaal: EUR 1.750 excl. btw
 - aanbetaling: EUR 500 excl. btw
@@ -91,4 +91,3 @@ Frontend-prijzen staan onder andere in:
 Backend-prijzen zijn leidend voor betalingen.
 
 Bij prijswijzigingen moeten frontend en backend gecontroleerd worden.
-

@@ -26,3 +26,6 @@ Klanten MaxWebstudio/
 
 # Local Netlify folder
 .netlify
+
+# Local/CI evidence produced by the Website Factory browser worker
+/artifacts/factory-browser-review/

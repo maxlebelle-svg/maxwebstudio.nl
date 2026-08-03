@@ -43,3 +43,12 @@ test("duplicate-opslag probeert beide websitekolommen voor de metadata-terugval"
   assert.match(source, /website: websiteUrl/);
   assert.ok(source.indexOf("website_url: websiteUrl") < source.indexOf("record: { metadata: patch.metadata"));
 });
+
+test("website-update valt terug op metadata wanneer oude websitekolommen ontbreken", () => {
+  assert.match(source, /record: \{\s*metadata: modernRecord\.metadata,\s*updated_at: modernRecord\.updated_at,\s*\}/);
+});
+
+test("asynchrone leadfouten worden als geldige JSON-response afgehandeld", () => {
+  assert.match(source, /return await updateLead\(/);
+  assert.match(source, /return jsonResponse\(missing \? 503 : error\.status \|\| 500/);
+});

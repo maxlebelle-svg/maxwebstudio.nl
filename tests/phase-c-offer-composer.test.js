@@ -323,3 +323,11 @@ test("40 preview failures are brought into view instead of failing invisibly", (
   const previewHandler = browser.match(/async function openPreview\(\) \{[\s\S]*?\n\}/)?.[0] || "";
   assert.match(previewHandler, /composerMessage\.scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
 });
+
+test("41 Composer shows a top-right progress notification until initial loading is complete", () => {
+  assert.match(html, /<script src="admin\/ui\/admin-toast\.js"><\/script>/);
+  assert.match(browser, /showToast\('Voorstelgegevens en prijzen laden…', 'info', \{ loading: true, persistent: true \}\)/);
+  assert.match(browser, /loadingToast\?\.update\('Voorstel Composer is klaar voor gebruik\.', 'success', \{ duration: 3200 \}\)/);
+  assert.match(css, /\.offer-composer-page \.toast\.is-loading \.toast-progress/);
+  assert.match(css, /@keyframes composer-loading-progress/);
+});

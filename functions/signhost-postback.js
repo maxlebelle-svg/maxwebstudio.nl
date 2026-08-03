@@ -1,8 +1,10 @@
 const crypto = require("node:crypto");
 const { rest } = require("./services/partnerOnboardingAccessService");
 const { downloadReceipt, downloadSignedPdf, signhostConfig, validatePostback } = require("./services/signhostService");
+const { fulfilSignedCommercialOffer } = require("./services/commercialOfferFulfilmentService");
 
 const BUCKET = "staff-private-documents";
+const COMMERCIAL_BUCKET = "commercial-private-documents";
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return ok();
@@ -16,6 +18,12 @@ exports.handler = async (event) => {
       return ok();
     }
     const context = config();
+    const commercialRows = await rest(context.url, context.service, `commercial_offer_signing_transactions?select=*&provider=eq.signhost&provider_transaction_id=eq.${encodeURIComponent(validation.id)}&limit=1`);
+    const commercialSigning = commercialRows?.[0];
+    if (commercialSigning) {
+      await processCommercialPostback(context, commercialSigning, validation);
+      return ok();
+    }
     const rows = await rest(context.url, context.service, `staff_signing_transactions?select=*&provider=eq.signhost&provider_transaction_id=eq.${encodeURIComponent(validation.id)}&limit=1`);
     const signing = rows?.[0];
     if (!signing) {
@@ -43,6 +51,54 @@ exports.handler = async (event) => {
   }
   return ok();
 };
+
+async function processCommercialPostback(context, signing, validation) {
+  const now = new Date().toISOString();
+  if (validation.mappedStatus !== "signed_pending_scan") {
+    const status = commercialSigningStatus(validation.mappedStatus);
+    await rest(context.url, context.service, `commercial_offer_signing_transactions?id=eq.${signing.id}`, {
+      method:"PATCH",
+      body:JSON.stringify({ provider_status:validation.status, status, last_postback_at:now, updated_at:now }),
+    });
+    return;
+  }
+  let artifacts = {};
+  if (!signing.signed_document_path || !signing.receipt_path) artifacts = await preserveCommercialArtifacts(context, signing);
+  await rest(context.url, context.service, `commercial_offer_signing_transactions?id=eq.${signing.id}`, {
+    method:"PATCH",
+    body:JSON.stringify({
+      ...artifacts,
+      provider_status:validation.status,
+      status:"signed_pending_processing",
+      signed_at:signing.signed_at || now,
+      last_postback_at:now,
+      updated_at:now,
+    }),
+  });
+  await fulfilSignedCommercialOffer(context, signing.provider_transaction_id, validation.status);
+}
+
+async function preserveCommercialArtifacts(context, signing) {
+  const provider = signhostConfig();
+  const [document, receipt] = await Promise.all([
+    downloadSignedPdf(provider, signing.provider_transaction_id, signing.provider_file_id),
+    downloadReceipt(provider, signing.provider_transaction_id),
+  ]);
+  assertPdf(document.bytes, "ondertekende offerte");
+  assertPdf(receipt.bytes, "ondertekenbewijs");
+  const documentPath = `${signing.offer_id}/${signing.offer_version_id}/signhost-ondertekende-offerte.pdf`;
+  const receiptPath = `${signing.offer_id}/${signing.offer_version_id}/signhost-auditbewijs.pdf`;
+  await Promise.all([
+    storageUploadToBucket(context, COMMERCIAL_BUCKET, documentPath, document.bytes),
+    storageUploadToBucket(context, COMMERCIAL_BUCKET, receiptPath, receipt.bytes),
+  ]);
+  return {
+    signed_document_path:documentPath,
+    receipt_path:receiptPath,
+    signed_document_sha256:crypto.createHash("sha256").update(document.bytes).digest("hex"),
+    receipt_sha256:crypto.createHash("sha256").update(receipt.bytes).digest("hex"),
+  };
+}
 
 async function processSmokePostback(context, smoke, validation) {
   const now = new Date().toISOString();
@@ -116,7 +172,11 @@ async function preserveSmokeArtifacts(context, smoke) {
 }
 
 async function storageUpload(context, path, bytes) {
-  const response = await fetch(`${context.url}/storage/v1/object/${BUCKET}/${encodePath(path)}`, {
+  return storageUploadToBucket(context, BUCKET, path, bytes);
+}
+
+async function storageUploadToBucket(context, bucket, path, bytes) {
+  const response = await fetch(`${context.url}/storage/v1/object/${bucket}/${encodePath(path)}`, {
     method:"POST",
     headers:{ apikey:context.service, Authorization:`Bearer ${context.service}`, "Content-Type":"application/pdf", "x-upsert":"false" },
     body:bytes,
@@ -132,6 +192,7 @@ function assertPdf(bytes, label) {
 async function logEvent(context, signing, eventType, metadata) { return rest(context.url, context.service, "staff_dossier_events", { method:"POST", body:JSON.stringify({ employee_profile_id:signing.profile_id, actor_profile_id:null, event_type:eventType, subject_type:"signing_transaction", subject_id:signing.id, safe_metadata:metadata }) }); }
 function eventName(status){return ({signed_pending_scan:"signing.signed",rejected:"signing.rejected",expired:"signing.expired",cancelled:"signing.cancelled",failed:"signing.failed"})[status]||"signing.updated";}
 function smokeStatus(status){return status === "signed_pending_scan" ? "signed" : status;}
+function commercialSigningStatus(status){return ({rejected:"rejected",expired:"expired",cancelled:"cancelled",failed:"failed"})[status]||"waiting_for_signer";}
 function config(){const url=clean(process.env.SUPABASE_URL).replace(/\/$/,"");const service=clean(process.env.SUPABASE_SERVICE_ROLE_KEY);if(!url||!service)throw coded("CONFIG_MISSING",500,"Postbackconfiguratie ontbreekt.");return {url,service};}
 function encodePath(value){return String(value).split("/").map(encodeURIComponent).join("/");}
 function parseSoft(value){try{const parsed=JSON.parse(value||"{}");return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{};}catch{return {};}}
@@ -139,4 +200,4 @@ function clean(value){return String(value??"").trim();}
 function coded(code,status,message){return Object.assign(new Error(message),{code,status});}
 function ok(){return {statusCode:200,headers:{"Content-Type":"text/plain","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"},body:"OK"};}
 
-exports._test = { assertPdf, eventName, parseSoft, smokeStatus };
+exports._test = { assertPdf, commercialSigningStatus, eventName, parseSoft, smokeStatus };

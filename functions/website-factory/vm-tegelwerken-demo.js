@@ -509,7 +509,7 @@ function renderBriefing({ version, generatedAt, pages }) {
     businessName: company.name,
     packageType: "premium",
     packageId: "premium",
-    packageLabel: "Premium Growth",
+    packageLabel: "Growth Website",
     industryProfile: "tiling",
     industryId: "tegelzetter",
     industryName: "Tegelzetbedrijf",

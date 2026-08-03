@@ -53,6 +53,11 @@
   status = 200
 
 [[redirects]]
+  from = "/domein-kopen"
+  to = "/domein-kopen.html"
+  status = 200
+
+[[redirects]]
   from = "/admin-assets"
   to = "/admin-assets.html"
   status = 200

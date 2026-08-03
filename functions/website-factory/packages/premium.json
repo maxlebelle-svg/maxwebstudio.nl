@@ -1,8 +1,8 @@
 {
   "id": "premium",
   "key": "premium",
-  "name": "Premium Growth",
-  "label": "Premium Growth",
+  "name": "Growth Website",
+  "label": "Growth Website",
   "price": 1750,
   "positioning": "Website als verkoopmachine.",
   "template": "premium-growth-site-v1",

@@ -17,7 +17,7 @@ const superAdmin = { id: "11111111-1111-4111-8111-111111111111", profileId: "222
 const admin = { ...superAdmin, role: "admin" };
 
 test("canonical catalog is versioned, deterministic and the only server price definition", () => {
-  assert.equal(catalog.CATALOG_VERSION, "2026-07-30.1");
+  assert.equal(catalog.CATALOG_VERSION, "2026-08-02.2");
   assert.equal(catalog.CURRENCY, "EUR");
   assert.equal(catalog.assertCatalogIntegrity(), true);
   assert.match(catalog.catalogChecksum(), /^[a-f0-9]{64}$/);
@@ -71,7 +71,12 @@ test("public add-ons have the approved fixed, starting-at or on-request classifi
   assert.deepEqual(catalog.PRODUCTS.google_ads_setup.components.map((item) => item.amountExVatCents), [45000, 29900]);
   assert.equal(catalog.PRODUCTS.automation.components[0].startingAmountExVatCents, 39500);
   assert.equal(catalog.PRODUCTS.social_media.components[0].startingAmountExVatCents, 29900);
+  assert.equal(catalog.PRODUCTS.website_tegoed_flex_5.components[0].amountExVatCents, 12500);
+  assert.equal(catalog.PRODUCTS.website_tegoed_flex_10.components[0].amountExVatCents, 22500);
+  assert.equal(catalog.PRODUCTS.website_tegoed_flex_5.classification, "fixed");
+  assert.equal(catalog.PRODUCTS.website_tegoed_flex_10.classification, "fixed");
   assert.equal(catalog.PRODUCTS.strippenkaart.classification, "on_request");
+  assert.equal(catalog.PRODUCTS.strippenkaart.active, false);
   assert.equal(catalog.PRODUCTS.monthly_content.active, false);
 });
 
@@ -107,8 +112,19 @@ test("compound add-ons keep setup and monthly components separate", () => {
   assert.equal(result.lines.filter((line) => line.componentType === "recurring").length, 2);
 });
 
+test("Website-tegoed Flex products are fixed-price and payable in full", () => {
+  const flex5 = offerService.buildOfferVersion({ paymentChoice: "full", selections: [{ productId: "website_tegoed_flex_5" }] }, admin);
+  const flex10 = offerService.buildOfferVersion({ paymentChoice: "full", selections: [{ productId: "website_tegoed_flex_10" }] }, admin);
+  assert.equal(flex5.oneTimeExVatCents, 12500);
+  assert.equal(flex5.dueNowInclVatCents, 15125);
+  assert.equal(flex10.oneTimeExVatCents, 22500);
+  assert.equal(flex10.dueNowInclVatCents, 27225);
+  assert.equal(flex5.hasNonBindingLines, false);
+  assert.equal(flex10.hasNonBindingLines, false);
+});
+
 test("starting-at and on-request products stay non-binding without authorized confirmation", () => {
-  const result = offerService.buildOfferVersion({ paymentChoice: "none", selections: [{ productId: "logo_design" }, { productId: "strippenkaart" }] }, admin);
+  const result = offerService.buildOfferVersion({ paymentChoice: "none", selections: [{ productId: "logo_design" }, { productId: "custom_request" }] }, admin);
   assert.equal(result.hasNonBindingLines, true);
   assert.equal(result.oneTimeExVatCents, 0);
   assert.ok(result.lines.every((line) => line.bindingState === "non_binding" && line.unitExVatCents === null));

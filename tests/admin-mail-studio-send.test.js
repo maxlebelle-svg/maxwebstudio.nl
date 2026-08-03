@@ -74,7 +74,7 @@ test("missing email and invalid relationships are not mailbar", async () => {
 });
 
 function validHtml() {
-  return '<!doctype html><meta name="supported-color-schemes"><style>@media (max-width: 620px){}</style><img src="max-webstudio-logo-mark.svg"><a class="mws-cta">cta</a> info@maxwebstudio.nl wa.me/31851302326 instagram.com/maxwebstudio.nl linkedin.com/company/130444905';
+  return '<!doctype html><meta name="supported-color-schemes"><style>@media (max-width: 620px){}</style><img src="max-webstudio-logo-mark.svg"><a class="mws-cta">cta</a> info@maxwebstudio.nl wa.me/31851305282 instagram.com/maxwebstudio.nl linkedin.com/company/130444905';
 }
 
 function response(status, body) {

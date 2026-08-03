@@ -95,6 +95,7 @@
       }
 
       .domain-center-search-card,
+      .domain-request-card,
       .domain-center-table-card,
       .domain-center-detail-card {
         padding: 22px;
@@ -115,6 +116,87 @@
         color: #f8fbff;
         background: rgba(15, 23, 42, 0.76);
       }
+
+      .domain-request-form {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr 1.2fr 1.2fr auto;
+        gap: 10px;
+        align-items: end;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 12px;
+        background: rgba(8, 35, 58, 0.76);
+      }
+
+      .domain-request-form label {
+        display: grid;
+        gap: 7px;
+        color: rgba(226, 236, 248, 0.72);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .domain-request-form input,
+      .domain-request-form select {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.76);
+      }
+
+      .domain-request-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .domain-request-row {
+        display: grid;
+        grid-template-columns: minmax(160px, 1.1fr) minmax(140px, 0.8fr) minmax(150px, 1fr);
+        gap: 12px;
+        align-items: center;
+        width: 100%;
+        padding: 15px 16px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 10px;
+        color: inherit;
+        background: rgba(15, 23, 42, 0.56);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .18s ease, background .18s ease, transform .18s ease;
+      }
+
+      .domain-request-row:hover { border-color: rgba(56, 189, 248, 0.34); transform: translateY(-1px); }
+      .domain-request-row.is-active { border-color: rgba(56, 189, 248, 0.58); background: rgba(12, 74, 110, 0.25); }
+
+      .domain-request-row strong,
+      .domain-request-row small { display: block; }
+
+      .domain-request-row small { margin-top: 4px; }
+
+      .domain-request-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+      .domain-request-topline .admin-section-heading { flex: 1; margin: 0; }
+      .domain-request-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0 14px; }
+      .domain-request-metric { padding: 14px 16px; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 10px; background: rgba(15, 23, 42, 0.5); }
+      .domain-request-metric span, .domain-request-metric strong { display: block; }
+      .domain-request-metric span { color: rgba(226, 236, 248, 0.5); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+      .domain-request-metric strong { margin-top: 5px; color: #f8fbff; font-size: 24px; }
+      .domain-request-toolbar { display: grid; grid-template-columns: 1fr 190px; gap: 10px; margin-bottom: 14px; }
+      .domain-request-toolbar input, .domain-request-toolbar select { min-height: 42px; width: 100%; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #f8fbff; background: rgba(15, 23, 42, 0.72); }
+      .domain-request-workspace { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .75fr); gap: 14px; align-items: start; }
+      .domain-request-detail { min-height: 250px; padding: 20px; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; background: linear-gradient(145deg, rgba(9, 37, 61, .94), rgba(6, 25, 43, .98)); }
+      .domain-request-detail h3 { margin: 5px 0 7px; }
+      .domain-request-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 18px 0; overflow: hidden; border: 1px solid rgba(148, 163, 184, .14); border-radius: 9px; background: rgba(148, 163, 184, .14); }
+      .domain-request-detail-grid div { padding: 13px; background: rgba(7, 27, 47, .96); }
+      .domain-request-detail-grid span, .domain-request-detail-grid strong { display: block; }
+      .domain-request-detail-grid span { margin-bottom: 5px; color: rgba(226, 236, 248, .46); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+      .domain-request-detail-grid strong { font-size: 12px; line-height: 1.45; }
+      .domain-request-next { padding: 13px; border-left: 3px solid #38bdf8; border-radius: 4px; background: rgba(14, 116, 144, .13); }
+      .domain-request-next span, .domain-request-next strong { display: block; }
+      .domain-request-next span { margin-bottom: 4px; color: #7dd3fc; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+      .domain-request-detail .domain-center-actions { margin-top: 18px; }
 
       .domain-center-status-strip {
         display: flex;
@@ -377,18 +459,32 @@
           grid-template-columns: 1fr 1fr;
         }
 
+        .domain-request-form,
+        .domain-request-row {
+          grid-template-columns: 1fr 1fr;
+        }
+
         .domain-center-search-row input {
           grid-column: 1 / -1;
         }
+
+        .domain-request-workspace { grid-template-columns: 1fr; }
       }
 
       @media (max-width: 760px) {
         .domain-center-summary,
         .domain-center-grid-2,
         .domain-record-grid,
-        .domain-center-search-row {
+        .domain-center-search-row,
+        .domain-request-form,
+        .domain-request-row {
           grid-template-columns: 1fr;
         }
+
+        .domain-request-topline { flex-direction: column; }
+        .domain-request-metrics { grid-template-columns: 1fr; }
+        .domain-request-toolbar { grid-template-columns: 1fr; }
+        .domain-request-detail-grid { grid-template-columns: 1fr; }
 
         .domain-center-dialog-head,
         .domain-center-result {
@@ -457,6 +553,48 @@
             </div>
           </article>
 
+          <article class="admin-card domain-request-card" aria-labelledby="domain-request-title">
+            <div class="domain-request-topline">
+              <div class="admin-section-heading">
+                <div>
+                  <p class="section-kicker">Operationele werklijst</p>
+                  <h2 id="domain-request-title">Domeinopdrachten</h2>
+                  <p class="domain-center-muted">Zie direct wie aan zet is en open alleen de opdracht waaraan je werkt.</p>
+                </div>
+                <span class="domain-pill" data-tone="info" id="domain-request-count">0 opdrachten</span>
+              </div>
+              <button class="button primary" id="domain-request-create-toggle" type="button">Nieuwe opdracht</button>
+            </div>
+            <form class="domain-request-form" id="domain-request-form" hidden>
+              <label>Type
+                <select name="requestType" required>
+                  <option value="registration">Nieuw registreren</option>
+                  <option value="transfer">Verhuizen</option>
+                  <option value="connection">Alleen koppelen</option>
+                </select>
+              </label>
+              <label>Domeinnaam<input name="domainName" type="text" placeholder="bedrijfsnaam.nl" required /></label>
+              <label>Alternatieven<input name="alternativeDomains" type="text" placeholder="bedrijfsnaam.com, bedrijfsnaam.eu" /></label>
+              <label>Interne toelichting<input name="note" type="text" placeholder="Optioneel; niet als klantvraag gebruikt" /></label>
+              <button class="button primary" type="submit">Opdracht aanmaken</button>
+            </form>
+            <div class="domain-center-result" id="domain-request-message" role="status" aria-live="polite" hidden></div>
+            <div class="domain-request-metrics" id="domain-request-metrics" aria-label="Samenvatting domeinopdrachten"></div>
+            <div class="domain-request-toolbar">
+              <input id="domain-request-search" type="search" placeholder="Zoek op domein of domeinhouder" aria-label="Zoek domeinopdrachten" />
+              <select id="domain-request-owner-filter" aria-label="Filter op wie aan zet is">
+                <option value="all">Iedereen</option>
+                <option value="customer">Klant aan zet</option>
+                <option value="admin">Max Webstudio aan zet</option>
+                <option value="completed">Afgerond</option>
+              </select>
+            </div>
+            <div class="domain-request-workspace">
+              <div class="domain-request-list" id="domain-request-list"></div>
+              <aside class="domain-request-detail" id="domain-request-detail" aria-live="polite"></aside>
+            </div>
+          </article>
+
           <article class="admin-card domain-center-table-card">
             <div class="admin-section-heading">
               <div>
@@ -499,6 +637,7 @@
         "use strict";
 
         const domainEndpoint = "/.netlify/functions/admin-domain-center";
+        const domainRequestEndpoint = "/.netlify/functions/admin-domain-requests";
         const transferStepLabels = [
           "Verhuiscode ontvangen",
           "Domeintransfer gestart",
@@ -517,12 +656,23 @@
         const detailPanel = document.getElementById("domain-detail-panel");
         const sourceLabel = document.getElementById("domain-source-label");
         const tableSource = document.getElementById("domain-table-source");
+        const requestForm = document.getElementById("domain-request-form");
+        const requestList = document.getElementById("domain-request-list");
+        const requestDetail = document.getElementById("domain-request-detail");
+        const requestMetrics = document.getElementById("domain-request-metrics");
+        const requestSearch = document.getElementById("domain-request-search");
+        const requestOwnerFilter = document.getElementById("domain-request-owner-filter");
+        const requestCreateToggle = document.getElementById("domain-request-create-toggle");
+        const requestMessage = document.getElementById("domain-request-message");
+        const requestCount = document.getElementById("domain-request-count");
         const tabs = Array.from(document.querySelectorAll(".domain-center-tab"));
         const state = {
           domains: [],
           metrics: [],
           loading: true,
           error: "",
+          requests: [],
+          activeRequestId: "",
         };
         let activeDomain = null;
         let activeTab = "overview";
@@ -577,6 +727,224 @@
           const data = await response.json().catch(() => ({}));
           if (!response.ok || data.success === false) throw new Error(data.error || "Domein Center kon niet laden.");
           return data;
+        }
+
+        async function domainRequestApi(method = "GET", payload = null) {
+          const token = getAdminBearer();
+          if (!token) throw new Error("Log in als admin om domeinopdrachten te beheren.");
+          if (!activeRelationship) throw new Error("Selecteer eerst een klant.");
+          const relationshipType = activeRelationship.relationshipType || activeRelationship.entityType;
+          const relationshipId = activeRelationship.relationshipId || (relationshipType === "lead" ? activeRelationship.leadId : activeRelationship.customerId);
+          const endpoint = method === "GET"
+            ? `${domainRequestEndpoint}?relationshipType=${encodeURIComponent(relationshipType)}&relationshipId=${encodeURIComponent(relationshipId)}`
+            : domainRequestEndpoint;
+          const response = await fetch(endpoint, {
+            method,
+            headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            credentials: "include",
+            body: method === "POST" ? JSON.stringify({ ...payload, relationshipType, relationshipId, customerId: relationshipType === "customer" ? relationshipId : "" }) : undefined,
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Domeinopdracht kon niet worden verwerkt.");
+          return data;
+        }
+
+        function domainRequestLabel(value = "") {
+          return ({ registration: "Nieuwe registratie", transfer: "Verhuizing", connection: "Alleen koppelen" })[value] || value;
+        }
+
+        function domainRequestStatus(value = "") {
+          return ({
+            draft: "Concept", awaiting_customer: "Wacht op klant", ready_for_review: "Klaar voor controle",
+            awaiting_approval: "Wacht op akkoord/betaling", scheduled: "Ingepland", in_progress: "In uitvoering",
+            technical_checks: "Technische controle", active: "Actief", needs_action: "Actie nodig",
+            failed: "Mislukt", cancelled: "Geannuleerd",
+          })[value] || value;
+        }
+
+        function domainRequestTone(value = "") {
+          if (value === "active") return "success";
+          if (["ready_for_review", "in_progress", "technical_checks", "scheduled"].includes(value)) return "info";
+          if (["needs_action", "failed"].includes(value)) return "warning";
+          return "neutral";
+        }
+
+        function renderDomainRequestMessage(message, tone = "info") {
+          requestMessage.hidden = !message;
+          requestMessage.innerHTML = message ? `<span class="domain-status" data-tone="${escapeHtml(tone)}">${tone === "warning" ? "Let op" : "Opgeslagen"}</span><strong>${escapeHtml(message)}</strong>` : "";
+        }
+
+        function nextDomainStatus(status) {
+          return ({
+            awaiting_customer: "ready_for_review", ready_for_review: "awaiting_approval", awaiting_approval: "scheduled",
+            scheduled: "in_progress", in_progress: "technical_checks", technical_checks: "active", needs_action: "in_progress",
+          })[status] || "";
+        }
+
+        function domainRequestOwner(status = "") {
+          if (["draft", "awaiting_customer", "needs_action"].includes(status)) return "customer";
+          if (["active", "failed", "cancelled"].includes(status)) return "completed";
+          return "admin";
+        }
+
+        function domainRequestNextStep(request = {}) {
+          const steps = {
+            draft: "Klant levert de eerste gegevens aan",
+            awaiting_customer: "Klant vult de ontbrekende gegevens in",
+            ready_for_review: "Controleer houder, e-mail en opdracht",
+            awaiting_approval: "Controleer akkoord of betaling",
+            scheduled: "Plan de uitvoering in",
+            in_progress: request.requestType === "transfer" ? "Voer de transfer uit bij de registrar; koppel daarna Netlify DNS" : "Voer registratie of koppeling uit",
+            technical_checks: "Controleer DNS, SSL, website en e-mail",
+            active: "Opdracht is afgerond",
+            needs_action: "Klant beantwoordt de aanvullende vraag",
+            failed: "Bepaal een herstelactie",
+            cancelled: "Geen vervolgactie",
+          };
+          return steps[request.status] || "Controleer de opdracht";
+        }
+
+        function renderDomainRequestMetrics() {
+          const counts = state.requests.reduce((result, request) => {
+            result[domainRequestOwner(request.status)] += 1;
+            return result;
+          }, { customer: 0, admin: 0, completed: 0 });
+          requestMetrics.innerHTML = [
+            ["Klant aan zet", counts.customer],
+            ["Max Webstudio aan zet", counts.admin],
+            ["Afgerond", counts.completed],
+          ].map(([label, value]) => `<div class="domain-request-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
+        }
+
+        function filteredDomainRequests() {
+          const query = String(requestSearch.value || "").trim().toLowerCase();
+          const owner = requestOwnerFilter.value || "all";
+          return state.requests.filter((request) => {
+            const holder = request.customerPayload?.holderName || request.customerPayload?.companyName || "";
+            const matchesQuery = !query || `${request.domainName} ${holder}`.toLowerCase().includes(query);
+            const matchesOwner = owner === "all" || domainRequestOwner(request.status) === owner;
+            return matchesQuery && matchesOwner;
+          });
+        }
+
+        function renderDomainRequestDetail(request) {
+          if (!request) {
+            requestDetail.innerHTML = `<p class="section-kicker">Opdrachtdetails</p><h3>Selecteer een opdracht</h3><p class="domain-center-muted">Kies links een domein om de gegevens, volgende stap en acties te bekijken.</p>`;
+            return;
+          }
+          const nextStatus = nextDomainStatus(request.status);
+          const holder = request.customerPayload?.holderName || request.customerPayload?.companyName || "Nog niet aangeleverd";
+          const emailState = ({ yes: "E-mail actief", no: "Geen domeinmail", unknown: "Nog controleren" })[request.customerPayload?.hasDomainEmail] || "Nog niet aangeleverd";
+          const owner = domainRequestOwner(request.status);
+          const ownerLabel = owner === "customer" ? "Klant aan zet" : owner === "admin" ? "Max Webstudio aan zet" : "Afgerond";
+          requestDetail.innerHTML = `<div data-request-id="${escapeHtml(request.id)}">
+            <p class="section-kicker">${escapeHtml(domainRequestLabel(request.requestType))}</p>
+            <h3>${escapeHtml(request.domainName)}</h3>
+            <span class="domain-status" data-tone="${escapeHtml(domainRequestTone(request.status))}">${escapeHtml(domainRequestStatus(request.status))}</span>
+            <div class="domain-request-detail-grid">
+              <div><span>Domeinhouder</span><strong>${escapeHtml(holder)}</strong></div>
+              <div><span>E-mail</span><strong>${escapeHtml(emailState)}</strong></div>
+              <div><span>Verhuiscode</span><strong>${request.hasTransferCode ? "Veilig ontvangen" : request.requestType === "transfer" ? "Nog nodig" : "Niet van toepassing"}</strong></div>
+              <div><span>Laatste wijziging</span><strong>${escapeHtml(formatDate(String(request.updatedAt || request.createdAt || "").slice(0, 10)))}</strong></div>
+            </div>
+            <div class="domain-request-next"><span>${escapeHtml(ownerLabel)}</span><strong>${escapeHtml(domainRequestNextStep(request))}</strong></div>
+            <div class="domain-center-actions">
+              ${request.requestType === "transfer" && request.hasTransferCode ? `<button class="button secondary" type="button" data-request-action="reveal">Code tonen</button>` : ""}
+              ${nextStatus ? `<button class="button primary" type="button" data-request-action="advance" data-next-status="${escapeHtml(nextStatus)}">${nextStatus === "active" ? "Afronden" : "Volgende stap"}</button>` : ""}
+              ${!["active", "cancelled", "failed"].includes(request.status) ? `<button class="button secondary" type="button" data-request-action="needs_action">Actie klant</button>` : ""}
+            </div>
+          </div>`;
+        }
+
+        function renderDomainRequests() {
+          requestCount.textContent = `${state.requests.length} ${state.requests.length === 1 ? "opdracht" : "opdrachten"}`;
+          renderDomainRequestMetrics();
+          const requests = filteredDomainRequests();
+          if (!requests.some((request) => request.id === state.activeRequestId)) state.activeRequestId = requests[0]?.id || "";
+          if (!requests.length) {
+            requestList.innerHTML = `<div class="domain-center-result"><span class="domain-center-muted">${state.requests.length ? "Geen opdrachten binnen dit filter." : "Nog geen domeinopdrachten voor deze klant."}</span></div>`;
+            renderDomainRequestDetail(null);
+            return;
+          }
+          requestList.innerHTML = requests.map((request) => {
+            const holder = request.customerPayload?.holderName || request.customerPayload?.companyName || "Nog niet aangeleverd";
+            const owner = domainRequestOwner(request.status);
+            const ownerLabel = owner === "customer" ? "Klant aan zet" : owner === "admin" ? "Max aan zet" : "Afgerond";
+            return `<button class="domain-request-row ${request.id === state.activeRequestId ? "is-active" : ""}" type="button" data-request-select="${escapeHtml(request.id)}">
+              <div><strong>${escapeHtml(request.domainName)}</strong><small class="domain-center-muted">${escapeHtml(domainRequestLabel(request.requestType))}</small></div>
+              <div><span class="domain-status" data-tone="${escapeHtml(domainRequestTone(request.status))}">${escapeHtml(domainRequestStatus(request.status))}</span><small class="domain-center-muted">Houder: ${escapeHtml(holder)}</small></div>
+              <div><strong>${escapeHtml(ownerLabel)}</strong><small class="domain-center-muted">${escapeHtml(domainRequestNextStep(request))}</small></div>
+            </button>`;
+          }).join("");
+          renderDomainRequestDetail(requests.find((request) => request.id === state.activeRequestId));
+        }
+
+        async function loadDomainRequests() {
+          try {
+            const data = await domainRequestApi("GET");
+            state.requests = Array.isArray(data.requests) ? data.requests : [];
+            renderDomainRequests();
+            if (data.conversionRequired) renderDomainRequestMessage("Zet deze lead eerst om naar een klant voordat je een domeinopdracht start.", "warning");
+          } catch (error) {
+            state.requests = [];
+            renderDomainRequests();
+            renderDomainRequestMessage(error.message || "Domeinopdrachten konden niet laden.", "warning");
+          }
+        }
+
+        async function createDomainRequest(event) {
+          event.preventDefault();
+          const button = requestForm.querySelector('button[type="submit"]');
+          const form = new FormData(requestForm);
+          button.disabled = true;
+          button.textContent = "Aanmaken...";
+          try {
+            const data = await domainRequestApi("POST", {
+              action: "create", requestType: form.get("requestType"), domainName: form.get("domainName"),
+              alternativeDomains: form.get("alternativeDomains"), note: form.get("note"),
+            });
+            state.requests.unshift(data.request);
+            state.activeRequestId = data.request.id;
+            renderDomainRequests();
+            renderDomainRequestMessage(`Opdracht voor ${data.request.domainName} staat klaar in het klantportaal.`, "success");
+            requestForm.reset();
+            requestForm.hidden = true;
+            requestCreateToggle.textContent = "Nieuwe opdracht";
+          } catch (error) {
+            renderDomainRequestMessage(error.message || "Opdracht kon niet worden aangemaakt.", "warning");
+          } finally {
+            button.disabled = false;
+            button.textContent = "Opdracht aanmaken";
+          }
+        }
+
+        async function handleDomainRequestAction(event) {
+          const button = event.target.closest("button[data-request-action]");
+          if (!button) return;
+          const row = button.closest("[data-request-id]");
+          const request = state.requests.find((item) => item.id === row?.dataset.requestId);
+          if (!request) return;
+          button.disabled = true;
+          try {
+            if (button.dataset.requestAction === "reveal") {
+              const data = await domainRequestApi("POST", { action: "reveal_transfer_code", requestId: request.id });
+              renderDomainRequestMessage(`Verhuiscode voor ${request.domainName}: ${data.transferCode}`, "info");
+              window.setTimeout(() => {
+                if (requestMessage.textContent.includes(data.transferCode)) renderDomainRequestMessage("De verhuiscode is weer afgeschermd.", "info");
+              }, 60000);
+              request.transferCodeViewed = true;
+            } else {
+              const status = button.dataset.requestAction === "needs_action" ? "needs_action" : button.dataset.nextStatus;
+              const data = await domainRequestApi("POST", { action: "update_status", requestId: request.id, status });
+              state.requests = state.requests.map((item) => item.id === request.id ? data.request : item);
+              renderDomainRequests();
+              renderDomainRequestMessage(`${request.domainName} staat nu op “${domainRequestStatus(status)}”.`, "success");
+            }
+          } catch (error) {
+            renderDomainRequestMessage(error.message || "Actie kon niet worden uitgevoerd.", "warning");
+          } finally {
+            button.disabled = false;
+          }
         }
 
         function normalizeDomain(value = "") {
@@ -683,6 +1051,11 @@
         async function startDomainTransfer() {
           const result = await checkDomainAvailability();
           if (!result) return null;
+          requestForm.elements.requestType.value = "transfer";
+          requestForm.elements.domainName.value = result.domainName;
+          requestForm.hidden = false;
+          requestCreateToggle.textContent = "Formulier sluiten";
+          requestForm.scrollIntoView({ behavior: "smooth", block: "center" });
           renderSearchResult("verhuizing voorbereiden", "info", `${result.domainName} kan nu aan een klant/project worden gekoppeld.`, "Volgende stap: verhuiscode, DNS-plan en e-mailimpact vastleggen.");
           return result;
         }
@@ -846,6 +1219,7 @@
           renderSummary();
           renderTable();
           setSourceState("CRM laden", "info");
+          loadDomainRequests();
           try {
             const data = await fetchDomainCenter();
             if (currentRequest !== domainRequestId) return;
@@ -887,8 +1261,30 @@
         document.getElementById("domain-register-button").addEventListener("click", () => {
           const query = normalizedSearchDomain();
           if (!query) renderSearchResult("invoer nodig", "warning", "Vul eerst een domeinnaam in.");
-          else renderSearchResult("registratie voorbereiden", "info", `${query} kan worden voorbereid als nieuwe domeinregistratie.`, "Volgende stap: provider/API-koppeling of handmatige registratie vastleggen.");
+          else {
+            requestForm.elements.requestType.value = "registration";
+            requestForm.elements.domainName.value = query;
+            requestForm.hidden = false;
+            requestCreateToggle.textContent = "Formulier sluiten";
+            requestForm.scrollIntoView({ behavior: "smooth", block: "center" });
+            renderSearchResult("registratie voorbereiden", "info", `${query} kan worden voorbereid als nieuwe domeinregistratie.`, "Maak hieronder de klantopdracht aan.");
+          }
         });
+        requestCreateToggle.addEventListener("click", () => {
+          requestForm.hidden = !requestForm.hidden;
+          requestCreateToggle.textContent = requestForm.hidden ? "Nieuwe opdracht" : "Formulier sluiten";
+          if (!requestForm.hidden) requestForm.elements.domainName.focus();
+        });
+        requestForm.addEventListener("submit", createDomainRequest);
+        requestList.addEventListener("click", (event) => {
+          const row = event.target.closest("[data-request-select]");
+          if (!row) return;
+          state.activeRequestId = row.dataset.requestSelect;
+          renderDomainRequests();
+        });
+        requestDetail.addEventListener("click", handleDomainRequestAction);
+        requestSearch.addEventListener("input", renderDomainRequests);
+        requestOwnerFilter.addEventListener("change", renderDomainRequests);
         document.getElementById("domain-detail-close").addEventListener("click", closeDomainDetail);
         modal.addEventListener("click", (event) => {
           if (event.target === modal) closeDomainDetail();

@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=20260707-sales-actions-demo" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css?v=20260709-briefing-system" />
     <link rel="stylesheet" href="admin/styles/admin-sidebar-system.css" />
-    <link rel="stylesheet" href="admin/styles/sales-workspace.css?v=20260801-sales-analysis-fix" />
+    <link rel="stylesheet" href="admin/styles/sales-workspace.css?v=20260802-guided-analysis" />
     <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
@@ -346,7 +346,14 @@
                 <label for="leadfinder-company">Bedrijfsnaam<input id="leadfinder-company" type="text" required /></label>
                 <label for="leadfinder-industry">Branche<input id="leadfinder-industry" type="text" placeholder="Bijv. bouwbedrijf, kapsalon of installatiebedrijf" /></label>
                 <label for="leadfinder-region">Plaats/regio<input id="leadfinder-region" type="text" /></label>
-                <label for="leadfinder-phone">Telefoon<input id="leadfinder-phone" type="tel" /></label>
+                <div class="lead-phone-fields admin-profile-wide">
+                  <div class="lead-phone-fields-heading">
+                    <label for="leadfinder-phone">Primair telefoonnummer<input id="leadfinder-phone" type="tel" autocomplete="tel" /></label>
+                    <button class="button secondary" id="leadfinder-add-phone" type="button">+ Extra telefoonnummer</button>
+                  </div>
+                  <div class="lead-additional-phones" id="leadfinder-additional-phones" aria-live="polite"></div>
+                  <small>Voeg bijvoorbeeld een vast en mobiel nummer toe. Het eerste nummer wordt gebruikt voor de snelle belactie.</small>
+                </div>
                 <label for="leadfinder-email">E-mail<input id="leadfinder-email" type="email" /></label>
                 <label for="leadfinder-website">Website URL<input id="leadfinder-website" type="url" placeholder="https://..." /></label>
                 <label for="leadfinder-website-status">Website-status<select id="leadfinder-website-status"></select></label>
@@ -579,13 +586,36 @@
                   <mark class="status-badge status-prepared" id="lead-website-analysis-state">Niet uitgevoerd</mark>
                 </summary>
                 <div class="lead-analysis-panel">
+                  <ol class="sales-analysis-flow" id="lead-website-analysis-flow" aria-label="Stappen voor website-analyse">
+                    <li data-analysis-flow-step="1"><span>1</span><strong>Website toevoegen</strong></li>
+                    <li data-analysis-flow-step="2"><span>2</span><strong>Opslaan bij lead</strong></li>
+                    <li data-analysis-flow-step="3"><span>3</span><strong>Analyseren</strong></li>
+                    <li data-analysis-flow-step="4"><span>4</span><strong>Optioneel indelen</strong></li>
+                    <li data-analysis-flow-step="5"><span>5</span><strong>Gesynchroniseerd</strong></li>
+                  </ol>
                   <label class="sales-analysis-url-control" for="lead-website-analysis-url">
                     <span>Website URL</span>
                     <input id="lead-website-analysis-url" type="url" inputmode="url" placeholder="https://voorbeeld.nl" autocomplete="url" />
-                    <small>Ontbreekt de website bij een handmatige lead? Vul hem hier alsnog in.</small>
+                    <small>Deze website blijft aan de lead gekoppeld totdat je hem zelf verwijdert.</small>
                   </label>
-                  <button class="button primary" id="lead-website-analysis-run" type="button" disabled>Website analyseren</button>
-                  <button class="button secondary" id="lead-website-analysis-sync" type="button" disabled>Opnieuw synchroniseren</button>
+                  <div class="sales-analysis-url-actions">
+                    <button class="button primary" id="lead-website-save" type="button" disabled>Website opslaan en analyseren</button>
+                    <button class="button secondary" id="lead-website-remove" type="button" disabled>Website verwijderen</button>
+                    <button class="button secondary" id="lead-website-analysis-run" type="button" disabled hidden>Website analyseren</button>
+                    <button class="button secondary" id="lead-website-analysis-sync" type="button" disabled>Opnieuw synchroniseren</button>
+                  </div>
+                  <div class="sales-analysis-grouping" id="lead-website-analysis-grouping">
+                    <div>
+                      <span>Lead groeperen</span>
+                      <strong>Kies het juiste slimme vak</strong>
+                    </div>
+                    <label for="lead-website-analysis-smart-view">
+                      <span>Categorie</span>
+                      <select id="lead-website-analysis-smart-view" aria-label="Lead vanuit website-analyse indelen"></select>
+                    </label>
+                    <button class="button secondary" id="lead-website-analysis-smart-view-save" type="button" disabled>Lead indelen</button>
+                    <p class="admin-form-message" id="lead-website-analysis-smart-view-message" role="status" aria-live="polite"></p>
+                  </div>
                   <div class="lead-analysis-result" id="lead-website-analysis-result">
                     Selecteer een lead met website om een homepage-analyse uit te voeren.
                   </div>
@@ -2699,13 +2729,13 @@
         const invoicePresets = [
           { group: "Website totaal", label: "Starter Site", description: "Starter Site", price: 495 },
           { group: "Website totaal", label: "Business Website", description: "Business Website", price: 995 },
-          { group: "Website totaal", label: "Premium Growth", description: "Premium Growth", price: 1750 },
+          { group: "Website totaal", label: "Growth Website", description: "Growth Website", price: 1750 },
           { group: "Aanbetaling", label: "Aanbetaling Starter Site", description: "Aanbetaling Starter Site", price: 150 },
           { group: "Aanbetaling", label: "Aanbetaling Business Website", description: "Aanbetaling Business Website", price: 300 },
-          { group: "Aanbetaling", label: "Aanbetaling Premium Growth", description: "Aanbetaling Premium Growth", price: 500 },
+          { group: "Aanbetaling", label: "Aanbetaling Growth Website", description: "Aanbetaling Growth Website", price: 500 },
           { group: "Restbetaling", label: "Restbetaling Starter Site", description: "Restbetaling Starter Site", price: 345 },
           { group: "Restbetaling", label: "Restbetaling Business Website", description: "Restbetaling Business Website", price: 695 },
-          { group: "Restbetaling", label: "Restbetaling Premium Growth", description: "Restbetaling Premium Growth", price: 1250 },
+          { group: "Restbetaling", label: "Restbetaling Growth Website", description: "Restbetaling Growth Website", price: 1250 },
           { group: "Onderhoud & hosting", label: "Geen onderhoud", description: "Geen onderhoud", price: 0 },
           { group: "Onderhoud & hosting", label: "Care Basic", description: "Care Basic - Hosting, SSL, back-up en technische monitoring", price: 19.95 },
           { group: "Onderhoud & hosting", label: "Care Plus", description: "Care Plus - Basic + 15 minuten kleine wijzigingen per maand", price: 49 },
@@ -19492,6 +19522,8 @@
         industry: document.getElementById("leadfinder-industry"),
         region: document.getElementById("leadfinder-region"),
         phone: document.getElementById("leadfinder-phone"),
+        addPhone: document.getElementById("leadfinder-add-phone"),
+        additionalPhones: document.getElementById("leadfinder-additional-phones"),
         email: document.getElementById("leadfinder-email"),
         website: document.getElementById("leadfinder-website"),
         websiteStatus: document.getElementById("leadfinder-website-status"),
@@ -19543,6 +19575,10 @@
         smartViewSelect: document.getElementById("sales-lead-smart-view-select"),
         smartViewSave: document.getElementById("sales-lead-smart-view-save"),
         smartViewMessage: document.getElementById("sales-lead-smart-view-message"),
+        analysisSmartViewAssignment: document.getElementById("lead-website-analysis-grouping"),
+        analysisSmartViewSelect: document.getElementById("lead-website-analysis-smart-view"),
+        analysisSmartViewSave: document.getElementById("lead-website-analysis-smart-view-save"),
+        analysisSmartViewMessage: document.getElementById("lead-website-analysis-smart-view-message"),
         contactList: document.getElementById("sales-lead-contact-list"),
         callScriptPanel: document.getElementById("leadfinder-call-script-panel"),
         makeDemoNow: document.getElementById("leadfinder-make-demo-now"),
@@ -19597,7 +19633,10 @@
         timeline: document.getElementById("sales-timeline"),
         timelineCount: document.getElementById("sales-timeline-count"),
         analysisState: document.getElementById("lead-website-analysis-state"),
+        analysisFlow: document.getElementById("lead-website-analysis-flow"),
         analysisUrl: document.getElementById("lead-website-analysis-url"),
+        websiteSave: document.getElementById("lead-website-save"),
+        websiteRemove: document.getElementById("lead-website-remove"),
         analysisRun: document.getElementById("lead-website-analysis-run"),
         analysisSync: document.getElementById("lead-website-analysis-sync"),
         analysisResult: document.getElementById("lead-website-analysis-result"),
@@ -19615,6 +19654,7 @@
       };
 
       let selectedLeadFinderId = "";
+      let leadAnalysisFlowBusyStep = 0;
       let activeSalesDetailTab = "overview";
       let leadPreviewRequestId = "";
       let leadfinderDataLayerLeads = [];
@@ -20916,43 +20956,72 @@
         setLeadOwnerAssignmentMessage(lead?.id ? "" : "Selecteer eerst een lead.", "");
       }
 
-      function setLeadSmartViewMessage(message = "", type = "") {
-        if (!leadfinderElements.smartViewMessage) return;
-        leadfinderElements.smartViewMessage.textContent = message;
-        leadfinderElements.smartViewMessage.className = `admin-form-message ${type}`;
+      function leadSmartViewControls(surface = "summary") {
+        return surface === "analysis"
+          ? {
+              assignment: leadfinderElements.analysisSmartViewAssignment,
+              select: leadfinderElements.analysisSmartViewSelect,
+              button: leadfinderElements.analysisSmartViewSave,
+              message: leadfinderElements.analysisSmartViewMessage,
+            }
+          : {
+              assignment: leadfinderElements.smartViewAssignment,
+              select: leadfinderElements.smartViewSelect,
+              button: leadfinderElements.smartViewSave,
+              message: leadfinderElements.smartViewMessage,
+            };
+      }
+
+      function setLeadSmartViewMessage(message = "", type = "", surface = "summary") {
+        const target = leadSmartViewControls(surface).message;
+        if (!target) return;
+        target.textContent = message;
+        target.className = `admin-form-message ${type}`;
       }
 
       function renderLeadSmartViewAssignment(lead) {
         const model = window.MaxSalesWorkspaceModel;
-        const select = leadfinderElements.smartViewSelect;
-        const button = leadfinderElements.smartViewSave;
-        if (!leadfinderElements.smartViewAssignment || !select || !button || !model) return;
+        if (!model) return;
         const current = model.normalizeLead(lead || {}).manualSmartView || "";
-        select.innerHTML = [
+        const optionHtml = [
           '<option value="">Automatisch bepalen</option>',
           ...(model.MANUAL_SMART_VIEWS || []).map((view) => `<option value="${escapeHtml(view.value)}">${escapeHtml(view.label)}</option>`),
         ].join("");
-        select.value = current;
         const writable = canManageLeadSmartView(lead);
-        select.disabled = !writable;
-        button.disabled = !writable;
-        leadfinderElements.smartViewAssignment.dataset.currentView = current || "automatic";
+        ["summary", "analysis"].forEach((surface) => {
+          const controls = leadSmartViewControls(surface);
+          if (!controls.assignment || !controls.select || !controls.button) return;
+          controls.select.innerHTML = optionHtml;
+          controls.select.value = current;
+          controls.select.disabled = !writable;
+          controls.button.disabled = !writable;
+          controls.assignment.dataset.currentView = current || "automatic";
+        });
         const context = getLeadfinderUserContext();
-        if (!lead?.id) setLeadSmartViewMessage("Selecteer eerst een lead.", "");
-        else if (!isProductionLead(lead)) setLeadSmartViewMessage("Sla deze lead eerst centraal op voordat je hem indeelt.", "warning");
-        else if (!writable) setLeadSmartViewMessage("Alleen de Super Admin of de toegewezen medewerker kan deze indeling wijzigen.", "warning");
-        else if (current) setLeadSmartViewMessage(`Handmatig ingedeeld bij ${model.MANUAL_SMART_VIEWS.find((view) => view.value === current)?.label || current}.`, "success");
-        else setLeadSmartViewMessage(context.role === "super_admin" ? "Je kunt deze lead in ieder slim vak plaatsen." : "Je kunt je eigen toegewezen lead handmatig indelen.", "");
+        let message = "";
+        let type = "";
+        if (!lead?.id) message = "Selecteer eerst een lead.";
+        else if (!isProductionLead(lead)) { message = "Sla deze lead eerst centraal op voordat je hem indeelt."; type = "warning"; }
+        else if (!writable) { message = "Alleen de Super Admin of de toegewezen medewerker kan deze indeling wijzigen."; type = "warning"; }
+        else if (current) { message = `Handmatig ingedeeld bij ${model.MANUAL_SMART_VIEWS.find((view) => view.value === current)?.label || current}.`; type = "success"; }
+        else message = context.role === "super_admin" ? "Je kunt deze lead in ieder slim vak plaatsen." : "Je kunt je eigen toegewezen lead handmatig indelen.";
+        setLeadSmartViewMessage(message, type, "summary");
+        setLeadSmartViewMessage(message, type, "analysis");
       }
 
-      async function saveSelectedLeadSmartView() {
+      async function saveSelectedLeadSmartView(surface = "summary") {
         const lead = selectedLeadFinderLead();
-        const button = leadfinderElements.smartViewSave;
+        const controls = leadSmartViewControls(surface);
+        const button = controls.button;
         if (!lead || !canManageLeadSmartView(lead) || !button) {
-          setLeadSmartViewMessage("Je hebt geen rechten om deze lead in te delen.", "error");
+          setLeadSmartViewMessage("Je hebt geen rechten om deze lead in te delen.", "error", surface);
           return;
         }
-        const smartView = leadfinderElements.smartViewSelect?.value || "";
+        const smartView = controls.select?.value || "";
+        if (surface === "analysis") {
+          leadAnalysisFlowBusyStep = 4;
+          setLeadAnalysisFlowActive(4);
+        }
         button.disabled = true;
         button.setAttribute("aria-busy", "true");
         button.textContent = "Opslaan…";
@@ -20962,13 +21031,15 @@
           await refreshLeads({ keepSelection: true });
           const label = smartView ? window.MaxSalesWorkspaceModel?.MANUAL_SMART_VIEWS.find((view) => view.value === smartView)?.label || smartView : "Automatisch bepalen";
           setLeadfinderMessage(`Leadindeling opgeslagen: ${label}.`, "success");
-          setLeadSmartViewMessage(smartView ? `Deze lead staat nu bij ${label}.` : "De slimme indeling wordt weer automatisch bepaald.", "success");
+          setLeadSmartViewMessage(smartView ? `Deze lead staat nu bij ${label}.` : "De slimme indeling wordt weer automatisch bepaald.", "success", surface);
         } catch (error) {
-          setLeadSmartViewMessage(error.message || "De leadindeling kon niet worden opgeslagen.", "error");
+          setLeadSmartViewMessage(error.message || "De leadindeling kon niet worden opgeslagen.", "error", surface);
         } finally {
+          leadAnalysisFlowBusyStep = 0;
           button.removeAttribute("aria-busy");
-          button.textContent = "Indeling opslaan";
+          button.textContent = surface === "analysis" ? "Lead indelen" : "Indeling opslaan";
           button.disabled = !canManageLeadSmartView(selectedLeadFinderLead());
+          renderLeadWebsiteAnalysis(selectedLeadFinderLead());
         }
       }
 
@@ -23217,6 +23288,7 @@
             lead.industry,
             lead.region,
             lead.phone,
+            ...(leadPhoneNumbers(lead)),
             lead.email,
             lead.websiteUrl,
             lead.notes,
@@ -23726,7 +23798,80 @@
       function normalizeExternalUrl(url = "") {
         const value = String(url || "").trim();
         if (!value) return "";
-        return value.startsWith("http") ? value : `https://${value}`;
+        return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+      }
+
+      function validatedLeadWebsiteUrl(url = "") {
+        const normalized = normalizeExternalUrl(url);
+        if (!normalized) return "";
+        try {
+          const parsed = new URL(normalized);
+          if (!["http:", "https:"].includes(parsed.protocol) || !parsed.hostname.includes(".")) throw new Error("invalid");
+          return parsed.toString();
+        } catch (error) {
+          throw new Error("Vul een geldige website in, bijvoorbeeld https://voorbeeld.nl.");
+        }
+      }
+
+      async function saveSelectedLeadWebsite({ remove = false } = {}) {
+        const lead = selectedLeadFinderLead();
+        if (!lead?.id) {
+          setLeadAnalysisMessage("Selecteer eerst een lead.", "error");
+          return false;
+        }
+        if (remove && !window.confirm("Website van deze lead verwijderen?")) return false;
+        let websiteUrl = "";
+        try {
+          websiteUrl = remove ? "" : validatedLeadWebsiteUrl(leadfinderElements.analysisUrl?.value || "");
+          if (!remove && !websiteUrl) throw new Error("Vul eerst een website in.");
+        } catch (error) {
+          setLeadAnalysisMessage(error.message, "error");
+          return false;
+        }
+        const button = remove ? leadfinderElements.websiteRemove : leadfinderElements.websiteSave;
+        if (button) {
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          button.textContent = remove ? "Verwijderen…" : "Opslaan…";
+        }
+        let resultMessage = "";
+        let resultType = "success";
+        try {
+          const result = await leadApiRequest("PATCH", { id: lead.id, websiteUrl }, { id: lead.id });
+          selectedLeadFinderId = result.lead?.id || lead.id;
+          await refreshLeads({ keepSelection: true });
+          if (leadfinderElements.analysisUrl) leadfinderElements.analysisUrl.value = websiteUrl;
+          resultMessage = remove ? "Website verwijderd van deze lead." : "Website blijvend opgeslagen bij deze lead.";
+          setLeadfinderMessage(remove ? "Website verwijderd." : "Website opgeslagen bij de lead.", "success");
+          return true;
+        } catch (error) {
+          resultMessage = error.message || "De website kon niet worden opgeslagen.";
+          resultType = "error";
+          return false;
+        } finally {
+          if (button) {
+            button.removeAttribute("aria-busy");
+            button.textContent = remove ? "Website verwijderen" : "Website opslaan en analyseren";
+          }
+          renderLeadWebsiteAnalysis(selectedLeadFinderLead());
+          setLeadAnalysisMessage(resultMessage, resultType);
+        }
+      }
+
+      async function saveAndAnalyzeSelectedLeadWebsite() {
+        leadAnalysisFlowBusyStep = 2;
+        setLeadAnalysisFlowActive(2);
+        const saved = await saveSelectedLeadWebsite();
+        if (!saved) {
+          leadAnalysisFlowBusyStep = 0;
+          renderLeadWebsiteAnalysis(selectedLeadFinderLead());
+          return;
+        }
+        leadAnalysisFlowBusyStep = 3;
+        setLeadAnalysisFlowActive(3);
+        await runLeadWebsiteAnalysis();
+        leadAnalysisFlowBusyStep = 0;
+        renderLeadWebsiteAnalysis(selectedLeadFinderLead());
       }
 
               function renderLeadfinderList() {
@@ -23949,8 +24094,9 @@
         renderLeadOwnerAssignment(lead);
         renderLeadSmartViewAssignment(lead);
         if (leadfinderElements.contactList) {
+          const phones = hasLead ? leadPhoneNumbers(lead) : [];
           renderLeadDetailRows(leadfinderElements.contactList, hasLead ? [
-            ["Telefoon", lead.phone || "-"],
+            [phones.length === 1 ? "Telefoon" : "Telefoonnummers", phones.join(" · ") || "-"],
             ["E-mail", lead.email || "-"],
             ["Website", lead.websiteUrl || "Geen website"],
             ["Google Maps", lead.googleMapsUrl || lead.googlePlaceId || "-"],
@@ -24079,12 +24225,19 @@
 
       function getWebsiteAnalysisResult(target, lead) {
         if (!target?.key) return null;
-        return websiteAnalysisState.get(target.key)
+        const result = websiteAnalysisState.get(target.key)
           || (lead && websiteAnalysisState.get(lead.id))
           || (target.urlKey && websiteAnalysisState.get(target.urlKey))
           || lead?.websiteAnalysis
           || lead?.metadata?.websiteAnalysis
           || null;
+        if (!result) return null;
+        const targetUrl = normalizeComparableUrl(target.url || "");
+        const resultUrl = normalizeComparableUrl(result.finalUrl || result.inputUrl || "");
+        const savedLeadUrl = normalizeComparableUrl(lead?.websiteUrl || "");
+        if (targetUrl && resultUrl && targetUrl !== resultUrl) return null;
+        if (targetUrl && !resultUrl && savedLeadUrl && targetUrl !== savedLeadUrl) return null;
+        return result;
       }
 
       function getDraftWebsiteAnalysisForForm() {
@@ -24114,13 +24267,57 @@
         leadfinderElements.score.title = "Deze score komt uit de website-analyse en is leidend.";
       }
 
+      function setLeadAnalysisFlowActive(activeStep = 0, completedSteps = []) {
+        const flow = leadfinderElements.analysisFlow;
+        if (!flow) return;
+        const completed = new Set(completedSteps);
+        flow.querySelectorAll("[data-analysis-flow-step]").forEach((item) => {
+          const step = Number(item.dataset.analysisFlowStep || 0);
+          const isComplete = completed.has(step) || (activeStep > 0 && step < activeStep);
+          item.classList.toggle("is-complete", isComplete);
+          item.classList.toggle("is-active", step === activeStep);
+          const marker = item.querySelector("span");
+          if (marker) marker.textContent = isComplete ? "✓" : String(step);
+        });
+      }
+
+      function renderLeadAnalysisFlow(lead, target, result, hasPendingAnalysisSync) {
+        if (leadAnalysisFlowBusyStep) {
+          setLeadAnalysisFlowActive(leadAnalysisFlowBusyStep);
+          return;
+        }
+        const inputReady = Boolean(target?.url);
+        const savedUrl = normalizeComparableUrl(lead?.websiteUrl || "");
+        const targetUrl = normalizeComparableUrl(target?.url || "");
+        const websiteSaved = Boolean(inputReady && savedUrl && savedUrl === targetUrl);
+        const analysisDone = Boolean(result?.ok);
+        const synced = Boolean(analysisDone && !hasPendingAnalysisSync);
+        const completed = [
+          inputReady && 1,
+          websiteSaved && 2,
+          analysisDone && 3,
+          analysisDone && 4,
+          synced && 5,
+        ].filter(Boolean);
+        const activeStep = !inputReady ? 1 : !websiteSaved ? 2 : !analysisDone ? 3 : !synced ? 5 : 0;
+        setLeadAnalysisFlowActive(activeStep, completed);
+      }
+
       function renderLeadWebsiteAnalysis(lead) {
         const target = getLeadWebsiteScanTarget();
         const result = getWebsiteAnalysisResult(target, lead);
         const canRun = Boolean(target.url);
+        const hasLead = Boolean(lead?.id);
+        const hasSavedWebsite = Boolean(String(lead?.websiteUrl || "").trim());
         const hasPendingAnalysisSync = Boolean(lead?.id && hasQueuedLeadSync(lead.id, "analysis"));
+        renderLeadAnalysisFlow(lead, target, result, hasPendingAnalysisSync);
+        if (leadfinderElements.websiteSave) {
+          leadfinderElements.websiteSave.disabled = Boolean(leadAnalysisFlowBusyStep) || !hasLead || !canRun;
+          leadfinderElements.websiteSave.textContent = result?.ok ? "Analyse opnieuw uitvoeren" : "Website opslaan en analyseren";
+        }
+        if (leadfinderElements.websiteRemove) leadfinderElements.websiteRemove.disabled = Boolean(leadAnalysisFlowBusyStep) || !hasLead || !hasSavedWebsite;
         if (leadfinderElements.analysisSync) {
-          leadfinderElements.analysisSync.disabled = !lead?.id || !hasPendingAnalysisSync;
+          leadfinderElements.analysisSync.disabled = Boolean(leadAnalysisFlowBusyStep) || !lead?.id || !hasPendingAnalysisSync;
         }
         if (leadfinderElements.analysisRun) {
           leadfinderElements.analysisRun.disabled = !canRun;
@@ -24155,7 +24352,7 @@
             leadfinderElements.analysisResult.innerHTML = `
               <strong>Website niet bereikbaar</strong>
               <p>${escapeHtml(friendlyReason)}</p>
-              <small>Gebruik “Analyse opnieuw uitvoeren” om de scan nogmaals te starten.</small>
+              <small>Gebruik “Website opslaan en analyseren” om de scan nogmaals te starten.</small>
               ${technicalDetails}
             `;
           }
@@ -24382,8 +24579,53 @@
         }
       }
 
+      function leadPhoneNumbers(lead = {}) {
+        const candidates = Array.isArray(lead.phoneNumbers)
+          ? lead.phoneNumbers
+          : Array.isArray(lead.metadata?.phoneNumbers)
+            ? lead.metadata.phoneNumbers
+            : [];
+        const values = [lead.phone, ...candidates].map((value) => String(value || "").trim()).filter(Boolean);
+        const seen = new Set();
+        return values.filter((value) => {
+          const key = normalizeComparablePhone(value);
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function readLeadfinderPhoneNumbers() {
+        return leadPhoneNumbers({
+          phone: leadfinderElements.phone?.value || "",
+          phoneNumbers: [...(leadfinderElements.additionalPhones?.querySelectorAll("input[data-lead-phone]") || [])].map((input) => input.value),
+        });
+      }
+
+      function addLeadfinderPhoneInput(value = "") {
+        if (!leadfinderElements.additionalPhones) return;
+        const currentCount = leadfinderElements.additionalPhones.querySelectorAll("[data-lead-phone-row]").length;
+        if (currentCount >= 9) {
+          setLeadfinderMessage("Je kunt maximaal 10 telefoonnummers per lead opslaan.", "warning");
+          return;
+        }
+        const row = document.createElement("div");
+        row.className = "lead-additional-phone-row";
+        row.dataset.leadPhoneRow = "";
+        row.innerHTML = `
+          <label>
+            <span>Extra telefoonnummer ${currentCount + 2}</span>
+            <input type="tel" data-lead-phone autocomplete="tel" value="${escapeHtml(value)}" />
+          </label>
+          <button class="lead-phone-remove" type="button" data-remove-lead-phone aria-label="Extra telefoonnummer verwijderen">Verwijderen</button>
+        `;
+        leadfinderElements.additionalPhones.appendChild(row);
+        row.querySelector("input")?.focus();
+      }
+
       function resetLeadfinderForm() {
         leadfinderElements.form?.reset();
+        if (leadfinderElements.additionalPhones) leadfinderElements.additionalPhones.innerHTML = "";
         if (leadfinderElements.websiteStatus) leadfinderElements.websiteStatus.value = "onbekend";
         if (leadfinderElements.callStatus) leadfinderElements.callStatus.value = "nieuw";
         if (leadfinderElements.score) {
@@ -24473,7 +24715,8 @@
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
           region: leadfinderElements.region?.value || "",
-          phone: leadfinderElements.phone?.value || "",
+          phone: readLeadfinderPhoneNumbers()[0] || "",
+          phoneNumbers: readLeadfinderPhoneNumbers(),
           email: leadfinderElements.email?.value || "",
           websiteUrl: leadfinderElements.website?.value || "",
           websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
@@ -24577,11 +24820,12 @@
         const googlePlaceId = leadfinderElements.form?.dataset.googlePlaceId || "";
         const googleMapsUrl = leadfinderElements.form?.dataset.googleMapsUrl || "";
         const websiteUrl = leadfinderElements.website?.value || "";
-        const phone = leadfinderElements.phone?.value || "";
+        const phoneNumbers = readLeadfinderPhoneNumbers();
         const duplicate = getLeadfinderLeads().find((lead) => {
           const samePlace = googlePlaceId && lead.googlePlaceId === googlePlaceId;
           const sameWebsite = normalizeComparableUrl(lead.websiteUrl) && normalizeComparableUrl(lead.websiteUrl) === normalizeComparableUrl(websiteUrl);
-          const samePhone = normalizeComparablePhone(lead.phone) && normalizeComparablePhone(lead.phone) === normalizeComparablePhone(phone);
+          const existingPhones = new Set(leadPhoneNumbers(lead).map(normalizeComparablePhone).filter(Boolean));
+          const samePhone = phoneNumbers.some((phone) => existingPhones.has(normalizeComparablePhone(phone)));
           return samePlace || sameWebsite || samePhone;
         });
         if (duplicate && !window.confirm(`Deze lead lijkt al te bestaan als ${duplicate.companyName}. Toch als nieuwe lead opslaan?`)) {
@@ -24986,6 +25230,15 @@
         restoreLeadfinderDetailFromUrl();
 
         leadfinderElements.form.addEventListener("submit", handleLeadfinderSubmit);
+        leadfinderElements.addPhone?.addEventListener("click", () => addLeadfinderPhoneInput());
+        leadfinderElements.additionalPhones?.addEventListener("click", (event) => {
+          const remove = event.target.closest("[data-remove-lead-phone]");
+          if (!remove) return;
+          remove.closest("[data-lead-phone-row]")?.remove();
+          [...leadfinderElements.additionalPhones.querySelectorAll("[data-lead-phone-row] span")].forEach((label, index) => {
+            label.textContent = `Extra telefoonnummer ${index + 2}`;
+          });
+        });
         leadfinderElements.reset?.addEventListener("click", () => {
           resetLeadfinderForm();
           setLeadfinderMessage("Formulier leeggemaakt.", "success");
@@ -25051,7 +25304,8 @@
           const lead = selectedLeadFinderLead();
           if (lead) toggleLeadFavorite(lead);
         });
-        leadfinderElements.smartViewSave?.addEventListener("click", saveSelectedLeadSmartView);
+        leadfinderElements.smartViewSave?.addEventListener("click", () => saveSelectedLeadSmartView("summary"));
+        leadfinderElements.analysisSmartViewSave?.addEventListener("click", () => saveSelectedLeadSmartView("analysis"));
         leadfinderElements.list.addEventListener("keydown", (event) => {
           const row = event.target.closest("[data-leadfinder-id]");
           if (row && ["Enter", " "].includes(event.key)) {
@@ -25257,6 +25511,8 @@
           }
         });
         leadfinderElements.syncNote?.addEventListener("click", () => retrySelectedLeadSync("notes"));
+        leadfinderElements.websiteSave?.addEventListener("click", saveAndAnalyzeSelectedLeadWebsite);
+        leadfinderElements.websiteRemove?.addEventListener("click", () => saveSelectedLeadWebsite({ remove: true }));
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
         leadfinderElements.analysisUrl?.addEventListener("input", () => {
           renderLeadWebsiteAnalysis(selectedLeadFinderLead());
@@ -25536,7 +25792,7 @@
         const websitePackages = [
           ["starter", "Starter Site (€495)"],
           ["business", "Business Website (€995)"],
-          ["premium", "Premium Growth (€1750)"],
+          ["premium", "Growth Website (€1750)"],
         ];
         const customerSteps = [
           "Aanvraag ontvangen",

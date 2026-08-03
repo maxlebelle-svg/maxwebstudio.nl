@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260712" />
+    <link rel="stylesheet" href="styles.css?v=20260802" />
   </head>
   <body>
     <header class="site-header">
@@ -66,7 +66,7 @@
                 <label class="choice-card">
                   <input type="radio" name="websitePackage" value="premium_growth" />
                   <span class="choice-eyebrow">Groei</span>
-                  <strong>Premium Growth</strong>
+                  <strong>Growth Website</strong>
                   <em>€1.750 ex. btw</em>
                   <small>Aanbetaling €500 ex. btw · restbedrag €1.250 ex. btw</small>
                 </label>
@@ -271,7 +271,7 @@
       function oneTime(item) { return item?.components?.find((component) => component.type === "one_time"); }
       function recurring(item) { return item?.components?.find((component) => component.type === "recurring"); }
       function cents(value) { return Number.isInteger(value) ? value / 100 : 0; }
-      function categoryLabel(value) { return ({ branding: "Branding", domain_email: "Domein en e-mail", telephony: "Telefonie", website_expansion: "Website-uitbreidingen", marketing: "Marketing", content: "Content", care: "Onderhoud en abonnementen", custom: "Maatwerk" })[value] || "Overig"; }
+      function categoryLabel(value) { return ({ branding: "Branding", domain_email: "Domein en e-mail", telephony: "Telefonie", website_expansion: "Website-uitbreidingen", marketing: "Marketing", content: "Content", care: "Onderhoud en abonnementen", website_support: "Website-tegoed", custom: "Maatwerk" })[value] || "Overig"; }
 
       function getOrderId() {
         const existing = sessionStorage.getItem(orderStorageKey);
@@ -430,6 +430,7 @@
         const params = new URLSearchParams(window.location.search);
         const website = params.get("website") || "";
         const care = params.get("care") || "";
+        const extra = params.get("extra") || "";
         const legacy = params.get("product") || "";
         const legacyMap = {
           starter_site_deposit: "starter_site",
@@ -441,9 +442,12 @@
         };
         const initialWebsite = websiteCatalog[website] ? website : legacyMap[legacy] || "";
         const initialCare = careCatalog[care] ? care : "";
+        const initialExtra = productCatalog[extra] ? extra : "";
         form.querySelector(`input[name="websitePackage"][value="${initialWebsite}"]`).checked = true;
         form.querySelector(`input[name="carePackage"][value="${initialCare}"]`).checked = true;
-        form.querySelector(`input[name="paymentChoice"][value="${legacy.endsWith("_full") ? "full" : "deposit"}"]`).checked = true;
+        if (initialExtra) form.querySelector(`input[name="productIds"][value="${initialExtra}"]`).checked = true;
+        const paymentChoice = legacy.endsWith("_full") || (initialExtra && !initialWebsite) ? "full" : "deposit";
+        form.querySelector(`input[name="paymentChoice"][value="${paymentChoice}"]`).checked = true;
       }
 
       form.addEventListener("input", updateSummary);

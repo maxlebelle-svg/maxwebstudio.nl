@@ -476,7 +476,7 @@ test("proposal mail uses the canonical Max Webstudio dark branding", () => {
   assert.match(mail.html, /#061626/);
   assert.match(mail.html, /bgcolor="#061626"/);
   assert.doesNotMatch(mail.html, /rgba\(/);
-  assert.match(mail.html, /wa\.me\/31851302326/);
+  assert.match(mail.html, /wa\.me\/31851305282/);
   assert.match(mail.html, /@media\(max-width:620px\)/);
 });
 
