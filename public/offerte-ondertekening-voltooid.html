@@ -9,60 +9,51 @@
   <title>Ondertekening ontvangen | Max Webstudio</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <style>
-    :root{--navy:#061827;--panel:#0a2235;--panel-2:#0d2a40;--line:#24445e;--cyan:#25c9e8;--green:#2dd39a;--white:#f7fbff;--muted:#b5c8d6}
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;background:radial-gradient(circle at 18% 5%,rgba(37,201,232,.14),transparent 30rem),linear-gradient(160deg,#061827 0%,#071d2e 52%,#04131f 100%);color:var(--white);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:56px 56px;mask-image:linear-gradient(to bottom,black,transparent 78%)}
-    main{position:relative;display:grid;place-items:center;min-height:100vh;padding:clamp(18px,4vw,46px)}
-    .card{width:min(760px,100%);overflow:hidden;border:1px solid var(--line);border-radius:28px;background:linear-gradient(145deg,rgba(13,42,64,.98),rgba(7,29,46,.98));box-shadow:0 30px 90px rgba(0,0,0,.4)}
-    .brand{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px clamp(22px,5vw,42px);border-bottom:1px solid var(--line);background:rgba(4,19,31,.55)}
-    .brand img{display:block;width:min(210px,55vw);height:auto}
-    .brand span{color:var(--cyan);font-size:.72rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
-    .content{padding:clamp(28px,6vw,56px)}
-    .check{display:grid;place-items:center;width:76px;height:76px;margin-bottom:26px;border:1px solid rgba(45,211,154,.45);border-radius:22px;background:rgba(45,211,154,.11);color:var(--green);font-size:2.8rem;font-weight:900;box-shadow:0 14px 35px rgba(45,211,154,.12)}
-    .eyebrow{margin:0 0 10px;color:var(--cyan);font-size:.76rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
-    h1{max-width:660px;margin:0;font-size:clamp(2.25rem,7vw,4.5rem);line-height:1.02;letter-spacing:-.035em}
-    .intro{max-width:630px;margin:22px 0 0;color:var(--muted);font-size:clamp(1.05rem,2.3vw,1.24rem);line-height:1.72}
-    .steps{display:grid;gap:10px;margin:32px 0 0;padding:0;list-style:none;counter-reset:step}
-    .steps li{counter-increment:step;display:grid;grid-template-columns:42px 1fr;gap:14px;align-items:center;padding:15px 16px;border:1px solid var(--line);border-radius:15px;background:rgba(4,19,31,.36)}
-    .steps li::before{content:counter(step);display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#123a50;color:var(--cyan);font-weight:900}
-    .steps strong{display:block;font-size:.98rem}
-    .steps span{display:block;margin-top:4px;color:var(--muted);font-size:.88rem;line-height:1.5}
-    .notice{margin:24px 0 0;padding:16px 18px;border-left:3px solid var(--green);border-radius:4px 13px 13px 4px;background:rgba(45,211,154,.08);color:#c8f8e8;line-height:1.65}
-    .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
-    .button{display:inline-flex;justify-content:center;align-items:center;min-height:52px;padding:13px 20px;border:1px solid transparent;border-radius:13px;color:#fff;text-decoration:none;font-weight:850}
-    .button.primary{background:#087b91}.button.secondary{border-color:#315674;background:transparent;color:#d7e6f0}
-    .footer{padding:18px clamp(22px,5vw,42px);border-top:1px solid var(--line);color:#8ea7b8;font-size:.8rem;line-height:1.5}
-    .rejected .check{border-color:rgba(251,191,36,.48);background:rgba(251,191,36,.1);color:#fbbf24}.rejected .notice{border-left-color:#fbbf24;background:rgba(251,191,36,.08);color:#fde7a8}
-    @media(max-width:560px){main{align-items:start;padding:10px}.card{border-radius:20px}.brand{align-items:flex-start;flex-direction:column}.content{padding:28px 22px}.actions{display:grid}.button{width:100%}}
-    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+    :root{--navy:#051827;--panel:#0a2437;--panel2:#0d2d43;--line:#244b63;--cyan:#2ac8e5;--green:#31d39b;--white:#f7fbff;--muted:#b3c7d5;--warning:#f6c453}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 14% 3%,rgba(42,200,229,.14),transparent 30rem),linear-gradient(155deg,#061827,#061d2d 55%,#04131f);color:var(--white);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:56px 56px;mask-image:linear-gradient(to bottom,#000,transparent 80%)}
+    main{position:relative;display:grid;place-items:center;min-height:100vh;padding:clamp(14px,3vw,34px)}.card{width:min(980px,100%);overflow:hidden;border:1px solid var(--line);border-radius:26px;background:linear-gradient(145deg,rgba(13,45,67,.98),rgba(6,27,43,.98));box-shadow:0 28px 85px rgba(0,0,0,.4)}
+    .brand{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px clamp(20px,4vw,38px);border-bottom:1px solid var(--line);background:rgba(3,18,29,.5)}.brand-lockup{display:flex;align-items:center;gap:11px}.brand-lockup img{display:block;width:46px;height:46px}.brand-lockup strong{display:block;color:var(--white);font-size:1.02rem}.brand-lockup small{display:block;margin-top:3px;color:var(--cyan);font-size:.58rem;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.brand>span,.eyebrow{color:var(--cyan);font-size:.72rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+    .content{padding:clamp(24px,4vw,42px)}.hero{display:grid;grid-template-columns:58px 1fr;gap:18px;align-items:start}.check{display:grid;place-items:center;width:58px;height:58px;border:1px solid rgba(49,211,155,.45);border-radius:17px;background:rgba(49,211,155,.11);color:var(--green);font-size:2rem;font-weight:950}.eyebrow{margin:2px 0 8px}h1{max-width:760px;margin:0;font-size:clamp(2rem,5vw,3.65rem);line-height:1.04;letter-spacing:-.035em}.intro{max-width:760px;margin:14px 0 0;color:var(--muted);font-size:clamp(1rem,2vw,1.12rem);line-height:1.65}
+    .workspace{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:18px;margin-top:28px}.panel{border:1px solid var(--line);border-radius:18px;background:rgba(3,18,29,.4)}.steps{display:grid;gap:0;margin:0;padding:0;list-style:none;counter-reset:step}.steps li{counter-increment:step;display:grid;grid-template-columns:42px 1fr;gap:13px;align-items:center;padding:17px}.steps li+li{border-top:1px solid rgba(36,75,99,.72)}.steps li::before{content:counter(step);display:grid;place-items:center;width:35px;height:35px;border-radius:11px;background:#123c53;color:var(--cyan);font-weight:900}.steps li.done::before{content:"✓";background:rgba(49,211,155,.16);color:var(--green)}.steps li.active::before{box-shadow:0 0 0 4px rgba(42,200,229,.12)}.steps strong{display:block;font-size:.96rem}.steps span{display:block;margin-top:3px;color:var(--muted);font-size:.86rem;line-height:1.45}
+    .next{display:flex;min-height:100%;flex-direction:column;padding:20px}.next-label{margin:0 0 8px;color:var(--cyan);font-size:.7rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase}.next h2{margin:0;font-size:1.28rem;line-height:1.3}.next-copy{margin:9px 0 0;color:var(--muted);font-size:.91rem;line-height:1.55}.amount{margin:16px 0 0;font-size:1.65rem;font-weight:900}.test-badge{display:inline-flex;align-self:flex-start;margin-top:10px;padding:5px 9px;border:1px solid rgba(246,196,83,.45);border-radius:999px;background:rgba(246,196,83,.1);color:#ffe29a;font-size:.7rem;font-weight:900;letter-spacing:.08em}.actions{display:grid;gap:10px;margin-top:auto;padding-top:20px}.button{display:inline-flex;justify-content:center;align-items:center;min-height:50px;padding:12px 16px;border:1px solid transparent;border-radius:12px;color:#fff;text-align:center;text-decoration:none;font-weight:850}.button.primary{background:#078aa2}.button.pay{background:#169b70}.button.secondary{border-color:#315b75;background:transparent;color:#dceaf2}[hidden]{display:none!important}.button.disabled{pointer-events:none;opacity:.58}
+    .notice{margin:18px 0 0;padding:13px 16px;border-left:3px solid var(--green);border-radius:4px 12px 12px 4px;background:rgba(49,211,155,.08);color:#c9f7e7;font-size:.88rem;line-height:1.55}.footer{display:flex;justify-content:space-between;gap:16px;padding:16px clamp(20px,4vw,38px);border-top:1px solid var(--line);color:#8fa9b9;font-size:.78rem}.stopped .check{border-color:rgba(246,196,83,.45);background:rgba(246,196,83,.1);color:var(--warning)}
+    @media(max-width:760px){main{align-items:start;padding:8px}.card{border-radius:19px}.content{padding:25px 20px}.hero{grid-template-columns:46px 1fr;gap:13px}.check{width:46px;height:46px;border-radius:14px;font-size:1.6rem}.workspace{grid-template-columns:1fr}.next{min-height:270px}.footer{flex-direction:column}.brand>span{display:none}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
   </style>
 </head>
 <body>
   <main>
     <section class="card" id="card" aria-labelledby="title">
-      <header class="brand"><img src="max-webstudio-logo-full.svg" width="210" alt="Max Webstudio"><span>Build better online</span></header>
+      <header class="brand"><div class="brand-lockup"><img src="max-webstudio-logo-mark.svg" width="46" height="46" alt=""><div><strong>Max Webstudio</strong><small>Build better online</small></div></div><span>Ondertekening</span></header>
       <div class="content">
-        <div class="check" aria-hidden="true" id="icon">✓</div>
-        <p class="eyebrow" id="eyebrow">Ondertekenactie ontvangen</p>
-        <h1 id="title">Bedankt, je ondertekening wordt verwerkt</h1>
-        <p class="intro" id="intro">Signhost maakt nu het definitief getekende document en het verificatiebewijs gereed. Je hoeft niet opnieuw te ondertekenen en je mag deze pagina veilig sluiten.</p>
-        <ol class="steps" id="steps">
-          <li><div><strong>Ondertekenactie ontvangen</strong><span>Je invoer is veilig bij Signhost aangekomen.</span></div></li>
-          <li><div><strong>Document en bewijs worden verwerkt</strong><span>Max Webstudio wacht op de beveiligde eindbevestiging van Signhost.</span></div></li>
-          <li><div><strong>Vervolgstap wordt klaargezet</strong><span>Je ontvangt apart bericht zodra alles volledig is verwerkt.</span></div></li>
-        </ol>
-        <p class="notice" id="notice"><strong>Goed om te weten:</strong> op deze pagina wordt geen betaling uitgevoerd. Als betaling onderdeel is van je offerte, ontvang je daarvoor een aparte beveiligde betaallink.</p>
-        <div class="actions"><a class="button primary" href="/">Naar Max Webstudio</a><a class="button secondary" href="mailto:info@maxwebstudio.nl">Neem contact op</a></div>
+        <div class="hero"><div class="check" aria-hidden="true" id="icon">✓</div><div><p class="eyebrow" id="eyebrow">Ondertekenactie ontvangen</p><h1 id="title">Bedankt, je offerte is ondertekend</h1><p class="intro" id="intro">Je ondertekening wordt verwerkt terwijl we de beveiligde eindbevestiging van Signhost controleren. Daarna zetten we je klantportaal, factuur en eventuele betaling automatisch klaar.</p></div></div>
+        <div class="workspace">
+          <div class="panel"><ol class="steps" id="steps"><li class="done" id="step-sign"><div><strong>Ondertekening ontvangen</strong><span>Je invoer is veilig bij Signhost aangekomen.</span></div></li><li class="active" id="step-process"><div><strong>Document en bewijs verwerken</strong><span>We wachten op de officiële eindbevestiging.</span></div></li><li id="step-ready"><div><strong>Portaal en betaling klaarzetten</strong><span>Deze stap start alleen na de bevestigde ondertekening.</span></div></li></ol></div>
+          <aside class="panel next" aria-live="polite"><p class="next-label">Volgende stap</p><h2 id="next-title">Je hoeft nu niets te doen</h2><p class="next-copy" id="next-copy">Deze pagina controleert de voortgang automatisch. Dit duurt meestal maar enkele seconden.</p><p class="amount" id="amount" hidden></p><span class="test-badge" id="test-badge" hidden>TESTBETALING · GEEN ECHT GELD</span><div class="actions"><a class="button primary disabled" id="primary-action" href="#" aria-disabled="true">Bezig met verwerken…</a><a class="button secondary" id="portal-action" href="/login.html?mode=client&amp;next=%2Fklantportaal.html%23facturen" hidden>Open klantportaal</a><a class="button secondary" id="contact-action" href="mailto:info@maxwebstudio.nl">Neem contact op</a></div></aside>
+        </div>
+        <p class="notice" id="notice"><strong>Veilig geregeld:</strong> je hoeft niet opnieuw te ondertekenen. Deze pagina leest alleen de status. Betaling of klantactivatie wordt uitsluitend gestart door onze beveiligde server na de officiële Signhost-bevestiging.</p>
       </div>
-      <footer class="footer">Max Webstudio · Veilig ondertekenen via Signhost</footer>
+      <footer class="footer"><span>Max Webstudio · Veilig ondertekenen via Signhost</span><span>Je mag deze pagina altijd veilig sluiten.</span></footer>
     </section>
   </main>
   <script>
-    const params=new URLSearchParams(location.search);const signerStatus=params.get('sh_signerstatus')||'';history.replaceState(null,'',location.pathname);
-    if(signerStatus==='rejected'){
-      const card=document.getElementById('card');card.classList.add('rejected');document.getElementById('icon').textContent='!';document.getElementById('eyebrow').textContent='Ondertekening niet afgerond';document.getElementById('title').textContent='Je hebt de offerte niet ondertekend';document.getElementById('intro').textContent='Er is geen ondertekende overeenkomst ontstaan. Neem gerust contact op met Max Webstudio als je iets wilt bespreken of aanpassen.';document.getElementById('steps').hidden=true;document.getElementById('notice').innerHTML='<strong>Goed om te weten:</strong> er wordt geen betaling, factuur of project gestart op basis van deze keuze.';
-    }
+    (()=>{
+      const params=new URLSearchParams(location.search);const token=params.get('status')||'';const signerStatus=params.get('sh_signerstatus')||'';history.replaceState(null,'',location.pathname);
+      const el=id=>document.getElementById(id);const card=el('card'),primary=el('primary-action'),portal=el('portal-action'),amount=el('amount'),badge=el('test-badge');let attempts=0,timer=0;
+      function action(link,label,href,kind){link.textContent=label;link.href=href||'#';link.className=`button ${kind||'primary'}${href?'':' disabled'}`;link.setAttribute('aria-disabled',href?'false':'true');}
+      function readySteps(){el('step-process').className='done';el('step-ready').className='done';}
+      function render(data){
+        if(data.state==='payment_pending'){readySteps();el('next-title').textContent='Je veilige betaling staat klaar';el('next-copy').textContent=data.payment?.invoiceNumber?`Factuur ${data.payment.invoiceNumber} is aangemaakt. Kies zelf wanneer je de beveiligde Mollie-omgeving opent.`:'Kies zelf wanneer je de beveiligde Mollie-omgeving opent.';amount.hidden=!data.payment?.amount;amount.textContent=data.payment?.amount?new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(Number(data.payment.amount)):'';badge.hidden=!data.payment?.testMode;action(primary,'Veilig betalen via Mollie',data.payment?.checkoutUrl,'pay');}
+        else if(data.state==='paid'){readySteps();el('next-title').textContent='Betaling ontvangen';el('next-copy').textContent='Dank je wel. Je project kan nu volgens de afgesproken planning verder.';action(primary,'Open klantportaal',data.portalUrl||'/login.html?mode=client','primary');}
+        else if(data.state==='ready'){readySteps();el('next-title').textContent='Alles staat klaar';el('next-copy').textContent='Voor deze offerte is nu geen betaling nodig. Je kunt verder in je klantportaal.';action(primary,'Open klantportaal',data.portalUrl||'/login.html?mode=client','primary');}
+        else if(data.state==='delayed'){el('step-process').className='done';el('step-ready').className='active';el('next-title').textContent='De vervolgstap duurt iets langer';el('next-copy').textContent='Je ondertekening is ontvangen. Wij controleren de verwerking; je hoeft niet opnieuw te tekenen.';action(primary,'Bekijk status opnieuw',location.pathname,'secondary');}
+        else if(data.state==='stopped'){stopped('De ondertekening is niet afgerond','Er wordt geen betaling, factuur of project gestart. Neem contact op als je iets wilt aanpassen.');return;}
+        else {if(data.signingConfirmed){el('step-process').className='done';el('step-ready').className='active';el('next-title').textContent='Je portaal en factuur worden klaargezet';el('next-copy').textContent='De ondertekening is bevestigd. We ronden nu de laatste veilige stappen af.';}if(attempts<30)timer=setTimeout(load,4000);}
+        portal.hidden=!data.portalReady;portal.href=data.portalUrl||portal.href;
+      }
+      function stopped(title,copy){clearTimeout(timer);card.classList.add('stopped');el('icon').textContent='!';el('eyebrow').textContent='Ondertekening niet afgerond';el('title').textContent=title;el('intro').textContent=copy;el('steps').hidden=true;el('next-title').textContent='We helpen je graag verder';el('next-copy').textContent='Neem contact op om de offerte te bespreken.';action(primary,'Naar Max Webstudio','/','primary');portal.hidden=true;}
+      async function load(){attempts+=1;try{const response=await fetch(`/.netlify/functions/commercial-offer-completion-status?status=${encodeURIComponent(token)}`,{headers:{Accept:'application/json'},cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.code||'status');render(data);}catch{if(attempts<5)timer=setTimeout(load,5000);else{el('next-title').textContent='De automatische controle is vertraagd';el('next-copy').textContent='Je ondertekening blijft veilig verwerkt worden. Je ontvangt de vervolgstappen ook per e-mail.';action(primary,'Naar Max Webstudio','/','secondary');}}}
+      if(signerStatus==='rejected'){stopped('Je hebt de offerte niet ondertekend','Er is geen ondertekende overeenkomst ontstaan. Neem gerust contact op als je iets wilt bespreken of aanpassen.');return;}if(token){load();}else{el('next-title').textContent='Je ontvangt de vervolgstappen per e-mail';el('next-copy').textContent='Deze ondertekening heeft nog geen live statuskoppeling. Je hoeft niet opnieuw te tekenen.';action(primary,'Naar Max Webstudio','/','primary');}
+    })();
   </script>
 </body>
 </html>

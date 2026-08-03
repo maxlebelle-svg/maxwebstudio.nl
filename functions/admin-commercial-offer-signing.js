@@ -84,7 +84,7 @@ async function requestSignature(input, actor, config) {
   try {
     const pdf = await loadSignableOfferPdf(config, offerVersionId);
     const provider = signhostConfig();
-    const transaction = await createCommercialOfferTransaction(provider, { signerEmail, signerName, offerVersionId });
+    const transaction = await createCommercialOfferTransaction(provider, { signerEmail, signerName, offerVersionId, signingTransactionId: reservation.signingId });
     const transactionId = clean(transaction.Id || transaction.id);
     if (!transactionId) throw problem(502, "SIGNING_RESPONSE_INVALID", "De ondertekenprovider gaf geen geldig transactienummer terug.");
     await uploadFileMetadata(provider, transactionId, reservation.providerFileId, buildCommercialOfferMetadata(transaction, {
