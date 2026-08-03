@@ -699,6 +699,8 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const contentQuality = generatedPackage.meta?.contentQuality || {};
   const genericFallbackCopy = /Een lokale specialist die online direct professioneel overkomt|Service, vertrouwen en contact/i.test(html);
   const crossIndustryCopyClean = industryId !== "boomverzorging" || !/huidadvies|huidvraag|behandeling plannen|behandelingen en advies|persoonlijke verzorging/i.test(html);
+  const serviceImagePaths = [...html.matchAll(/class="[^"]*service-card[^"]*"[\s\S]{0,800}?<img[^>]+src="([^"]+)"/gi)].map((match) => match[1]);
+  const serviceImagesAreUnique = serviceImagePaths.length === 0 || new Set(serviceImagePaths).size === serviceImagePaths.length;
   const checks = [
     check("hero_present", "Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10, "visualFoundation", true),
     check("hero_visual_present", "Hero visual aanwezig", /class="[^"]*hero/i.test(html) && /<img[^>]+src=/i.test(html), 12, "visualFoundation"),
@@ -708,6 +710,7 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
     check("minimum_section_count", "Minimaal vijf secties", sectionCount >= 5, 10, "visualFoundation"),
     check("package_page_count", "Pakket pagina-aantal klopt", htmlPageCount >= packageRules.pages.length, 12, "technical", true),
     check("minimum_service_count", "Minimaal drie diensten", serviceCardCount >= 3, 8, "content"),
+    check("distinct_service_images", "Iedere dienst heeft een eigen afbeelding", serviceImagesAreUnique, 10, "visualFoundation", true),
     check("minimum_benefit_count", "Minimaal drie voordelen", benefitCount >= 3, 8, "content"),
     check("process_present", "Werkwijze aanwezig", /id="werkwijze"|Zo werkt|Werkwijze/i.test(html), 8, "content"),
     check("trust_present", "Reviews of vertrouwen aanwezig", /id="reviews"|review|vertrouwen/i.test(html), 8, "conversion"),
@@ -1232,6 +1235,11 @@ function serviceSpecificDemoAsset({ service = "", industryProfile = {}, demoImag
 
 function serviceImageRoleForText(serviceText = "", profileKey = "") {
   const text = `${serviceText} ${profileKey}`;
+  if (/boominspectie|boomcontrole/.test(serviceText)) return "detail";
+  if (/boomadvies|boombeheer/.test(serviceText)) return "team";
+  if (/bomen?\s+snoeien|snoeiwerk/.test(serviceText)) return "service";
+  if (/bomen?\s+(?:verwijderen|rooien|kappen)|boomverwijder/.test(serviceText)) return "project";
+  if (/stormschade|stormveilig/.test(serviceText)) return "service-alt";
   if (/contact|bel|whatsapp|afspraak|reserver|boeken|aanmeld|inschrijf|intake|kennismaking|offerte|aanvraag/.test(text)) return "contact";
   if (/advies|consult|controle|diagnose|inspectie|boominspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan|tegel|voeg|kit|natuursteen/.test(text)) return "detail";
   if (/team|begeleiding|instruct|persoonlijk|coaching|praktijk|behandeling|therapie|mondzorg/.test(text)) return "team";

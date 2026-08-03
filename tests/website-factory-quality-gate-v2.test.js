@@ -79,6 +79,7 @@ test("tree-care output is specific, packaged locally and never falls back to gen
   const html = generated.files.find((file) => file.path === "index.html").content;
   const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Boomverzorging Drenthe" } });
   const imagePaths = generated.files.filter((file) => /^assets\/.+\.(?:jpe?g|png|webp)$/i.test(file.path)).map((file) => file.path);
+  const serviceImages = [...html.matchAll(/class="[^"]*service-card[^"]*"[\s\S]{0,800}?<img src="([^"]+)"/g)].map((match) => match[1]);
 
   assert.equal(generated.meta.industryId, "boomverzorging");
   assert.equal(generated.meta.industryProfile, "boomverzorging");
@@ -93,9 +94,24 @@ test("tree-care output is specific, packaged locally and never falls back to gen
   assert.match(html, /data-mws-field="secondary-cta" href="#diensten"/);
   assert.ok(imagePaths.length >= 5);
   assert.ok(imagePaths.every((path) => path.startsWith("assets/boomverzorging-")));
+  assert.equal(serviceImages.length, 5);
+  assert.equal(new Set(serviceImages).size, serviceImages.length);
   assert.equal(report.passed, true);
+  assert.equal(report.checks.find((item) => item.id === "distinct_service_images").passed, true);
   assert.equal(report.checks.find((item) => item.id === "industry_context_specific").passed, true);
   assert.equal(report.checks.find((item) => item.id === "no_cross_industry_copy").passed, true);
+});
+
+test("duplicate service images are a hard quality blocker", () => {
+  const generated = generatedPackage();
+  const entry = generated.files.find((file) => file.path === "index.html");
+  const serviceImages = [...entry.content.matchAll(/class="[^"]*service-card[^"]*"[\s\S]{0,800}?<img src="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(serviceImages.length >= 3);
+  entry.content = entry.content.replaceAll(serviceImages[1], serviceImages[0]);
+
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "De Groene Lijn" } });
+  assert.equal(report.passed, false);
+  assert.ok(report.blockingChecks.some((item) => item.id === "distinct_service_images"));
 });
 
 test("unknown companies are blocked instead of receiving a polished-looking generic preview", () => {

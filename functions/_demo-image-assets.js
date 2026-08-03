@@ -64,14 +64,14 @@ const ACTIVE_LEGACY_IMAGE_SLOTS = Object.freeze([
 const demoImageGroups = Object.freeze([
   customGroup("boomverzorging", "Boomverzorging", ["boomverzorging-demo"], ["boomverzorging", "boomverzorger", "boombeheer", "boomspecialist", "arborist", "boominspectie", "bomen snoeien", "bomen kappen", "stobben frezen", "stormschade"], {
     hero: "roles/hero.jpg",
-    service: "roles/hero.jpg",
-    team: "roles/hero.jpg",
+    service: "roles/pruning.jpg",
+    team: "roles/boom-advice.jpg",
     project: "roles/removal.jpg",
     contact: "roles/inspection.jpg",
-    "service-alt": "roles/removal.jpg",
+    "service-alt": "roles/storm-damage.jpg",
     "project-alt": "roles/removal.jpg",
     detail: "roles/inspection.jpg",
-    review: "roles/inspection.jpg",
+    review: "roles/boom-advice.jpg",
     background: "roles/hero.jpg",
   }),
   group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
