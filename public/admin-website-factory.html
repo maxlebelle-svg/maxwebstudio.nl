@@ -24730,7 +24730,6 @@
             saveIntakeLocally();
             renderIntakeFields();
             if (elements.briefing) elements.briefing.value = buildBriefing();
-            await saveJourney();
             if (!currentWebsiteIntelligencePackage()?.lastScannedAt) {
               const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
               const manualContextReady = inferredBranch !== "zakelijk"
