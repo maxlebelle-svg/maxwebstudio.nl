@@ -68,7 +68,11 @@ test("Quick Build accepts a business name or valid website without requiring the
   assert.match(factory, /if \(intake\.buildReady\) return true/);
   assert.match(factory, /const guidedIntakeKeys = new Set\(\["branch", "goal", "style", "cta", "services", "photoStatus"\]\)/);
   assert.match(factory, /await window\.WebsiteFactoryRuntime\.quickBuild/);
-  assert.match(factory, /const savedJourney = journey\?\.id \? journey : await saveJourney\(\)/);
+  assert.match(factory, /const inferredBranch = inferBranchFromLead\(\{ companyName: businessName, websiteUrl, notes \}\)/);
+  assert.match(factory, /intakeState\.branch = inferredBranch/);
+  assert.match(factory, /if \(elements\.briefing\) elements\.briefing\.value = buildBriefing\(\)/);
+  assert.match(factory, /const savedJourney = await saveJourney\(\)/);
+  assert.doesNotMatch(factory, /journey\?\.id \? journey : await saveJourney\(\)/);
   assert.match(factory, /const result = await generatePreview\(currentPackageType\(\), \{ surface: "quick" \}\)/);
   assert.doesNotMatch(factory, /const waitForJourney = window\.setInterval/);
   assert.match(backend, /buildQuickFactoryBriefing\(sourceJourney\)/);

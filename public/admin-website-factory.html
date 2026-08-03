@@ -17553,6 +17553,7 @@
           convertActiveLeadTopbar.hidden = !canConvert;
           convertActiveLeadTopbar.disabled = !canConvert;
         }
+        window.syncActiveLeadConversionAction = syncActiveLeadConversionAction;
 
         function openActiveLeadCustomerOnboarding() {
           const lead = selectedLead();
@@ -24070,12 +24071,12 @@
         function renderActiveContextBanner(context = null) {
           if (!elements.activeContext) return;
           if (!context) {
-            syncActiveLeadConversionAction(null);
+            window.syncActiveLeadConversionAction?.(null);
             elements.activeContext.hidden = true;
             elements.activeContext.innerHTML = "";
             return;
           }
-          syncActiveLeadConversionAction(context);
+          window.syncActiveLeadConversionAction?.(context);
           const isCustomer = context.entityType === "customer";
           const website = String(context.website || "").trim();
           const websiteHref = website ? (website.startsWith("http") ? website : `https://${website}`) : "";
@@ -24630,6 +24631,8 @@
         async function quickBuild(input = {}) {
           const businessName = String(input.businessName || "").trim();
           const websiteUrl = String(input.websiteUrl || "").trim();
+          const place = String(input.place || "").trim();
+          const wishes = String(input.wishes || "").trim();
           let validWebsite = false;
           if (websiteUrl) {
             try { validWebsite = ["http:", "https:"].includes(new URL(websiteUrl).protocol); } catch { validWebsite = false; }
@@ -24641,10 +24644,41 @@
           }
           if (businessName && elements.business) elements.business.value = businessName;
           if (elements.website) elements.website.value = websiteUrl;
-          const notes = [elements.notes?.value || "", input.place ? `Plaats: ${String(input.place).trim()}` : "", String(input.wishes || "").trim()].filter(Boolean).join("\n");
+          const notes = [elements.notes?.value || "", place ? `Plaats: ${place}` : "", wishes].filter(Boolean).join("\n");
           if (elements.notes) elements.notes.value = notes;
-          const savedJourney = journey?.id ? journey : await saveJourney();
-          if (!savedJourney?.id && !journey?.id) {
+
+          const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
+          if (inferredBranch !== "zakelijk") {
+            const branchChanged = String(intakeState.branch || "") !== inferredBranch;
+            const preset = branchPresets[inferredBranch] || {};
+            const presetServices = ensureArrayValue(preset.services).map((item) => Array.isArray(item) ? item[0] : item).filter(Boolean);
+            const inferredServices = normalizeServiceValues([businessName, wishes, notes]).filter((service) => presetServices.includes(service));
+            intakeState.branch = inferredBranch;
+            if (branchChanged || ensureArrayValue(intakeState.services).length < 2) {
+              intakeState.services = inferredServices.length >= 2 ? inferredServices : presetServices.slice(0, 6);
+            }
+            if (branchChanged || !intakeState.goal) intakeState.goal = preset.goals?.[0] || "leads";
+            if (branchChanged || !intakeState.cta) intakeState.cta = /whatsapp/i.test(wishes) ? "whatsapp" : /offerte/i.test(wishes) ? "quote" : preset.ctas?.[0] || "contact";
+            if (branchChanged || !ensureArrayValue(intakeState.style).length) intakeState.style = ["modern", "rustig", "lokaal", "direct"];
+          }
+          if (place) {
+            intakeState.regionText = place;
+            if (!intakeState.area) intakeState.area = "regional";
+          }
+          if (!intakeState.audience) intakeState.audience = "beide";
+          if (!intakeState.existingWebsite) intakeState.existingWebsite = validWebsite ? "active" : "none";
+          if (!intakeState.logoStatus) intakeState.logoStatus = validWebsite ? "extract" : "needed";
+          if (!intakeState.photoStatus) intakeState.photoStatus = validWebsite ? "extract" : "generate";
+          if (!intakeState.followUp) intakeState.followUp = "today";
+          if (!intakeState.leadTemperature) intakeState.leadTemperature = "medium";
+          if (!ensureArrayValue(intakeState.mustHaves).length) intakeState.mustHaves = ["phone", "contact_form", "reviews", "projects", "service_area"];
+          saveIntakeLocally();
+          renderIntakeFields();
+
+          // A quick build must never reuse an older lead briefing after the employee changes the identity or wishes.
+          if (elements.briefing) elements.briefing.value = buildBriefing();
+          const savedJourney = await saveJourney();
+          if (!savedJourney?.id) {
             const error = lastFactoryActionError || new Error("De demo-aanvraag is niet opgeslagen. Probeer opnieuw.");
             error.code = "DEMO_JOURNEY_SAVE_INCOMPLETE";
             throw error;
@@ -24662,7 +24696,6 @@
               }
             }
           }
-          if (!elements.briefing?.value) elements.briefing.value = buildBriefing();
           const result = await generatePreview(currentPackageType(), { surface: "quick" });
           if (!result) {
             const error = lastFactoryActionError || new Error("De previewbuild is niet gestart.");
