@@ -93,6 +93,7 @@ test("status cards and process steps are derived from current Factory state", ()
   assert.doesNotMatch(guidedStateSource, /document\.querySelectorAll\("#demo-intake-fields/);
   assert.match(factory, /function renderGuidedStatus\(\)/);
   assert.match(factory, /function renderGuidedProcess\(\)/);
+  assert.match(factory, /\["Blokkerende controle", blockingLabels \|\| "Geen statische blokkade"\]/);
   for (const label of ["Briefing", "Research", "Afbeeldingen", "Content", "SEO", "Mail", "Project", "Preview", "Timeline", "Live zetten"]) {
     assert.match(factory, new RegExp(label));
   }

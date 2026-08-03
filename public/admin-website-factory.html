@@ -25909,6 +25909,9 @@
             const score = latest?.previewScore ?? activeVersion?.previewScore;
             const browserReview = qualityReport.browserReview || {};
             const browserRepair = qualityReport.browserRepair || {};
+            const blockingLabels = Array.isArray(qualityReport.blockingChecks)
+              ? qualityReport.blockingChecks.map((item) => item?.label || item?.id).filter(Boolean).join(", ")
+              : "";
             const browserStatus = browserReview.status === "passed"
               ? "Geslaagd"
               : browserRepair.status === "awaiting_recheck"
@@ -25932,6 +25935,7 @@
               ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
               ["Laatste buildtijd", latest?.finishedAt || latest?.updatedAt ? formatDate(latest.finishedAt || latest.updatedAt) : "-"],
               ["Melding", activeBuildError || buildHistory.warning || (absoluteUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
+              ["Blokkerende controle", blockingLabels || "Geen statische blokkade"],
             ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           }
           if (elements.buildHistory) {
