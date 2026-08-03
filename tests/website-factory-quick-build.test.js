@@ -61,6 +61,7 @@ test("starting a replacement build is immediate and preserves existing preview v
 test("replacement builds refresh website research instead of reusing stale categories", () => {
   assert.match(factoryHtml, /if \(validWebsite\) \{\s*await analyzeWebsiteForFactory\(\)/);
   assert.doesNotMatch(factoryHtml, /validWebsite && !currentWebsiteIntelligencePackage\(\)\?\.lastScannedAt/);
+  assert.match(factoryHtml, /await analyzeWebsiteForFactory\(\);[\s\S]{0,500}intakeState\.services = inferredServices;[\s\S]{0,500}elements\.briefing\.value = buildBriefing\(\);[\s\S]{0,200}await saveJourney\(\);/);
 });
 
 test("tree-care quick build recognizes the customer's own six service categories", () => {

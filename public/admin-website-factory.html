@@ -24723,6 +24723,14 @@
           // old navigation labels, social-icon names or categories from an earlier Factory version.
           if (validWebsite) {
             await analyzeWebsiteForFactory();
+            // The scan reloads the journey and may hydrate older intake answers. Restore the
+            // employee's explicit quick-build choices before the package is generated.
+            if (inferredServices.length >= 2) intakeState.services = inferredServices;
+            if (place) intakeState.regionText = place;
+            saveIntakeLocally();
+            renderIntakeFields();
+            if (elements.briefing) elements.briefing.value = buildBriefing();
+            await saveJourney();
             if (!currentWebsiteIntelligencePackage()?.lastScannedAt) {
               const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
               const manualContextReady = inferredBranch !== "zakelijk"
