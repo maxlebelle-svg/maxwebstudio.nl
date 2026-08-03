@@ -24688,8 +24688,10 @@
             const presetServices = ensureArrayValue(preset.services).map((item) => Array.isArray(item) ? item[0] : item).filter(Boolean);
             const inferredServices = normalizeServiceValues([businessName, wishes, notes]).filter((service) => presetServices.includes(service));
             intakeState.branch = inferredBranch;
-            if (branchChanged || ensureArrayValue(intakeState.services).length < 2) {
-              intakeState.services = inferredServices.length >= 2 ? inferredServices : presetServices.slice(0, 6);
+            if (inferredServices.length >= 2) {
+              intakeState.services = inferredServices;
+            } else if (branchChanged || ensureArrayValue(intakeState.services).length < 2) {
+              intakeState.services = presetServices.slice(0, 6);
             }
             if (branchChanged || !intakeState.goal) intakeState.goal = preset.goals?.[0] || "leads";
             if (branchChanged || !intakeState.cta) intakeState.cta = /whatsapp/i.test(wishes) ? "whatsapp" : /offerte/i.test(wishes) ? "quote" : preset.ctas?.[0] || "contact";

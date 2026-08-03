@@ -68,6 +68,7 @@ test("tree-care quick build recognizes the customer's own six service categories
     assert.match(factoryHtml, new RegExp(`\\[\\"${id}\\",`));
   }
   assert.match(factoryHtml, /eikenprocess.*values\.push\("eikenprocessierups"\)/);
+  assert.match(factoryHtml, /if \(inferredServices\.length >= 2\) \{\s*intakeState\.services = inferredServices;/);
 });
 
 test("explicit no-website context skips website use", () => {
