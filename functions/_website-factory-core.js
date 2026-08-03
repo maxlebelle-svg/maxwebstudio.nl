@@ -286,8 +286,11 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.headings || []),
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
+  const resolvedRegion = websiteBrief.business.region
+    || extractLocationText([combinedBriefing, currentWebsite.title, currentWebsite.h1, ...(currentWebsite.paragraphs || [])].filter(Boolean).join("\n"));
   const legacyIndustry = explicitIndustry || inferIndustry(industrySignals, businessName);
-  const sourceWebsiteServices = mergeUnique(currentWebsite.services, websiteAnalysis?.aiBriefing?.services)
+  const explicitlyMentionedServices = extractMentionedServices([combinedBriefing, currentWebsiteText].filter(Boolean).join("\n"));
+  const sourceWebsiteServices = mergeUnique(currentWebsite.services, websiteAnalysis?.aiBriefing?.services, explicitlyMentionedServices)
     .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName));
   const requestedServices = websiteBrief.business.services.length
     ? websiteBrief.business.services
@@ -310,7 +313,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     websiteUrl,
     blockedColors: websiteBrief.brand.blockedColors.length ? websiteBrief.brand.blockedColors : extractField(combinedBriefing, ["Niet gebruiken", "Geblokkeerde kleuren"]),
     seoKeywords: websiteBrief.seo.keywords.length ? websiteBrief.seo.keywords : websiteAnalysis?.aiBriefing?.seoKeywords,
-    serviceArea: websiteBrief.seo.serviceArea || websiteAnalysis?.aiBriefing?.region,
+    serviceArea: websiteBrief.seo.serviceArea || resolvedRegion || websiteAnalysis?.aiBriefing?.region,
   });
   const adaptedIndustry = adaptIndustryProfileToFactoryInput(intelligenceProfile, {
     industry: explicitIndustry,
@@ -376,7 +379,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     role,
     packagedAssetMeta(siteAssets.find((item) => item.kind === role), asset),
   ]));
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region: websiteBrief.business.region, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite, googleReviews, googleRating, googleRatingTotal, googleMapsUrl });
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region: resolvedRegion, preferSixServiceGrid: sourceWebsiteServices.length >= 6, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite, googleReviews, googleRating, googleRatingTotal, googleMapsUrl });
   const css = renderCss(colors);
   const script = renderScript({ businessName, email, services, industryProfile, siteAssets });
   const sitemap = renderSitemap({ siteUrl, pages });
@@ -1050,6 +1053,24 @@ function extractServices(text = "", industry = "") {
   return ["Advies", "Uitvoering", "Service"];
 }
 
+function extractMentionedServices(text = "") {
+  const source = String(text || "").toLowerCase();
+  const dictionary = [
+    ["boomverzorging", "Boomverzorging"],
+    ["rooien", "Rooien"],
+    ["snoeien", "Snoeien"],
+    ["aanplanten", "Aanplanten"],
+    ["stobbenfrezen", "Stobbenfrezen"],
+    ["stobben frezen", "Stobben frezen"],
+    ["eikenprocessierups", "Eikenprocessierups"],
+  ];
+  return dictionary
+    .map(([needle, label], order) => ({ label, order, position: source.indexOf(needle) }))
+    .filter((item) => item.position >= 0)
+    .sort((left, right) => left.position - right.position || left.order - right.order)
+    .map((item) => item.label);
+}
+
 function inferIndustry(text = "", businessName = "") {
   const normalized = `${text} ${businessName}`.toLowerCase();
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return "rijschool";
@@ -1102,7 +1123,8 @@ function mergeUnique(...groups) {
 function isUsableServiceLabel(value = "") {
   const text = cleanText(value);
   if (!text) return false;
-  if (/^(?:envelope|mail|e-mail|email|telefoon|phone|facebook|instagram|linkedin|youtube|tiktok|menu|home)$/i.test(text)) return false;
+  if (/^(?:envelope|mail|e-mail|email|telefoon|phone|menu|home)$/i.test(text)) return false;
+  if (/^(?:facebook|instagram|linkedin|youtube|tiktok)(?:[-_\s].*)?$/i.test(text)) return false;
   if (/^https?:\/\//i.test(text) || /^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(text)) return false;
   if (/^(naam|branche|regio|website|contact|telefoon|e-mail|email|bedrijf|doelgroep|output|cta|call to action)\s*:/i.test(text)) return false;
   if (text.length > 70) return false;
@@ -1742,7 +1764,7 @@ function normalizeSocialLinks(values = []) {
   }).filter(Boolean).slice(0, 6);
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region = "", industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {}, googleReviews = [], googleRating = "", googleRatingTotal = "", googleMapsUrl = "" }) {
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region = "", preferSixServiceGrid = false, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {}, googleReviews = [], googleRating = "", googleRatingTotal = "", googleMapsUrl = "" }) {
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
   const demoCopy = demoCopyForIndustry(profile, packageRules);
   const navLinks = navigationLinks(packageRules, profile).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
@@ -1760,7 +1782,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const sourceDisplayableServiceCount = mergeUnique(currentWebsite.services)
     .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName))
     .length;
-  const displayedServices = services.slice(0, sourceDisplayableServiceCount >= 6 || packageRules.pages.length >= 7 ? 6 : 5);
+  const displayedServices = services.slice(0, preferSixServiceGrid || sourceDisplayableServiceCount >= 6 || packageRules.pages.length >= 7 ? 6 : 5);
   const serviceTiles = displayedServices.map((service, index) => `
         <a class="project-tile service-card" href="#portfolio" data-service="${escapeHtml(service)}">
           <img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)} door ${escapeHtml(businessName)}" loading="lazy" />

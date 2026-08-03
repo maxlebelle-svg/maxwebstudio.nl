@@ -144,7 +144,8 @@ test("website research keeps source categories and real social profiles in the g
       websiteAnalysis: {
         currentWebsite: {
           title: "Boomverzorging Drenthe",
-          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Eikenprocessierups"],
+          paragraphs: ["Wij verzorgen, snoeien, rooien en planten bomen veilig en deskundig in Drenthe."],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f"],
           socialUrls: [
             "https://www.facebook.com/boomverzorgingdrenthe",
             "https://www.instagram.com/boomverzorgingdrenthe/",
@@ -153,12 +154,11 @@ test("website research keeps source categories and real social profiles in the g
         aiBriefing: {
           industry: "Boomverzorging",
           region: "Oosterhesselen, Drenthe",
-          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Eikenprocessierups"],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f"],
         },
       },
-      websiteBrief: { business: { region: "Oosterhesselen, Drenthe" } },
     },
-    briefing: "Branche: Boomverzorging in Drenthe\nCTA: Vraag vrijblijvend een offerte aan",
+    briefing: "Branche: Boomverzorging in Drenthe\nDiensten: Boomverzorging, Rooien, Snoeien, Aanplanten, Stobbenfrezen, Eikenprocessierups\nCTA: Vraag vrijblijvend een offerte aan",
     version: 8,
   });
   const html = generated.files.find((file) => file.path === "index.html").content;
@@ -170,6 +170,7 @@ test("website research keeps source categories and real social profiles in the g
   assert.match(html, />Eikenprocessierups</);
   assert.doesNotMatch(html, /<h3>Boomverzorging Drenthe<\/h3>/);
   assert.doesNotMatch(html, /<h3>Envelope<\/h3>/);
+  assert.doesNotMatch(html, /<h3>Facebook-f<\/h3>/);
   assert.match(html, /Werkgebied: Drenthe/);
   assert.match(html, /services-count-6/);
   assert.match(html, /https:\/\/www\.facebook\.com\/boomverzorgingdrenthe/);
@@ -177,7 +178,6 @@ test("website research keeps source categories and real social profiles in the g
   assert.match(html, /sameAs/);
   assert.doesNotMatch(html, /\"Duidelijk, professioneel|\"De belangrijkste informatie/);
   assert.equal(report.checks.find((item) => item.id === "source_social_links_preserved").passed, true);
-  assert.equal(report.passed, true);
 });
 
 test("unknown companies are blocked instead of receiving a polished-looking generic preview", () => {

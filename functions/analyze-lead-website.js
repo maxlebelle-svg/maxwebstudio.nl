@@ -444,6 +444,7 @@ function extractServiceNavigationLabels(html) {
   while ((match = pattern.exec(String(html || ""))) && labels.length < 20) {
     const href = String(match[1] || "").toLowerCase();
     const label = cleanExtractedText(match[2]);
+    if (/(?:facebook|instagram|linkedin|youtube|youtu\.be|tiktok)\.com|^mailto:|^tel:/.test(href)) continue;
     if (!label || label.length < 3 || label.length > 42) continue;
     if (/^(home|contact|over ons|over mij|nieuws|blog|privacy|voorwaarden|route|offerte|login)$/i.test(label)) continue;
     if (!/(dienst|service|aanbod|behandeling|menu|boom|snoei|rooi|kap|plant|stob|stronk|processierups|tegel|rijles|scooter|auto|tuin|onderhoud|reparatie|installatie|coaching|massage)/i.test(`${href} ${label}`)) continue;
