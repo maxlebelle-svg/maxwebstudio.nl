@@ -63,6 +63,13 @@ test("replacement builds refresh website research instead of reusing stale categ
   assert.doesNotMatch(factoryHtml, /validWebsite && !currentWebsiteIntelligencePackage\(\)\?\.lastScannedAt/);
 });
 
+test("tree-care quick build recognizes the customer's own six service categories", () => {
+  for (const id of ["boomverzorging", "rooien", "snoeien", "aanplanten", "stobbenfrezen", "eikenprocessierups"]) {
+    assert.match(factoryHtml, new RegExp(`\\[\\"${id}\\",`));
+  }
+  assert.match(factoryHtml, /eikenprocess.*values\.push\("eikenprocessierups"\)/);
+});
+
 test("explicit no-website context skips website use", () => {
   assert.deepEqual(normalizeWebsiteInput("fattrek.nl", { intent: "none", explicitNoWebsite: true }), {
     url: "", kind: "none", shouldScan: false, warning: "", fallbackAllowed: true,

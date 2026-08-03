@@ -104,6 +104,11 @@ const INTAKE_SERVICES = Object.freeze({
   stobben_frezen: "Stobben frezen",
   boomadvies: "Boomadvies en beheer",
   boomverzorging: "Boomverzorging",
+  rooien: "Rooien",
+  snoeien: "Snoeien",
+  aanplanten: "Aanplanten",
+  stobbenfrezen: "Stobbenfrezen",
+  eikenprocessierups: "Eikenprocessierups",
 });
 
 const INTAKE_CTAS = Object.freeze({

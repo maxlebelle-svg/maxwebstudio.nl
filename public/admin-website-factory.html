@@ -21229,7 +21229,7 @@
           boomverzorging: {
             goals: ["leads", "call", "trust", "portfolio", "appointment"],
             ctas: ["quote", "call", "whatsapp", "free_appointment"],
-            services: [["bomen_snoeien", "Bomen snoeien"], ["boominspectie", "Boominspectie"], ["bomen_verwijderen", "Bomen verwijderen"], ["stormschade", "Stormschade en veiligheid"], ["stobben_frezen", "Stobben frezen"], ["boomadvies", "Boomadvies en beheer"], ["kroonverankering", "Kroonverankering"], ["aanplant", "Aanplant en nazorg"]],
+            services: [["boomverzorging", "Boomverzorging"], ["rooien", "Rooien"], ["snoeien", "Snoeien"], ["aanplanten", "Aanplanten"], ["stobbenfrezen", "Stobbenfrezen"], ["eikenprocessierups", "Eikenprocessierups"], ["boominspectie", "Boominspectie"], ["stormschade", "Stormschade en veiligheid"], ["boomadvies", "Boomadvies en beheer"], ["kroonverankering", "Kroonverankering"]],
           },
           automotive: {
             goals: ["appointment", "call", "trust", "route", "leads", "portfolio"],
@@ -22484,11 +22484,14 @@
         function normalizeServiceValues(labels = []) {
           const text = ensureArrayValue(labels).join(" ").toLowerCase();
           const values = [];
-          if (/boomverzorg|boomverzorger|arborist|boominspect/.test(text)) values.push("boominspectie", "boomadvies");
-          if (/snoei/.test(text)) values.push("bomen_snoeien");
-          if (/kappen|rooien|verwijder/.test(text)) values.push("bomen_verwijderen");
+          if (/boomverzorg|boomverzorger|arborist/.test(text)) values.push("boomverzorging");
+          if (/boominspect/.test(text)) values.push("boominspectie");
+          if (/snoei/.test(text)) values.push("snoeien");
+          if (/kappen|rooien|verwijder/.test(text)) values.push("rooien");
+          if (/aanplant/.test(text)) values.push("aanplanten");
           if (/storm/.test(text)) values.push("stormschade");
-          if (/stob|stronk/.test(text)) values.push("stobben_frezen");
+          if (/stob|stronk/.test(text)) values.push("stobbenfrezen");
+          if (/eikenprocess/.test(text)) values.push("eikenprocessierups");
           if (/maatwerk/.test(text)) values.push("maatwerk");
           if (/project/.test(text)) values.push("projecten");
           if (/onderhoud/.test(text)) values.push("onderhoud");
