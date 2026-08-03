@@ -114,6 +114,27 @@ test("duplicate service images are a hard quality blocker", () => {
   assert.ok(report.blockingChecks.some((item) => item.id === "distinct_service_images"));
 });
 
+test("service click galleries use static packaged images instead of broken runtime paths", () => {
+  const generated = buildWebsitePackage({
+    journey: { businessName: "Boomverzorging Drenthe", websiteUrl: "https://boomverzorgingdrenthe.nl", packageType: "starter" },
+    briefing: "Branche: Boomverzorging\nDiensten: Boominspectie, Boomadvies en beheer, Bomen snoeien, Bomen verwijderen, Stormschade",
+    version: 7,
+  });
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  const script = generated.files.find((file) => file.path === "script.js").content;
+  const gallerySets = [...html.matchAll(/data-portfolio-service="([^"]+)"[^>]*>[\s\S]*?<\/div>/g)];
+  const referencedImages = [...html.matchAll(/class="portfolio-item"><img src="([^"]+)"/g)].map((match) => match[1]);
+  const packagedPaths = new Set(generated.files.map((file) => file.path));
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Boomverzorging Drenthe" } });
+
+  assert.equal(gallerySets.length, 5);
+  assert.equal(referencedImages.length, 15);
+  assert.ok(referencedImages.every((imagePath) => packagedPaths.has(imagePath)));
+  assert.doesNotMatch(script, /portfolioGallery\.innerHTML|data\.images/);
+  assert.match(script, /portfolioGalleries\.forEach/);
+  assert.equal(report.checks.find((item) => item.id === "static_portfolio_images").passed, true);
+});
+
 test("unknown companies are blocked instead of receiving a polished-looking generic preview", () => {
   const generated = buildWebsitePackage({ journey: { businessName: "Voorbeeldbedrijf" }, version: 1 });
   const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Voorbeeldbedrijf" } });
