@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="client-login.css?v=20260803-client-studio" />
     <script src="admin/ui/shared-helpers.js"></script>
   </head>
   <body class="portal-body">
@@ -18,10 +19,10 @@
       <section class="portal-auth-card">
         <a class="brand" href="index.html" aria-label="Max Webstudio home">
           <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
-          <span>Max Webstudio</span>
+          <span id="login-brand-name">Max Webstudio</span>
         </a>
         <div>
-          <p class="section-kicker">Login</p>
+          <p class="section-kicker" id="login-kicker">Login</p>
           <h1 id="login-heading">Inloggen bij Max Webstudio.</h1>
           <p id="login-intro">Log in om verder te gaan naar je dashboard of vraag toegang aan tot je klantomgeving.</p>
         </div>
@@ -70,10 +71,16 @@
             </label>
             <button class="button primary" type="submit">Inloggen</button>
             <button class="button secondary" type="button" data-auth-panel-trigger="reset">Wachtwoord vergeten</button>
+            <button class="portal-client-access" type="button" data-auth-panel-trigger="request">Toegang aanvragen</button>
           </form>
         </section>
 
         <section class="portal-auth-panel" data-auth-panel="request" hidden>
+          <div class="portal-client-panel-heading">
+            <p>Toegang aanvragen</p>
+            <h2>Vraag jouw klantportaal aan.</h2>
+            <span>Vul je gegevens in. We nemen persoonlijk contact met je op om de toegang klaar te zetten.</span>
+          </div>
           <form class="portal-login-form" id="account-request-form">
             <label for="request-name">Naam<input id="request-name" name="name" type="text" autocomplete="name" required /></label>
             <label for="request-email">E-mailadres<input id="request-email" name="email" type="email" autocomplete="email" required /></label>
@@ -84,6 +91,11 @@
         </section>
 
         <section class="portal-auth-panel" data-auth-panel="reset" data-auth-live-only hidden>
+          <div class="portal-client-panel-heading">
+            <p>Wachtwoord herstellen</p>
+            <h2>We helpen je weer naar binnen.</h2>
+            <span>Vul het e-mailadres van je klantaccount in. Je ontvangt daarna een veilige resetlink.</span>
+          </div>
           <form class="portal-login-form" id="password-reset-form">
             <label for="reset-email">E-mailadres<input id="reset-email" name="email" type="email" autocomplete="email" required /></label>
             <button class="button primary" type="submit">Resetlink aanvragen</button>
@@ -91,6 +103,10 @@
         </section>
 
         <section class="portal-auth-panel" data-auth-panel="recovery" data-auth-live-only hidden>
+          <div class="portal-client-panel-heading">
+            <p>Nieuw wachtwoord</p>
+            <h2>Kies een veilig wachtwoord.</h2>
+          </div>
           <form class="portal-login-form" id="password-update-form">
             <label for="new-password">Nieuw wachtwoord
               <span class="portal-password-field">
@@ -149,6 +165,8 @@
         const loginStatusTitle = document.getElementById("login-status-title");
         const loginHeading = document.getElementById("login-heading");
         const loginIntro = document.getElementById("login-intro");
+        const loginBrandName = document.getElementById("login-brand-name");
+        const loginKicker = document.getElementById("login-kicker");
         const realLoginStatus = document.getElementById("real-login-status");
         const realLoginUnavailable = document.querySelector("[data-real-login-unavailable]");
         const realLoginTab = document.querySelector("[data-auth-panel-trigger='real']");
@@ -178,6 +196,10 @@
           admin: {
             title: "Admin login",
             body: "Log in met je Max Webstudio beheerdersaccount om verder te gaan.",
+          },
+          food: {
+            title: "Restaurantportaal",
+            body: "Log in met je beheerdersaccount om menu's, bestellingen en je restaurantomgeving te beheren.",
           },
           request: {
             title: "Account aanvragen",
@@ -251,19 +273,54 @@
           return isAdminPath(getSafeRelativePath(document.referrer || ""));
         }
 
+        function isFoodPortalRequest() {
+          const host = String(window.location?.hostname || "").toLowerCase();
+          const requested = getRequestedRedirect();
+          return host === "max-webstudio-food-demo.netlify.app" || /^\/admin\/food(?:\/|$)/.test(requested);
+        }
+
         function renderLoginShellMode() {
           const adminMode = isAdminLoginRequest();
+          const foodPortalMode = isFoodPortalRequest();
+          const clientPortalMode = !adminMode && !foodPortalMode;
           document.body.classList.toggle("is-admin-login", adminMode);
+          document.body.classList.toggle("is-food-portal", foodPortalMode);
+          document.body.classList.toggle("is-client-login", clientPortalMode);
+          document.title = foodPortalMode
+            ? "Restaurant login | Max Food Portal"
+            : clientPortalMode
+            ? "Klantportaal login | Max Webstudio"
+            : "Login | Max Webstudio";
+          if (loginBrandName) {
+            loginBrandName.textContent = foodPortalMode
+              ? "Max Food Portal"
+              : clientPortalMode
+              ? "Max Webstudio Klantportaal"
+              : "Max Webstudio";
+          }
+          if (loginKicker) {
+            loginKicker.textContent = foodPortalMode ? "Restaurantbeheer" : clientPortalMode ? "Klantlogin" : "Login";
+          }
           if (loginHeading) {
-            loginHeading.textContent = adminMode ? "Admin login Max Webstudio." : "Inloggen bij Max Webstudio.";
+            loginHeading.textContent = foodPortalMode
+              ? "Welkom bij Max Food Portal."
+              : clientPortalMode
+              ? "Welkom in jouw klantportaal."
+              : adminMode
+              ? "Admin login Max Webstudio."
+              : "Inloggen bij Max Webstudio.";
           }
           if (loginIntro) {
-            loginIntro.textContent = adminMode
+            loginIntro.textContent = foodPortalMode
+              ? "Beheer menu's, bestellingen en je restaurantomgeving vanuit één duidelijke werkplek."
+              : clientPortalMode
+              ? "Bekijk de voortgang, geef feedback, deel bestanden en regel alles rond je website vanuit één plek."
+              : adminMode
               ? "Log in met je Max Webstudio beheerdersaccount om naar het adminportaal te gaan."
               : "Log in op je klantportaal of vraag toegang aan tot je klantomgeving.";
           }
           if (realLoginTab) {
-            realLoginTab.textContent = adminMode ? "Admin login" : "Klantlogin";
+            realLoginTab.textContent = foodPortalMode ? "Food admin" : adminMode ? "Admin login" : "Klantlogin";
           }
         }
 
@@ -534,7 +591,8 @@
           panelButtons.forEach((button) => {
             button.classList.toggle("is-active", button.dataset.authPanelTrigger === name);
           });
-          renderLoginStatus(name, name === "real" ? realLoginStatusMessage : "");
+          const statusName = name === "real" && isFoodPortalRequest() ? "food" : name;
+          renderLoginStatus(statusName, name === "real" ? realLoginStatusMessage : "");
         }
 
         async function loadAuth() {
@@ -562,12 +620,15 @@
             authConfigSafe = Boolean(authReadiness.canShowLoginForm);
             realLoginActive = Boolean(authReadiness.authLive);
             const adminMode = isAdminLoginRequest();
+            const foodPortalMode = isFoodPortalRequest();
             const adminLoginAvailable = adminMode && authConfigSafe;
             renderLoginShellMode();
             realLoginStatusMessage = realLoginActive
               ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
               : authReadiness.visitorMessage;
-            if (adminMode) {
+            if (foodPortalMode) {
+              realLoginStatusMessage = "Log in met je beheerdersaccount om het restaurantdashboard te openen.";
+            } else if (adminMode) {
               realLoginStatusMessage = "Log in met je Max Webstudio beheerdersaccount om verder te gaan.";
             }
             realLoginForm.hidden = !(realLoginActive || adminLoginAvailable || (authConfigSafe && isDeveloperModeEnabled()));
@@ -580,7 +641,7 @@
             }
             renderAuthLiveVisibility();
             if (document.querySelector("[data-auth-panel='real']").classList.contains("is-active")) {
-              renderLoginStatus(adminMode ? "admin" : "real", realLoginStatusMessage);
+              renderLoginStatus(foodPortalMode ? "food" : adminMode ? "admin" : "real", realLoginStatusMessage);
             }
           } catch (error) {
             logSafeDiagnostic("Auth status unavailable", error, "AUTH_STATUS_UNAVAILABLE");
@@ -824,7 +885,8 @@
         });
         setupPasswordToggles();
         renderLoginShellMode();
-        if (isAdminLoginRequest()) renderLoginStatus("admin");
+        if (isFoodPortalRequest()) renderLoginStatus("food");
+        else if (isAdminLoginRequest()) renderLoginStatus("admin");
         renderDeveloperModeVisibility();
         renderAuthLiveVisibility();
         activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");
