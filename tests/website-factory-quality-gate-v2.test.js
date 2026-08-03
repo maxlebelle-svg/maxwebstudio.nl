@@ -145,7 +145,7 @@ test("website research keeps source categories and real social profiles in the g
         currentWebsite: {
           title: "Boomverzorging Drenthe",
           paragraphs: ["Wij verzorgen, snoeien, rooien en planten bomen veilig en deskundig in Drenthe."],
-          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f"],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f", "Map-signs"],
           socialUrls: [
             "https://www.facebook.com/boomverzorgingdrenthe",
             "https://www.instagram.com/boomverzorgingdrenthe/",
@@ -154,7 +154,7 @@ test("website research keeps source categories and real social profiles in the g
         aiBriefing: {
           industry: "Boomverzorging",
           region: "Oosterhesselen, Drenthe",
-          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f"],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f", "Map-signs"],
         },
       },
     },
@@ -171,6 +171,7 @@ test("website research keeps source categories and real social profiles in the g
   assert.doesNotMatch(html, /<h3>Boomverzorging Drenthe<\/h3>/);
   assert.doesNotMatch(html, /<h3>Envelope<\/h3>/);
   assert.doesNotMatch(html, /<h3>Facebook-f<\/h3>/);
+  assert.doesNotMatch(html, /<h3>Map-signs<\/h3>/);
   assert.match(html, /Werkgebied: Drenthe/);
   assert.match(html, /services-count-6/);
   assert.match(html, /https:\/\/www\.facebook\.com\/boomverzorgingdrenthe/);

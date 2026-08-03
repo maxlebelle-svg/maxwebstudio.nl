@@ -286,8 +286,14 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.headings || []),
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
-  const resolvedRegion = websiteBrief.business.region
-    || extractLocationText([combinedBriefing, currentWebsite.title, currentWebsite.h1, ...(currentWebsite.paragraphs || [])].filter(Boolean).join("\n"));
+  const resolvedRegion = extractLocationText([
+    websiteBrief.business.region,
+    combinedBriefing,
+    businessName,
+    currentWebsite.title,
+    currentWebsite.h1,
+    ...(currentWebsite.paragraphs || []),
+  ].filter(Boolean).join("\n"));
   const legacyIndustry = explicitIndustry || inferIndustry(industrySignals, businessName);
   const explicitlyMentionedServices = extractMentionedServices([combinedBriefing, currentWebsiteText].filter(Boolean).join("\n"));
   const sourceWebsiteServices = mergeUnique(currentWebsite.services, websiteAnalysis?.aiBriefing?.services, explicitlyMentionedServices)
@@ -295,7 +301,9 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const requestedServices = websiteBrief.business.services.length
     ? websiteBrief.business.services
     : extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), legacyIndustry);
-  const extractedServices = mergeUnique(sourceWebsiteServices, requestedServices);
+  const extractedServices = websiteBrief.business.services.length
+    ? mergeUnique(requestedServices, sourceWebsiteServices)
+    : mergeUnique(sourceWebsiteServices, requestedServices);
   const packageType = normalizePackageType(websiteBrief.site.packageType || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
   const factoryIndustrySignals = websiteBrief.source.kind === "legacy_briefing"
     ? `${legacyIndustry} ${industrySignals} ${businessName}`
