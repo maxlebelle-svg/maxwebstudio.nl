@@ -1,10 +1,10 @@
 const crypto = require("node:crypto");
 const { rest } = require("./services/partnerOnboardingAccessService");
 const { downloadReceipt, downloadSignedPdf, signhostConfig, validatePostback } = require("./services/signhostService");
+const { activateSignedCommercialOffer } = require("./services/commercialOfferActivationService");
 const { fulfilSignedCommercialOffer } = require("./services/commercialOfferFulfilmentService");
 
 const BUCKET = "staff-private-documents";
-const COMMERCIAL_BUCKET = "commercial-private-documents";
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return ok();
@@ -53,52 +53,39 @@ exports.handler = async (event) => {
 };
 
 async function processCommercialPostback(context, signing, validation) {
-  const now = new Date().toISOString();
-  if (validation.mappedStatus !== "signed_pending_scan") {
-    const status = commercialSigningStatus(validation.mappedStatus);
-    await rest(context.url, context.service, `commercial_offer_signing_transactions?id=eq.${signing.id}`, {
-      method:"PATCH",
-      body:JSON.stringify({ provider_status:validation.status, status, last_postback_at:now, updated_at:now }),
-    });
-    return;
-  }
-  let artifacts = {};
-  if (!signing.signed_document_path || !signing.receipt_path) artifacts = await preserveCommercialArtifacts(context, signing);
-  await rest(context.url, context.service, `commercial_offer_signing_transactions?id=eq.${signing.id}`, {
-    method:"PATCH",
-    body:JSON.stringify({
-      ...artifacts,
-      provider_status:validation.status,
-      status:"signed_pending_processing",
-      signed_at:signing.signed_at || now,
-      last_postback_at:now,
-      updated_at:now,
-    }),
+  const status = validation.mappedStatus === "signed_pending_scan" ? "signed" : validation.mappedStatus;
+  let artifacts = { signedDocumentPath:null, signedDocumentSha256:null, receiptPath:null, receiptSha256:null };
+  if (status === "signed" && (!signing.signed_document_path || !signing.receipt_path)) artifacts = await preserveCommercialArtifacts(context, signing);
+  const result = await rpc(context, "commercial_finalize_offer_signature_v1", {
+    input_signing_transaction_id:signing.id,
+    input_status:status,
+    input_provider_status:validation.status,
+    input_signed_document_path:artifacts.signedDocumentPath || signing.signed_document_path || null,
+    input_signed_document_sha256:artifacts.signedDocumentSha256 || signing.signed_document_sha256 || null,
+    input_receipt_path:artifacts.receiptPath || signing.receipt_path || null,
+    input_receipt_sha256:artifacts.receiptSha256 || signing.receipt_sha256 || null,
   });
-  await fulfilSignedCommercialOffer(context, signing.provider_transaction_id, validation.status);
+  if (status === "signed") {
+    let activation = {};
+    try { activation = await activateSignedCommercialOffer(context, { ...signing, status:"signed", signed_at:new Date().toISOString() }); }
+    catch (error) { console.error("Signed commercial offer portal activation failed", { signingId:signing.id, code:error.code || "PORTAL_ACTIVATION_FAILED" }); }
+    try { await fulfilSignedCommercialOffer(context, signing.provider_transaction_id, validation.status); }
+    catch (error) { console.error("Signed commercial offer fulfilment failed", { signingId:signing.id, code:error.code || "COMMERCIAL_FULFILMENT_FAILED" }); }
+  }
 }
 
 async function preserveCommercialArtifacts(context, signing) {
-  const provider = signhostConfig();
-  const [document, receipt] = await Promise.all([
-    downloadSignedPdf(provider, signing.provider_transaction_id, signing.provider_file_id),
-    downloadReceipt(provider, signing.provider_transaction_id),
-  ]);
-  assertPdf(document.bytes, "ondertekende offerte");
-  assertPdf(receipt.bytes, "ondertekenbewijs");
-  const documentPath = `${signing.offer_id}/${signing.offer_version_id}/signhost-ondertekende-offerte.pdf`;
-  const receiptPath = `${signing.offer_id}/${signing.offer_version_id}/signhost-auditbewijs.pdf`;
-  await Promise.all([
-    storageUploadToBucket(context, COMMERCIAL_BUCKET, documentPath, document.bytes),
-    storageUploadToBucket(context, COMMERCIAL_BUCKET, receiptPath, receipt.bytes),
-  ]);
-  return {
-    signed_document_path:documentPath,
-    receipt_path:receiptPath,
-    signed_document_sha256:crypto.createHash("sha256").update(document.bytes).digest("hex"),
-    receipt_sha256:crypto.createHash("sha256").update(receipt.bytes).digest("hex"),
-  };
+  const provider=signhostConfig();
+  const [document,receipt]=await Promise.all([downloadSignedPdf(provider,signing.provider_transaction_id,signing.provider_file_id),downloadReceipt(provider,signing.provider_transaction_id)]);
+  assertPdf(document.bytes,"ondertekende offerte");assertPdf(receipt.bytes,"ondertekenbewijs");
+  const base=`${signing.offer_id}/${signing.offer_version_id}`;
+  const documentPath=`${base}/signhost-ondertekende-offerte.pdf`;const receiptPath=`${base}/signhost-ondertekenbewijs.pdf`;
+  await Promise.all([commercialStorageUpload(context,documentPath,document.bytes),commercialStorageUpload(context,receiptPath,receipt.bytes)]);
+  return{signedDocumentPath:documentPath,signedDocumentSha256:crypto.createHash("sha256").update(document.bytes).digest("hex"),receiptPath,receiptSha256:crypto.createHash("sha256").update(receipt.bytes).digest("hex")};
 }
+
+async function commercialStorageUpload(context,path,bytes){const response=await fetch(`${context.url}/storage/v1/object/commercial-private-documents/${encodePath(path)}`,{method:"POST",headers:{apikey:context.service,Authorization:`Bearer ${context.service}`,"Content-Type":"application/pdf","x-upsert":"false"},body:bytes});if(!response.ok&&response.status!==409)throw coded("COMMERCIAL_SIGNING_ARTIFACT_STORAGE_FAILED",502,"Ondertekende offerte kon niet veilig worden opgeslagen.");}
+async function rpc(context,name,body){const response=await fetch(`${context.url}/rest/v1/rpc/${name}`,{method:"POST",headers:{apikey:context.service,Authorization:`Bearer ${context.service}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(body)});const data=await response.json().catch(()=>null);if(!response.ok)throw coded(data?.code||"COMMERCIAL_SIGNING_FINALIZE_FAILED",response.status,data?.message||"Ondertekening kon niet worden afgerond.");return data;}
 
 async function processSmokePostback(context, smoke, validation) {
   const now = new Date().toISOString();
@@ -172,11 +159,7 @@ async function preserveSmokeArtifacts(context, smoke) {
 }
 
 async function storageUpload(context, path, bytes) {
-  return storageUploadToBucket(context, BUCKET, path, bytes);
-}
-
-async function storageUploadToBucket(context, bucket, path, bytes) {
-  const response = await fetch(`${context.url}/storage/v1/object/${bucket}/${encodePath(path)}`, {
+  const response = await fetch(`${context.url}/storage/v1/object/${BUCKET}/${encodePath(path)}`, {
     method:"POST",
     headers:{ apikey:context.service, Authorization:`Bearer ${context.service}`, "Content-Type":"application/pdf", "x-upsert":"false" },
     body:bytes,
@@ -192,7 +175,6 @@ function assertPdf(bytes, label) {
 async function logEvent(context, signing, eventType, metadata) { return rest(context.url, context.service, "staff_dossier_events", { method:"POST", body:JSON.stringify({ employee_profile_id:signing.profile_id, actor_profile_id:null, event_type:eventType, subject_type:"signing_transaction", subject_id:signing.id, safe_metadata:metadata }) }); }
 function eventName(status){return ({signed_pending_scan:"signing.signed",rejected:"signing.rejected",expired:"signing.expired",cancelled:"signing.cancelled",failed:"signing.failed"})[status]||"signing.updated";}
 function smokeStatus(status){return status === "signed_pending_scan" ? "signed" : status;}
-function commercialSigningStatus(status){return ({rejected:"rejected",expired:"expired",cancelled:"cancelled",failed:"failed"})[status]||"waiting_for_signer";}
 function config(){const url=clean(process.env.SUPABASE_URL).replace(/\/$/,"");const service=clean(process.env.SUPABASE_SERVICE_ROLE_KEY);if(!url||!service)throw coded("CONFIG_MISSING",500,"Postbackconfiguratie ontbreekt.");return {url,service};}
 function encodePath(value){return String(value).split("/").map(encodeURIComponent).join("/");}
 function parseSoft(value){try{const parsed=JSON.parse(value||"{}");return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{};}catch{return {};}}
@@ -200,4 +182,4 @@ function clean(value){return String(value??"").trim();}
 function coded(code,status,message){return Object.assign(new Error(message),{code,status});}
 function ok(){return {statusCode:200,headers:{"Content-Type":"text/plain","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"},body:"OK"};}
 
-exports._test = { assertPdf, commercialSigningStatus, eventName, parseSoft, smokeStatus };
+exports._test = { assertPdf, eventName, parseSoft, smokeStatus, processCommercialPostback };

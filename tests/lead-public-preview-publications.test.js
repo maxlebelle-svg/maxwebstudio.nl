@@ -52,6 +52,7 @@ function fixture(overrides = {}) {
       published_to_portal: false,
       approved_at: null,
       metadata: { previewSource: "factory" },
+      quality_report: { passed: true, browserReview: { status: "passed" }, readiness: { internalPreview: true, customerPreview: true, reason: "browser_review_passed" } },
       generated_package: {
         entryFile: "index.html",
         files: [{ path: "index.html", encoding: "utf8", content: "<!doctype html><h1>Heel je zelf</h1>" }],

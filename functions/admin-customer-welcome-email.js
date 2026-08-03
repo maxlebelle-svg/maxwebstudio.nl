@@ -175,6 +175,12 @@ async function ensureCustomerAuthContext(input) {
     error.statusCode = 500;
     throw error;
   }
+  const linkedCustomer = await linkCustomerAccess(supabaseUrl, serviceRoleKey, input.customerId, authUser.id, profile.id, authUser.active);
+  if (!linkedCustomer?.id) {
+    const error = new Error("Klantaccount kon niet veilig aan het klantrecord worden gekoppeld.");
+    error.statusCode = 409;
+    throw error;
+  }
   return {
     configured: true,
     authUserId: cleanText(authUser.id),
@@ -183,6 +189,32 @@ async function ensureCustomerAuthContext(input) {
     accountStatus: authUser.active || cleanText(profile.status).toLowerCase() === "active" ? "activated" : authUser.action === "created" ? "not_invited" : invitationStatus(profile),
     profile,
   };
+}
+
+async function linkCustomerAccess(supabaseUrl, serviceRoleKey, customerId, authUserId, profileId, active = false) {
+  const headers = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: "application/json" };
+  const currentResponse = await fetch(`${supabaseUrl}/rest/v1/customers?select=id,auth_user_id,profile_id,portal_status&id=eq.${encodeURIComponent(customerId)}&limit=1`, { headers });
+  const currentRows = await currentResponse.json().catch(() => []);
+  const current = Array.isArray(currentRows) ? currentRows[0] : null;
+  if (!currentResponse.ok || !current?.id) return null;
+  if ((current.auth_user_id && current.auth_user_id !== authUserId) || (current.profile_id && current.profile_id !== profileId)) {
+    const error = new Error("Dit klantrecord is al aan een ander account gekoppeld.");
+    error.statusCode = 409;
+    throw error;
+  }
+  const patch = {
+    auth_user_id: authUserId,
+    profile_id: profileId,
+    portal_status: active ? "active" : (current.portal_status === "active" ? "active" : "invited"),
+    updated_at: new Date().toISOString(),
+  };
+  const response = await fetch(`${supabaseUrl}/rest/v1/customers?id=eq.${encodeURIComponent(customerId)}`, {
+    method: "PATCH",
+    headers: { ...headers, "Content-Type": "application/json", "Content-Profile": "public", Prefer: "return=representation" },
+    body: JSON.stringify(patch),
+  });
+  const rows = await response.json().catch(() => []);
+  return response.ok && Array.isArray(rows) ? rows[0] || null : null;
 }
 
 async function ensureCustomerAuthUser(supabaseUrl, serviceRoleKey, input) {
@@ -458,4 +490,5 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-exports._test = { buildWelcomeEmailHtml, invitationStatus, isProductionEnvironment, publicAuthContext };
+exports._test = { buildWelcomeEmailHtml, invitationStatus, isProductionEnvironment, publicAuthContext, linkCustomerAccess };
+exports._internal = { ensureCustomerAuthContext, createInviteOrResetLink, buildMailPreview, buildWelcomeEmailHtml, updateCustomerInvitationStatus, publicAuthContext };

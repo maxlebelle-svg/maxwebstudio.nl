@@ -11,8 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="offer-view.css" />
   </head>
-  <body>
+  <body class="offer-view-page">
     <header class="site-header">
       <a class="brand" href="index.html" aria-label="Max Webstudio home">
         <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
@@ -26,21 +27,30 @@
     </header>
 
     <main>
-      <section class="page-hero payment-hero">
-        <p class="eyebrow">Persoonlijke offerte</p>
-        <h1 id="quote-page-title">Offerte laden...</h1>
-        <p id="quote-page-subtitle">We controleren je sessie en laden de actuele offerte veilig op.</p>
+      <section class="offer-view-hero" aria-labelledby="quote-page-title">
+        <div>
+          <p class="eyebrow">Zakelijke offerte · beveiligde weergave</p>
+          <h1 id="quote-page-title">Offerte laden...</h1>
+          <p id="quote-page-subtitle">We controleren je sessie en laden de actuele, server-side vastgelegde offerteversie.</p>
+        </div>
+        <aside class="offer-view-assurance" aria-label="Beveiliging van deze offerte">
+          <span>Versiegebonden</span>
+          <strong>Je ziet precies wat is vastgelegd.</strong>
+          <p>Scope, bedragen, geldigheid en een eventueel akkoord worden gekoppeld aan één controleerbare offerteversie.</p>
+        </aside>
       </section>
-      <section class="content-page payment-page quote-page-shell" id="quote-page">
-        <article class="checkout-summary-card quote-public-card" id="quote-card" aria-live="polite">
-          <p class="section-kicker">Offerte</p>
+      <section class="offer-view-shell" id="quote-page">
+        <article class="offer-document is-loading" id="quote-card" aria-live="polite" aria-busy="true">
+          <div class="offer-loading-mark" aria-hidden="true"></div>
+          <p class="section-kicker">Beveiligde offerte</p>
           <h2>Offertegegevens laden</h2>
-          <p>Een ogenblik geduld.</p>
+          <p>Een ogenblik geduld. De actuele versie en bedragen worden gecontroleerd.</p>
         </article>
       </section>
     </main>
 
-    <script type="module">
+    <script type="module" src="./src/offer-view.js"></script>
+    <script type="application/x-legacy-disabled" data-legacy-offer-view>
       import { getCompanySettings, getMailtoLink, getTelephoneLink, getWhatsappLink } from "./src/services/companySettingsService.js";
 
       (() => {

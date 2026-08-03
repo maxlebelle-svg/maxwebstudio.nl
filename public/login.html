@@ -334,6 +334,7 @@
             return isAdminRole(normalizedRole) ? requested : "";
           }
           if (normalizedRole === "customer") {
+            if (/^\/(?:offerte|klantportaal)\.html(?:[?#]|$)/.test(requested)) return requested;
             return customerId ? `/klantportaal.html?customerId=${encodeURIComponent(customerId)}` : "/klantportaal.html";
           }
           if (normalizedRole === "sales_partner" || normalizedRole === "sales_manager") return "/admin-sales.html";

@@ -142,7 +142,7 @@ async function readComposerContext(query, actor, config) {
       definitiveSend: phaseD1Enabled(),
       revokeInterest: phaseD1Enabled() && ["super_admin", "admin"].includes(normalizeRole(actor.role)),
       stagingMail: isStagingDeployment(),
-      providersEnabled: false,
+      providersEnabled: signhostCommercialEnabled(),
     },
   });
 }
@@ -192,13 +192,16 @@ async function dispatchMail(kind, input, actor, config) {
   let tokenHash = null;
   let tokenExpiresAt = null;
   let interestUrl = "";
+  let signingUrl = "";
   if (kind === "definitive") {
+    if (context.version.snapshot?.offerPurpose === "definitive_offer" && !signhostCommercialEnabled()) throw problem(503, "SIGNHOST_NOT_CONFIGURED", "Signhost is nog niet volledig geconfigureerd voor definitieve offertes.");
     rawToken = crypto.randomBytes(32).toString("base64url");
     tokenHash = sha256(rawToken);
     tokenExpiresAt = snapshotExpiry;
-    interestUrl = `${siteUrl()}/voorstel-interesse.html#token=${encodeURIComponent(rawToken)}`;
+    if (context.version.snapshot?.offerPurpose === "definitive_offer") signingUrl = `${siteUrl()}/voorstel-ondertekenen.html#token=${encodeURIComponent(rawToken)}`;
+    else interestUrl = `${siteUrl()}/voorstel-interesse.html#token=${encodeURIComponent(rawToken)}`;
   }
-  const reservation = await rpc(config, "commercial_reserve_offer_dispatch_v1", {
+  const reservation = await rpc(config, "commercial_reserve_offer_dispatch_v2", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
     input_offer_version_id: offerVersionId,
@@ -214,7 +217,7 @@ async function dispatchMail(kind, input, actor, config) {
   }
   let mail;
   try {
-    mail = buildCommercialOfferMail({ relationship: { ...context.relationship, email: recipient }, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, staging: isStagingDeployment() });
+    mail = buildCommercialOfferMail({ relationship: { ...context.relationship, email: recipient }, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, signingUrl, staging: isStagingDeployment() });
   } catch (error) {
     await finalizeDispatch(config, actor, reservation.dispatchId, false, "", error.code || "mail_render_failed");
     throw error;
@@ -262,6 +265,7 @@ async function revokeInterest(input, actor, config) {
     input_reason: reason,
     input_idempotency_key: boundedKey(input.actionKey),
   });
+  await rest(config, `commercial_offer_signing_access_tokens?offer_version_id=eq.${offerVersionId}&started_at=is.null&revoked_at=is.null`, { method: "PATCH", body: JSON.stringify({ revoked_at: new Date().toISOString() }) });
   const redaction = await rpc(config, "commercial_redact_offer_email_logs_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
@@ -349,12 +353,14 @@ async function loadHistory(type, id, requestedOfferId, config) {
   const filter = `in.(${offerIds.join(",")})`;
   const versions = await rest(config, `commercial_offer_versions?select=*&offer_id=${filter}&order=version_number.desc`);
   const versionFilter = `in.(${versions.map((version) => version.id).join(",") || "00000000-0000-0000-0000-000000000000"})`;
-  const [lines, documents, events, dispatches, interestTokens] = await Promise.all([
+  const [lines, documents, events, dispatches, interestTokens, signingAccessTokens, signingTransactions] = await Promise.all([
     rest(config, `commercial_offer_lines?select=*&offer_version_id=${versionFilter}&order=position.asc`),
     rest(config, `commercial_offer_document_bindings?select=*&offer_version_id=${versionFilter}&order=document_type.asc`),
     rest(config, `commercial_offer_events?select=offer_id,offer_version_id,event_type,actor_profile_id,actor_role,reason,previous_status,new_status,occurred_at,safe_metadata&offer_id=${filter}&order=occurred_at.desc`),
     rest(config, `commercial_offer_mail_dispatches?select=id,offer_id,offer_version_id,dispatch_kind,status,reserved_at,completed_at&offer_id=${filter}&order=created_at.desc`),
     rest(config, `commercial_offer_interest_tokens?select=id,offer_id,offer_version_id,expires_at,confirmed_at,revoked_at,created_at&offer_id=${filter}&order=created_at.desc`),
+    rest(config, `commercial_offer_signing_access_tokens?select=id,offer_id,offer_version_id,expires_at,started_at,revoked_at,created_at&offer_id=${filter}&order=created_at.desc`),
+    rest(config, `commercial_offer_signing_transactions?select=id,offer_id,offer_version_id,status,requested_at,signed_at,last_postback_at,created_at&offer_id=${filter}&order=created_at.desc`),
   ]);
   return offers.map((offer) => ({
     ...offer,
@@ -365,12 +371,15 @@ async function loadHistory(type, id, requestedOfferId, config) {
       events: events.filter((event) => event.offer_version_id === version.id),
       dispatches: dispatches.filter((dispatch) => dispatch.offer_version_id === version.id),
       interestTokens: interestTokens.filter((token) => token.offer_version_id === version.id),
+      signingAccessTokens: signingAccessTokens.filter((token) => token.offer_version_id === version.id),
+      signingTransactions: signingTransactions.filter((transaction) => transaction.offer_version_id === version.id),
     })),
     events: events.filter((event) => event.offer_id === offer.id),
   }));
 }
 
 function mapRelationship(type, record) {
+  const metadata = record.metadata && typeof record.metadata === "object" ? record.metadata : {};
   return {
     type,
     id: record.id,
@@ -379,17 +388,19 @@ function mapRelationship(type, record) {
     email: clean(record.email).toLowerCase(),
     phone: clean(record.phone),
     website: clean(record.website || record.website_url),
+    kvkNumber: clean(record.kvk_number || record.kvk || metadata.kvkNumber),
     missing: [!clean(record.company_name || record.company || record.name) && "bedrijfsnaam", !clean(record.contact_name || record.name) && "contactpersoon", !clean(record.email) && "e-mailadres", !clean(record.phone) && "telefoonnummer"].filter(Boolean),
   };
 }
 
 function mapDemo(row) {
   const meta = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : {};
-  const desktopUrl = absolutePreviewUrl(row.preview_url);
-  const foodDemo = isSilveradoFoodDemo(row, desktopUrl);
+  const storedPreviewUrl = absolutePreviewUrl(row.preview_url);
+  const foodDemo = isSilveradoFoodDemo(row, storedPreviewUrl);
   const storefrontUrl = foodDemo ? SILVERADO_FOOD_DEMO.storefrontUrl : "";
   const restaurantPortalUrl = foodDemo ? SILVERADO_FOOD_DEMO.restaurantPortalUrl : "";
-  const mobileUrl = storefrontUrl || absolutePreviewUrl(meta.mobileUrl) || desktopUrl;
+  const desktopUrl = restaurantPortalUrl || storedPreviewUrl;
+  const mobileUrl = storefrontUrl || absolutePreviewUrl(meta.mobileUrl) || storedPreviewUrl;
   const qrTarget = storefrontUrl || absolutePreviewUrl(meta.qrTarget) || mobileUrl;
   return {
     id: row.id,
@@ -415,7 +426,8 @@ function isSilveradoFoodDemo(row = {}, desktopUrl = "") {
     .join(" ")
     .toLowerCase();
   const knownPreview = identity.includes("/preview/emmerloord-rotishop") || identity.includes("/preview/emmeloord-rotishop");
-  return knownPreview || (identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop")));
+  const knownRestaurant = identity.includes("emmeloord rotishop") || identity.includes("emmerloord rotishop");
+  return knownPreview || knownRestaurant || (identity.includes("silverado") && (identity.includes("roti") || identity.includes("rotishop")));
 }
 
 function signedQrCodeUrl(target) {
@@ -449,10 +461,14 @@ function silveradoQr(row, desktopUrl) {
   try { return new URL("/assets/food/silverado/silverado-demo-qr.svg", siteUrl()).toString(); } catch { return ""; }
 }
 
-async function rest(config, path) {
-  const response = await fetch(`${config.url}/rest/v1/${path}`, { headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, Accept: "application/json" } });
+async function rest(config, path, options = {}) {
+  const response = await fetch(`${config.url}/rest/v1/${path}`, {
+    method: options.method || "GET",
+    headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, Accept: "application/json", "Content-Type": "application/json", ...(options.headers || {}) },
+    body: options.body,
+  });
   const data = await response.json().catch(() => null);
-  if (response.ok && Array.isArray(data)) return data;
+  if (response.ok && (Array.isArray(data) || options.method === "PATCH")) return Array.isArray(data) ? data : [];
   console.error("Commercial composer read failed", { status: response.status, code: clean(data?.code), resource: clean(path).split("?")[0] });
   throw problem(503, "OFFER_READ_UNAVAILABLE", "De commerciële context kon niet veilig worden geladen.");
 }
@@ -524,6 +540,11 @@ function siteUrl() {
   const candidate = clean(process.env.URL || process.env.DEPLOY_PRIME_URL || "https://maxwebstudio-staging.netlify.app");
   try { const url = new URL(candidate); if (url.protocol !== "https:" || url.username || url.password) throw new Error("unsafe"); return url.origin; }
   catch { throw problem(503, "SITE_URL_INVALID", "De veilige applicatie-URL ontbreekt."); }
+}
+
+function signhostCommercialEnabled() {
+  const enabled = clean(process.env.COMMERCIAL_OFFER_SIGNHOST_ENABLED).toLowerCase();
+  return ["1", "true", "yes", "on"].includes(enabled) && Boolean(clean(process.env.SIGNHOST_APP_KEY) && clean(process.env.SIGNHOST_USER_TOKEN) && clean(process.env.SIGNHOST_POSTBACK_AUTHORIZATION) && clean(process.env.SIGNHOST_POSTBACK_SHARED_SECRET));
 }
 function sha256(value) { return crypto.createHash("sha256").update(clean(value)).digest("hex"); }
 function validEmail(value) { const email = clean(value); return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }

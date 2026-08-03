@@ -19,16 +19,17 @@ const retryableStatusMigration = fs.readFileSync(path.join(root, "supabase/migra
 function buildQuick(journey = {}, briefing = "") {
   const generatedPackage = buildWebsitePackage({
     journey: { businessName: "FatTrek", packageType: "starter", ...journey },
-    briefing: briefing || "Branche: outdoor en reizen\nPlaats: Almere\nDoel: relevante aanvragen",
+    briefing: briefing || "Branche: hovenier\nPlaats: Almere\nDiensten: Tuinontwerp, Tuinaanleg, Tuinonderhoud\nDoel: relevante aanvragen",
     version: 1,
   });
   return { generatedPackage, quality: runQualityCheck({ generatedPackage, journey }) };
 }
 
-test("new lead can build with only a business name", () => {
+test("new lead with only a business name is blocked until the branche is known", () => {
   const { generatedPackage, quality } = buildQuick({}, "Doel: relevante aanvragen");
   assert.equal(generatedPackage.businessName, "FatTrek");
-  assert.equal(quality.passed, true);
+  assert.equal(quality.passed, false);
+  assert.ok(quality.blockingChecks.some((item) => item.id === "industry_context_specific"));
 });
 
 test("package persistence has a bounded extended timeout and retryable status is deployable", () => {
@@ -41,6 +42,34 @@ test("package persistence has a bounded extended timeout and retryable status is
 test("new lead can build with business name and industry", () => {
   const { generatedPackage } = buildQuick({}, "Branche: outdoor en reizen\nDoel: kennismaking plannen");
   assert.ok(generatedPackage.meta.services.length >= 3);
+});
+
+test("quick build tolerates a missing selected lead when projecting Google review data", () => {
+  assert.match(factoryHtml, /const normalizedLead = lead && typeof lead === "object" \? lead : \{\};/);
+  assert.match(factoryHtml, /Array\.isArray\(normalizedLead\.googleReviews\)/);
+  assert.doesNotMatch(factoryHtml, /Array\.isArray\(lead\.googleReviews\)/);
+});
+
+test("starting a replacement build is immediate and preserves existing preview versions", () => {
+  const resetFlow = factoryHtml.match(/async function resetDemoForRegeneration\(\) \{([\s\S]*?)\n        \}\n\n        async function saveDemoSite/)?.[1] || "";
+  assert.ok(resetFlow);
+  assert.doesNotMatch(resetFlow, /window\.confirm/);
+  assert.doesNotMatch(resetFlow, /apiRequest\(endpoint, "PATCH"/);
+  assert.match(resetFlow, /Bestaande previewversies blijven veilig bewaard/);
+});
+
+test("replacement builds refresh website research instead of reusing stale categories", () => {
+  assert.match(factoryHtml, /if \(validWebsite\) \{\s*await analyzeWebsiteForFactory\(\)/);
+  assert.doesNotMatch(factoryHtml, /validWebsite && !currentWebsiteIntelligencePackage\(\)\?\.lastScannedAt/);
+  assert.match(factoryHtml, /await analyzeWebsiteForFactory\(\);[\s\S]{0,500}intakeState\.services = inferredServices;[\s\S]{0,500}elements\.briefing\.value = buildBriefing\(\);/);
+});
+
+test("tree-care quick build recognizes the customer's own six service categories", () => {
+  for (const id of ["boomverzorging", "rooien", "snoeien", "aanplanten", "stobbenfrezen", "eikenprocessierups"]) {
+    assert.match(factoryHtml, new RegExp(`\\[\\"${id}\\",`));
+  }
+  assert.match(factoryHtml, /eikenprocess.*values\.push\("eikenprocessierups"\)/);
+  assert.match(factoryHtml, /if \(inferredServices\.length >= 2\) \{\s*intakeState\.services = inferredServices;/);
 });
 
 test("explicit no-website context skips website use", () => {
@@ -72,7 +101,7 @@ test("valid website with failed scan still builds from briefing data", () => {
   const { generatedPackage, quality } = buildQuick({
     websiteUrl: "https://fattrek.nl",
     websiteAnalysis: { ok: false, error: "scan_failed" },
-  }, "Branche: outdoor en reizen\nPlaats: Almere");
+  }, "Branche: hovenier\nPlaats: Almere\nDiensten: Tuinontwerp, Tuinaanleg, Tuinonderhoud");
   assert.equal(generatedPackage.meta.websiteUrl, "https://fattrek.nl");
   assert.equal(generatedPackage.meta.currentWebsite.sourceUrl, "");
   assert.equal(quality.passed, true);
@@ -309,7 +338,7 @@ test("normal build stores one renderable preview version after Hero validation",
   const journeyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
   const jobId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
   const job = { id: jobId, demo_journey_id: journeyId, status: "queued", current_step: "queued", progress: 5, preview_version: 1, build_logs: [], created_by: "admin-id" };
-  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "Branche: outdoor en reizen", created_by: "admin-id" };
+  const journey = { id: journeyId, business_name: "FatTrek", generated_briefing: "Branche: hovenier\nDiensten: Tuinontwerp, Tuinaanleg, Tuinonderhoud", created_by: "admin-id" };
   const previewWrites = [];
   const jobWrites = [];
   const previousFetch = global.fetch;

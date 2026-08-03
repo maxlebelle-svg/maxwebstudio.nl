@@ -51,6 +51,16 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
 });
 
+test("proposal mail visibly reconciles the original amount, discount and final total", () => {
+  const discountedSnapshot = offerService.buildOfferVersion({ paymentChoice: "full", discountPercentage: 25, selections: [{ productId: "business_website" }, { productId: "care_basic" }] }, { id: "11111111-1111-4111-8111-111111111111", profileId: "22222222-2222-4222-8222-222222222222", role: "admin" });
+  const mail = buildCommercialOfferMail({ ...base, snapshot: discountedSnapshot, mode: "preview" });
+  assert.match(mail.text, /Eenmalig vóór korting: € 995,00/);
+  assert.match(mail.text, /Korting \(25%\): -€ 248,75/);
+  assert.match(mail.text, /Eenmalig na korting excl\. btw: € 746,25/);
+  assert.match(mail.text, /Per maand excl\. btw: € 19,95/);
+  assert.match(mail.html, /Korting \(25%\)/);
+});
+
 test("Silverado proposal mail shows the storefront and restaurant portal as separate verified actions", () => {
   const demo = {
     ...base.demo,
@@ -179,9 +189,9 @@ test("cross-relationship demo checks remain mandatory for preview and send", () 
   assert.match(source, /assertRelationshipAccess\(actor, offer\.relationship_type/);
 });
 
-test("D1 contains no Signhost, Mollie, invoice, subscription or onboarding activation", () => {
-  const d1 = [read("functions/admin-commercial-offers.js"), read("functions/commercial-offer-interest.js"), read("functions/services/commercialOfferMailService.js"), migration].join("\n");
-  assert.doesNotMatch(d1, /signhost|api\.mollie|create_invoice|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
+test("original D1 migration remains free of payment, invoice, subscription and onboarding activation", () => {
+  const d1 = [read("functions/commercial-offer-interest.js"), migration].join("\n");
+  assert.doesNotMatch(d1, /api\.mollie|create_invoice|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
   assert.match(html, /geen contract, betaling, factuur, abonnement of onboarding/i);
 });
 
@@ -269,7 +279,7 @@ test("modal 11: synchronous pending guard makes double click a single request", 
 test("modal 12: frontend modal does not replace authoritative server validation", () => {
   const server = read("functions/admin-commercial-offers.js");
   for (const evidence of ["assertPhaseD1Enabled", "assertRelationshipAccess", "offerExpiry", "DEMO_RELATIONSHIP_MISMATCH", "OFFER_NOT_SEND_READY"]) assert.match(server, new RegExp(evidence));
-  assert.match(server, /commercial_reserve_offer_dispatch_v1/);
+  assert.match(server, /commercial_reserve_offer_dispatch_v2/);
 });
 
 test("modal 13: expired offers remain blocked server-side", () => {
@@ -421,9 +431,9 @@ test("revoke request is idempotent and performs no provider action", () => {
   assert.match(hardening, /idempotency_key=input_idempotency_key/);
 });
 
-test("D1 hardening remains free of production providers and activation side effects", () => {
-  const scope = [hardening, read("functions/admin-commercial-offers.js"), browser].join("\n");
-  assert.doesNotMatch(scope, /signhost|api\.mollie|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
+test("D1 interest hardening remains free of payment and subscription side effects", () => {
+  const scope = hardening;
+  assert.doesNotMatch(scope, /api\.mollie|insert into public\.invoices|insert into public\.subscriptions|start_onboarding/i);
 });
 
 test("manual definitive recipient is normalized while test mail remains admin-only", () => {
@@ -442,7 +452,7 @@ test("production preview and dispatch do not force a staging label", () => {
   assert.match(server, /staging: isStagingDeployment\(\)/);
 });
 
-test("relative stored demo links become safe absolute production mail links", () => {
+test("Silverado manual preview maps computer to the restaurant portal and mobile to the storefront", () => {
   const previousUrl = process.env.URL;
   const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   try {
@@ -451,17 +461,18 @@ test("relative stored demo links become safe absolute production mail links", ()
     const demo = endpoint.mapDemo({
       id: "33333333-3333-4333-8333-333333333333",
       business_name: "Emmeloord Rotishop",
-      preview_url: "/preview/emmerloord-rotishop",
+      preview_url: "/.netlify/functions/manual-preview-render?version=9e1c8a3b-06e2-4187-9a5b-97152b03ec93&token=safe-token",
       preview_package: {},
     });
-    assert.equal(demo.desktopUrl, "https://maxwebstudio.nl/preview/emmerloord-rotishop");
     assert.equal(demo.type, "food");
     assert.equal(demo.storefrontUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
     assert.equal(demo.restaurantPortalUrl, endpoint.SILVERADO_FOOD_DEMO.restaurantPortalUrl);
+    assert.equal(demo.desktopUrl, endpoint.SILVERADO_FOOD_DEMO.restaurantPortalUrl);
     assert.equal(demo.mobileUrl, endpoint.SILVERADO_FOOD_DEMO.storefrontUrl);
     assert.match(demo.qrCodeUrl, /^https:\/\/maxwebstudio\.nl\/api\/commercial-offer-qr\?target=/);
     assert.match(decodeURIComponent(demo.qrCodeUrl), /max-webstudio-food-demo\.netlify\.app\/food\/silverado-roti-shop-emmeloord/);
     assert.doesNotThrow(() => buildCommercialOfferMail({ ...base, demo, mode: "preview" }));
+    assert.equal(endpoint.isSilveradoFoodDemo({ business_name: "Andere rotishop", preview_url: "/preview/andere-rotishop" }), false);
   } finally {
     if (previousUrl === undefined) delete process.env.URL; else process.env.URL = previousUrl;
     if (previousKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey;

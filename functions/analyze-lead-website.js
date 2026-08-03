@@ -289,7 +289,7 @@ function analyzeHtml(html, context) {
     "contact",
   ]);
   const hasMobileResponsiveSignal = hasViewportMeta || hasMediaQuery || /responsive|mobile-first|mobiel/i.test(raw);
-  const currentWebsite = buildCurrentWebsiteSnapshot(raw, {
+  const currentWebsite = buildCurrentWebsiteSnapshot(combinedHtml, {
     inputUrl: context.inputUrl,
     finalUrl,
     titleText,
@@ -415,6 +415,7 @@ function buildCurrentWebsiteSnapshot(html, context = {}) {
   const raw = String(html || "");
   const baseUrl = context.finalUrl || context.inputUrl || "";
   const headings = extractTagTexts(raw, /<h([1-3])[^>]*>([\s\S]*?)<\/h\1>/gi, 10);
+  const navigationLabels = extractServiceNavigationLabels(raw);
   const paragraphs = extractTagTexts(raw, /<p[^>]*>([\s\S]*?)<\/p>/gi, 8)
     .filter((item) => item.length >= 35);
   const pricingItems = extractPricingItems(raw);
@@ -426,12 +427,30 @@ function buildCurrentWebsiteSnapshot(html, context = {}) {
     metaDescription: cleanExtractedText(context.metaDescriptionText),
     h1: cleanExtractedText(context.h1Text),
     headings,
+    navigationLabels,
+    services: uniqueServiceLabels([...navigationLabels, ...inferServices(stripHtml(raw).toLowerCase(), headings)]).slice(0, 8),
     paragraphs,
     pricingItems,
     imageUrls,
     socialUrls,
     extractedAt: new Date().toISOString(),
   };
+}
+
+function extractServiceNavigationLabels(html) {
+  const labels = [];
+  const pattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = pattern.exec(String(html || ""))) && labels.length < 20) {
+    const href = String(match[1] || "").toLowerCase();
+    const label = cleanExtractedText(match[2]);
+    if (/(?:facebook|instagram|linkedin|youtube|youtu\.be|tiktok)\.com|^mailto:|^tel:/.test(href)) continue;
+    if (!label || label.length < 3 || label.length > 42) continue;
+    if (/^(home|contact|over ons|over mij|nieuws|blog|privacy|voorwaarden|route|offerte|login)$/i.test(label)) continue;
+    if (!/(dienst|service|aanbod|behandeling|menu|boom|snoei|rooi|kap|plant|stob|stronk|processierups|tegel|rijles|scooter|auto|apk|diagnose|tuin|onderhoud|reparatie|installatie|coaching|massage)/i.test(label)) continue;
+    labels.push(label);
+  }
+  return uniqueServiceLabels(labels).slice(0, 8);
 }
 
 async function scanPublicPages(finalUrl, homepageHtml) {
@@ -596,6 +615,17 @@ function buildAiBriefing({ html, currentWebsite, contactData, media, finalUrl })
 
 function inferServices(text, headings = []) {
   const dictionary = [
+    ["boomverzorging", "Boomverzorging"],
+    ["boominspectie", "Boominspectie"],
+    ["rooien", "Rooien"],
+    ["bomen rooien", "Bomen rooien"],
+    ["snoeien", "Snoeien"],
+    ["bomen snoeien", "Bomen snoeien"],
+    ["aanplanten", "Aanplanten"],
+    ["stobbenfrezen", "Stobbenfrezen"],
+    ["stobben frezen", "Stobben frezen"],
+    ["eikenprocessierups", "Eikenprocessierups"],
+    ["stormschade", "Stormschade"],
     ["badkamertegel", "Badkamer betegelen"],
     ["tegelwerk", "Tegelwerk"],
     ["tegelzet", "Tegelwerk"],
@@ -617,9 +647,25 @@ function inferServices(text, headings = []) {
     ["apk", "APK"],
     ["occasion", "Occasions"],
   ];
-  const found = dictionary.filter(([needle]) => text.includes(needle)).map(([, label]) => label);
-  const headingServices = headings.filter((item) => item.length > 3 && item.length < 60).slice(0, 4);
-  return [...new Set([...found, ...headingServices])].slice(0, 8);
+  const found = dictionary
+    .map(([needle, label], order) => ({ label, order, position: text.indexOf(needle) }))
+    .filter((item) => item.position >= 0)
+    .sort((a, b) => a.position - b.position || a.order - b.order)
+    .map((item) => item.label);
+  const headingServices = headings.filter((item) => item.length > 3
+    && item.length < 60
+    && !/^(home|contact|over ons|welkom|waarom|werkwijze|onze diensten|diensten|projecten|nieuws|veelgestelde vragen)/i.test(item));
+  return uniqueServiceLabels([...found, ...headingServices]).slice(0, 8);
+}
+
+function uniqueServiceLabels(items = []) {
+  const seen = new Set();
+  return items.map(cleanExtractedText).filter((item) => {
+    const key = item.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function inferIndustry(text, currentWebsite = {}) {
@@ -645,6 +691,8 @@ function inferRegion(text, contactData = {}) {
   const address = contactData.addresses?.[0] || "";
   const match = address.match(/[1-9]\d{3}\s?[A-Z]{2}\s+([A-ZÀ-Ÿ][a-zà-ÿ.' -]{2,40})/);
   if (match) return cleanExtractedText(match[1]);
+  const namedRegion = String(text || "").match(/\b(Drenthe|Groningen|Friesland|Fryslân|Overijssel|Gelderland|Flevoland|Utrecht|Noord-Holland|Zuid-Holland|Zeeland|Noord-Brabant|Limburg)\b/i);
+  if (namedRegion) return titleCase(namedRegion[1]);
   if (/landelijk/.test(text)) return "Landelijk";
   if (/regio/.test(text)) return "Regionaal";
   return "Lokaal";

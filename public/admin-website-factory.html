@@ -11886,7 +11886,7 @@
                 activeLead.converted_customer_id = customerId;
                 activeLead.convertedCustomerId = customerId;
               }
-              syncActiveLeadConversionAction({ entityType: "lead" });
+              syncActiveLeadConversionAction({ entityType: "lead", lead: activeLead });
             }
             const emailStatus = data.email?.sent
               ? " Welkomstmail is via Resend verzonden."
@@ -17548,11 +17548,12 @@
 
         function syncActiveLeadConversionAction(context = null) {
           if (!convertActiveLeadTopbar) return;
-          const lead = context?.entityType === "lead" ? selectedLead() : null;
+          const lead = context?.entityType === "lead" ? context.lead : null;
           const canConvert = Boolean(lead?.id && !convertedCustomerIdForLead(lead));
           convertActiveLeadTopbar.hidden = !canConvert;
           convertActiveLeadTopbar.disabled = !canConvert;
         }
+        window.syncActiveLeadConversionAction = syncActiveLeadConversionAction;
 
         function openActiveLeadCustomerOnboarding() {
           const lead = selectedLead();
@@ -17562,7 +17563,7 @@
           }
           if (convertedCustomerIdForLead(lead)) {
             setAdminAccessMessage("Deze lead is al aan een klant gekoppeld.", "error");
-            syncActiveLeadConversionAction({ entityType: "lead" });
+            syncActiveLeadConversionAction({ entityType: "lead", lead });
             return;
           }
           const company = lead.companyName || lead.company_name || lead.businessName || lead.business_name || lead.company || "";
@@ -21225,6 +21226,11 @@
           ["reviews", "Reviews verzamelen", "Social proof zichtbaar inzetten."],
         ];
         const branchPresets = {
+          boomverzorging: {
+            goals: ["leads", "call", "trust", "portfolio", "appointment"],
+            ctas: ["quote", "call", "whatsapp", "free_appointment"],
+            services: [["boomverzorging", "Boomverzorging"], ["rooien", "Rooien"], ["snoeien", "Snoeien"], ["aanplanten", "Aanplanten"], ["stobbenfrezen", "Stobbenfrezen"], ["eikenprocessierups", "Eikenprocessierups"], ["boominspectie", "Boominspectie"], ["stormschade", "Stormschade en veiligheid"], ["boomadvies", "Boomadvies en beheer"], ["kroonverankering", "Kroonverankering"]],
+          },
           automotive: {
             goals: ["appointment", "call", "trust", "route", "leads", "portfolio"],
             ctas: ["appointment", "call", "quote", "whatsapp", "route", "more_info"],
@@ -21435,7 +21441,7 @@
         const factoryContextRequestGuard = factoryContextSync.createRequestGuard();
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["tegelzetbedrijf", "Tegelzetbedrijf / tegelwerk"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["boomverzorging", "Boomverzorging / boombeheer"], ["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["tegelzetbedrijf", "Tegelzetbedrijf / tegelwerk"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
           { key: "goal", label: "Hoofddoel website", helper: "Kies wat de website vooral moet opleveren voor deze klant.", required: true, type: "single", options: baseGoalOptions },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
           { key: "addOns", label: "Extra producten & services", helper: "Vink alles aan wat we kunnen meepakken in aanbod, preview of upsell.", type: "multi", wide: true, options: addOnOptions },
@@ -22448,9 +22454,44 @@
             || null;
         }
 
+        function factoryWebsiteAnalysisPayload() {
+          const packageData = currentWebsiteIntelligencePackage();
+          if (!packageData) return null;
+          const scan = packageData.websiteScanRaw && typeof packageData.websiteScanRaw === "object"
+            ? packageData.websiteScanRaw
+            : {};
+          const homepage = scan.currentWebsite || scan.homepage || {};
+          const aiBriefing = packageData.aiBriefing && typeof packageData.aiBriefing === "object"
+            ? packageData.aiBriefing
+            : {};
+          const contact = packageData.extractedContactData && typeof packageData.extractedContactData === "object"
+            ? packageData.extractedContactData
+            : {};
+          const unique = (items = []) => [...new Set(items.map((item) => String(item || "").trim()).filter(Boolean))];
+          return {
+            ...scan,
+            currentWebsite: {
+              ...homepage,
+              services: unique([...(homepage.services || []), ...(aiBriefing.services || [])]),
+              socialUrls: unique([...(homepage.socialUrls || []), ...(contact.socialUrls || [])]),
+            },
+            aiBriefing,
+            researchPackage: packageData.researchPackage || null,
+            extractedContactData: contact,
+          };
+        }
+
         function normalizeServiceValues(labels = []) {
           const text = ensureArrayValue(labels).join(" ").toLowerCase();
           const values = [];
+          if (/boomverzorg|boomverzorger|arborist/.test(text)) values.push("boomverzorging");
+          if (/boominspect/.test(text)) values.push("boominspectie");
+          if (/snoei/.test(text)) values.push("snoeien");
+          if (/kappen|rooien|verwijder/.test(text)) values.push("rooien");
+          if (/aanplant/.test(text)) values.push("aanplanten");
+          if (/storm/.test(text)) values.push("stormschade");
+          if (/stob|stronk/.test(text)) values.push("stobbenfrezen");
+          if (/eikenprocess/.test(text)) values.push("eikenprocessierups");
           if (/maatwerk/.test(text)) values.push("maatwerk");
           if (/project/.test(text)) values.push("projecten");
           if (/onderhoud/.test(text)) values.push("onderhoud");
@@ -22675,6 +22716,7 @@
 
         function inferBranchFromLead(lead = {}) {
           const text = [lead.industry, lead.companyName, lead.websiteUrl, lead.notes, lead.demoBriefing].filter(Boolean).join(" ").toLowerCase();
+          if (/boomverzorg|boomverzorger|boombeheer|boomspecialist|arborist|boominspect|bomen?\s+(?:snoeien|kappen|rooien|verwijderen)|stobben?\s+frezen|stormschade/.test(text)) return "boomverzorging";
           if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(text)) return "rijschool";
           if (/tandarts|mondzorg|orthodont|dental/.test(text)) return "tandarts";
           if (/fysio|fysiotherapie|revalidatie|sportzorg/.test(text)) return "fysiotherapie";
@@ -23829,8 +23871,11 @@
           const feedbackCount = authoritative ? Number(authoritative.feedbackCount || 0) : Number(activeVersion?.feedbackCount || 0);
           const hasBuildContext = Boolean(latestJob?.id || previewStored);
           const briefingReady = authoritative ? authoritative.briefingReady === true : hasBuildContext || Boolean(currentJourney?.generatedBriefing);
-          const researchReady = authoritative ? authoritative.researchReady === true : hasBuildContext || Boolean(currentJourney?.previewPackage?.websiteIntelligence || currentJourney?.previewPackage?.websiteIntelligencePackage);
-          const scanReady = authoritative ? authoritative.scanReady === true : hasBuildContext || researchReady;
+          const intelligence = currentJourney?.previewPackage?.websiteIntelligencePackage || currentJourney?.previewPackage?.websiteIntelligence || null;
+          const researchReady = authoritative ? authoritative.researchReady === true : Boolean(intelligence && (intelligence.lastScannedAt || intelligence.aiBriefing || intelligence.websiteIntelligence || intelligence.websiteScanRaw));
+          const scanReady = authoritative ? authoritative.scanReady === true : researchReady;
+          const qualityReport = latestJob?.qualityReport || activeVersion?.qualityReport || {};
+          const customerPreviewReady = authoritative ? authoritative.customerPreviewReady === true : qualityReport?.readiness?.customerPreview === true;
           const buildCompleted = authoritative ? authoritative.buildCompleted === true : jobStatus === "completed" && previewRenderable;
           const state = authoritative?.state || (!briefingReady
             ? "briefing_required"
@@ -23879,6 +23924,8 @@
             previewStored,
             previewRenderable,
             previewEditable,
+            internalPreviewReady: previewRenderable,
+            customerPreviewReady,
             published,
             approved,
             feedbackCount,
@@ -24054,12 +24101,15 @@
         function renderActiveContextBanner(context = null) {
           if (!elements.activeContext) return;
           if (!context) {
-            syncActiveLeadConversionAction(null);
+            window.syncActiveLeadConversionAction?.(null);
             elements.activeContext.hidden = true;
             elements.activeContext.innerHTML = "";
             return;
           }
-          syncActiveLeadConversionAction(context);
+          window.syncActiveLeadConversionAction?.({
+            ...context,
+            lead: context.entityType === "lead" ? selectedLead() : null,
+          });
           const isCustomer = context.entityType === "customer";
           const website = String(context.website || "").trim();
           const websiteHref = website ? (website.startsWith("http") ? website : `https://${website}`) : "";
@@ -24347,13 +24397,14 @@
         }
 
         function googleReviewPayloadFromLead(lead = {}) {
-          const meta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
-          const reviews = Array.isArray(lead.googleReviews) ? lead.googleReviews : Array.isArray(meta.googleReviews) ? meta.googleReviews : [];
+          const normalizedLead = lead && typeof lead === "object" ? lead : {};
+          const meta = normalizedLead.metadata && typeof normalizedLead.metadata === "object" ? normalizedLead.metadata : {};
+          const reviews = Array.isArray(normalizedLead.googleReviews) ? normalizedLead.googleReviews : Array.isArray(meta.googleReviews) ? meta.googleReviews : [];
           return {
             googleReviews: reviews,
-            googleRating: lead.googleRating || meta.googleRating || meta.rating || "",
-            googleRatingTotal: lead.googleRatingTotal || meta.googleRatingTotal || meta.userRatingsTotal || "",
-            googleMapsUrl: lead.googleMapsUrl || meta.googleMapsUrl || "",
+            googleRating: normalizedLead.googleRating || meta.googleRating || meta.rating || "",
+            googleRatingTotal: normalizedLead.googleRatingTotal || meta.googleRatingTotal || meta.userRatingsTotal || "",
+            googleMapsUrl: normalizedLead.googleMapsUrl || meta.googleMapsUrl || "",
           };
         }
 
@@ -24396,7 +24447,7 @@
             intakeSummary: buildIntakeBriefingSection(),
             intakeCompleteness: intake.percent,
             assetMetadata: intake.assets,
-            websiteAnalysis: currentWebsiteIntelligencePackage()?.websiteScanRaw || currentWebsiteIntelligencePackage()?.websiteIntelligence || null,
+            websiteAnalysis: factoryWebsiteAnalysisPayload(),
             websiteIntelligencePackage: currentWebsiteIntelligencePackage(),
             ...googleReviewPayloadFromLead(lead),
             ...extra,
@@ -24614,6 +24665,8 @@
         async function quickBuild(input = {}) {
           const businessName = String(input.businessName || "").trim();
           const websiteUrl = String(input.websiteUrl || "").trim();
+          const place = String(input.place || "").trim();
+          const wishes = String(input.wishes || "").trim();
           let validWebsite = false;
           if (websiteUrl) {
             try { validWebsite = ["http:", "https:"].includes(new URL(websiteUrl).protocol); } catch { validWebsite = false; }
@@ -24625,15 +24678,70 @@
           }
           if (businessName && elements.business) elements.business.value = businessName;
           if (elements.website) elements.website.value = websiteUrl;
-          const notes = [elements.notes?.value || "", input.place ? `Plaats: ${String(input.place).trim()}` : "", String(input.wishes || "").trim()].filter(Boolean).join("\n");
+          const notes = [elements.notes?.value || "", place ? `Plaats: ${place}` : "", wishes].filter(Boolean).join("\n");
           if (elements.notes) elements.notes.value = notes;
-          const savedJourney = journey?.id ? journey : await saveJourney();
-          if (!savedJourney?.id && !journey?.id) {
+
+          const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
+          let inferredServices = [];
+          if (inferredBranch !== "zakelijk") {
+            const branchChanged = String(intakeState.branch || "") !== inferredBranch;
+            const preset = branchPresets[inferredBranch] || {};
+            const presetServices = ensureArrayValue(preset.services).map((item) => Array.isArray(item) ? item[0] : item).filter(Boolean);
+            inferredServices = normalizeServiceValues([businessName, wishes, notes]).filter((service) => presetServices.includes(service));
+            intakeState.branch = inferredBranch;
+            if (inferredServices.length >= 2) {
+              intakeState.services = inferredServices;
+            } else if (branchChanged || ensureArrayValue(intakeState.services).length < 2) {
+              intakeState.services = presetServices.slice(0, 6);
+            }
+            if (branchChanged || !intakeState.goal) intakeState.goal = preset.goals?.[0] || "leads";
+            if (branchChanged || !intakeState.cta) intakeState.cta = /whatsapp/i.test(wishes) ? "whatsapp" : /offerte/i.test(wishes) ? "quote" : preset.ctas?.[0] || "contact";
+            if (branchChanged || !ensureArrayValue(intakeState.style).length) intakeState.style = ["modern", "rustig", "lokaal", "direct"];
+          }
+          if (place) {
+            intakeState.regionText = place;
+            if (!intakeState.area) intakeState.area = "regional";
+          }
+          if (!intakeState.audience) intakeState.audience = "beide";
+          if (!intakeState.existingWebsite) intakeState.existingWebsite = validWebsite ? "active" : "none";
+          if (!intakeState.logoStatus) intakeState.logoStatus = validWebsite ? "extract" : "needed";
+          if (!intakeState.photoStatus) intakeState.photoStatus = validWebsite ? "extract" : "generate";
+          if (!intakeState.followUp) intakeState.followUp = "today";
+          if (!intakeState.leadTemperature) intakeState.leadTemperature = "medium";
+          if (!ensureArrayValue(intakeState.mustHaves).length) intakeState.mustHaves = ["phone", "contact_form", "reviews", "projects", "service_area"];
+          saveIntakeLocally();
+          renderIntakeFields();
+
+          // A quick build must never reuse an older lead briefing after the employee changes the identity or wishes.
+          if (elements.briefing) elements.briefing.value = buildBriefing();
+          const savedJourney = await saveJourney();
+          if (!savedJourney?.id) {
             const error = lastFactoryActionError || new Error("De demo-aanvraag is niet opgeslagen. Probeer opnieuw.");
             error.code = "DEMO_JOURNEY_SAVE_INCOMPLETE";
             throw error;
           }
-          if (!elements.briefing?.value) elements.briefing.value = buildBriefing();
+          // Every replacement build must use a fresh source scan; cached research may still contain
+          // old navigation labels, social-icon names or categories from an earlier Factory version.
+          if (validWebsite) {
+            await analyzeWebsiteForFactory();
+            // The scan reloads the journey and may hydrate older intake answers. Restore the
+            // employee's explicit quick-build choices before the package is generated.
+            if (inferredServices.length >= 2) intakeState.services = inferredServices;
+            if (place) intakeState.regionText = place;
+            saveIntakeLocally();
+            renderIntakeFields();
+            if (elements.briefing) elements.briefing.value = buildBriefing();
+            if (!currentWebsiteIntelligencePackage()?.lastScannedAt) {
+              const inferredBranch = inferBranchFromLead({ companyName: businessName, websiteUrl, notes });
+              const manualContextReady = inferredBranch !== "zakelijk"
+                || (String(intakeState.branch || "") !== "zakelijk" && ensureArrayValue(intakeState.services).length >= 2);
+              if (!manualContextReady) {
+                const error = new Error("De website-analyse is nog niet voltooid en branche-informatie ontbreekt. Kies minimaal de branche en twee concrete diensten; daarna kan de Factory veilig verder.");
+                error.code = "FACTORY_RESEARCH_REQUIRED";
+                throw error;
+              }
+            }
+          }
           const result = await generatePreview(currentPackageType(), { surface: "quick" });
           if (!result) {
             const error = lastFactoryActionError || new Error("De previewbuild is niet gestart.");
@@ -24672,17 +24780,6 @@
         };
 
         async function resetDemoForRegeneration() {
-          const hasExistingOutput = Boolean(
-            journey?.previewUrl
-            || elements.briefing?.value
-            || buildHistory.latestJob
-            || (buildHistory.previewVersions || []).length
-          );
-          const confirmed = window.confirm(hasExistingOutput
-            ? "Oude demo-preview en websiteplan losmaken? Daarna kun je de briefing opnieuw invullen en een verbeterde preview genereren."
-            : "Briefing leegmaken zodat je opnieuw kunt invoeren?");
-          if (!confirmed) return;
-
           await withJourneyLock("regenerate_demo", [elements.regenerateDemo, elements.regeneratePreview, elements.generatePreview, elements.generateBriefing, elements.save, elements.nextStepPrimary], async () => {
             const selectedPackage = currentPackageType();
             intakeState = selectedPackage ? { package: selectedPackage } : {};
@@ -24704,42 +24801,20 @@
             }
 
             if (journey?.id) {
-              setMessage(elements.message, "Oude demo resetten...", "info");
-              try {
-                const data = await apiRequest(endpoint, "PATCH", collectPayload({
-                  id: journey.id,
-                  demoJourneyId: journey.id,
-                  demoStatus: "aanvraag_ontvangen",
-                  generatedBriefing: "",
-                  previewUrl: "",
-                  feedback: "",
-                  intake: intakeState,
-                  intakeSummary: "",
-                  intakeCompleteness: 0,
-                  assetMetadata: [],
-                }));
-                journey = data.demoJourney || data.journey || journey;
-                if (journey) {
-                  journey.generatedBriefing = "";
-                  journey.previewUrl = "";
-                  journey.feedback = "";
-                  journey.previewPackage = {};
-                  journey.assetMetadata = [];
-                  journey.intake = intakeState;
-                  journey.intakeCompleteness = 0;
-                }
-                events = Array.isArray(data.events) ? data.events : events;
-              } catch (error) {
-                setMessage(elements.message, error.message || "Demo resetten is niet gelukt.", "error");
-                return;
-              }
+              journey.generatedBriefing = "";
+              journey.previewUrl = "";
+              journey.feedback = "";
+              journey.previewPackage = {};
+              journey.assetMetadata = [];
+              journey.intake = intakeState;
+              journey.intakeCompleteness = 0;
             }
 
             renderIntakeFields();
             renderIntake();
             renderJourney();
             document.getElementById("demo-journey-intake")?.scrollIntoView({ behavior: "smooth", block: "center" });
-            setMessage(elements.message, "Demo is klaargezet om opnieuw in te vullen. Vul de verbeterde briefing in en genereer daarna opnieuw het websiteplan en de preview.", "success");
+            setMessage(elements.message, "Nieuwe build klaar om in te vullen. Bestaande previewversies blijven veilig bewaard.", "success");
           });
         }
 
@@ -25805,11 +25880,12 @@
           }
         }
 
-        function buildStatusLabel(status = "", capability = previewCapabilityState()) {
+        function buildStatusLabel(status = "", capability = previewCapabilityState(), customerPreviewReady = false) {
           if (status === "completed") {
             if (!capability.versionStored) return "Build klaar, previewversie ontbreekt";
             if (!capability.renderable) return "Build klaar, previewbron ontbreekt";
-            return capability.editorAvailable ? "Preview klaar en bewerkbaar" : "Preview klaar, bewerkmodus niet beschikbaar";
+            if (customerPreviewReady) return capability.editorAvailable ? "Klantpreview klaar en bewerkbaar" : "Klantpreview klaar";
+            return capability.editorAvailable ? "Interne preview · controle nodig" : "Interne preview · controle nodig, niet bewerkbaar";
           }
           return ({
             queued: "In wachtrij",
@@ -25825,27 +25901,31 @@
 
         function renderBuildStatus() {
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
+          const versions = buildHistory.previewVersions || [];
           const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
           const capability = previewCapabilityState();
           const previewUrl = journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "";
           const absoluteUrl = absolutePreviewUrl(previewUrl);
           const previewToken = journey?.previewToken || latest?.previewToken || activeVersion?.previewToken || "";
           const packageMeta = latest?.generatedPackage?.meta || activeVersion?.generatedPackage?.meta || latestPackageMeta();
+          const qualityReport = latest?.qualityReport || activeVersion?.qualityReport || {};
+          const customerPreviewReady = qualityReport.readiness?.customerPreview === true;
           const generatedPages = Array.isArray(packageMeta.generatedPages) ? packageMeta.generatedPages : [];
           const generatedSections = Array.isArray(packageMeta.generatedSections || packageMeta.templateSections) ? (packageMeta.generatedSections || packageMeta.templateSections) : [];
           const activeBuildError = ["retryable", "failed", "quality_failed"].includes(String(latest?.status || "").toLowerCase()) ? latest?.errorMessage || "" : "";
           if (elements.buildState) {
-            elements.buildState.textContent = latest ? buildStatusLabel(latest.status, capability) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
+            elements.buildState.textContent = latest ? buildStatusLabel(latest.status, capability, customerPreviewReady) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
           }
           if (elements.buildProgress) {
             elements.buildProgress.style.width = `${Math.max(0, Math.min(100, Number(latest?.progress || 0)))}%`;
           }
           if (elements.buildDetails) {
             const score = latest?.previewScore ?? activeVersion?.previewScore;
-            const qualityReport = latest?.qualityReport || activeVersion?.qualityReport || {};
             const browserReview = qualityReport.browserReview || {};
             const browserRepair = qualityReport.browserRepair || {};
-            const customerPreviewReady = qualityReport.readiness?.customerPreview === true;
+            const blockingLabels = Array.isArray(qualityReport.blockingChecks)
+              ? qualityReport.blockingChecks.map((item) => item?.label || item?.id).filter(Boolean).join(", ")
+              : "";
             const browserStatus = browserReview.status === "passed"
               ? "Geslaagd"
               : browserRepair.status === "awaiting_recheck"
@@ -25854,7 +25934,7 @@
                   ? "Handmatige controle nodig"
                   : "Nog niet uitgevoerd";
             elements.buildDetails.innerHTML = [
-              ["Website Factory", latest ? buildStatusLabel(latest.status, capability) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
+              ["Website Factory", latest ? buildStatusLabel(latest.status, capability, customerPreviewReady) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
               ["Websitepakket", packageMeta.packageLabel || packageLabel(currentPackageType())],
               ["Brancheprofiel", packageMeta.industryName || packageMeta.industryProfileLabel || "-"],
               ["Aantal pagina's", generatedPages.length ? String(generatedPages.length) : "-"],
@@ -25869,6 +25949,7 @@
               ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
               ["Laatste buildtijd", latest?.finishedAt || latest?.updatedAt ? formatDate(latest.finishedAt || latest.updatedAt) : "-"],
               ["Melding", activeBuildError || buildHistory.warning || (absoluteUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
+              ["Blokkerende controle", blockingLabels || "Geen statische blokkade"],
             ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           }
           if (elements.buildHistory) {
@@ -25877,7 +25958,15 @@
               <div class="sales-timeline-item factory-history-item">
                 <span class="sales-timeline-dot ${job.status === "completed" ? "is-active" : ""}"></span>
                 <div>
-                  <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status, job === latest ? capability : { versionStored: false, renderable: false, editorAvailable: false })}`)}</strong>
+                  <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status, (() => {
+                    const linkedVersion = versions.find((version) => String(version?.buildJobId || "") === String(job.id || ""))
+                      || versions.find((version) => Number(version?.version || 0) === Number(job.previewVersion || 0));
+                    return {
+                      versionStored: Boolean(linkedVersion?.id),
+                      renderable: linkedVersion?.renderable === true,
+                      editorAvailable: linkedVersion?.editorAvailable === true,
+                    };
+                  })())}`)}</strong>
                   <small>${escapeHtml(`Score ${Number.isFinite(Number(job.previewScore)) ? job.previewScore : "-"} / 100 · ${job.currentStep || "build"}`)}</small>
                   <small>${escapeHtml(formatDate(job.finishedAt || job.updatedAt || job.createdAt))}</small>
                 </div>
@@ -26905,11 +26994,14 @@
         function imageState() {
           const uploaded = document.querySelectorAll("#demo-intake-assets .demo-intake-asset").length;
           const scanned = document.querySelectorAll("#factory-media-review > div.is-ready").length;
+          const runtime = window.WebsiteFactoryRuntime?.getState?.() || {};
+          const generatedPackage = runtime.buildHistory?.latestJob?.generatedPackage || runtime.buildHistory?.activeVersion?.generatedPackage || {};
+          const generated = (generatedPackage.files || []).filter((file) => /^assets\/.+\.(?:avif|gif|jpe?g|png|webp|svg)$/i.test(String(file?.path || "")) && !/(?:logo|favicon|og-image)\./i.test(String(file?.path || ""))).length;
           const photoCopy = text('[data-intake-question="photoStatus"] .factory-field-summary strong', "");
-          const needsImages = !uploaded && !scanned && !/eigen foto|website pakken|beschikbaar/i.test(photoCopy);
-          const required = Math.max(uploaded + scanned, needsImages ? 3 : 1);
-          const available = Math.min(required, uploaded + scanned);
-          return { required, available, uploaded, scanned, missing: Math.max(0, required - available), generated: 0 };
+          const needsImages = !uploaded && !scanned && !generated && !/eigen foto|website pakken|beschikbaar/i.test(photoCopy);
+          const required = Math.max(uploaded + scanned + generated, needsImages ? 3 : 1);
+          const available = Math.min(required, uploaded + scanned + generated);
+          return { required, available, uploaded, scanned, missing: Math.max(0, required - available), generated };
         }
 
         function guidedState() {
@@ -26925,9 +27017,9 @@
                 ? pipeline.errorMessage || "Build mislukt"
                 : pipeline.buildCompleted ? "Preview klaar" : "Nog niet gestart";
           const previewState = pipeline.previewEditable
-            ? "Preview klaar en bewerkbaar"
+            ? pipeline.customerPreviewReady ? "Klantpreview vrijgegeven" : "Interne preview bewerkbaar · kwaliteitscontrole loopt"
             : pipeline.previewRenderable
-              ? "Preview klaar"
+              ? pipeline.customerPreviewReady ? "Klantpreview vrijgegeven" : "Interne preview · nog niet deelbaar"
               : pipeline.previewStored ? "Preview opgeslagen, bron niet renderbaar" : "Nog geen preview";
           const savedDemo = currentJourney.savedDemoSite || currentJourney.previewPackage?.savedDemoSite || currentJourney.previewPackage?.saved_demo_site;
           return {
@@ -26942,7 +27034,9 @@
             buildReady: Boolean(pipeline.buildCompleted),
             buildRunning: Boolean(pipeline.buildRunning),
             buildBlocked,
-            previewReady: Boolean(pipeline.previewRenderable),
+            previewReady: Boolean(pipeline.customerPreviewReady),
+            internalPreviewReady: Boolean(pipeline.previewRenderable),
+            customerPreviewReady: Boolean(pipeline.customerPreviewReady),
             previewEditable: Boolean(pipeline.previewEditable),
             retryable: Boolean(pipeline.retryable),
             nextStep: pipeline.nextStep || "Briefing",
@@ -26962,7 +27056,7 @@
             ["SEO", state.scanReady ? "Automatisch ingevuld" : "Niet gestart", state.scanSummary, "⌕", "seo"],
             ["Mail", text("#demo-journey-mail-state", "Niet gestart"), "Bestaande e-mailflow", "✉", "mail"],
             ["Project", state.buildState, text("#factory-cockpit-package", "Websitepakket"), "⌘", "project"],
-            ["Preview", state.previewReady ? "Klaar" : "Wachtend", state.previewState, "◉", "preview"],
+            ["Preview", state.previewReady ? "Klaar voor klant" : state.internalPreviewReady ? "Interne controle" : "Wachtend", state.previewState, "◉", "preview"],
             ["Timeline", state.feedback ? "Feedback ontvangen" : "Actueel", state.feedback ? "Open feedback" : "Geen open feedback", "◷", "timeline"],
           ];
           const signature = JSON.stringify(cards);
@@ -27003,7 +27097,7 @@
             ["Research", state.researchReady, state.briefingReady && !state.researchReady, "Compleet", "Wachtend"],
             ["Scan", state.scanReady, state.researchReady && !state.scanReady, "Voltooid", "Wachtend"],
             ["Build", state.buildReady, state.buildRunning || (state.scanReady && !state.buildReady && !state.buildBlocked), state.buildState, "Nog niet gestart"],
-            ["Preview", state.previewReady, state.buildReady && !state.previewReady, "Klaar", "Wachtend"],
+            ["Preview", state.previewReady, state.internalPreviewReady && !state.previewReady, "Klaar voor klant", state.internalPreviewReady ? "Kwaliteitscontrole" : "Wachtend"],
             ["Feedback", Boolean(state.feedback), state.previewReady && !state.feedback, "Ontvangen", "Wachtend"],
             ["Live zetten", /verkocht|definitieve|live/i.test(value("#demo-journey-status")), false, "Voltooid", "Nog niet gestart"],
           ];

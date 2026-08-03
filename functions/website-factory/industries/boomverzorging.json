@@ -1,0 +1,83 @@
+{
+  "id": "boomverzorging",
+  "name": "Boomverzorging en boombeheer",
+  "tone": "vakkundig, veilig, nuchter en lokaal betrokken",
+  "colorHints": [
+    "bosgroen",
+    "mosgroen",
+    "warm zand",
+    "houtbruin"
+  ],
+  "heroAngles": [
+    "Gezonde bomen, veilig verzorgd en vakkundig beheerd.",
+    "Boomverzorging met aandacht voor veiligheid, omgeving en een duurzaam resultaat."
+  ],
+  "trustSignals": [
+    "Veilig en zorgvuldig werken",
+    "Duidelijke beoordeling vooraf",
+    "Vakkundig snoei- en boomwerk",
+    "Netjes achtergelaten werkplek"
+  ],
+  "ctaExamples": [
+    "Vraag een boominspectie aan",
+    "Bespreek uw boomwerk",
+    "Vraag vrijblijvend een offerte aan"
+  ],
+  "assetKeywords": [
+    "boomverzorging",
+    "bomen snoeien",
+    "boominspectie",
+    "klimwerk",
+    "groenbeheer"
+  ],
+  "key": "tree-care",
+  "label": "Boomverzorging en boombeheer",
+  "aliases": [
+    "boomverzorging",
+    "boomverzorger",
+    "boombeheer",
+    "boomspecialist",
+    "arborist",
+    "bomen snoeien",
+    "bomen kappen",
+    "boominspectie",
+    "stobben frezen"
+  ],
+  "palette": {
+    "ink": "#152019",
+    "brand": "#28543a",
+    "accent": "#d19a47",
+    "soft": "#f2f4ed",
+    "dark": "#193324"
+  },
+  "copy": {
+    "eyebrow": "Boomverzorging, veiligheid en duurzaam beheer",
+    "hero": "Gezonde bomen, veilig verzorgd en vakkundig beheerd.",
+    "intro": "Voor particulieren, bedrijven en beheerders die bomen veilig willen laten inspecteren, snoeien, verzorgen of verwijderen.",
+    "cta": "Vraag een boominspectie aan",
+    "secondaryCta": "Bekijk de diensten"
+  },
+  "services": [
+    "Bomen snoeien",
+    "Boominspectie",
+    "Bomen verwijderen",
+    "Stormschade en veiligheid",
+    "Stobben frezen",
+    "Boomadvies en beheer"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "portfolio",
+    "process",
+    "reviews",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-boomverzorging",
+    "snoeiwerk",
+    "boominspectie",
+    "veilig-klimwerk",
+    "boombeheer"
+  ]
+}

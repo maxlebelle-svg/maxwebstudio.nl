@@ -507,6 +507,7 @@ async function validatePublicPreviewOwnership(context, relationship, previewVers
   if (cleanText(version.status).toLowerCase() === "archived") {
     throw previewError("PREVIEW_NOT_SHAREABLE", "Een gearchiveerde preview kan niet publiek worden gedeeld.", 409);
   }
+  assertCustomerPreviewQualityReady(version);
 
   const journeyId = uuidOrEmpty(version.demo_journey_id);
   const journey = journeyId
@@ -687,6 +688,7 @@ async function publishActiveCustomerPreview(context, payload = {}) {
     : await readRows(context, "website_preview_versions", `select=${previewVersionFields}&customer_id=eq.${customerId}&order=version.desc`);
   const selectedVersion = previewVersionId ? versions.find((item) => cleanText(item.id) === previewVersionId) : versions[0] || null;
   if (!selectedVersion?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen previewversie gevonden om te publiceren.", 404);
+  if (previewSource !== PREVIEW_SOURCES.MANUAL) assertCustomerPreviewQualityReady(selectedVersion);
   const ownership = previewSource === PREVIEW_SOURCES.MANUAL
     ? await resolveStandaloneManualOwnership(context, selectedVersion, customerId, projectId)
     : await resolveOwnership(context, selectedVersion, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
@@ -772,6 +774,18 @@ async function publishActiveCustomerPreview(context, payload = {}) {
   return response;
 }
 
+function assertCustomerPreviewQualityReady(version = {}) {
+  const source = normalizePreviewSource(previewSourceForVersion(version));
+  if (source === PREVIEW_SOURCES.MANUAL) return true;
+  const report = version.quality_report && typeof version.quality_report === "object" ? version.quality_report : {};
+  if (report?.readiness?.customerPreview === true && report?.browserReview?.status === "passed") return true;
+  throw previewError(
+    "PREVIEW_QUALITY_NOT_APPROVED",
+    "Deze Factory-preview is nog niet door de inhoudelijke en browsercontrole gekomen en kan daarom niet met de klant worden gedeeld.",
+    409
+  );
+}
+
 function previewFingerprint({ demoJourneyId = "", previewSource = "", previewPackage = {} } = {}) {
   const files = Array.isArray(previewPackage.files) ? previewPackage.files.map((file) => [file.path, file.size, file.encoding, file.content]) : [];
   return createHash("sha256").update(JSON.stringify({ demoJourneyId, previewSource, files })).digest("hex");
@@ -797,6 +811,7 @@ async function publishPreviewVersion(context, payload = {}) {
   if (!version?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen bestaande previewversie gevonden om te publiceren.", 404);
   const storedSource = normalizePreviewSource(previewSourceForVersion(version));
   if (!storedSource) throw previewError("PREVIEW_SOURCE_INVALID", `De bronmetadata van previewversie ${version.id} ontbreekt.`, 409);
+  if (storedSource !== PREVIEW_SOURCES.MANUAL) assertCustomerPreviewQualityReady(version);
   if (requestedSource && requestedSource !== storedSource) {
     throw previewError("PREVIEW_SOURCE_MISMATCH", "De geselecteerde previewbron komt niet overeen met de opgeslagen previewversie.", 409);
   }
@@ -1427,6 +1442,7 @@ function jsonResponse(statusCode, body) {
 }
 
 exports._private = {
+  assertCustomerPreviewQualityReady,
   findPreviewVersionsForWebsite,
   persistPublicPreviewPointer,
   previewFingerprint,

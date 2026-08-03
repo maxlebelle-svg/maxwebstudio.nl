@@ -107,9 +107,48 @@ test("14 full payment uses the entire one-time total", () => {
   assert.equal(snapshot.remainingExVatCents, 0);
 });
 
-test("15 legacy fifty-percent route is absent from Composer", () => {
-  assert.doesNotMatch(browser + endpoint, /50\s*%|0\.5\s*\/\s*1\.21|half[_-]?payment/i);
-  assert.match(html, /Geen algemene 50%-optie/);
+test("15 fifty-percent discount is distinct from the removed percentage payment route", () => {
+  assert.doesNotMatch(browser + endpoint, /0\.5\s*\/\s*1\.21|half[_-]?payment/i);
+  assert.match(html, /<option value="50">50% korting<\/option>/);
+  assert.doesNotMatch(html, /name="payment"[^>]*value="50"/);
+});
+
+test("15a only the six approved manual discounts are accepted", () => {
+  for (const discountPercentage of [10, 15, 20, 25, 50, 75]) {
+    const snapshot = offers.buildOfferVersion({ paymentChoice: "none", discountPercentage, selections: [{ productId: "starter_site" }] }, actor);
+    assert.equal(snapshot.discountPercentage, discountPercentage);
+  }
+  for (const discountPercentage of [-10, 12, 100]) {
+    assert.throws(() => offers.buildOfferVersion({ paymentChoice: "none", discountPercentage, selections: [{ productId: "starter_site" }] }, actor), /kortingspercentage/i);
+  }
+});
+
+test("15b discount changes only the one-time total and VAT", () => {
+  const snapshot = offers.buildOfferVersion({ paymentChoice: "full", discountPercentage: 20, selections: [{ productId: "business_website" }, { productId: "care_basic" }] }, actor);
+  assert.equal(snapshot.oneTimeBeforeDiscountExVatCents, 99500);
+  assert.equal(snapshot.discountExVatCents, 19900);
+  assert.equal(snapshot.oneTimeExVatCents, 79600);
+  assert.equal(snapshot.oneTimeVatCents, 16716);
+  assert.equal(snapshot.oneTimeInclVatCents, 96316);
+  assert.equal(snapshot.recurringExVatCents, 1995);
+  assert.equal(snapshot.dueNowExVatCents, 79600);
+});
+
+test("15c a discounted total safely caps the fixed deposit", () => {
+  const snapshot = offers.buildOfferVersion({ paymentChoice: "fixed_deposit", discountPercentage: 75, selections: [{ productId: "starter_site" }] }, actor);
+  assert.equal(snapshot.oneTimeExVatCents, 12375);
+  assert.equal(snapshot.fixedDepositExVatCents, 15000);
+  assert.equal(snapshot.dueNowExVatCents, 12375);
+  assert.equal(snapshot.remainingExVatCents, 0);
+});
+
+test("15d discount is immutable input and restored by Composer", async () => {
+  const original = offers.buildOfferVersion({ paymentChoice: "none", discountPercentage: 10, selections: [{ productId: "starter_site" }] }, actor);
+  const changed = offers.buildOfferVersion({ paymentChoice: "none", discountPercentage: 15, selections: [{ productId: "starter_site" }] }, actor);
+  assert.notEqual(original.checksum, changed.checksum);
+  const { stateFromSnapshot } = await corePromise;
+  assert.equal(stateFromSnapshot(changed).discountPercentage, 15);
+  assert.match(browser, /discountPercentage: state\.discountPercentage/);
 });
 
 test("16 cents and VAT formatting preserve nineteen euros ninety-five", async () => {
@@ -258,7 +297,10 @@ test("31 missing email warns but does not block draft pricing", async () => {
 
 test("32 recurring offer automatically requires hosting and maintenance terms", () => {
   const recurring = documents.documentsForSnapshot({ recurringExVatCents: 1995 });
-  assert.equal(recurring.find((doc) => doc.documentType === "hosting_maintenance_terms").required, true);
+  const hostingTerms = recurring.find((doc) => doc.documentType === "hosting_maintenance_terms");
+  assert.equal(hostingTerms.required, true);
+  assert.equal(hostingTerms.versionCode, "hosting-onderhoud-2026-08");
+  assert.equal(hostingTerms.effectiveFrom, "2026-08-02");
   const once = documents.documentsForSnapshot({ recurringExVatCents: 0 });
   assert.equal(once.find((doc) => doc.documentType === "hosting_maintenance_terms").required, false);
 });
@@ -270,21 +312,30 @@ test("33 document registry checksums match the published local documents", () =>
     const expected = documents.DOCUMENTS.find((doc) => doc.documentType === type).checksumSha256;
     assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(root, file))).digest("hex"), expected);
   }
+  const generalTerms = documents.DOCUMENTS.find((doc) => doc.documentType === "general_terms");
+  assert.equal(generalTerms.versionCode, "algemene-voorwaarden-2026-08-b2b");
+  assert.equal(generalTerms.effectiveFrom, "2026-08-02");
+  const privacyPolicy = documents.DOCUMENTS.find((doc) => doc.documentType === "privacy_policy");
+  assert.equal(privacyPolicy.versionCode, "privacyverklaring-2026-08");
+  assert.equal(privacyPolicy.effectiveFrom, "2026-08-02");
+  assert.match(read("functions/commercial-order.js"), /TERMS_VERSION = "algemene-voorwaarden-2026-08-b2b"/);
 });
 
-test("34 Phase D1 adds mail only and no signature, payment or external QR provider", () => {
+test("34 Composer adds the certified Signhost offer route without payment or external QR providers", () => {
   const phaseC = html + browser + endpoint + read("public/src/offer-composer-core.mjs");
-  assert.doesNotMatch(phaseC, /api\.mollie|signhost|api\.qrserver|quickchart/i);
-  assert.match(endpoint, /providersEnabled:\s*false/);
+  assert.doesNotMatch(phaseC, /api\.mollie|api\.qrserver|quickchart/i);
+  assert.match(phaseC, /definitive_offer/);
+  assert.match(endpoint, /signhostCommercialEnabled/);
   assert.match(endpoint, /silverado-demo-qr\.svg/);
 });
 
-test("35 GET context is read-only while all writes use bounded Phase B RPCs", () => {
+test("35 GET context is read-only while writes use bounded RPCs or token revocation", () => {
   assert.match(endpoint, /event\.httpMethod === "GET" \? "read" : "write"/);
   assert.match(endpoint, /if \(event\.httpMethod === "GET"\)/);
   assert.match(endpoint, /commercial_create_offer_version_v1/);
   assert.match(endpoint, /commercial_transition_offer_version_v1/);
-  assert.doesNotMatch(endpoint, /method:\s*"(?:PUT|PATCH|DELETE)"/);
+  assert.doesNotMatch(endpoint, /method:\s*"(?:PUT|DELETE)"/);
+  assert.match(endpoint, /commercial_offer_signing_access_tokens/);
 });
 
 test("36 safe route parsing rejects fabricated or malformed relationship ids", async () => {
@@ -330,4 +381,61 @@ test("41 Composer shows a top-right progress notification until initial loading 
   assert.match(browser, /loadingToast\?\.update\('Voorstel Composer is klaar voor gebruik\.', 'success', \{ duration: 3200 \}\)/);
   assert.match(css, /\.offer-composer-page \.toast\.is-loading \.toast-progress/);
   assert.match(css, /@keyframes composer-loading-progress/);
+});
+
+test("42 every bound document can be opened and inspected before selection", () => {
+  for (const id of ["document-preview-dialog", "document-preview-frame", "close-document-preview"]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(browser, /data-document-preview="\$\{document\.documentType\}"/);
+  assert.match(browser, /href="\$\{escapeHtml\(sourceUrl\)\}" target="_blank" rel="noopener"/);
+  assert.match(browser, /elements\.documentPreviewFrame\.srcdoc = templateDocumentPreview\(document\)/);
+  assert.match(browser, /document\.documentType === 'quote' \? quote : agreement/);
+  assert.match(browser, /url\.protocol === 'https:'/);
+  assert.match(css, /\.document-preview-button/);
+  assert.match(css, /\.document-preview-dialog/);
+});
+
+test("43 agreement template is a complete B2B contract bound to an immutable proposal version", () => {
+  const agreement = documents.DOCUMENTS.find((document) => document.documentType === "agreement");
+  assert.equal(agreement.versionCode, "commercial-agreement-2026-08-b2b");
+  assert.equal(agreement.templateCode, "commercial-agreement-v2");
+  assert.equal(agreement.effectiveFrom, "2026-08-02");
+  assert.match(agreement.checksumSha256, /^[a-f0-9]{64}$/);
+  for (const phrase of [
+    "Uitsluitend zakelijke overeenkomst",
+    "Voorstelreferentie en integriteit",
+    "Afspraken over de uitvoering",
+    "Toepasselijke documenten en volgorde",
+    "Zakelijke akkoordverklaring",
+    "bevoegde vertegenwoordiger",
+  ]) assert.match(browser, new RegExp(phrase));
+  assert.match(browser, /snapshot\.checksum/);
+  assert.match(browser, /storedVersion\?\.version_number/);
+  assert.match(browser, /relationship\.kvkNumber/);
+  assert.match(endpoint, /kvkNumber: clean\(record\.kvk_number \|\| record\.kvk \|\| metadata\.kvkNumber\)/);
+  assert.match(browser, /Conceptweergave/);
+  assert.match(browser, /overflow-x:hidden/);
+  assert.match(browser, /overflow-wrap:anywhere/);
+});
+
+test("44 offer view template shows complete B2B scope, pricing, payment and integrity", () => {
+  const quote = documents.DOCUMENTS.find((document) => document.documentType === "quote");
+  assert.equal(quote.versionCode, "offer-view-2026-08-b2b");
+  assert.equal(quote.templateCode, "offer-view-v2");
+  assert.equal(quote.effectiveFrom, "2026-08-02");
+  assert.match(quote.checksumSha256, /^[a-f0-9]{64}$/);
+  for (const phrase of [
+    "Zakelijke offerte",
+    "Relatie en zakelijk karakter",
+    "Prijsopbouw",
+    "Betaalafspraak",
+    "Geldigheid en integriteit",
+    "Gekoppelde documenten",
+    "Wat gebeurt er bij acceptatie",
+  ]) assert.match(browser, new RegExp(phrase));
+  assert.match(browser, /snapshot\.oneTimeExVatCents/);
+  assert.match(browser, /snapshot\.oneTimeVatCents/);
+  assert.match(browser, /snapshot\.recurringInclVatCents/);
+  assert.match(browser, /snapshot\.dueNowInclVatCents/);
+  assert.match(browser, /snapshot\.remainingExVatCents/);
+  assert.match(browser, /snapshotChecksum/);
 });

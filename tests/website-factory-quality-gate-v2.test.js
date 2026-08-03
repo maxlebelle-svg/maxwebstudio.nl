@@ -71,6 +71,134 @@ test("quality checks expose stable identifiers, categories and criticality", () 
   assert.equal(report.checks.find((item) => item.id === "hero_visual_present").category, "visualFoundation");
 });
 
+test("tree-care output is specific, packaged locally and never falls back to generic sales copy", () => {
+  const generated = buildWebsitePackage({
+    journey: { businessName: "Boomverzorging Drenthe", websiteUrl: "https://boomverzorgingdrenthe.nl", packageType: "starter" },
+    version: 2,
+  });
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Boomverzorging Drenthe" } });
+  const imagePaths = generated.files.filter((file) => /^assets\/.+\.(?:jpe?g|png|webp)$/i.test(file.path)).map((file) => file.path);
+  const serviceImages = [...html.matchAll(/class="[^"]*service-card[^"]*"[\s\S]{0,800}?<img src="([^"]+)"/g)].map((match) => match[1]);
+
+  assert.equal(generated.meta.industryId, "boomverzorging");
+  assert.equal(generated.meta.industryProfile, "boomverzorging");
+  assert.ok(generated.meta.contentQuality.classificationConfidence >= 0.8);
+  assert.deepEqual(generated.meta.services.slice(0, 3), ["Bomen snoeien", "Boominspectie", "Bomen verwijderen"]);
+  assert.match(html, /Bomen snoeien/);
+  assert.match(html, /Boominspectie/);
+  assert.match(html, /Vraag een boominspectie aan/);
+  assert.match(html, /Vakkundig boomwerk voor iedere situatie/);
+  assert.match(html, /Boominspectie aanvragen/);
+  assert.doesNotMatch(html, /Een lokale specialist die online direct professioneel overkomt|Bekijk producten|Maakt praktisch duidelijk wat er gebeurt|huidadvies|huidvraag|behandeling plannen|persoonlijke verzorging/i);
+  assert.match(html, /data-mws-field="secondary-cta" href="#diensten"/);
+  assert.ok(imagePaths.length >= 5);
+  assert.ok(imagePaths.every((path) => path.startsWith("assets/boomverzorging-")));
+  assert.equal(serviceImages.length, 5);
+  assert.equal(new Set(serviceImages).size, serviceImages.length);
+  assert.equal(report.passed, true);
+  assert.equal(report.checks.find((item) => item.id === "distinct_service_images").passed, true);
+  assert.equal(report.checks.find((item) => item.id === "industry_context_specific").passed, true);
+  assert.equal(report.checks.find((item) => item.id === "no_cross_industry_copy").passed, true);
+});
+
+test("duplicate service images are a hard quality blocker", () => {
+  const generated = generatedPackage();
+  const entry = generated.files.find((file) => file.path === "index.html");
+  const serviceImages = [...entry.content.matchAll(/class="[^"]*service-card[^"]*"[\s\S]{0,800}?<img src="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(serviceImages.length >= 3);
+  entry.content = entry.content.replaceAll(serviceImages[1], serviceImages[0]);
+
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "De Groene Lijn" } });
+  assert.equal(report.passed, false);
+  assert.ok(report.blockingChecks.some((item) => item.id === "distinct_service_images"));
+});
+
+test("service click galleries use static packaged images instead of broken runtime paths", () => {
+  const generated = buildWebsitePackage({
+    journey: { businessName: "Boomverzorging Drenthe", websiteUrl: "https://boomverzorgingdrenthe.nl", packageType: "starter" },
+    briefing: "Branche: Boomverzorging\nDiensten: Boominspectie, Boomadvies en beheer, Bomen snoeien, Bomen verwijderen, Stormschade",
+    version: 7,
+  });
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  const script = generated.files.find((file) => file.path === "script.js").content;
+  const gallerySets = [...html.matchAll(/data-portfolio-service="([^"]+)"[^>]*>[\s\S]*?<\/div>/g)];
+  const referencedImages = [...html.matchAll(/class="portfolio-item"><img src="([^"]+)"/g)].map((match) => match[1]);
+  const packagedPaths = new Set(generated.files.map((file) => file.path));
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Boomverzorging Drenthe" } });
+
+  assert.equal(gallerySets.length, 5);
+  assert.equal(referencedImages.length, 15);
+  assert.ok(referencedImages.every((imagePath) => packagedPaths.has(imagePath)));
+  assert.doesNotMatch(script, /portfolioGallery\.innerHTML|data\.images/);
+  assert.match(script, /portfolioGalleries\.forEach/);
+  assert.equal(report.checks.find((item) => item.id === "static_portfolio_images").passed, true);
+});
+
+test("website research keeps source categories and real social profiles in the generated site", () => {
+  const generated = buildWebsitePackage({
+    journey: {
+      businessName: "Boomverzorging Drenthe",
+      websiteUrl: "https://boomverzorgingdrenthe.nl",
+      packageType: "starter",
+      websiteAnalysis: {
+        currentWebsite: {
+          title: "Boomverzorging Drenthe",
+          paragraphs: ["Wij verzorgen, snoeien, rooien en planten bomen veilig en deskundig in Drenthe."],
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f", "Map-signs"],
+          socialUrls: [
+            "https://www.facebook.com/boomverzorgingdrenthe",
+            "https://www.instagram.com/boomverzorgingdrenthe/",
+          ],
+        },
+        aiBriefing: {
+          industry: "Boomverzorging",
+          region: "Oosterhesselen, Drenthe",
+          services: ["Boomverzorging Drenthe", "Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Envelope", "Facebook-f", "Map-signs"],
+        },
+      },
+    },
+    briefing: "Branche: Boomverzorging in Drenthe\nDiensten: Boomverzorging, Rooien, Snoeien, Aanplanten, Stobbenfrezen, Eikenprocessierups\nCTA: Vraag vrijblijvend een offerte aan",
+    version: 8,
+  });
+  const html = generated.files.find((file) => file.path === "index.html").content;
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Boomverzorging Drenthe" } });
+
+  assert.deepEqual(generated.meta.services.slice(0, 6), ["Boomverzorging", "Rooien", "Snoeien", "Aanplanten", "Stobbenfrezen", "Eikenprocessierups"]);
+  assert.match(html, />Rooien</);
+  assert.match(html, />Stobbenfrezen</);
+  assert.match(html, />Eikenprocessierups</);
+  assert.doesNotMatch(html, /<h3>Boomverzorging Drenthe<\/h3>/);
+  assert.doesNotMatch(html, /<h3>Envelope<\/h3>/);
+  assert.doesNotMatch(html, /<h3>Facebook-f<\/h3>/);
+  assert.doesNotMatch(html, /<h3>Map-signs<\/h3>/);
+  assert.match(html, /Werkgebied: Drenthe/);
+  assert.match(html, /services-count-6/);
+  assert.match(html, /https:\/\/www\.facebook\.com\/boomverzorgingdrenthe/);
+  assert.match(html, /https:\/\/www\.instagram\.com\/boomverzorgingdrenthe\//);
+  assert.match(html, /sameAs/);
+  assert.doesNotMatch(html, /\"Duidelijk, professioneel|\"De belangrijkste informatie/);
+  assert.equal(report.checks.find((item) => item.id === "source_social_links_preserved").passed, true);
+});
+
+test("unknown companies are blocked instead of receiving a polished-looking generic preview", () => {
+  const generated = buildWebsitePackage({ journey: { businessName: "Voorbeeldbedrijf" }, version: 1 });
+  const report = runQualityCheck({ generatedPackage: generated, journey: { businessName: "Voorbeeldbedrijf" } });
+
+  assert.equal(report.passed, false);
+  assert.equal(report.readiness.customerPreview, false);
+  assert.ok(report.blockingChecks.some((item) => item.id === "industry_context_specific"));
+  assert.ok(report.blockingChecks.some((item) => item.id === "no_generic_fallback_copy"));
+});
+
+test("publication backend rejects an unapproved Factory version but keeps manual ZIP compatibility", () => {
+  assert.throws(
+    () => require("../functions/admin-preview-publication")._private.assertCustomerPreviewQualityReady({ generated_package: { meta: { previewSource: "factory_build" } }, quality_report: { readiness: { customerPreview: false }, browserReview: { status: "not_run" } } }),
+    (error) => error.code === "PREVIEW_QUALITY_NOT_APPROVED" && error.status === 409,
+  );
+  assert.equal(require("../functions/admin-preview-publication")._private.assertCustomerPreviewQualityReady({ generated_package: { meta: { previewSource: "manual_zip" } } }), true);
+});
+
 test("beauty output uses treatment language and includes the mobile overflow safeguards", () => {
   const generated = buildWebsitePackage({
     journey: { businessName: "Studio Morgen", packageType: "starter" },

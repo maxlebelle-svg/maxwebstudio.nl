@@ -289,6 +289,19 @@ function mollieConfig() {
 }
 function assertEnabled() { if (clean(process.env.COMMERCIAL_OFFER_POST_SIGNATURE_ENABLED).toLowerCase() !== "true") throw coded("COMMERCIAL_POST_SIGNATURE_DISABLED", 403, "De automatisering na ondertekening is nog niet geactiveerd."); }
 function packageLabel(snapshot = {}) { const names = (Array.isArray(snapshot.lines) ? snapshot.lines : []).filter((line) => line.componentType === "one_time").map((line) => clean(line.productName)).filter(Boolean); return names.slice(0, 3).join(" + ") || "Max Webstudio opdracht"; }
+function invoiceLines(snapshot, payment, paymentChoice) {
+  const label = paymentChoice === "full" ? `Volledige betaling ${packageLabel(snapshot)}` : `Aanbetaling ${packageLabel(snapshot)}`;
+  const vatRate = payment.subtotal > 0 ? Math.round((payment.vat / payment.subtotal) * 10000) / 100 : 0;
+  return [{
+    description: label,
+    quantity: 1,
+    unitPrice: payment.subtotal,
+    vatRate,
+    subtotal: payment.subtotal,
+    vat: payment.vat,
+    total: payment.total,
+  }];
+}
 function orderId(versionId) { return `signed_offer_${clean(versionId).replace(/-/g, "")}`.slice(0, 90); }
 function integer(value) { const number = Number(value); return Number.isInteger(number) && number >= 0 ? number : 0; }
 function euros(cents) { return Math.round(integer(cents)) / 100; }
@@ -299,5 +312,5 @@ function coded(code, status, message) { return Object.assign(new Error(message),
 
 module.exports = {
   fulfilSignedCommercialOffer,
-  _private: { paymentAmounts, relationshipIdentity, packageLabel, orderId, mollieConfig, safeCode },
+  _private: { paymentAmounts, relationshipIdentity, packageLabel, invoiceLines, orderId, mollieConfig, safeCode },
 };

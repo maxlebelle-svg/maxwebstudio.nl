@@ -28,7 +28,7 @@ async function run(options = {}) {
     calls.push({ path: parsed.pathname, method, query: parsed.searchParams, body: init.body ? JSON.parse(init.body) : null });
     if (parsed.pathname.endsWith("/public_preview_publications")) return response(200, [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", relationship_type: "lead", relationship_id: IDS.lead, public_slug: "advies-post", preview_version_id: options.publicationPreviewId || IDS.preview, enabled: true, revoked_at: null, updated_at: "2026-07-18" }]);
     if (parsed.pathname.endsWith("/leads")) return response(200, [{ id: IDS.lead, company_name: "Advies Post", contact_name: "Lisanne Post", email: options.email === undefined ? "lisanne@example.test" : options.email, status: "new", lead_status: "interest" }]);
-    if (parsed.pathname.endsWith("/website_preview_versions")) return response(200, [{ id: IDS.preview, demo_journey_id: IDS.journey, version: 4, status: "internal", generated_package: { files: [{ path: "index.html", content: "<h1>Demo</h1>" }] }, metadata: { previewSource: "website_factory" } }]);
+    if (parsed.pathname.endsWith("/website_preview_versions")) return response(200, [{ id: IDS.preview, demo_journey_id: IDS.journey, version: 4, status: "internal", quality_report: { passed: true, browserReview: { status: "passed" }, readiness: { internalPreview: true, customerPreview: true } }, generated_package: { files: [{ path: "index.html", content: "<h1>Demo</h1>" }] }, metadata: { previewSource: "website_factory" } }]);
     if (parsed.pathname.endsWith("/demo_journeys")) return response(200, [{ id: IDS.journey, lead_id: IDS.lead }]);
     throw new Error(`Unexpected ${method} ${url}`);
   };

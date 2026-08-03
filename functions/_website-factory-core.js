@@ -171,6 +171,28 @@ const INDUSTRY_PROFILES = [
       ["Afspraak rondmaken", "De klant weet direct wanneer de auto klaar is of welke vervolgstap nodig is."],
     ],
   }),
+  profile("tree-care", ["boomverzorging", "boomverzorger", "boombeheer", "boomspecialist", "arborist", "boominspectie", "bomen snoeien", "boom snoeien", "bomen kappen", "boom kappen", "stobben frezen", "stormschade"], {
+    label: "Boomverzorging en boombeheer",
+    colors: { ink: "#152019", brand: "#28543a", accent: "#d19a47", soft: "#f2f4ed", dark: "#193324" },
+    hero: "Vakkundige boomverzorging, van inspectie tot veilige uitvoering.",
+    intro: "Voor gezonde bomen en een veilige omgeving: deskundig advies, zorgvuldig snoeiwerk en gecontroleerde verwijdering voor particulieren, bedrijven en terreinbeheerders.",
+    eyebrow: "Boomverzorging, veiligheid en duurzaam beheer",
+    cta: "Vraag vrijblijvend een offerte aan",
+    secondaryCta: "Bekijk de diensten",
+    services: ["Bomen snoeien", "Boominspectie", "Bomen verwijderen", "Stormschade en veiligheid", "Stobben frezen", "Boomadvies en beheer"],
+    benefits: [
+      ["Veilig uitgevoerd", "De aanpak begint met een duidelijke beoordeling van boom, omgeving en bereikbaarheid."],
+      ["Vakkundig boomwerk", "Snoei, verzorging en verwijdering worden afgestemd op de situatie en het gewenste resultaat."],
+      ["Duidelijke afspraken", "U weet vooraf welke werkzaamheden nodig zijn en hoe het terrein wordt achtergelaten."],
+      ["Lokaal en betrokken", "Korte lijnen maken inspectie, planning en uitvoering overzichtelijk."],
+    ],
+    process: [
+      ["Situatie bespreken", "Vertel om welke boom of bomen het gaat en wat u wilt laten beoordelen."],
+      ["Inspectie en advies", "De situatie, veiligheid en passende werkwijze worden vooraf duidelijk in kaart gebracht."],
+      ["Werk inplannen", "U ontvangt een heldere aanpak en planning voor het boomwerk."],
+      ["Veilig uitvoeren", "Het werk wordt zorgvuldig uitgevoerd en de werkplek wordt netjes achtergelaten."],
+    ],
+  }),
   profile("garden", ["hovenier", "tuin", "tuinaanleg", "groen", "buitenruimte"], {
     label: "Tuin en buitenruimte",
     colors: { ink: "#17231b", brand: "#2f5d45", accent: "#d4a24a", soft: "#f2f4ed", dark: "#243b2d" },
@@ -249,7 +271,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     return buildVmTegelwerkenDemo({ version, editorManifest: FACTORY_EDITOR_MANIFEST });
   }
   const websiteAnalysis = websiteBrief.research.websiteAnalysis;
-  const currentWebsite = normalizeCurrentWebsiteSnapshot(websiteAnalysis?.currentWebsite || journey.currentWebsite || journey.current_website);
+  const currentWebsite = normalizeCurrentWebsiteSnapshot(websiteAnalysis?.currentWebsite || websiteAnalysis?.homepage || journey.currentWebsite || journey.current_website);
   const googleBusiness = websiteBrief.research.googleBusiness || journey.googleBusiness || journey.google_business || {};
   const googleReviews = normalizeGoogleReviews(journey.googleReviews || journey.google_reviews || googleBusiness.reviews);
   const googleRating = cleanText(journey.googleRating || journey.google_rating || googleBusiness.rating);
@@ -264,10 +286,24 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.headings || []),
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
+  const resolvedRegion = extractLocationText([
+    websiteBrief.business.region,
+    combinedBriefing,
+    businessName,
+    currentWebsite.title,
+    currentWebsite.h1,
+    ...(currentWebsite.paragraphs || []),
+  ].filter(Boolean).join("\n"));
   const legacyIndustry = explicitIndustry || inferIndustry(industrySignals, businessName);
-  const extractedServices = websiteBrief.business.services.length
+  const explicitlyMentionedServices = extractMentionedServices([combinedBriefing, currentWebsiteText].filter(Boolean).join("\n"));
+  const sourceWebsiteServices = mergeUnique(currentWebsite.services, websiteAnalysis?.aiBriefing?.services, explicitlyMentionedServices)
+    .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName));
+  const requestedServices = websiteBrief.business.services.length
     ? websiteBrief.business.services
     : extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), legacyIndustry);
+  const extractedServices = websiteBrief.business.services.length
+    ? mergeUnique(requestedServices, sourceWebsiteServices)
+    : mergeUnique(sourceWebsiteServices, requestedServices);
   const packageType = normalizePackageType(websiteBrief.site.packageType || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
   const factoryIndustrySignals = websiteBrief.source.kind === "legacy_briefing"
     ? `${legacyIndustry} ${industrySignals} ${businessName}`
@@ -285,7 +321,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     websiteUrl,
     blockedColors: websiteBrief.brand.blockedColors.length ? websiteBrief.brand.blockedColors : extractField(combinedBriefing, ["Niet gebruiken", "Geblokkeerde kleuren"]),
     seoKeywords: websiteBrief.seo.keywords.length ? websiteBrief.seo.keywords : websiteAnalysis?.aiBriefing?.seoKeywords,
-    serviceArea: websiteBrief.seo.serviceArea || websiteAnalysis?.aiBriefing?.region,
+    serviceArea: websiteBrief.seo.serviceArea || resolvedRegion || websiteAnalysis?.aiBriefing?.region,
   });
   const adaptedIndustry = adaptIndustryProfileToFactoryInput(intelligenceProfile, {
     industry: explicitIndustry,
@@ -309,7 +345,9 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     cta: adaptedIndustry.cta || legacyIndustryProfile.cta,
     services: adaptedIndustry.services.length ? adaptedIndustry.services : legacyIndustryProfile.services,
   };
-  const services = mergeUnique(adaptedIndustry.services, industryProfile.services).filter(isUsableServiceLabel).slice(0, 6);
+  const services = mergeUnique(adaptedIndustry.services, industryProfile.services)
+    .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName))
+    .slice(0, 6);
   const pricingPackages = extractPricingPackages({
     currentWebsite,
     briefing: combinedBriefing,
@@ -326,6 +364,17 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const heroImage = demoImageAssets.hero || resolveDemoImageAsset({ businessName, industry, services, briefing: industrySignals });
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
+  const genericServiceLabels = new Set(["advies", "uitvoering", "service", "onderhoud", "contact", "maatwerk", "projecten"]);
+  const specificServices = services.filter((service) => !genericServiceLabels.has(cleanText(service).toLowerCase()));
+  const factoryIndustrySpecific = !["", "local"].includes(cleanText(factoryConfig.industry.id).toLowerCase());
+  const contentQuality = {
+    classificationConfidence: Math.max(Number(intelligenceProfile.confidence || 0), factoryIndustrySpecific ? 0.72 : 0),
+    industrySpecific: factoryIndustrySpecific || (intelligenceProfile.subcategory !== "neutrale-lokale-dienstverlener" && Number(intelligenceProfile.confidence || 0) >= 0.45),
+    specificServiceCount: specificServices.length,
+    specificServices,
+    genericFallbackUsed: !factoryIndustrySpecific && intelligenceProfile.subcategory === "neutrale-lokale-dienstverlener",
+    inputSignalCount: inputSignals,
+  };
   const templateSections = packageRules.sections;
   const pages = packageRules.pages;
   const siteUrl = normalizeSiteUrl(websiteUrl, businessName);
@@ -338,7 +387,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     role,
     packagedAssetMeta(siteAssets.find((item) => item.kind === role), asset),
   ]));
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite, googleReviews, googleRating, googleRatingTotal, googleMapsUrl });
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region: resolvedRegion, preferSixServiceGrid: sourceWebsiteServices.length >= 6, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite, googleReviews, googleRating, googleRatingTotal, googleMapsUrl });
   const css = renderCss(colors);
   const script = renderScript({ businessName, email, services, industryProfile, siteAssets });
   const sitemap = renderSitemap({ siteUrl, pages });
@@ -398,6 +447,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     visualDirection: "premium industry landing page",
     templateSections,
     lowInputWarning,
+    contentQuality,
     warnings: lowInputWarning ? ["Weinig klantinput beschikbaar; premium branchecopy en veilige demo-assets gebruikt."] : [],
     customerWishes: combinedBriefing,
     sourceWebsiteContent: currentWebsiteText,
@@ -524,6 +574,8 @@ function normalizeCurrentWebsiteSnapshot(value = null) {
     metaDescription: cleanText(source.metaDescription),
     h1: cleanText(source.h1),
     headings: cleanList(source.headings, 10),
+    navigationLabels: cleanList(source.navigationLabels, 10),
+    services: cleanList(source.services, 10),
     paragraphs: cleanList(source.paragraphs, 8),
     pricingItems,
     imageUrls: cleanList(source.imageUrls || source.images, 8),
@@ -662,6 +714,14 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const htmlPageCount = files.filter((file) => file.path.endsWith(".html")).length;
   const assetCount = files.filter((file) => file.path.startsWith("assets/")).length;
   const hasFile = (path) => files.some((file) => file.path === path);
+  const contentQuality = generatedPackage.meta?.contentQuality || {};
+  const genericFallbackCopy = /Een lokale specialist die online direct professioneel overkomt|Service, vertrouwen en contact/i.test(html);
+  const crossIndustryCopyClean = industryId !== "boomverzorging" || !/huidadvies|huidvraag|behandeling plannen|behandelingen en advies|persoonlijke verzorging/i.test(html);
+  const serviceImagePaths = [...html.matchAll(/class="[^"]*service-card[^"]*"[\s\S]{0,800}?<img[^>]+src="([^"]+)"/gi)].map((match) => match[1]);
+  const serviceImagesAreUnique = serviceImagePaths.length === 0 || new Set(serviceImagePaths).size === serviceImagePaths.length;
+  const portfolioImagesAreStatic = !/id="portfolio"/i.test(html) || /data-portfolio-service="[^"]+"[^>]*>[\s\S]{0,500}?<img[^>]+src="[^"]+"/i.test(html);
+  const sourceSocialUrls = normalizeSocialLinks(generatedPackage.meta?.currentWebsite?.socialUrls).map((item) => item.url);
+  const sourceSocialsRendered = sourceSocialUrls.length === 0 || sourceSocialUrls.every((url) => html.includes(url.replace(/&/g, "&amp;")) || html.includes(url));
   const checks = [
     check("hero_present", "Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10, "visualFoundation", true),
     check("hero_visual_present", "Hero visual aanwezig", /class="[^"]*hero/i.test(html) && /<img[^>]+src=/i.test(html), 12, "visualFoundation"),
@@ -671,6 +731,8 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
     check("minimum_section_count", "Minimaal vijf secties", sectionCount >= 5, 10, "visualFoundation"),
     check("package_page_count", "Pakket pagina-aantal klopt", htmlPageCount >= packageRules.pages.length, 12, "technical", true),
     check("minimum_service_count", "Minimaal drie diensten", serviceCardCount >= 3, 8, "content"),
+    check("distinct_service_images", "Iedere dienst heeft een eigen afbeelding", serviceImagesAreUnique, 10, "visualFoundation", true),
+    check("static_portfolio_images", "Uitgeklapte dienstbeelden zijn vooraf gevalideerd", portfolioImagesAreStatic && !/portfolioGallery\.innerHTML/.test(script), 10, "technical", true),
     check("minimum_benefit_count", "Minimaal drie voordelen", benefitCount >= 3, 8, "content"),
     check("process_present", "Werkwijze aanwezig", /id="werkwijze"|Zo werkt|Werkwijze/i.test(html), 8, "content"),
     check("trust_present", "Reviews of vertrouwen aanwezig", /id="reviews"|review|vertrouwen/i.test(html), 8, "conversion"),
@@ -686,12 +748,17 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
     check("cta_has_label", "CTA niet leeg", />\s*(Plan|Vraag|Neem|Bel|Start|Bekijk)[^<]+</i.test(html), 4, "conversion", true),
     check("html_document_valid", "HTML basis klopt", /<!doctype html>/i.test(html) && /<\/html>/i.test(html) && /<\/body>/i.test(html), 6, "technical", true),
     check("script_static_safe", "Script statisch veilig", script ? !/document\.write|eval\(|fetch\(/i.test(script) : true, 4, "technical", true),
-    check("industry_content_present", "Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())) || /branche|diensten/i.test(html), 8, "content"),
+    check("industry_content_present", "Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())), 8, "content", true),
+    check("industry_context_specific", "Branche betrouwbaar herkend", contentQuality.industrySpecific === true, 12, "content", true),
+    check("services_are_specific", "Minimaal twee concrete diensten", Number(contentQuality.specificServiceCount || 0) >= 2, 10, "content", true),
+    check("no_generic_fallback_copy", "Geen generieke noodcopy", contentQuality.genericFallbackUsed !== true && !genericFallbackCopy, 10, "content", true),
+    check("no_cross_industry_copy", "Geen tekst uit een andere branche", crossIndustryCopyClean, 12, "content", true),
     check("preview_has_substance", "Geen kale preview", css.length > 3500 && html.length > 6000, 10, "visualFoundation"),
     check("css_present", "CSS aanwezig", css.length > 1200, 6, "technical", true),
-    check("local_assets_present", "Lokale assets aanwezig", assetCount >= 4 && hasFile("assets/hero.svg") && hasFile("assets/logo.svg"), 10, "visualFoundation"),
+    check("local_assets_present", "Lokale assets aanwezig", assetCount >= 4 && files.some((file) => /^assets\/(?:[^/]+-)?hero\.(?:avif|gif|jpe?g|png|webp|svg)$/i.test(file.path)) && hasFile("assets/logo.svg"), 10, "visualFoundation"),
     check("seo_files_present", "SEO pakket aanwezig", hasFile("sitemap.xml") && hasFile("robots.txt") && hasFile(".htaccess"), 8, "technical"),
     check("social_assets_present", "Favicon en social preview aanwezig", hasFile("assets/favicon.svg") && hasFile("assets/og-image.svg"), 7, "visualFoundation"),
+    check("source_social_links_preserved", "Gevonden social-links overgenomen", sourceSocialsRendered, 6, "content", true),
     check("request_form_fallback", "Aanvraagformulier werkt zonder backend", /requestForm/.test(script) && /mailto:/.test(script), 6, "conversion"),
     check("no_automatic_deploy", "Geen automatische live upload", !/ftp|sftp|netlify\s+deploy|fetch\(|XMLHttpRequest|PUT|POST/i.test(script), 10, "technical", true),
   ];
@@ -971,6 +1038,7 @@ function extractServices(text = "", industry = "") {
   if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return ["Badkamer betegelen", "Vloertegels", "Wandtegels", "Natuursteen", "Voeg- en kitwerk"];
   if (/autoairco|auto-airco|auto airco/.test(normalized)) return ["Airco service", "Airco onderhoud", "Diagnose", "Reparatie", "Afspraak maken"];
   if (/autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return ["Onderhoud", "APK", "Diagnose", "Reparatie", "Occasions"];
+  if (/boomverzorg|boomverzorger|boombeheer|boomspecialist|arborist|boominspectie|bomen?\s+(?:snoeien|kappen|rooien|verwijderen)|stobben?\s+frezen|stormschade/.test(normalized)) return ["Bomen snoeien", "Boominspectie", "Bomen verwijderen", "Stormschade en veiligheid", "Stobben frezen", "Boomadvies en beheer"];
   if (/timmer|timmerwerk|timmerwerken|timmerbedrijf|timmerman|zolder|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn/.test(normalized)) return ["Zolderverbouwing", "Dakkapel afwerking", "Vliering plaatsen", "Overkapping en tuinhuis", "Gevelbekleding", "Kozijnen en maatwerk"];
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return ["Renovatie", "Maatwerk", "Projectbegeleiding"];
   if (/restaurant|horeca|cafe|catering/.test(normalized)) return ["Menu", "Reserveren", "Catering"];
@@ -993,11 +1061,30 @@ function extractServices(text = "", industry = "") {
   return ["Advies", "Uitvoering", "Service"];
 }
 
+function extractMentionedServices(text = "") {
+  const source = String(text || "").toLowerCase();
+  const dictionary = [
+    ["boomverzorging", "Boomverzorging"],
+    ["rooien", "Rooien"],
+    ["snoeien", "Snoeien"],
+    ["aanplanten", "Aanplanten"],
+    ["stobbenfrezen", "Stobbenfrezen"],
+    ["stobben frezen", "Stobben frezen"],
+    ["eikenprocessierups", "Eikenprocessierups"],
+  ];
+  return dictionary
+    .map(([needle, label], order) => ({ label, order, position: source.indexOf(needle) }))
+    .filter((item) => item.position >= 0)
+    .sort((left, right) => left.position - right.position || left.order - right.order)
+    .map((item) => item.label);
+}
+
 function inferIndustry(text = "", businessName = "") {
   const normalized = `${text} ${businessName}`.toLowerCase();
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return "rijschool";
   if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return "tegelwerk en betegeling";
   if (/autoairco|auto-airco|auto airco|autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return "automotive";
+  if (/boomverzorg|boomverzorger|boombeheer|boomspecialist|arborist|boominspectie|bomen?\s+(?:snoeien|kappen|rooien|verwijderen)|stobben?\s+frezen|stormschade/.test(normalized)) return "boomverzorging en boombeheer";
   if (/timmer|timmerwerk|timmerwerken|timmerbedrijf|timmerman|zolder|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn/.test(normalized)) return "timmerwerk en maatwerk";
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return "bouw en renovatie";
   if (/restaurant|horeca|cafe/.test(normalized)) return "horeca";
@@ -1044,14 +1131,30 @@ function mergeUnique(...groups) {
 function isUsableServiceLabel(value = "") {
   const text = cleanText(value);
   if (!text) return false;
+  if (/^(?:envelope|mail|e-mail|email|telefoon|phone|menu|home)$/i.test(text)) return false;
+  if (/^(?:facebook|instagram|linkedin|youtube|tiktok)(?:[-_\s].*)?$/i.test(text)) return false;
   if (/^https?:\/\//i.test(text) || /^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(text)) return false;
   if (/^(naam|branche|regio|website|contact|telefoon|e-mail|email|bedrijf|doelgroep|output|cta|call to action)\s*:/i.test(text)) return false;
   if (text.length > 70) return false;
   return /[a-zA-ZÀ-ÿ]/.test(text);
 }
 
+function isBusinessNameServiceLabel(value = "", businessName = "") {
+  const normalize = (input) => cleanText(input)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const serviceKey = normalize(value);
+  const businessKey = normalize(businessName);
+  return Boolean(serviceKey && businessKey && serviceKey === businessKey);
+}
+
 function extractLocationText(value = "") {
   const text = cleanText(value);
+  const namedRegion = text.match(/\b(Drenthe|Groningen|Friesland|Fryslân|Overijssel|Gelderland|Flevoland|Utrecht|Noord-Holland|Zuid-Holland|Zeeland|Noord-Brabant|Limburg|Amsterdam|Rotterdam|Almere|Breda|Den Haag|Eindhoven|Alkmaar|Haarlem)\b/i);
+  if (namedRegion) return namedRegion[1];
   const parts = text.split(/[|,/]/).map((item) => cleanText(item)).filter(Boolean);
   return parts.find((part) => /regio|plaats|omgeving|nederland|amsterdam|rotterdam|utrecht|almere|breda|den haag|eindhoven|alkmaar|haarlem/i.test(part)) || "Regio";
 }
@@ -1189,11 +1292,16 @@ function serviceSpecificDemoAsset({ service = "", industryProfile = {}, demoImag
 
 function serviceImageRoleForText(serviceText = "", profileKey = "") {
   const text = `${serviceText} ${profileKey}`;
+  if (/boominspectie|boomcontrole/.test(serviceText)) return "detail";
+  if (/boomadvies|boombeheer/.test(serviceText)) return "team";
+  if (/bomen?\s+snoeien|snoeiwerk/.test(serviceText)) return "service";
+  if (/bomen?\s+(?:verwijderen|rooien|kappen)|boomverwijder/.test(serviceText)) return "project";
+  if (/stormschade|stormveilig/.test(serviceText)) return "service-alt";
   if (/contact|bel|whatsapp|afspraak|reserver|boeken|aanmeld|inschrijf|intake|kennismaking|offerte|aanvraag/.test(text)) return "contact";
-  if (/advies|consult|controle|diagnose|inspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan|tegel|voeg|kit|natuursteen/.test(text)) return "detail";
+  if (/advies|consult|controle|diagnose|inspectie|boominspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan|tegel|voeg|kit|natuursteen/.test(text)) return "detail";
   if (/team|begeleiding|instruct|persoonlijk|coaching|praktijk|behandeling|therapie|mondzorg/.test(text)) return "team";
-  if (/project|portfolio|renovatie|aanbouw|dak|dakkapel|zolder|vliering|overkapping|tuinhuis|gevel|houtwerk|kozijn|tuinontwerp|aanleg|nieuwbouw|woning|verkoop|badkamer|vloer|wand/.test(text)) return "project";
-  if (/uitvoering|reparatie|onderhoud|apk|airco|installatie|laadpaal|warmtepomp|storing|storingen|lekkage|cv|service|spoed/.test(text)) return "service-alt";
+  if (/project|portfolio|renovatie|aanbouw|dak|dakkapel|zolder|vliering|overkapping|tuinhuis|gevel|houtwerk|kozijn|tuinontwerp|aanleg|boomverwijder|boom kappen|bomen kappen|nieuwbouw|woning|verkoop|badkamer|vloer|wand/.test(text)) return "project";
+  if (/uitvoering|reparatie|onderhoud|snoei|stobben|stormschade|apk|airco|installatie|laadpaal|warmtepomp|storing|storingen|lekkage|cv|service|spoed/.test(text)) return "service-alt";
   if (/resultaat|review|vertrouwen|garantie|geslaagd|preventie|nazorg/.test(text)) return "review";
   if (/menu|lunch|diner|arrangement|private dining|kamer|verblijf|interieur|sfeer/.test(text)) return "project-alt";
   return "service";
@@ -1377,7 +1485,12 @@ function isHolisticProfile(profile = {}) {
 
 function isBeautyProfile(profile = {}) {
   const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""}`.toLowerCase();
-  return /beauty|schoonheid|salon|kapper|verzorging/.test(text);
+  return /beauty|schoonheid|salon|kapper|huidverzorging/.test(text);
+}
+
+function isTreeCareProfile(profile = {}) {
+  const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""}`.toLowerCase();
+  return /boomverzorging|boombeheer|boomspecialist|tree-care|arborist/.test(text);
 }
 
 function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter) {
@@ -1424,6 +1537,40 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     subPageIntro: "kan deze pagina later aanvullen met echte cases, foto's en klantreacties.",
     footerLabel: packageRules.label,
   };
+  if (isTreeCareProfile(profile)) {
+    return {
+      ...defaults,
+      quickActionTitle: "Boominspectie aanvragen",
+      quickActionText: "Beschrijf de boom en de situatie",
+      contactActionTitle: "Offerte voor boomwerk",
+      contactActionText: "Ontvang een duidelijke aanpak en planning",
+      servicesEyebrow: "Boomverzorging en veiligheid",
+      servicesTitle: "Vakkundig boomwerk voor iedere situatie.",
+      portfolioEyebrow: "Werk in beeld",
+      portfolioTitle: "Bekijk de aanpak per boomdienst.",
+      portfolioCopy: "Kies een dienst om de werkwijze en een passende projectpresentatie te bekijken.",
+      benefitsEyebrow: "Veilig en zorgvuldig",
+      benefitsTitle: "Boomwerk met aandacht voor mens, omgeving en boom.",
+      benefitsText: "De pagina maakt inspectie, advies, uitvoering en de route naar een heldere offerte concreet.",
+      processEyebrow: "Zo werken we",
+      processTitle: "Van eerste beoordeling naar veilig uitgevoerd boomwerk.",
+      reviewsEyebrow: "Zorgvuldig boomwerk",
+      reviewsTitle: "Een onderbouwde aanpak voor iedere boom en standplaats.",
+      reviewOneTitle: "Eerst beoordelen, dan gericht uitvoeren.",
+      reviewOneText: "Conditie, bereikbaarheid, omgeving en mogelijke risico’s worden meegenomen voordat het werk wordt ingepland.",
+      reviewTwoTitle: "Veilig werken met respect voor boom en terrein.",
+      reviewTwoText: "De werkwijze wordt afgestemd op de situatie, met aandacht voor behoud waar mogelijk en een nette oplevering.",
+      contactEyebrow: "Boomwerk bespreken",
+      contactTitle: "Vertel om welke boom het gaat en ontvang gericht advies.",
+      projectLabel: "Gewenste boomdienst",
+      messageLabel: "Wat is de situatie?",
+      messagePlaceholder: "Beschrijf de boom, de locatie, eventuele schade of risico's en wanneer u geholpen wilt worden.",
+      subPageEyebrow: "Boomverzorging en boombeheer",
+      subPageText: "presenteert hier extra informatie over inspectie, snoei, verwijdering en duurzaam boombeheer.",
+      subPageIntro: "kan deze pagina later aanvullen met echte projecten, certificeringen en klantreacties.",
+      footerLabel: "Boomverzorging, veiligheid en duurzaam boombeheer",
+    };
+  }
   if (isHolisticProfile(profile)) {
     return {
       ...defaults,
@@ -1600,24 +1747,64 @@ function navigationLinks(packageRules = PACKAGE_RULES.starter, profile = {}) {
   return links;
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {}, googleReviews = [], googleRating = "", googleRatingTotal = "", googleMapsUrl = "" }) {
+function normalizeSocialLinks(values = []) {
+  const platforms = [
+    ["instagram.com", "Instagram"],
+    ["facebook.com", "Facebook"],
+    ["linkedin.com", "LinkedIn"],
+    ["youtube.com", "YouTube"],
+    ["youtu.be", "YouTube"],
+    ["tiktok.com", "TikTok"],
+  ];
+  const seen = new Set();
+  return (Array.isArray(values) ? values : []).map((value) => {
+    try {
+      const url = new URL(cleanText(value));
+      const match = platforms.find(([domain]) => url.hostname === domain || url.hostname.endsWith(`.${domain}`));
+      if (url.protocol !== "https:" || !match) return null;
+      const key = `${match[1]}:${url.toString()}`;
+      if (seen.has(key)) return null;
+      seen.add(key);
+      return { url: url.toString(), label: match[1] };
+    } catch {
+      return null;
+    }
+  }).filter(Boolean).slice(0, 6);
+}
+
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region = "", preferSixServiceGrid = false, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {}, googleReviews = [], googleRating = "", googleRatingTotal = "", googleMapsUrl = "" }) {
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
   const demoCopy = demoCopyForIndustry(profile, packageRules);
   const navLinks = navigationLinks(packageRules, profile).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
   const phoneHref = phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact";
+  const secondaryCtaLabel = profile.secondaryCta || "Bel direct";
+  const secondaryCtaHref = /bel|telefoon|whatsapp|direct/i.test(secondaryCtaLabel) ? phoneHref : "#diensten";
   const emailHref = email ? `mailto:${escapeHtml(email)}` : "#contact";
-  const cityLine = extractLocationText(industry) || "uw regio";
+  const cityLine = extractLocationText(region || industry) || "uw regio";
   const logoAsset = assetPath(siteAssets, "logo", "");
   const faviconAsset = assetPath(siteAssets, "favicon", "");
   const ogAsset = assetPath(siteAssets, "og", "");
   const heroAsset = heroAssetPath(siteAssets, heroImage.src);
-  const serviceTiles = services.slice(0, packageRules.pages.length >= 7 ? 6 : 5).map((service, index) => `
+  const socialLinks = normalizeSocialLinks(currentWebsite.socialUrls);
+  const socialLinkHtml = socialLinks.map((item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${businessName} op ${item.label}`)}">${escapeHtml(item.label)}</a>`).join("");
+  const sourceDisplayableServiceCount = mergeUnique(currentWebsite.services)
+    .filter((service) => isUsableServiceLabel(service) && !isBusinessNameServiceLabel(service, businessName))
+    .length;
+  const displayedServices = services.slice(0, preferSixServiceGrid || sourceDisplayableServiceCount >= 6 || packageRules.pages.length >= 7 ? 6 : 5);
+  const serviceTiles = displayedServices.map((service, index) => `
         <a class="project-tile service-card" href="#portfolio" data-service="${escapeHtml(service)}">
           <img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)} door ${escapeHtml(businessName)}" loading="lazy" />
           <span>${String(index + 1).padStart(2, "0")}</span>
           <h3>${escapeHtml(service)}</h3>
           <p>${escapeHtml(serviceText(service, profile))}</p>
         </a>`).join("");
+  const portfolioServices = displayedServices;
+  const portfolioGallerySets = portfolioServices.map((service, serviceIndex) => {
+    const galleryServices = Array.from({ length: Math.min(3, portfolioServices.length) }, (_, offset) => portfolioServices[(serviceIndex + offset) % portfolioServices.length]);
+    return `<div class="portfolio-gallery" data-portfolio-service="${escapeHtml(service)}" hidden>
+          ${galleryServices.map((galleryService, imageIndex) => `<article class="portfolio-item"><img src="${escapeHtml(serviceAssetPath(siteAssets, galleryService, heroAsset))}" alt="${escapeHtml(`${service} voorbeeld ${imageIndex + 1}`)}" loading="lazy" /><strong>${escapeHtml(galleryService)}</strong></article>`).join("")}
+        </div>`;
+  }).join("");
   const pricingCards = pricingPackages.map((item) => `
         <article class="pricing-card">
           <span>${escapeHtml(item.confidence === "manual" ? "Aangeleverd" : "Gevonden op huidige website")}</span>
@@ -1670,7 +1857,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
     ? `<a class="review-source-link" href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener">Bekijk op Google</a>`
     : "";
   const contactLine = [phone ? `Telefoon: ${phone}` : "", email ? `E-mail: ${email}` : ""].filter(Boolean).join(" | ");
-  const websiteLine = websiteUrl ? `Huidige website: ${websiteUrl}` : "Website-informatie kan later worden aangevuld.";
+  const visibleContactName = /^(contactpersoon|onbekende contactpersoon)$/i.test(contactName) ? "" : contactName;
   const statLabel = packageRules.pages.length >= 7 ? "premium pagina's" : packageRules.pages.length >= 4 ? "websitepagina's" : "onepage flow";
   const sourceHighlights = [
     currentWebsite.h1 || currentWebsite.title,
@@ -1731,7 +1918,8 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
       url: siteUrl,
       telephone: phone || undefined,
       email: email || undefined,
-      contactPoint: contactName ? { "@type": "ContactPoint", name: contactName, contactType: "customer service" } : undefined,
+      sameAs: socialLinks.length ? socialLinks.map((item) => item.url) : undefined,
+      contactPoint: visibleContactName ? { "@type": "ContactPoint", name: visibleContactName, contactType: "customer service" } : undefined,
       areaServed: cityLine,
     }).replace(/</g, "\\u003c")}</script>
   </head>
@@ -1741,7 +1929,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
       <nav aria-label="Hoofdnavigatie">
         ${navLinks}
       </nav>
-      <a class="nav-phone" href="${escapeHtml(phoneHref)}">${escapeHtml(phone || cta)}</a>
+      <div class="nav-contact"><a class="nav-phone" href="${escapeHtml(phoneHref)}">${escapeHtml(phone || cta)}</a>${socialLinks.length ? `<div class="social-links">${socialLinkHtml}</div>` : ""}</div>
       <a class="nav-cta" href="#contact">${escapeHtml(cta)}</a>
     </header>
     <main id="top">
@@ -1754,7 +1942,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <p data-mws-field="description">${escapeHtml(profile.intro || description)}</p>
           <div class="hero-actions">
             <a class="button" data-mws-field="primary-cta" href="#contact">${escapeHtml(cta)}</a>
-            <a class="button secondary" data-mws-field="secondary-cta" href="${escapeHtml(phoneHref)}">${escapeHtml(profile.secondaryCta || "Bel direct")}</a>
+            <a class="button secondary" data-mws-field="secondary-cta" href="${escapeHtml(secondaryCtaHref)}">${escapeHtml(secondaryCtaLabel)}</a>
           </div>
           <div class="hero-proof">
             <span><strong>${services.length}</strong> specialisaties</span>
@@ -1773,7 +1961,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
       <section class="section-band services-section" id="diensten" data-mws-section-id="home.services" data-mws-section-type="services" data-mws-section-label="Diensten">
         <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(demoCopy.servicesEyebrow)}</span>
         <h2 data-mws-field="title">${escapeHtml(demoCopy.servicesTitle)}</h2>
-        <div class="service-grid" data-mws-field="items">${serviceTiles}</div>
+        <div class="service-grid${displayedServices.length === 6 ? " services-count-6" : ""}"${displayedServices.length === 6 ? ' style="grid-template-columns:repeat(3,1fr)"' : ""} data-mws-field="items">${serviceTiles}</div>
       </section>
       ${pricingSection}
 
@@ -1783,7 +1971,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <h2 id="portfolioTitle">${escapeHtml(demoCopy.portfolioTitle)}</h2>
           <p id="portfolioCopy">${escapeHtml(demoCopy.portfolioCopy)}</p>
         </div>
-        <div class="portfolio-gallery" id="portfolioGallery"></div>
+        <div id="portfolioGalleries">${portfolioGallerySets}</div>
       </section>
 
       <section class="section-band benefits-section" data-mws-section-id="home.introduction" data-mws-section-type="text" data-mws-section-label="Introductie">
@@ -1821,8 +2009,9 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <p data-mws-field="description">Liever direct contact? ${escapeHtml(contactLine || "Voeg telefoon en e-mail toe voor directe contactopties.")}</p>
           <div class="company-card">
             <strong>${escapeHtml(businessName)}</strong>
-            <span>${escapeHtml(contactName)}</span>
-            <span>${escapeHtml(websiteLine)}</span>
+            ${visibleContactName ? `<span>${escapeHtml(visibleContactName)}</span>` : ""}
+            <span>Werkgebied: ${escapeHtml(cityLine)}</span>
+            ${contactLine ? `<span>${escapeHtml(contactLine)}</span>` : ""}
           </div>
         </div>
         <form class="preview-form" id="requestForm" data-mws-field="form" action="${emailHref}" method="get">
@@ -1830,14 +2019,14 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <label>Telefoonnummer<input name="telefoon" placeholder="Bijv. 06 12345678" /></label>
           <label>E-mailadres<input name="email" placeholder="uw@email.nl" /></label>
           <label>Gewenst contactmoment<input name="contactmoment" placeholder="Bijv. morgenmiddag" /></label>
-          <label class="wide">${escapeHtml(demoCopy.projectLabel)}<select name="project">${services.slice(0, 5).map((service) => `<option>${escapeHtml(service)}</option>`).join("")}</select></label>
+          <label class="wide">${escapeHtml(demoCopy.projectLabel)}<select name="project">${displayedServices.map((service) => `<option>${escapeHtml(service)}</option>`).join("")}</select></label>
           <label class="wide">${escapeHtml(demoCopy.messageLabel)}<textarea name="bericht" placeholder="${escapeHtml(demoCopy.messagePlaceholder)}"></textarea></label>
           <button type="submit">${escapeHtml(cta)}</button>
           <small>Na klikken opent uw mailprogramma met de aanvraag klaar om te versturen.</small>
         </form>
       </section>
     </main>
-    <footer class="site-footer" data-mws-section-id="global.footer" data-mws-section-type="footer" data-mws-section-label="Footer"><div><strong data-mws-field="business-name">${escapeHtml(businessName)}</strong><span data-mws-field="description">${escapeHtml(demoCopy.footerLabel)}</span></div><nav data-mws-field="navigation">${navLinks}</nav></footer>
+    <footer class="site-footer" data-mws-section-id="global.footer" data-mws-section-type="footer" data-mws-section-label="Footer"><div><strong data-mws-field="business-name">${escapeHtml(businessName)}</strong><span data-mws-field="description">${escapeHtml(demoCopy.footerLabel)}</span>${socialLinks.length ? `<div class="social-links footer-socials">${socialLinkHtml}</div>` : ""}</div><nav data-mws-field="navigation">${navLinks}</nav></footer>
     <script src="script.js"></script>
   </body>
 </html>`;
@@ -1874,42 +2063,36 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
 
 function renderCss() {
   const css = `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:20px;align-items:center;padding:12px clamp(20px,3.4vw,52px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-size:19px;font-weight:900}.brand img{width:46px;height:46px;object-fit:contain}.site-header nav{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 18px}.site-header nav a,.nav-phone{text-decoration:none;font-size:14px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 18px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 70px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.pricing-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading,.portfolio-panel{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;text-decoration:none;background:#111}.project-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.74),rgba(0,0,0,.08))}.project-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.project-tile:hover img{transform:scale(1.045)}.project-tile span,.project-tile h3,.project-tile p{position:relative;z-index:1}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.pricing-section{display:grid;grid-template-columns:.78fr 1.22fr;gap:38px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.pricing-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.pricing-card{display:grid;gap:12px;padding:26px;border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.pricing-card span{color:var(--accent);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}.pricing-card strong{font-size:clamp(34px,4vw,54px);line-height:1;color:var(--ink)}.pricing-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.portfolio-panel{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.portfolio-panel[hidden]{display:none}.portfolio-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.portfolio-item{position:relative;min-height:210px;overflow:hidden;color:#fff;background:#111}.portfolio-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.portfolio-item strong{position:absolute;left:18px;right:18px;bottom:18px;z-index:1;font-size:20px}.portfolio-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),transparent)}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p,.portfolio-panel p,.pricing-section p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.source-website-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;padding:clamp(64px,7vw,110px) 0;border-top:1px solid var(--line)}.source-highlights{margin:0;padding:0;list-style:none;display:grid;gap:12px}.source-highlights li{padding:18px 20px;background:#fff;border-left:4px solid var(--accent);box-shadow:0 16px 40px rgba(17,24,39,.06);font-weight:800;line-height:1.5}.source-image-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.source-image-strip img{width:100%;height:260px;object-fit:cover;background:#111}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-source-link{display:inline-flex;margin-top:14px;color:var(--accent);font-weight:950;text-decoration:none}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:22px;overflow:hidden;color:#fff;background:#111}.gallery-grid article::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06))}.gallery-grid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-grid strong{position:relative;z-index:1;font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer div{display:grid;gap:6px}.site-footer strong{color:#fff}.site-footer nav{display:flex;flex-wrap:wrap;gap:12px 18px}.site-footer nav a{color:rgba(255,255,255,.74);text-decoration:none}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card,.section-heading .pricing-card{padding:28px}.section-heading .service-card img{width:100%;height:190px;object-fit:cover;margin:-28px -28px 24px;width:calc(100% + 56px)}@media(max-width:1100px){.service-grid,.pricing-card-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:auto 1fr auto;padding:10px clamp(18px,3vw,42px)}.site-header nav{justify-content:flex-end}.nav-phone{display:none}.portfolio-panel,.pricing-section{grid-template-columns:1fr}.portfolio-gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}.service-grid,.pricing-card-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form,.portfolio-gallery,.source-image-strip{grid-template-columns:1fr}.site-header{grid-template-columns:1fr auto}.brand img{width:40px;height:40px}.site-header nav{grid-column:1/-1;overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;padding-bottom:2px}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}.site-footer{display:grid}h1{font-size:clamp(42px,15vw,68px)}}`;
-  const tabletSafetyCss = `@media(max-width:820px){.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}}`;
+  const socialCss = `.nav-contact{display:flex;align-items:center;justify-content:flex-end;gap:12px}.social-links{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.social-links a{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:5px 9px;border:1px solid rgba(255,255,255,.28);border-radius:999px;color:#fff;text-decoration:none;font-size:11px;font-weight:900}.footer-socials{margin-top:12px}.footer-socials a{color:#fff}@media(max-width:1100px){.nav-contact .social-links{display:none}}@media(max-width:760px){.nav-contact{display:none}}`;
+  const tabletSafetyCss = `.portfolio-gallery[hidden]{display:none}@media(max-width:820px){.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}}`;
   const responsiveSafetyCss = `body{overflow-x:hidden}.site-header>*{min-width:0}.hero-copy{width:100%;max-width:860px;min-width:0}@media(max-width:760px){.section-band{width:min(1160px,calc(100% - 32px))}.site-header{grid-template-columns:minmax(0,1fr);gap:12px;padding:10px 16px}.brand{min-width:0}.brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav-cta{grid-column:1/-1;width:100%}.site-header nav{grid-column:1/-1;width:100%;overflow:visible;flex-wrap:wrap;justify-content:flex-start}.hero{min-width:0;padding:56px 22px}.hero-copy{max-width:100%;min-width:0}.hero-actions{display:grid;grid-template-columns:1fr}.hero-actions .button{width:100%;max-width:100%}.hero-proof{display:grid;grid-template-columns:1fr;width:100%}.hero-proof span{width:100%;min-width:0}.contact-bar{width:calc(100% - 32px)}h1{font-size:clamp(36px,11vw,48px);overflow-wrap:anywhere}}`;
-  return `${css}${tabletSafetyCss}${responsiveSafetyCss}`;
+  return `${css}${socialCss}${tabletSafetyCss}${responsiveSafetyCss}`;
 }
 
-function renderScript({ businessName, email, services, industryProfile = null, siteAssets = [] }) {
+function renderScript({ businessName, email, services, industryProfile = null }) {
   const portfolioCopy = isDrivingSchoolProfile(industryProfile)
     ? (service) => `${service} krijgt eigen uitleg, passend beeld en een directe route naar proefles of pakketadvies.`
     : (service) => `${service} krijgt een eigen visuele presentatie, korte uitleg en een directe route naar aanvraag of contact.`;
-  const heroAsset = assetPath(siteAssets, "hero", "assets/og-image.svg");
-  const detailAsset = assetPath(siteAssets, "detail", heroAsset);
-  const projectAsset = assetPath(siteAssets, "project", heroAsset);
-  const portfolio = Object.fromEntries(services.slice(0, 6).map((service, index) => [service, {
+  const portfolio = Object.fromEntries(services.slice(0, 6).map((service) => [service, {
     title: `${service} helder in beeld`,
     copy: portfolioCopy(service),
-    images: [
-      serviceAssetPath(siteAssets, service, heroAsset),
-      index % 2 === 0 ? projectAsset : detailAsset,
-      assetPath(siteAssets, "og", "assets/og-image.svg"),
-    ],
   }]));
   return `document.documentElement.classList.add("preview-ready");
 const portfolioData = ${JSON.stringify(portfolio)};
 const portfolioPanel = document.getElementById("portfolio");
 const portfolioTitle = document.getElementById("portfolioTitle");
 const portfolioCopy = document.getElementById("portfolioCopy");
-const portfolioGallery = document.getElementById("portfolioGallery");
+const portfolioGalleries = Array.from(document.querySelectorAll("[data-portfolio-service]"));
 document.querySelectorAll("[data-service]").forEach((card) => {
   card.addEventListener("click", (event) => {
     event.preventDefault();
     const service = card.getAttribute("data-service");
     const data = portfolioData[service];
-    if (!data || !portfolioPanel || !portfolioGallery) return;
+    const activeGallery = portfolioGalleries.find((gallery) => gallery.getAttribute("data-portfolio-service") === service);
+    if (!data || !portfolioPanel || !activeGallery) return;
     portfolioTitle.textContent = data.title;
     portfolioCopy.textContent = data.copy;
-    portfolioGallery.innerHTML = data.images.map((src, index) => '<article class="portfolio-item"><img src="' + src + '" alt="' + service + ' voorbeeld ' + (index + 1) + '"><strong>' + service + '</strong></article>').join("");
+    portfolioGalleries.forEach((gallery) => { gallery.hidden = gallery !== activeGallery; });
     portfolioPanel.hidden = false;
     portfolioPanel.scrollIntoView({ behavior: "smooth", block: "start" });
     const projectSelect = document.querySelector('select[name="project"]');
@@ -1939,6 +2122,17 @@ if (form) {
 
 function serviceText(service, profile = {}) {
   const text = String(service || "").toLowerCase();
+  if (/boominspectie|boomcontrole/.test(text)) return "De conditie en veiligheid van de boom worden zorgvuldig beoordeeld, inclusief een praktisch advies voor onderhoud of vervolgwerk.";
+  if (/eikenprocessierups/.test(text)) return "Een gerichte aanpak om overlast van de eikenprocessierups veilig te beperken, afgestemd op boom, locatie en omgeving.";
+  if (/aanplant/.test(text)) return "Van boomkeuze tot standplaats en eerste verzorging: een gezonde start die past bij de beschikbare ruimte.";
+  if (/bomen? snoeien|snoeiwerk|^snoeien$/.test(text)) return "Vakkundig snoeiwerk ondersteunt gezonde groei, vermindert risico’s en behoudt waar mogelijk de natuurlijke vorm van de boom.";
+  if (/bomen? (?:verwijderen|rooien|kappen)|^rooien$|^kappen$/.test(text)) return "Bomen worden gecontroleerd en veilig verwijderd, ook op locaties met bebouwing of beperkte werkruimte.";
+  if (/stormschade/.test(text)) return "Beschadigde bomen en risicovolle takken worden snel beoordeeld en veiliggesteld om verdere schade te voorkomen.";
+  if (/stobben?|stronken?/.test(text)) return "Achtergebleven stronken worden netjes uitgefreesd, zodat de grond weer bruikbaar is voor tuin, bestrating of herplant.";
+  if (/boomadvies|boombeheer|boomverzorging/.test(text)) return "Gericht advies en periodieke verzorging houden bomen gezond, veilig en passend bij hun omgeving.";
+  if (/tuinontwerp/.test(text)) return "Vertaalt wensen, gebruik en sfeer naar een doordacht tuinplan dat past bij de woning en de beschikbare ruimte.";
+  if (/tuinaanleg|aanleg/.test(text) && /tuin|aanleg/.test(text)) return "Laat zien hoe ontwerp, grondwerk, beplanting en afwerking samenkomen in een verzorgde buitenruimte.";
+  if (/tuinonderhoud/.test(text)) return "Maakt concreet welk periodiek onderhoud nodig is om de tuin gezond, veilig en verzorgd te houden.";
   if (/airco/.test(text)) return "Laat direct zien wat de aircoservice inhoudt, wanneer klanten moeten langskomen en hoe ze snel een afspraak maken.";
   if (/diagnose|controle|inspectie|check/.test(text)) return "Geeft bezoekers vertrouwen door duidelijk te maken hoe de controle werkt en welke vervolgstap logisch is.";
   if (/reparatie|uitvoering|onderhoud|apk|service|storing|spoed/.test(text)) return "Maakt praktisch duidelijk wat er gebeurt, hoe snel klanten geholpen worden en hoe ze contact opnemen.";
@@ -2010,6 +2204,7 @@ function displayIndustryLabel(subcategory = "", fallback = "") {
     restaurant: "Restaurant",
     timmerbedrijf: "Timmerbedrijf",
     installatiebedrijf: "Installatiebedrijf",
+    boomverzorging: "Boomverzorging en boombeheer",
     webshop: "Webshop",
     advies: "Zakelijke dienstverlening",
     "neutrale-lokale-dienstverlener": "Lokale specialist",

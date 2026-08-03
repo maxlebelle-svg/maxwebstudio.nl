@@ -24,6 +24,8 @@ const state = {
   quantities: {},
   customPrices: {},
   paymentChoice: 'none',
+  offerPurpose: 'personal_proposal',
+  discountPercentage: 0,
   selectedDemoId: routeContext.demoJourneyId,
   selectedFactoryProjectId: routeContext.factoryProjectId,
   selectedDocumentTypes: [],
@@ -45,7 +47,7 @@ const state = {
 };
 
 const elements = Object.fromEntries([
-  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','document-options','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
+  'composer-app','composer-message','composer-status','catalog-version','catalog-checksum','website-catalog-version','relationship-card','offer-purpose','offer-purpose-help','offer-flow-explanation','factory-context','demo-options','website-options','care-options','addon-options','addon-search','addon-category','discount-percentage','document-options','document-preview-dialog','document-preview-title','document-preview-meta','document-preview-frame','close-document-preview','done-document-preview','offer-title','change-reason','save-draft','ready-review','revoke-version','readiness-list','version-history','summary-version','summary-lines','sum-once-before-discount','sum-discount-label','sum-discount','sum-once-ex','sum-once-vat','sum-once-incl','sum-month-ex','sum-month-incl','sum-due','sum-remaining','summary-warning','open-preview','test-mail','definitive-send','revoke-interest','interest-access-summary','mail-preview','close-preview','preview-subject','preview-frame','manual-mail-text','copy-manual-mail','sequence-preview','sequence-test','sequence-definitive','definitive-send-dialog','definitive-staging-warning','definitive-send-warning','close-definitive-send','cancel-definitive-send','confirm-definitive-send','definitive-send-check','definitive-send-result','confirm-company','confirm-recipient','confirm-demo','confirm-website','confirm-care','confirm-once-before-discount','confirm-discount-label','confirm-discount','confirm-once','confirm-monthly','confirm-payment-label','confirm-payment','confirm-valid-until','revoke-interest-dialog','close-revoke-interest','cancel-revoke-interest','confirm-revoke-interest','revoke-interest-reason','revoke-interest-result','revoke-company','revoke-recipient','revoke-version-number','revoke-dispatch-date','revoke-expiry','revoke-confirmed','commercial-preflight-panel','commercial-preflight-run','commercial-preflight-status','commercial-preflight-flags'
 ].map((id) => [camel(id), document.getElementById(id)]));
 
 let calculationTimer = 0;
@@ -173,6 +175,8 @@ function bindEvents() {
   elements.careOptions.addEventListener('change', (event) => selectSingle(event, 'careProductId'));
   elements.paymentOptions = document.getElementById('payment-options');
   elements.paymentOptions.addEventListener('change', (event) => { if (event.target.name === 'payment') { state.paymentChoice = event.target.value; changed(); } });
+  elements.discountPercentage.addEventListener('change', () => { state.discountPercentage = Number(elements.discountPercentage.value); changed(); });
+  elements.offerPurpose.addEventListener('change', () => { state.offerPurpose = elements.offerPurpose.value; changed(); renderOfferPurpose(); });
   elements.demoOptions.addEventListener('change', (event) => { if (event.target.name === 'demo') { state.selectedDemoId = event.target.value; markDirty(); renderPreviewAvailability(); } });
   elements.addonOptions.addEventListener('change', handleAddonChange);
   elements.addonOptions.addEventListener('input', handleCustomInput);
@@ -183,6 +187,9 @@ function bindEvents() {
     state.selectedDocumentTypes = [...elements.documentOptions.querySelectorAll('[data-document-type]:checked')].map((item) => item.dataset.documentType);
     markDirty(); renderReadiness();
   });
+  elements.closeDocumentPreview.addEventListener('click', closeDocumentPreview);
+  elements.doneDocumentPreview.addEventListener('click', closeDocumentPreview);
+  elements.documentPreviewDialog.addEventListener('click', (event) => { if (event.target === elements.documentPreviewDialog) closeDocumentPreview(); });
   elements.offerTitle.addEventListener('input', markDirty);
   elements.changeReason.addEventListener('input', renderReadiness);
   elements.saveDraft.addEventListener('click', saveDraft);
@@ -236,6 +243,9 @@ function renderAll() {
   elements.websiteCatalogVersion.textContent = state.data.catalog.version;
   elements.catalogChecksum.textContent = `SHA-256 ${state.data.catalog.checksum.slice(0, 16)}…`;
   elements.definitiveStagingWarning.hidden = !state.data?.capabilities?.stagingMail;
+  elements.discountPercentage.value = String(state.discountPercentage);
+  elements.offerPurpose.value = state.offerPurpose;
+  renderOfferPurpose();
   renderRelationship(); renderFactory(); renderDemos(); renderCatalog(); renderDocuments(); renderHistory(); renderSummary(); renderReadiness(); renderStatus();
 }
 
@@ -253,6 +263,19 @@ function renderRelationship() {
     if (input.value.trim() && !validRecipientEmail(input.value)) showMessage('Vul een geldig verzendadres in.', 'warning');
   });
   if (!state.recipientEmail) showMessage('E-mailadres ontbreekt. Vul hieronder het verzendadres voor deze offerte in.', 'warning');
+}
+
+function renderOfferPurpose() {
+  const definitive = state.offerPurpose === 'definitive_offer';
+  elements.offerPurposeHelp.textContent = definitive
+    ? 'Bindend na ondertekening via Signhost. Pas de provider-webhook zet de sale op ondertekend.'
+    : 'Vrijblijvend: interesse is nog geen sale of overeenkomst.';
+  elements.offerFlowExplanation.textContent = definitive
+    ? 'De klant controleert de offerte en tekent via Signhost. Daarna worden sale en klantportaal automatisch klaargezet; betaling blijft apart.'
+    : 'De interesseknop maakt geen contract, betaling, factuur, abonnement of onboarding.';
+  elements.definitiveSendWarning.textContent = definitive
+    ? 'Na bevestiging wordt één e-mail met een beveiligde ondertekenlink verstuurd. Alleen een geldige Signhost-handtekening maakt de zakelijke overeenkomst definitief.'
+    : 'Na bevestiging wordt er werkelijk één e-mail verstuurd. Er wordt geen contract, betaling, factuur, abonnement of onboarding gestart.';
 }
 
 function renderFactory() {
@@ -295,13 +318,80 @@ function renderAddOns() {
 function renderDocuments() {
   const docs = activeDocuments();
   for (const document of docs) if (document.required && !state.selectedDocumentTypes.includes(document.documentType)) state.selectedDocumentTypes.push(document.documentType);
-  elements.documentOptions.innerHTML = docs.map((document) => `<label class="document-row"><input type="checkbox" data-document-type="${document.documentType}" ${state.selectedDocumentTypes.includes(document.documentType) ? 'checked' : ''}/><div><strong>${escapeHtml(document.name)}</strong><p>Versie ${escapeHtml(document.versionCode)} · ingangsdatum ${escapeHtml(document.effectiveFrom)}${document.required ? ' · verplicht' : ''}</p><span class="checksum">✓ ${escapeHtml(document.checksumSha256.slice(0, 20))}…</span></div><span class="classification">${escapeHtml(document.checksumStatus)}</span></label>`).join('');
+  elements.documentOptions.innerHTML = docs.map((document) => {
+    const inputId = `document-${document.documentType}`;
+    const sourceUrl = safeDocumentUrl(document.sourceUrl);
+    const previewAction = sourceUrl
+      ? `<a class="document-preview-button" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener" aria-label="${escapeHtml(document.name)} bekijken">Bekijken</a>`
+      : `<button class="document-preview-button" type="button" data-document-preview="${document.documentType}" aria-label="${escapeHtml(document.name)} bekijken">Bekijken</button>`;
+    return `<article class="document-row"><input id="${inputId}" type="checkbox" data-document-type="${document.documentType}" ${state.selectedDocumentTypes.includes(document.documentType) ? 'checked' : ''}/><label class="document-copy" for="${inputId}"><strong>${escapeHtml(document.name)}</strong><p>Versie ${escapeHtml(document.versionCode)} · ingangsdatum ${escapeHtml(document.effectiveFrom)}${document.required ? ' · verplicht' : ''}</p><span class="checksum">✓ ${escapeHtml(document.checksumSha256.slice(0, 20))}…</span></label><div class="document-row-actions"><span class="classification">${escapeHtml(document.checksumStatus)}</span>${previewAction}</div></article>`;
+  }).join('');
+  elements.documentOptions.querySelectorAll('[data-document-preview]').forEach((button) => button.addEventListener('click', openDocumentPreview));
+}
+
+function openDocumentPreview(event) {
+  const documentType = event.currentTarget.dataset.documentPreview;
+  const document = activeDocuments().find((item) => item.documentType === documentType);
+  if (!document) return;
+  elements.documentPreviewTitle.textContent = document.name;
+  elements.documentPreviewMeta.textContent = `Versie ${document.versionCode} · ingangsdatum ${document.effectiveFrom}`;
+  elements.documentPreviewFrame.title = `Inhoud van ${document.name}`;
+  elements.documentPreviewFrame.removeAttribute('src');
+  elements.documentPreviewFrame.srcdoc = templateDocumentPreview(document);
+  elements.documentPreviewDialog.showModal();
+  elements.closeDocumentPreview.focus();
+}
+
+function closeDocumentPreview() {
+  if (!elements.documentPreviewDialog.open) return;
+  elements.documentPreviewDialog.close();
+  elements.documentPreviewFrame.removeAttribute('src');
+  elements.documentPreviewFrame.srcdoc = '';
+}
+
+function safeDocumentUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value, window.location.origin);
+    return url.protocol === 'https:' ? url.href : '';
+  } catch { return ''; }
+}
+
+function templateDocumentPreview(document) {
+  const relationship = state.data?.relationship || {};
+  const snapshot = state.snapshot;
+  const storedVersion = currentVersion();
+  const lines = snapshot?.lines || [];
+  const company = relationship.companyName || relationship.contactName || 'Nog geen relatiegegevens';
+  const proposalReference = storedVersion?.version_number ? `Voorstelversie ${storedVersion.version_number}` : 'Concept · nog niet als versie opgeslagen';
+  const snapshotChecksum = snapshot?.checksum ? `${snapshot.checksum.slice(0, 24)}…` : 'Wordt bij het opslaan vastgelegd';
+  const productRows = lines.length ? lines.map((line) => `<tr><td><strong>${escapeHtml(`${line.quantity || 1}× ${line.productName}`)}</strong><small>${escapeHtml(line.productDescription || '')}${line.componentType === 'recurring' ? ' · per maand' : ' · eenmalig'}</small></td><td>${escapeHtml(line.bindingState === 'binding' ? money(line.subtotalExVatCents, { monthly: line.componentType === 'recurring' }) : 'Nog te bevestigen')}</td><td>${escapeHtml(line.bindingState === 'binding' ? money(line.totalInclVatCents, { monthly: line.componentType === 'recurring' }) : 'Nog te bevestigen')}</td></tr>`).join('') : '<tr><td colspan="3">Maak eerst een productkeuze om de actuele inhoud te zien.</td></tr>';
+  const discountRow = Number(snapshot?.discountPercentage || 0) > 0 ? `<tr><td><strong>Handmatige korting (${snapshot.discountPercentage}%)</strong><small>Alleen over de eenmalige onderdelen; maandelijkse kosten blijven ongewijzigd.</small></td><td>− ${escapeHtml(money(snapshot.discountExVatCents))}</td><td>− ${escapeHtml(money(snapshot.discountExVatCents + Math.round(snapshot.discountExVatCents * Number(snapshot.vatRate || 21) / 100)))}</td></tr>` : '';
+  const scopeRows = `${productRows}${discountRow}`;
+  const common = `<section><h2>Relatie en zakelijk karakter</h2><dl><div><dt>Bedrijf</dt><dd>${escapeHtml(company)}</dd></div><div><dt>Contactpersoon</dt><dd>${escapeHtml(relationship.contactName || '—')}</dd></div><div><dt>E-mail</dt><dd>${escapeHtml(effectiveRecipientEmail() || relationship.email || '—')}</dd></div><div><dt>KvK-nummer</dt><dd>${escapeHtml(relationship.kvkNumber || 'Nog te bevestigen bij zakelijk akkoord')}</dd></div></dl><p class="muted">Deze offerte is opgesteld voor een klant die handelt in de uitoefening van een beroep of bedrijf.</p></section><section><h2>Scope van dit voorstel</h2><table class="scope-table"><thead><tr><th>Onderdeel en aantal</th><th>Excl. btw</th><th>Incl. btw</th></tr></thead><tbody>${scopeRows}</tbody></table><p class="muted">Alleen bindend bevestigde onderdelen en bedragen behoren tot deze offerteversie. Een inhoudelijke wijziging vereist een nieuwe versie.</p></section>`;
+  const quote = `<section class="quote-intro"><div class="agreement-status">Zakelijke offerte · ${escapeHtml(proposalReference)}</div><h2>Voorstel voor ${escapeHtml(company)}</h2><p>Een helder overzicht van de afgesproken scope, prijsopbouw, betaalkeuze, geldigheid en gekoppelde documenten.</p></section>${common}<section><h2>Prijsopbouw</h2><dl><div><dt>Eenmalig excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeExVatCents) : '—')}</dd></div><div><dt>Btw eenmalig</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeVatCents) : '—')}</dd></div><div><dt>Eenmalig incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeInclVatCents) : '—')}</dd></div><div><dt>Per maand excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringExVatCents, { monthly: true }) : '—')}</dd></div><div><dt>Btw per maand</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringVatCents, { monthly: true }) : '—')}</dd></div><div><dt>Per maand incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringInclVatCents, { monthly: true }) : '—')}</dd></div></dl></section><section><h2>Betaalafspraak</h2><dl><div><dt>Gekozen betaalroute</dt><dd>${escapeHtml(paymentChoiceLabel(snapshot?.paymentChoice))}</dd></div><div><dt>Nu te betalen excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowExVatCents) : '—')}</dd></div><div><dt>Btw over bedrag nu</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowVatCents) : '—')}</dd></div><div><dt>Nu te betalen incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowInclVatCents) : '—')}</dd></div><div><dt>Resterend eenmalig excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.remainingExVatCents) : '—')}</dd></div></dl><p class="muted">Acceptatie van de offerte start niet automatisch een betaling. Facturatie en betaling volgen de gekoppelde overeenkomst en voorwaarden.</p></section><section><h2>Geldigheid en integriteit</h2><dl><div><dt>Referentie</dt><dd>${escapeHtml(proposalReference)}</dd></div><div><dt>Offerteweergave</dt><dd>${escapeHtml(document.versionCode)}</dd></div><div><dt>Geldig tot en met</dt><dd>${escapeHtml(snapshot?.validUntil ? formatDateOnly(snapshot.validUntil) : '—')}</dd></div><div><dt>Voorstelchecksum</dt><dd class="checksum-value">${escapeHtml(snapshotChecksum)}</dd></div></dl><p class="notice"><strong>Controleerbare versie.</strong> De definitieve offerte verwijst naar één onveranderlijke voorstelversie. Bij digitaal akkoord worden versie, documentchecksums, bedragen, tijdstip en beschikbare technische bewijsgegevens vastgelegd.</p></section><section><h2>Gekoppelde documenten</h2><ol><li><strong>Overeenkomsttemplate · zakelijke overeenkomst</strong><span>Legt partijen, uitvoering, betaling, intellectueel eigendom en acceptatie vast.</span></li><li><strong>Algemene voorwaarden · versie 2026-08 B2B</strong><span>Vullen de concrete scope en prijsafspraken aan.</span></li><li><strong>Hosting- en onderhoudsvoorwaarden</strong><span>Gelden wanneer een doorlopende hosting- of onderhoudsdienst is opgenomen.</span></li><li><strong>Privacyverklaring · versie 2026-08</strong><span>Beschrijft de verwerking van persoonsgegevens en staat naast de contractuele documentvolgorde.</span></li></ol></section><section class="acceptance"><div class="agreement-status">Zakelijke akkoordverklaring</div><h2>Wat gebeurt er bij acceptatie?</h2><p>De klant controleert eerst scope, prijzen, betaalafspraak, geldigheid en de gekoppelde documenten. Het akkoord wordt vervolgens aan precies deze voorstelversie gekoppeld; een wijziging vraagt om een nieuwe versie.</p><p class="notice"><strong>Conceptweergave.</strong> Sla het voorstel eerst als onveranderlijke versie op. Pas daarna kan deze offerteweergave definitief aan de klant worden aangeboden.</p></section>`;
+  const recurringTerms = Number(snapshot?.recurringExVatCents || 0) > 0
+    ? 'De gekoppelde hosting- en onderhoudsvoorwaarden maken onderdeel uit van deze overeenkomst.'
+    : 'Hosting- en onderhoudsvoorwaarden gelden alleen wanneer een doorlopende dienst wordt toegevoegd.';
+  const agreement = `<section class="agreement-intro"><div class="agreement-status">Uitsluitend zakelijke overeenkomst</div><h2>Partijen en uitgangspunt</h2><p>Deze overeenkomst wordt gesloten tussen <strong>Max Webstudio, onderdeel van Lebellebox / Lebelle Sales &amp; Marketing</strong>, hierna “Max Webstudio”, en <strong>${escapeHtml(company)}</strong>, hierna “klant”. De klant verklaart uitsluitend te handelen in de uitoefening van een beroep of bedrijf.</p><p class="muted">Het consumentenherroepingsrecht is niet van toepassing. Annulering en beëindiging volgen uit deze overeenkomst en de gekoppelde voorwaarden.</p></section>${common}<section><h2>Voorstelreferentie en integriteit</h2><dl><div><dt>Referentie</dt><dd>${escapeHtml(proposalReference)}</dd></div><div><dt>Templateversie</dt><dd>${escapeHtml(document.versionCode)}</dd></div><div><dt>Voorstelchecksum</dt><dd class="checksum-value">${escapeHtml(snapshotChecksum)}</dd></div><div><dt>Geldig tot en met</dt><dd>${escapeHtml(snapshot?.validUntil ? formatDateOnly(snapshot.validUntil) : '—')}</dd></div></dl><p class="muted">De definitieve overeenkomst verwijst naar één onveranderlijke voorstelversie. Een inhoudelijke wijziging vereist een nieuwe versie.</p></section><section><h2>Prijs en betaling</h2><dl><div><dt>Eenmalig excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeExVatCents) : '—')}</dd></div><div><dt>Eenmalig incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.oneTimeInclVatCents) : '—')}</dd></div><div><dt>Maandelijks excl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.recurringExVatCents, { monthly: true }) : '—')}</dd></div><div><dt>Nu te betalen incl. btw</dt><dd>${escapeHtml(snapshot ? money(snapshot.dueNowInclVatCents) : '—')}</dd></div><div><dt>Betaalafspraak</dt><dd>${escapeHtml(paymentChoiceLabel(snapshot?.paymentChoice))}</dd></div></dl><p>Facturen hebben standaard een betaaltermijn van 14 dagen, tenzij de opgeslagen voorstelversie uitdrukkelijk iets anders bepaalt. Bij te late zakelijke betaling gelden de wettelijke handelsrente en redelijke incassokosten binnen de grenzen van de wet.</p></section><section><h2>Afspraken over de uitvoering</h2><div class="clause-grid"><article class="clause"><strong>1. Opdracht en afbakening</strong><p>Alleen de hierboven opgenomen producten, diensten, aantallen en bindend bevestigde prijzen behoren tot de opdracht.</p></article><article class="clause"><strong>2. Start en planning</strong><p>De uitvoering start na akkoord, een eventueel afgesproken aanbetaling en ontvangst van de benodigde informatie. Planningen zijn streefdata, tenzij schriftelijk een fatale termijn is overeengekomen.</p></article><article class="clause"><strong>3. Medewerking klant</strong><p>De klant levert teksten, beelden, toegang, feedback en toestemmingen tijdig aan en staat ervoor in dat aangeleverd materiaal rechtmatig mag worden gebruikt.</p></article><article class="clause"><strong>4. Oplevering en feedback</strong><p>De klant beoordeelt concepten en opleveringen binnen de afgesproken of een redelijke termijn. Max Webstudio krijgt eerst een redelijke mogelijkheid om een toerekenbare fout te herstellen.</p></article><article class="clause"><strong>5. Wijzigingen en meerwerk</strong><p>Werk buiten de vastgelegde scope, extra feedbackrondes of gewijzigde wensen gelden als meerwerk. Voorzienbaar meerwerk en gevolgen voor prijs en planning worden vooraf afgestemd.</p></article><article class="clause"><strong>6. Doorlopende diensten</strong><p>${escapeHtml(recurringTerms)} De toepasselijke looptijd en opzegtermijn volgen uit de voorstelversie en die specifieke voorwaarden.</p></article><article class="clause"><strong>7. Intellectueel eigendom</strong><p>Gebruiks- of overdrachtsrechten ontstaan pas na volledige betaling, voor zover in de offerte of algemene voorwaarden niet anders is bepaald. Rechten op bestaande bouwstenen en materialen van derden blijven bij de rechthebbende.</p></article><article class="clause"><strong>8. Privacy en vertrouwelijkheid</strong><p>Partijen behandelen vertrouwelijke informatie zorgvuldig. De privacyverklaring beschrijft hoe Max Webstudio persoonsgegevens verwerkt; indien nodig wordt afzonderlijk een verwerkersovereenkomst gesloten.</p></article><article class="clause"><strong>9. Aansprakelijkheid en overmacht</strong><p>De bepalingen over aansprakelijkheid, externe leveranciers, overmacht, beveiliging en back-ups uit de algemene voorwaarden zijn van toepassing.</p></article><article class="clause"><strong>10. Opschorting en einde</strong><p>Opschorting, annulering en beëindiging verlopen volgens de geaccepteerde voorstelversie en voorwaarden. Reeds verricht werk, gemaakte kosten en opeisbare bedragen blijven verschuldigd.</p></article></div></section><section><h2>Toepasselijke documenten en volgorde</h2><ol><li><strong>Schriftelijke afwijking of afzonderlijk ondertekende afspraak</strong><span>Gaat voor wanneer partijen deze uitdrukkelijk vastleggen.</span></li><li><strong>De geaccepteerde, onveranderlijke voorstelversie</strong><span>Bevat de concrete scope, prijzen, betaling en geldigheid.</span></li><li><strong>Specifieke product-, hosting- en onderhoudsvoorwaarden</strong><span>Gelden voor de diensten waarop zij betrekking hebben.</span></li><li><strong>Algemene voorwaarden · versie 2026-08 B2B</strong><span>Vullen de concrete afspraken aan.</span></li></ol><p class="muted">De privacyverklaring geeft informatie over de verwerking van persoonsgegevens en staat naast deze contractuele documentvolgorde.</p></section><section class="acceptance"><div class="agreement-status">Zakelijke akkoordverklaring</div><h2>Totstandkoming en bewijs</h2><p>De overeenkomst komt tot stand zodra de klant schriftelijk of digitaal akkoord geeft, de bestelling plaatst, een afgesproken betaling doet of Max Webstudio op verzoek van de klant met de uitvoering begint.</p><p>Bij digitale acceptatie worden de geaccepteerde voorstel- en documentversies, checksums, het acceptatietijdstip en de beschikbare technische bewijsgegevens vastgelegd. De klant bevestigt daarbij de overeenkomst uitsluitend zakelijk te sluiten en bevoegde vertegenwoordiger van de genoemde onderneming te zijn.</p><p class="notice"><strong>Conceptweergave.</strong> Sla het voorstel eerst als onveranderlijke versie op. Pas daarna kan deze template als definitieve overeenkomst aan precies die versie worden gekoppeld.</p></section>`;
+  return documentPreviewShell(document.name, document.documentType === 'quote' ? quote : agreement);
+}
+
+function paymentChoiceLabel(value) {
+  return ({ fixed_deposit: 'vaste catalogusaanbetaling', full: 'volledige betaling', none: 'nog geen betaalkeuze' })[value] || 'nog geen betaalkeuze';
+}
+
+function documentPreviewShell(title, content) {
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>*{box-sizing:border-box}body{margin:0;overflow-x:hidden;background:#f4f7fa;color:#10283a;font:16px/1.55 Inter,Arial,sans-serif}.page{max-width:900px;margin:auto;padding:42px 28px 70px}.brand{color:#147ca0;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}h1{margin:.3rem 0 2rem;font-size:clamp(2rem,5vw,3.3rem);line-height:1.05;overflow-wrap:anywhere}section{margin:18px 0;padding:24px;border:1px solid #d6e1e8;border-radius:16px;background:white}h2{margin:0 0 14px;font-size:1.2rem}p{margin:.65rem 0}dl{display:grid;gap:9px;margin:0}dl div{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #edf1f4;padding-bottom:8px}dt{color:#617483}dd{margin:0;font-weight:750;text-align:right}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #edf1f4}th:last-child,td:last-child{text-align:right}td small,ol span{display:block;color:#617483;font-weight:400}.notice{padding:14px;border-radius:10px;background:#eef8fb;color:#31586b}.muted{color:#617483}.agreement-intro,.acceptance{border-color:#9bd4e6;background:linear-gradient(135deg,#fff,#eef9fc)}.agreement-status{display:inline-flex;margin-bottom:12px;padding:5px 10px;border-radius:999px;background:#0c3449;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.clause-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.clause{padding:16px;border:1px solid #e0e9ee;border-radius:12px;background:#f9fbfc}.clause strong{display:block;color:#0d6687}.clause p{margin-bottom:0;color:#4f6675}.checksum-value{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem;overflow-wrap:anywhere}ol{display:grid;gap:12px;padding-left:22px}@media(max-width:600px){.page{padding:24px 12px}section{padding:18px}.clause-grid{grid-template-columns:1fr}dl div{display:block}dd{text-align:left}th:nth-child(2),td:nth-child(2){display:none}}</style></head><body><main class="page"><span class="brand">Max Webstudio · documentinzage</span><h1>${escapeHtml(title)}</h1>${content}</main></body></html>`;
 }
 
 function renderSummary() {
   const snapshot = state.snapshot;
   elements.summaryVersion.textContent = snapshot ? `Catalogus ${snapshot.catalogVersion}` : state.calculating ? 'Berekenen…' : 'Maak een productkeuze';
   elements.summaryLines.innerHTML = snapshot?.lines?.map((line) => `<div class="summary-line"><span>${escapeHtml(line.productName)}${line.componentType === 'recurring' ? ' · per maand' : ''}</span><strong>${line.bindingState === 'binding' ? money(line.totalInclVatCents, { monthly: line.componentType === 'recurring' }) : 'Te bevestigen'}</strong></div>`).join('') || '';
+  setText('sumOnceBeforeDiscount', snapshot && money(snapshot.oneTimeBeforeDiscountExVatCents));
+  if (elements.sumDiscountLabel) elements.sumDiscountLabel.textContent = `Korting${snapshot ? ` (${snapshot.discountPercentage}%)` : ''}`;
+  setText('sumDiscount', snapshot && `− ${money(snapshot.discountExVatCents)}`);
   setText('sumOnceEx', snapshot && money(snapshot.oneTimeExVatCents)); setText('sumOnceVat', snapshot && money(snapshot.oneTimeVatCents)); setText('sumOnceIncl', snapshot && money(snapshot.oneTimeInclVatCents)); setText('sumMonthEx', snapshot && money(snapshot.recurringExVatCents, { monthly: true })); setText('sumMonthIncl', snapshot && money(snapshot.recurringInclVatCents, { monthly: true })); setText('sumDue', snapshot && money(snapshot.dueNowInclVatCents)); setText('sumRemaining', snapshot && money(snapshot.remainingExVatCents));
   elements.summaryWarning.textContent = snapshot?.hasNonBindingLines ? 'Dit voorstel bevat nog een vanaf- of op-aanvraagprijs en kan niet gereed voor controle worden gemaakt.' : '';
   renderPreviewAvailability();
@@ -365,13 +455,17 @@ function renderPreviewAvailability() {
   const definitiveSent = Boolean(version?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive' && dispatch.status === 'sent'));
   const interestConfirmed = Boolean(version?.interestTokens?.some((token) => token.confirmed_at));
   const activeInterestTokens = (version?.interestTokens || []).filter((token) => !token.confirmed_at && !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
+  const activeSigningTokens = (version?.signingAccessTokens || []).filter((token) => !token.revoked_at && new Date(token.expires_at).getTime() > Date.now());
+  const signingTransaction = version?.signingTransactions?.[0];
+  const definitiveOffer = state.offerPurpose === 'definitive_offer';
+  const providerReady = !definitiveOffer || state.data?.capabilities?.providersEnabled;
   elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
   elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
-  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend);
-  elements.revokeInterest.disabled = !(activeInterestTokens.length && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
-  elements.interestAccessSummary.textContent = activeInterestTokens.length
-    ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}`
-    : version?.interestTokens?.some((token) => token.confirmed_at) ? 'Interesse is bevestigd; er is geen onbevestigde link actief.' : 'Geen actieve interesselink.';
+  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed && !signingTransaction)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend && providerReady);
+  elements.revokeInterest.disabled = !((activeInterestTokens.length || (activeSigningTokens.length && !signingTransaction)) && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
+  elements.interestAccessSummary.textContent = definitiveOffer
+    ? signingTransaction ? `Signhost-status: ${statusLabel(signingTransaction.status)}${signingTransaction.signed_at ? ` · ${formatDate(signingTransaction.signed_at)}` : ''}` : activeSigningTokens.length ? `Actieve ondertekenlink · geldig tot ${formatDate(activeSigningTokens[0].expires_at)}` : providerReady ? 'Geen actieve ondertekenlink.' : 'Signhost is nog niet geconfigureerd.'
+    : activeInterestTokens.length ? `${activeInterestTokens.length} actieve, onbevestigde interesselink · geldig tot ${formatDate(activeInterestTokens[0].expires_at)}` : version?.interestTokens?.some((token) => token.confirmed_at) ? 'Interesse is bevestigd; er is geen onbevestigde link actief.' : 'Geen actieve interesselink.';
   setSequence(elements.sequencePreview, previewed, !sendReady);
   setSequence(elements.sequenceTest, tested, !previewed);
   setSequence(elements.sequenceDefinitive, definitiveSent, !tested);
@@ -421,7 +515,7 @@ async function calculate() {
   if (!selections.length) { state.snapshot = null; renderSummary(); renderDocuments(); renderReadiness(); return; }
   state.calculating = true; renderSummary();
   try {
-    const data = await request('POST', { action: 'prepare_snapshot', paymentChoice: state.paymentChoice, selections });
+    const data = await request('POST', { action: 'prepare_snapshot', offerPurpose: state.offerPurpose, paymentChoice: state.paymentChoice, discountPercentage: state.discountPercentage, selections });
     state.snapshot = data.snapshot;
     renderDocuments(); renderSummary(); renderReadiness();
   } catch (error) {
@@ -447,6 +541,8 @@ async function saveDraft() {
       demoJourneyId: state.selectedDemoId || null,
       factoryProjectId: state.selectedFactoryProjectId || null,
       paymentChoice: state.paymentChoice,
+      offerPurpose: state.offerPurpose,
+      discountPercentage: state.discountPercentage,
       selections: selectionsFromState(state, state.data.actor),
       documents,
       changeReason: elements.changeReason.value.trim() || null,
@@ -521,6 +617,9 @@ function openDefinitiveSendDialog() {
   elements.confirmDemo.textContent = details.demoName;
   elements.confirmWebsite.textContent = details.websiteName;
   elements.confirmCare.textContent = details.careName;
+  elements.confirmOnceBeforeDiscount.textContent = money(details.oneTimeBeforeDiscountExVatCents);
+  elements.confirmDiscountLabel.textContent = `Korting (${details.discountPercentage}%)`;
+  elements.confirmDiscount.textContent = `− ${money(details.discountExVatCents)}`;
   elements.confirmOnce.textContent = money(details.oneTimeExVatCents);
   elements.confirmMonthly.textContent = money(details.recurringExVatCents, { monthly: true });
   elements.confirmPaymentLabel.textContent = details.paymentLabel;
@@ -566,7 +665,9 @@ function trapDialogFocus(event, dialog, pending) {
 function openRevokeInterestDialog() {
   if (elements.revokeInterest.disabled || state.revokeInterestPending) return;
   const version = currentVersion();
-  const token = (version?.interestTokens || []).find((item) => !item.confirmed_at && !item.revoked_at && new Date(item.expires_at).getTime() > Date.now());
+  const token = state.offerPurpose === 'definitive_offer'
+    ? (version?.signingAccessTokens || []).find((item) => !item.started_at && !item.revoked_at && new Date(item.expires_at).getTime() > Date.now())
+    : (version?.interestTokens || []).find((item) => !item.confirmed_at && !item.revoked_at && new Date(item.expires_at).getTime() > Date.now());
   const dispatch = (version?.dispatches || []).find((item) => item.dispatch_kind === 'definitive' && item.status === 'sent');
   if (!token) return renderPreviewAvailability();
   const details = definitiveConfirmationDetails({ relationship: state.data.relationship, demo: {}, snapshot: state.snapshot || version.snapshot });
@@ -650,7 +751,7 @@ async function sendDefinitiveMail() {
     elements.definitiveSendDialog.close();
     state.definitiveTrigger?.focus();
     state.definitiveTrigger = null;
-    showMessage('De definitieve demomail is één keer verzonden. Er is geen contract, betaling of onboarding gestart.', 'success');
+    showMessage(state.offerPurpose === 'definitive_offer' ? 'De definitieve offerte is verzonden. De sale wordt pas gewonnen na de Signhost-handtekening.' : 'Het persoonlijke voorstel is verzonden. Interesse is nog geen contract, betaling of onboarding.', 'success');
   } catch (error) {
     try { await reloadContext(); } catch { /* De oorspronkelijke fout blijft leidend. */ }
     const hasDispatch = Boolean(currentVersion()?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive'));

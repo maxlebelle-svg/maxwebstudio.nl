@@ -1,4 +1,5 @@
 const { corsHeaders } = require("./_cors");
+const { sendTrackedEmail } = require("./services/resendMailService");
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ACCEPTANCE_STATEMENT_VERSION = "quote_acceptance_nl_v1";
@@ -41,12 +42,20 @@ exports.handler = async (event) => {
           input_statement_snapshot: ACCEPTANCE_STATEMENT,
         });
         const quote = await loadQuote(context, customer.id, quoteId);
+        const acceptance = sanitizeAcceptance(result?.acceptance || quote.acceptance);
+        const portalNotification = await sendPortalAccessConfirmation({ customer, quote, acceptance });
         return jsonResponse(200, {
           success: true,
           duplicate: result?.duplicate === true,
           quote,
-          acceptance: sanitizeAcceptance(result?.acceptance || quote.acceptance),
-          sideEffects: { paymentStarted: false, emailSent: false },
+          acceptance,
+          portalAccess: {
+            ready: true,
+            url: "/klantportaal.html",
+            emailSent: portalNotification.sent,
+            emailWarning: portalNotification.warning,
+          },
+          sideEffects: { paymentStarted: false, emailSent: portalNotification.sent },
         });
       } catch (error) {
         if (error.code === "40001") return jsonResponse(409, { success: false, error: "De offerte is gewijzigd. Ververs de pagina en controleer de nieuwe versie." });
@@ -91,6 +100,7 @@ function sanitizeQuote(row = {}, lines = [], checksum = "", acceptance = null) {
     quoteNumber: cleanText(row.quote_number) || "Offerte",
     projectId: cleanText(row.project_id),
     websiteId: cleanText(row.website_id),
+    type: cleanText(row.type),
     title: cleanText(row.title) || "Offerte",
     proposal: cleanText(row.proposal),
     status,
@@ -98,6 +108,7 @@ function sanitizeQuote(row = {}, lines = [], checksum = "", acceptance = null) {
     checksum: cleanText(checksum),
     quoteDate: cleanText(row.quote_date || row.created_at),
     validUntil,
+    sentAt: cleanText(row.sent_at),
     subtotal: Number(row.subtotal || 0),
     vat: Number(row.vat || 0),
     total: Number(row.total || 0),
@@ -113,6 +124,8 @@ function sanitizeQuote(row = {}, lines = [], checksum = "", acceptance = null) {
     })),
     acceptable: !acceptance && status === "sent" && Boolean(validDate && validDate.getTime() >= Date.now())
       && !row.archived_at && !row.deleted_at && !replaced,
+    acceptanceStatement: ACCEPTANCE_STATEMENT,
+    acceptanceStatementVersion: ACCEPTANCE_STATEMENT_VERSION,
     acceptance: acceptance ? sanitizeAcceptance(acceptance) : null,
   };
 }
@@ -149,6 +162,50 @@ async function resolveCustomerForAuthUser(context, authUserId) {
   const profile = await readSingle(context, "profiles", `select=*&auth_user_id=eq.${authUserId}&limit=1`);
   if (!profile?.id) return null;
   return readSingle(context, "customers", `select=*&profile_id=eq.${profile.id}&limit=1`);
+}
+
+async function sendPortalAccessConfirmation({ customer = {}, quote = {}, acceptance = null } = {}) {
+  const email = cleanText(customer.email).toLowerCase();
+  if (!acceptance?.id || !validEmail(email)) return { sent: false, warning: "Bevestigingsmail niet verstuurd: klantadres ontbreekt." };
+  const portalUrl = "https://maxwebstudio.nl/klantportaal.html";
+  const name = cleanText(customer.name || customer.contact_name || customer.company || customer.company_name) || "daar";
+  const company = cleanText(customer.company || customer.company_name || customer.name) || "je organisatie";
+  const quoteLabel = cleanText(quote.quoteNumber) || "je offerte";
+  const acceptedAt = cleanText(acceptance.acceptedAt) || new Date().toISOString();
+  const subject = `${quoteLabel} geaccepteerd – je klantportaal staat klaar`;
+  const text = [
+    `Hoi ${name},`,
+    "",
+    `Je akkoord op ${quoteLabel}, versie ${quote.version}, voor ${company} is veilig vastgelegd.`,
+    `Tijdstip: ${acceptedAt}.`,
+    "",
+    "Je klantportaal staat klaar. Je hoeft geen nieuw account aan te maken en wij sturen nooit een wachtwoord per e-mail.",
+    `Open klantportaal: ${portalUrl}`,
+    "",
+    "Het accepteren van de offerte heeft geen betaling gestart.",
+    "",
+    "Met vriendelijke groet,",
+    "Max Webstudio",
+  ].join("\n");
+  const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(subject)}</title></head><body style="margin:0;background:#061626;color:#fff;font-family:Inter,Arial,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061626;padding:28px 14px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#102a3d;border:1px solid #29445a;border-radius:22px;overflow:hidden;"><tr><td style="padding:30px;"><p style="margin:0 0 10px;color:#7dd3fc;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;">Akkoord bevestigd</p><h1 style="margin:0 0 16px;font-size:30px;line-height:1.15;">Je klantportaal staat klaar.</h1><p style="margin:0 0 14px;color:#c9d7e8;font-size:16px;line-height:1.65;">Hoi ${escapeHtml(name)}, je akkoord op <strong style="color:#fff;">${escapeHtml(quoteLabel)}, versie ${Number(quote.version || 1)}</strong> voor ${escapeHtml(company)} is veilig vastgelegd.</p><p style="margin:0 0 22px;color:#91a6bc;font-size:14px;line-height:1.6;">Je hoeft geen nieuw account aan te maken. Wij sturen nooit wachtwoorden per e-mail en met dit akkoord is geen betaling gestart.</p><a href="${portalUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;font-weight:800;border-radius:13px;padding:14px 20px;">Open klantportaal</a></td></tr></table></td></tr></table></body></html>`;
+  try {
+    const result = await sendTrackedEmail({
+      to: email,
+      subject,
+      html,
+      text,
+      templateKey: "quote_acceptance_portal_access",
+      templateName: "Offerte geaccepteerd en klantportaal klaar",
+      customerId: cleanText(customer.id),
+      projectId: cleanText(quote.projectId),
+      triggeredBy: "client_quote_acceptance",
+      idempotencyKey: `quote.acceptance.portal:${acceptance.id}`,
+      metadata: { quoteId: cleanText(quote.id), quoteVersion: Number(quote.version || 1), acceptanceId: acceptance.id },
+    });
+    return { sent: result?.sent === true, warning: cleanText(result?.warning || (result?.sent ? "" : "De portaalmail kon niet worden bevestigd.")) };
+  } catch {
+    return { sent: false, warning: "Je akkoord staat vast, maar de portaalmail kon niet worden verstuurd." };
+  }
 }
 
 async function readRows(context, table, query) {
@@ -204,6 +261,8 @@ function parsePayload(body) {
 
 function uuidOrEmpty(value) { const text = cleanText(value); return UUID_PATTERN.test(text) ? text : ""; }
 function cleanText(value = "") { return String(value || "").trim(); }
+function validEmail(value = "") { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanText(value)); }
+function escapeHtml(value = "") { return cleanText(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 function httpError(message, status) { return Object.assign(new Error(message), { status }); }
 function jsonResponse(statusCode, body) {
   return {
@@ -213,4 +272,4 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-exports._private = { sanitizeQuote, sanitizeAcceptance };
+exports._private = { sanitizeQuote, sanitizeAcceptance, sendPortalAccessConfirmation, validEmail };

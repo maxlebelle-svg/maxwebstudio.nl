@@ -68,7 +68,11 @@ test("Quick Build accepts a business name or valid website without requiring the
   assert.match(factory, /if \(intake\.buildReady\) return true/);
   assert.match(factory, /const guidedIntakeKeys = new Set\(\["branch", "goal", "style", "cta", "services", "photoStatus"\]\)/);
   assert.match(factory, /await window\.WebsiteFactoryRuntime\.quickBuild/);
-  assert.match(factory, /const savedJourney = journey\?\.id \? journey : await saveJourney\(\)/);
+  assert.match(factory, /const inferredBranch = inferBranchFromLead\(\{ companyName: businessName, websiteUrl, notes \}\)/);
+  assert.match(factory, /intakeState\.branch = inferredBranch/);
+  assert.match(factory, /if \(elements\.briefing\) elements\.briefing\.value = buildBriefing\(\)/);
+  assert.match(factory, /const savedJourney = await saveJourney\(\)/);
+  assert.doesNotMatch(factory, /journey\?\.id \? journey : await saveJourney\(\)/);
   assert.match(factory, /const result = await generatePreview\(currentPackageType\(\), \{ surface: "quick" \}\)/);
   assert.doesNotMatch(factory, /const waitForJourney = window\.setInterval/);
   assert.match(backend, /buildQuickFactoryBriefing\(sourceJourney\)/);
@@ -89,6 +93,7 @@ test("status cards and process steps are derived from current Factory state", ()
   assert.doesNotMatch(guidedStateSource, /document\.querySelectorAll\("#demo-intake-fields/);
   assert.match(factory, /function renderGuidedStatus\(\)/);
   assert.match(factory, /function renderGuidedProcess\(\)/);
+  assert.match(factory, /\["Blokkerende controle", blockingLabels \|\| "Geen statische blokkade"\]/);
   for (const label of ["Briefing", "Research", "Afbeeldingen", "Content", "SEO", "Mail", "Project", "Preview", "Timeline", "Live zetten"]) {
     assert.match(factory, new RegExp(label));
   }
@@ -194,4 +199,20 @@ test("guided layout has desktop, tablet and mobile responsive rules", () => {
   assert.match(styles, /@media\(max-width:1280px\)/);
   assert.match(styles, /@media\(max-width:1024px\)/);
   assert.match(styles, /@media\(max-width:768px\)/);
+});
+
+test("quick build keeps inferred services available after the asynchronous website scan", () => {
+  const quickBuild = factory.slice(factory.indexOf("async function quickBuild"), factory.indexOf("window.WebsiteFactoryRuntime = {"));
+  assert.match(quickBuild, /let inferredServices = \[\];/);
+  assert.match(quickBuild, /inferredServices = normalizeServiceValues/);
+  assert.match(quickBuild, /await analyzeWebsiteForFactory\(\);[\s\S]*if \(inferredServices\.length >= 2\) intakeState\.services = inferredServices/);
+  assert.doesNotMatch(quickBuild, /const inferredServices = normalizeServiceValues/);
+});
+
+test("build history links every completed job to its stored preview version", () => {
+  const renderBuildStatus = factory.slice(factory.indexOf("function renderBuildStatus()"), factory.indexOf("function renderProjectWorkspace()"));
+  assert.match(renderBuildStatus, /const versions = buildHistory\.previewVersions \|\| \[\]/);
+  assert.match(renderBuildStatus, /version\?\.buildJobId[\s\S]*job\.id/);
+  assert.match(renderBuildStatus, /Number\(version\?\.version \|\| 0\) === Number\(job\.previewVersion \|\| 0\)/);
+  assert.doesNotMatch(renderBuildStatus, /job === latest \? capability : \{ versionStored: false/);
 });

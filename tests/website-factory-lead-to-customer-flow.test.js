@@ -14,7 +14,9 @@ test("Website Factory toont een contextuele lead-naar-klantactie naast Nieuwe kl
     "de contextuele actie hoort links van Nieuwe klant te staan",
   );
   assert.match(factory, /const canConvert = Boolean\(lead\?\.id && !convertedCustomerIdForLead\(lead\)\)/);
-  assert.match(factory, /syncActiveLeadConversionAction\(context\)/);
+  assert.match(factory, /window\.syncActiveLeadConversionAction = syncActiveLeadConversionAction/);
+  assert.match(factory, /const lead = context\?\.entityType === "lead" \? context\.lead : null/);
+  assert.match(factory, /lead: context\.entityType === "lead" \? selectedLead\(\) : null/);
 });
 
 test("leadgegevens vullen het bestaande klantportaalformulier zonder automatisch mail te versturen", () => {

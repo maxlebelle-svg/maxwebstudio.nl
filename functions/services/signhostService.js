@@ -197,7 +197,7 @@ function buildCommercialOfferMetadata(transaction, input) {
   const signers = Array.isArray(transaction?.Signers) ? transaction.Signers : [];
   const signer = signerId(signers, input.signerEmail, 0);
   if (!signer) throw coded("SIGNHOST_SIGNERS_INVALID", 502, "Signhost gaf geen geldige ondertekenaar terug.");
-  const pageNumber = Math.max(1, Math.min(250, Number(input.pageNumber) || 1));
+  const pageNumber = Math.max(1, Math.min(250, Number(input.signaturePage || input.pageNumber) || 1));
   return {
     DisplayName:clean(input.displayName || "Definitieve offerte Max Webstudio").slice(0,180),
     Signers:{ [signer]:{ FormSets:["CustomerSignature"] } },
@@ -207,6 +207,18 @@ function buildCommercialOfferMetadata(transaction, input) {
       },
     },
   };
+}
+
+function transactionSignUrl(transaction) {
+  const signer = Array.isArray(transaction?.Signers) ? transaction.Signers[0] : null;
+  const raw = clean(signer?.SignUrl || signer?.signUrl || transaction?.SignUrl || transaction?.signUrl);
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "https:" && !parsed.username && !parsed.password ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
 }
 
 function singleLine(page, left, top, width) {
@@ -286,6 +298,7 @@ module.exports = {
   signhostConfig,
   signhostRequest,
   startTransaction,
+  transactionSignUrl,
   uploadPdf,
   uploadFileMetadata,
   validatePostback,

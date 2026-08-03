@@ -14,6 +14,8 @@ const {
 const { DEFAULT_VALIDITY_DAYS, defaultValidityDate } = require("./commercialOfferValidityService");
 
 const PAYMENT_CHOICES = new Set(["fixed_deposit", "full", "none"]);
+const DISCOUNT_PERCENTAGES = new Set([0, 10, 15, 20, 25, 50, 75]);
+const OFFER_PURPOSES = new Set(["personal_proposal", "definitive_offer"]);
 const CUSTOM_PRICE_ROLES = new Set(["super_admin"]);
 
 function buildOfferVersion(input = {}, actor = {}) {
@@ -21,6 +23,10 @@ function buildOfferVersion(input = {}, actor = {}) {
   if (!selections.length || selections.length > 60) throw validation("Kies minimaal één en maximaal zestig producten.");
   const paymentChoice = clean(input.paymentChoice || "none").toLowerCase();
   if (!PAYMENT_CHOICES.has(paymentChoice)) throw validation("Ongeldige betaalkeuze.");
+  const discountPercentage = integer(input.discountPercentage ?? 0, "Ongeldig kortingspercentage.");
+  if (!DISCOUNT_PERCENTAGES.has(discountPercentage)) throw validation("Kies een toegestaan kortingspercentage.");
+  const offerPurpose = clean(input.offerPurpose || "personal_proposal").toLowerCase();
+  if (!OFFER_PURPOSES.has(offerPurpose)) throw validation("Kies of dit een persoonlijk voorstel of definitieve offerte is.");
 
   const selectedIds = selections.map((entry) => clean(entry.productId));
   if (new Set(selectedIds).size !== selectedIds.length) throw validation("Een product mag maar één keer in een voorstel staan.");
@@ -49,7 +55,7 @@ function buildOfferVersion(input = {}, actor = {}) {
     });
   });
 
-  const totals = calculateTotals(lines, websiteIds[0], paymentChoice);
+  const totals = calculateTotals(lines, websiteIds[0], paymentChoice, discountPercentage);
   const validUntil = defaultValidityDate();
   const snapshot = {
     catalogKey: CATALOG_KEY,
@@ -58,7 +64,9 @@ function buildOfferVersion(input = {}, actor = {}) {
     currency: CURRENCY,
     vatRate: VAT_RATE,
     validUntil,
+    offerPurpose,
     paymentChoice,
+    discountPercentage,
     ...totals,
     lines,
   };
@@ -112,18 +120,22 @@ function buildLine(item, component, quantity, override, actor, position, customP
   };
 }
 
-function calculateTotals(lines, websiteId, paymentChoice) {
+function calculateTotals(lines, websiteId, paymentChoice, discountPercentage) {
   const binding = lines.filter((line) => line.bindingState === "binding");
   const oneTime = binding.filter((line) => line.componentType === "one_time");
   const recurring = binding.filter((line) => line.componentType === "recurring");
-  const oneTimeExVatCents = sum(oneTime, "subtotalExVatCents");
-  const oneTimeVatCents = sum(oneTime, "vatCents");
+  const oneTimeBeforeDiscountExVatCents = sum(oneTime, "subtotalExVatCents");
+  const discountExVatCents = Math.round(oneTimeBeforeDiscountExVatCents * discountPercentage / 100);
+  const oneTimeExVatCents = oneTimeBeforeDiscountExVatCents - discountExVatCents;
+  const oneTimeVatCents = Math.round(oneTimeExVatCents * VAT_RATE / 100);
   const recurringExVatCents = sum(recurring, "subtotalExVatCents");
   const recurringVatCents = sum(recurring, "vatCents");
   const fixedDepositExVatCents = paymentChoice === "fixed_deposit" ? PRODUCTS[websiteId].fixedDepositExVatCents : 0;
-  const dueNowExVatCents = paymentChoice === "full" ? oneTimeExVatCents : fixedDepositExVatCents;
+  const dueNowExVatCents = paymentChoice === "full" ? oneTimeExVatCents : Math.min(fixedDepositExVatCents, oneTimeExVatCents);
   const dueNowVatCents = Math.round(dueNowExVatCents * VAT_RATE / 100);
   return {
+    oneTimeBeforeDiscountExVatCents,
+    discountExVatCents,
     oneTimeExVatCents,
     oneTimeVatCents,
     oneTimeInclVatCents: oneTimeExVatCents + oneTimeVatCents,
@@ -170,5 +182,7 @@ module.exports = {
   buildOfferVersion,
   catalogRegistrationPayload,
   PAYMENT_CHOICES,
+  DISCOUNT_PERCENTAGES,
+  OFFER_PURPOSES,
   _private: { validityDate: (days, now) => days === DEFAULT_VALIDITY_DAYS ? defaultValidityDate(now) : null, DEFAULT_VALIDITY_DAYS },
 };

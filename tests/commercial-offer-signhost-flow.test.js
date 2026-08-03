@@ -1,0 +1,65 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const { buildOfferVersion } = require("../functions/services/commercialOfferService");
+const { buildCommercialOfferMail } = require("../functions/services/commercialOfferMailService");
+const { generateCommercialOfferPdf } = require("../functions/services/commercialOfferPdfService");
+const { buildCommercialOfferMetadata, transactionSignUrl } = require("../functions/services/signhostService");
+
+const root=path.join(__dirname,"..");
+const read=file=>fs.readFileSync(path.join(root,file),"utf8");
+function snapshot(purpose="definitive_offer") { return buildOfferVersion({offerPurpose:purpose,paymentChoice:"full",discountPercentage:15,selections:[{productId:"starter_site",quantity:1}]},{role:"super_admin",profileId:"00000000-0000-4000-8000-000000000001"}); }
+const relation={companyName:"Voorbeeld BV",contactName:"Jan Jansen",email:"jan@voorbeeld.nl"};
+const demo={desktopUrl:"https://demo.example/admin",mobileUrl:"https://demo.example/mobile",qrCodeUrl:"https://maxwebstudio.nl/api/commercial-offer-qr?x=1"};
+
+test("offer purpose is immutable checksum input and defaults safely to personal proposal",()=>{
+  const personal=snapshot("personal_proposal"),definitive=snapshot();
+  assert.equal(personal.offerPurpose,"personal_proposal");assert.equal(definitive.offerPurpose,"definitive_offer");assert.notEqual(personal.checksum,definitive.checksum);
+});
+
+test("mail keeps personal interest and definitive Signhost actions explicitly separate",()=>{
+  const personal=buildCommercialOfferMail({relationship:relation,demo,snapshot:snapshot("personal_proposal"),mode:"definitive",interestUrl:"https://maxwebstudio.nl/voorstel-interesse.html#token=x"});
+  const definitive=buildCommercialOfferMail({relationship:relation,demo,snapshot:snapshot(),mode:"definitive",signingUrl:"https://maxwebstudio.nl/voorstel-ondertekenen.html#token=x"});
+  assert.match(personal.html,/Ja, ik wil verder/);assert.match(personal.disclaimer,/geen digitale ondertekening/i);
+  assert.match(definitive.html,/Bekijk offerte en onderteken/);assert.match(definitive.subject,/Definitieve offerte/);assert.match(definitive.disclaimer,/Alleen ondertekening via Signhost/i);
+  assert.throws(()=>buildCommercialOfferMail({relationship:relation,demo,snapshot:snapshot(),mode:"definitive",interestUrl:"https://maxwebstudio.nl/interesse"}),/ondertekenlink/i);
+});
+
+test("generated definitive offer is a branded three-page PDF with pinned business evidence",()=>{
+  const value=snapshot();const pdf=generateCommercialOfferPdf({offerId:"12345678-1234-4234-8234-123456789abc",versionNumber:3,snapshot:value,relationship:relation,documents:[{document_type:"general_terms",version_code:"algemene-voorwaarden-2026-08-b2b",checksum_sha256:"a".repeat(64)}],signerName:"Jan Jansen",signerRole:"Eigenaar"});
+  const source=pdf.bytes.toString("latin1");
+  assert.equal(pdf.pageCount,3);assert.equal(pdf.signaturePage,3);assert.equal(pdf.bytes.subarray(0,5).toString(),"%PDF-");assert.match(pdf.bytes.subarray(-20).toString("latin1"),/%%EOF/);
+  assert.match(source,/Max Webstudio/);assert.match(source,/BUILD BETTER ONLINE/);assert.match(source,/Duidelijk vastgelegd/);assert.match(source,/DIGITALE HANDTEKENING VIA SIGNHOST/);
+  assert.match(source,/algemene-voorwaarden-2026-08-b2b/);assert.doesNotMatch(source,/consumentenherroepingsrecht/i);
+});
+
+test("long definitive offers keep every line and move the Signhost field to the actual final page",()=>{
+  const value=snapshot();
+  const lines=Array.from({length:12},(_,index)=>({...value.lines[0],productName:`Onderdeel ${String(index+1).padStart(2,"0")}`,productDescription:`Beschrijving ${index+1}`}));
+  const pdf=generateCommercialOfferPdf({offerId:"12345678-1234-4234-8234-123456789abc",versionNumber:4,snapshot:{...value,lines},relationship:relation,documents:[],signerName:"Jan Jansen",signerRole:"Eigenaar"});
+  const source=pdf.bytes.toString("latin1");
+  assert.equal(pdf.pageCount,4);assert.equal(pdf.signaturePage,4);assert.match(source,/Onderdeel 01/);assert.match(source,/Onderdeel 12/);assert.match(source,/4 \/ 4/);
+});
+
+test("Signhost metadata gives exactly the customer signer a signature field on the final page",()=>{
+  const metadata=buildCommercialOfferMetadata({Signers:[{Id:"signer-1",Email:relation.email}]},{signerEmail:relation.email,signaturePage:3,reference:"MWS-003"});
+  assert.deepEqual(metadata.Signers,{"signer-1":{FormSets:["CustomerSignature"]}});assert.equal(metadata.FormSets.CustomerSignature.Handtekening.Location.PageNumber,3);
+  assert.equal(transactionSignUrl({Signers:[{SignUrl:"https://signhost.example/sign/abc"}]}),"https://signhost.example/sign/abc");assert.equal(transactionSignUrl({SignUrl:"javascript:bad"}),"");
+});
+
+test("migration makes provider postback the only signed finalizer and keeps artifacts private",()=>{
+  const sql=read("supabase/migrations/20260802213000_commercial_offer_signhost.sql");
+  assert.match(sql,/commercial_offer_signing_transactions/);assert.match(sql,/commercial_finalize_offer_signature_v1/);assert.match(sql,/status='signed'/);assert.match(sql,/public\s*,\s*file_size_limit|values\([^\n]+false/i);assert.match(sql,/force row level security/);assert.match(sql,/grant execute.*service_role/s);assert.doesNotMatch(sql,/grant execute.*\b(?:anon|authenticated)\b/i);
+});
+
+test("customer page requires authority and displays clickable versioned documents",()=>{
+  const page=read("public/voorstel-ondertekenen.html");
+  assert.match(page,/authorityConfirmed/);assert.match(page,/bevoegd/);assert.match(page,/target="_blank"/);assert.match(page,/Authorization:`Bearer \$\{token\}`/);assert.match(page,/Signhost/);assert.doesNotMatch(page,/wachtwoord.{0,20}(?:verstuur|mail)/i);
+});
+
+test("verified signed postback stores both artifacts before portal activation",()=>{
+  const postback=read("functions/signhost-postback.js"),activation=read("functions/services/commercialOfferActivationService.js");
+  assert.match(postback,/preserveCommercialArtifacts/);assert.match(postback,/commercial_finalize_offer_signature_v1/);assert.match(postback,/activateSignedCommercialOffer/);assert.match(postback,/receiptSha256/);
+  assert.match(activation,/ensureCustomerAuthContext/);assert.match(activation,/createInviteOrResetLink/);assert.match(activation,/lead_status:"won"/);assert.doesNotMatch(activation,/password\s*:/i);
+});

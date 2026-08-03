@@ -111,8 +111,8 @@
       }
 
       function normalizeRole(value = "") {
-        const role = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-        return roleAliases[role] || role;
+        const rawRole = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+        return roleAliases[rawRole] || rawRole;
       }
 
       function defaultTargetForRole(role = "") {

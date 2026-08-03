@@ -93,6 +93,10 @@
       "fileset": "docs/release-readiness/phase-d1-leads-demo-read-policy-hardening/FILESET.json"
     },
     {
+      "manifest": "docs/release-readiness/commercial-offer-signhost-v1-product-migrations/MANIFEST.json",
+      "fileset": "docs/release-readiness/commercial-offer-signhost-v1-product-migrations/FILESET.json"
+    },
+    {
       "manifest": "docs/release-readiness/domain-request-workflow/MANIFEST.json",
       "fileset": "docs/release-readiness/domain-request-workflow/FILESET.json"
     },
