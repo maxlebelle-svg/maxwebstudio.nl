@@ -15,7 +15,8 @@ test("Website Factory toont een contextuele lead-naar-klantactie naast Nieuwe kl
   );
   assert.match(factory, /const canConvert = Boolean\(lead\?\.id && !convertedCustomerIdForLead\(lead\)\)/);
   assert.match(factory, /window\.syncActiveLeadConversionAction = syncActiveLeadConversionAction/);
-  assert.match(factory, /window\.syncActiveLeadConversionAction\?\.\(context\)/);
+  assert.match(factory, /const lead = context\?\.entityType === "lead" \? context\.lead : null/);
+  assert.match(factory, /lead: context\.entityType === "lead" \? selectedLead\(\) : null/);
 });
 
 test("leadgegevens vullen het bestaande klantportaalformulier zonder automatisch mail te versturen", () => {

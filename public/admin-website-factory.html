@@ -11886,7 +11886,7 @@
                 activeLead.converted_customer_id = customerId;
                 activeLead.convertedCustomerId = customerId;
               }
-              syncActiveLeadConversionAction({ entityType: "lead" });
+              syncActiveLeadConversionAction({ entityType: "lead", lead: activeLead });
             }
             const emailStatus = data.email?.sent
               ? " Welkomstmail is via Resend verzonden."
@@ -17548,7 +17548,7 @@
 
         function syncActiveLeadConversionAction(context = null) {
           if (!convertActiveLeadTopbar) return;
-          const lead = context?.entityType === "lead" ? selectedLead() : null;
+          const lead = context?.entityType === "lead" ? context.lead : null;
           const canConvert = Boolean(lead?.id && !convertedCustomerIdForLead(lead));
           convertActiveLeadTopbar.hidden = !canConvert;
           convertActiveLeadTopbar.disabled = !canConvert;
@@ -17563,7 +17563,7 @@
           }
           if (convertedCustomerIdForLead(lead)) {
             setAdminAccessMessage("Deze lead is al aan een klant gekoppeld.", "error");
-            syncActiveLeadConversionAction({ entityType: "lead" });
+            syncActiveLeadConversionAction({ entityType: "lead", lead });
             return;
           }
           const company = lead.companyName || lead.company_name || lead.businessName || lead.business_name || lead.company || "";
@@ -24076,7 +24076,10 @@
             elements.activeContext.innerHTML = "";
             return;
           }
-          window.syncActiveLeadConversionAction?.(context);
+          window.syncActiveLeadConversionAction?.({
+            ...context,
+            lead: context.entityType === "lead" ? selectedLead() : null,
+          });
           const isCustomer = context.entityType === "customer";
           const website = String(context.website || "").trim();
           const websiteHref = website ? (website.startsWith("http") ? website : `https://${website}`) : "";
