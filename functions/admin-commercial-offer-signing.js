@@ -155,6 +155,11 @@ async function rest(config, path) {
   const response = await fetch(`${config.url}/rest/v1/${path}`, { headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, Accept: "application/json" } });
   const data = await response.json().catch(() => null);
   if (response.ok && Array.isArray(data)) return data;
+  console.error("Commercial signing read failed", {
+    resource: clean(path).split("?")[0].replace(/[^a-z0-9_]/gi, "").slice(0, 80),
+    status: response.status,
+    providerCode: clean(data?.code).slice(0, 40),
+  });
   throw problem(503, "OFFER_READ_UNAVAILABLE", "De commerciële context kon niet veilig worden geladen.");
 }
 async function rpc(config, name, body) {
