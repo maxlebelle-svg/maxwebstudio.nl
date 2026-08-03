@@ -215,6 +215,7 @@ async function dispatchMail(kind, input, actor, config) {
     if (reservation.status === "sent") return json(200, { success: true, duplicate: true, dispatch: reservation });
     throw problem(409, "DISPATCH_ALREADY_RESERVED", "Deze verzendactie is al veilig gereserveerd en wordt niet opnieuw uitgevoerd.");
   }
+  if (signingUrl) await bindSigningRecipient(config, reservation.dispatchId, recipient);
   let mail;
   try {
     mail = buildCommercialOfferMail({ relationship: { ...context.relationship, email: recipient }, demo: context.demo, snapshot: context.version.snapshot, mode: kind, interestUrl, signingUrl, staging: isStagingDeployment() });
@@ -241,6 +242,15 @@ async function dispatchMail(kind, input, actor, config) {
   return json(200, { success: true, duplicate: false, dispatch: finalized, recipient: kind === "test" ? actor.email : "customer" });
 }
 
+async function bindSigningRecipient(config, dispatchId, recipient) {
+  const rows = await rest(config, `commercial_offer_signing_access_tokens?dispatch_id=eq.${dispatchId}&signer_email=is.null`, {
+    method: "PATCH",
+    body: JSON.stringify({ signer_email: recipient.toLowerCase() }),
+    headers: { Prefer: "return=representation" },
+  });
+  if (!Array.isArray(rows) || rows.length !== 1) throw problem(503, "SIGNING_RECIPIENT_BINDING_FAILED", "De bevestigde ontvanger kon niet veilig aan de ondertekenlink worden gekoppeld.");
+}
+
 async function finalizeDispatch(config, actor, dispatchId, sent, providerHash, failureCode) {
   return rpc(config, "commercial_finalize_offer_dispatch_v1", {
     input_actor_profile_id: actor.profileId,
@@ -265,7 +275,7 @@ async function revokeInterest(input, actor, config) {
     input_reason: reason,
     input_idempotency_key: boundedKey(input.actionKey),
   });
-  await rest(config, `commercial_offer_signing_access_tokens?offer_version_id=eq.${offerVersionId}&started_at=is.null&revoked_at=is.null`, { method: "PATCH", body: JSON.stringify({ revoked_at: new Date().toISOString() }) });
+  await rest(config, `commercial_offer_signing_access_tokens?offer_version_id=eq.${offerVersionId}&started_at=is.null&revoked_at=is.null`, { method: "PATCH", body: JSON.stringify({ revoked_at: new Date().toISOString(), signer_email: null }) });
   const redaction = await rpc(config, "commercial_redact_offer_email_logs_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,

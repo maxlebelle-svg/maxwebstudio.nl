@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-signing-recipient-binding-2026-08-03",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260803233000_bind_signing_recipient_to_access_token.sql",
+      "bytes": 837,
+      "sha256": "96076da9ff832906ab6b476fca0ec8da2a77d37564cfd5bdd1cdd35f89a9fae5"
+    }
+  ]
+}

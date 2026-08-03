@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-signing-recipient-binding-2026-08-03",
+  "release": "Max Webstudio verified signing recipient binding",
+  "status": "DEPLOYED_TO_STAGING_AND_PRODUCTION_WITH_SEPARATE_AUTHORIZATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/manual-offer-recipient",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "separateRemoteExecutionAuthorized": true,
+  "productionAppliedAt": "2026-08-03T21:33:28Z",
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260803233000_bind_signing_recipient_to_access_token.sql"
+  ],
+  "scope": [
+    "bind the server-verified definitive dispatch recipient to its opaque signing access token",
+    "allow a relationship without its own email address to use the explicitly verified dispatch recipient",
+    "clear the plaintext recipient after Signhost start, failure, or access revocation"
+  ],
+  "explicitlyExcluded": [
+    "client-controlled signer email input",
+    "changes to immutable offer versions or prior audit evidence",
+    "live Mollie payments"
+  ]
+}

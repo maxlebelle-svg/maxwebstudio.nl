@@ -103,6 +103,10 @@
     {
       "manifest": "docs/release-readiness/commercial-offer-phase-2-fulfilment/MANIFEST.json",
       "fileset": "docs/release-readiness/commercial-offer-phase-2-fulfilment/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/commercial-offer-signing-recipient-binding/MANIFEST.json",
+      "fileset": "docs/release-readiness/commercial-offer-signing-recipient-binding/FILESET.json"
     }
   ]
 }
