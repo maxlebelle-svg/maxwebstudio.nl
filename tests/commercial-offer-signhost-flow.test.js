@@ -23,6 +23,9 @@ test("mail keeps personal interest and definitive Signhost actions explicitly se
   const definitive=buildCommercialOfferMail({relationship:relation,demo,snapshot:snapshot(),mode:"definitive",signingUrl:"https://maxwebstudio.nl/voorstel-ondertekenen.html#token=x"});
   assert.match(personal.html,/Ja, ik wil verder/);assert.match(personal.disclaimer,/geen digitale ondertekening/i);
   assert.match(definitive.html,/Bekijk offerte en onderteken/);assert.match(definitive.subject,/Definitieve offerte/);assert.match(definitive.disclaimer,/Alleen ondertekening via Signhost/i);
+  assert.match(definitive.html,/BUILD BETTER ONLINE/);assert.match(definitive.html,/name="color-scheme" content="dark"/);assert.match(definitive.html,/Volgende stap/);
+  assert.ok(definitive.html.indexOf("Bekijk offerte en onderteken")<definitive.html.indexOf("Demo op computer bekijken"));
+  assert.doesNotMatch(personal.html,/start de beveiligde ondertekening via Signhost/i);
   assert.throws(()=>buildCommercialOfferMail({relationship:relation,demo,snapshot:snapshot(),mode:"definitive",interestUrl:"https://maxwebstudio.nl/interesse"}),/ondertekenlink/i);
 });
 
