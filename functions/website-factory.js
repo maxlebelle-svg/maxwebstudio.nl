@@ -48,6 +48,9 @@ const BUILD_JOB_SUMMARY_FIELDS = [
 const BUILD_JOB_RUNTIME_FIELDS = [
   BUILD_JOB_SUMMARY_FIELDS, "quality_report", "generated_package", "updated_at",
 ].join(",");
+const BUILD_JOB_QUEUE_SCAN_FIELDS = [
+  BUILD_JOB_SUMMARY_FIELDS, "quality_report", "updated_at",
+].join(",");
 const PREVIEW_RECOVERY_FIELDS = [
   "id", "demo_journey_id", "build_job_id", "customer_id", "project_id", "website_id", "version", "title",
   "preview_url", "preview_token", "preview_score", "quality_report", "metadata", "is_active", "status", "created_by", "created_at",
@@ -557,13 +560,13 @@ async function getBrowserReviewQueueResponse(context, payload) {
   const jobs = [];
   let offset = 0;
 
-  // Filter niet pas na één kleine databasepagina. Oudere, niet-geschikte jobs
-  // mogen nieuwe geldige browserreviews nooit permanent uit de wachtrij duwen.
+  // Scan alleen lichte metadata. Het volledige websitepakket kan meerdere MB's
+  // groot zijn en wordt pas voor een werkelijk geschikte kandidaat opgehaald.
   while (jobs.length < requestedLimit && offset < maxScannedRows) {
     const query = new URLSearchParams({
-      select: BUILD_JOB_RUNTIME_FIELDS,
+      select: BUILD_JOB_QUEUE_SCAN_FIELDS,
       status: "in.(completed,quality_check)",
-      order: "updated_at.asc",
+      order: "updated_at.desc",
       limit: String(pageSize),
       offset: String(offset),
     });
@@ -572,7 +575,13 @@ async function getBrowserReviewQueueResponse(context, payload) {
       headers: restHeaders(context.serviceRoleKey),
       timeoutMs: PACKAGE_SUPABASE_TIMEOUT_MS,
     });
-    jobs.push(...rows.map(normalizeBuildJob).filter(isBrowserReviewQueueCandidate).slice(0, requestedLimit - jobs.length));
+    const candidates = rows.map(normalizeBuildJob).filter((job) => isBrowserReviewQueueCandidate(job, { requirePackage: false }));
+    for (const candidate of candidates) {
+      if (jobs.length >= requestedLimit) break;
+      const runtimeRow = await readBuildJobRuntimeById(context, candidate.id, PACKAGE_SUPABASE_TIMEOUT_MS);
+      const runtimeJob = normalizeBuildJob(runtimeRow);
+      if (isBrowserReviewQueueCandidate(runtimeJob)) jobs.push(runtimeJob);
+    }
     if (rows.length < pageSize) break;
     offset += pageSize;
   }
@@ -585,7 +594,7 @@ async function getBrowserReviewQueueResponse(context, payload) {
   });
 }
 
-function isBrowserReviewQueueCandidate(job) {
+function isBrowserReviewQueueCandidate(job, options = {}) {
   const firstReviewRequired = job.currentStep === "completed"
     && job.qualityReport?.browserReview?.required === true
     && job.qualityReport?.browserReview?.status === "not_run"
@@ -596,7 +605,7 @@ function isBrowserReviewQueueCandidate(job) {
     && job.qualityReport?.readiness?.customerPreview !== true
     && (firstReviewRequired || repairedBuildRequiresRecheck)
     && Boolean(job.previewUrl)
-    && isUsableGeneratedPackage(job.generatedPackage);
+    && (options.requirePackage === false || isUsableGeneratedPackage(job.generatedPackage));
 }
 
 async function generatePackageResponse(context, payload) {

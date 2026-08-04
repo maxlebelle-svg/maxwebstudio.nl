@@ -46,6 +46,9 @@ test("Factory exposes only eligible builds through the browser review queue", ()
   assert.match(endpoint, /offset: String\(offset\)/);
   assert.match(endpoint, /while \(jobs\.length < requestedLimit && offset < maxScannedRows\)/);
   assert.match(endpoint, /pageSize = Math\.max\(50, requestedLimit \* 10\)/);
+  assert.match(endpoint, /select: BUILD_JOB_QUEUE_SCAN_FIELDS/);
+  assert.match(endpoint, /readBuildJobRuntimeById\(context, candidate\.id/);
+  assert.match(endpoint, /order: "updated_at\.desc"/);
   assert.doesNotMatch(endpoint, /limit: String\(requestedLimit \* 3\)/);
 });
 
