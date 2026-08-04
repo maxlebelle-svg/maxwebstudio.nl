@@ -47,12 +47,13 @@ test("Factory exposes only eligible builds through the browser review queue", ()
   assert.match(endpoint, /qualityReport\?\.browserReview\?\.status === "not_run"/);
   assert.match(endpoint, /qualityReport\?\.readiness\?\.reason === "browser_review_required"/);
   assert.match(endpoint, /qualityReport\?\.browserRepair\?\.status === "awaiting_recheck"/);
-  assert.match(endpoint, /isUsableGeneratedPackage\(job\.generatedPackage\)/);
   assert.match(endpoint, /offset: String\(offset\)/);
   assert.match(endpoint, /while \(jobs\.length < requestedLimit && offset < maxScannedRows\)/);
   assert.match(endpoint, /pageSize = Math\.max\(50, requestedLimit \* 10\)/);
   assert.match(endpoint, /select: BUILD_JOB_QUEUE_SCAN_FIELDS/);
-  assert.match(endpoint, /readBuildJobRuntimeById\(context, candidate\.id/);
+  assert.match(endpoint, /readPreviewVersionBrowserReviewByBuildJobId\(context, candidate\.id\)/);
+  assert.match(endpoint, /PREVIEW_BROWSER_REVIEW_FIELDS = "id,build_job_id,package_checksum,metadata"/);
+  assert.doesNotMatch(endpoint, /readBuildJobRuntimeById\(context, candidate\.id/);
   assert.match(endpoint, /order: "updated_at\.desc"/);
   assert.doesNotMatch(endpoint, /limit: String\(requestedLimit \* 3\)/);
 });

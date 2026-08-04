@@ -72,6 +72,19 @@ test("browser evidence for another artifact fails closed", () => {
   assert.ok(result.report.blockers.some((item) => item.id === "artifact_hash_mismatch"));
 });
 
+test("browser evidence can be checked against a trusted stored checksum without loading the package", () => {
+  const pkg = generatedPackage();
+  const expectedArtifactHash = artifactHashForPackage(pkg);
+  const result = processBrowserReview({
+    staticReport: { passed: true, score: 96 },
+    evidence: evidenceFor(pkg),
+    expectedArtifactHash,
+  });
+
+  assert.equal(result.report.passed, true);
+  assert.equal(result.browserRepair.artifactHash, expectedArtifactHash);
+});
+
 test("layout, overflow and form failures produce a deterministic repaired package", () => {
   const pkg = generatedPackage();
   const result = processBrowserReview({
@@ -124,6 +137,8 @@ test("the Factory endpoint and employee view expose the browser repair loop", ()
 
   assert.match(endpoint, /action === "submit_browser_review"/);
   assert.match(endpoint, /BROWSER_ARTIFACT_MISMATCH/);
+  assert.match(endpoint, /readBuildJobReviewById\(context, jobId\)/);
+  assert.match(endpoint, /automaticRepairPlanned/);
   assert.match(endpoint, /current_step: retryAvailable \? "browser_review_required" : "browser_review_failed"/);
   assert.match(endpoint, /customerPreviewReady: true/);
   assert.match(factoryView, /\["Browsercontrole", browserStatus\]/);

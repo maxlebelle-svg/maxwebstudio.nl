@@ -946,6 +946,7 @@ function normalizePreviewVersion(row = {}) {
     previewUrl,
     previewToken,
     previewScore: row.preview_score === null || row.preview_score === undefined ? null : Number(row.preview_score),
+    packageChecksum: cleanText(row.package_checksum).toLowerCase(),
     qualityReport: row.quality_report && typeof row.quality_report === "object" ? row.quality_report : null,
     generatedPackage,
     metadata,
