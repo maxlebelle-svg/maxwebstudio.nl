@@ -62,6 +62,7 @@ const PREVIEW_SUMMARY_FIELDS = [
   "preview_score", "metadata", "is_active", "status", "created_by", "created_at", "feedback_items", "approved_at",
   "published_to_portal", "published_at",
 ].join(",");
+const PREVIEW_BROWSER_REVIEW_FIELDS = "id,build_job_id,package_checksum,metadata";
 const RESUMABLE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "retryable"]);
 const DEFAULT_SUPABASE_TIMEOUT_MS = 8000;
 const PACKAGE_SUPABASE_TIMEOUT_MS = 30000;
@@ -575,12 +576,12 @@ async function getBrowserReviewQueueResponse(context, payload) {
       headers: restHeaders(context.serviceRoleKey),
       timeoutMs: PACKAGE_SUPABASE_TIMEOUT_MS,
     });
-    const candidates = rows.map(normalizeBuildJob).filter((job) => isBrowserReviewQueueCandidate(job, { requirePackage: false }));
+    const candidates = rows.map(normalizeBuildJob).filter(isBrowserReviewQueueCandidate);
     for (const candidate of candidates) {
       if (jobs.length >= requestedLimit) break;
-      const runtimeRow = await readBuildJobRuntimeById(context, candidate.id, PACKAGE_SUPABASE_TIMEOUT_MS);
-      const runtimeJob = normalizeBuildJob(runtimeRow);
-      if (isBrowserReviewQueueCandidate(runtimeJob)) jobs.push(runtimeJob);
+      const previewVersion = await readPreviewVersionBrowserReviewByBuildJobId(context, candidate.id);
+      const artifactHash = cleanArtifactHash(previewVersion?.packageChecksum || candidate.qualityReport?.browserRepair?.artifactHash);
+      if (artifactHash) jobs.push({ ...candidate, artifactHash });
     }
     if (rows.length < pageSize) break;
     offset += pageSize;
@@ -594,7 +595,7 @@ async function getBrowserReviewQueueResponse(context, payload) {
   });
 }
 
-function isBrowserReviewQueueCandidate(job, options = {}) {
+function isBrowserReviewQueueCandidate(job) {
   const firstReviewRequired = job.currentStep === "completed"
     && job.qualityReport?.browserReview?.required === true
     && job.qualityReport?.browserReview?.status === "not_run"
@@ -604,8 +605,12 @@ function isBrowserReviewQueueCandidate(job, options = {}) {
   return job.qualityReport?.passed === true
     && job.qualityReport?.readiness?.customerPreview !== true
     && (firstReviewRequired || repairedBuildRequiresRecheck)
-    && Boolean(job.previewUrl)
-    && (options.requirePackage === false || isUsableGeneratedPackage(job.generatedPackage));
+    && Boolean(job.previewUrl);
+}
+
+function cleanArtifactHash(value) {
+  const hash = cleanText(value).toLowerCase();
+  return /^[0-9a-f]{64}$/.test(hash) ? hash : "";
 }
 
 async function generatePackageResponse(context, payload) {
@@ -646,9 +651,7 @@ async function submitBrowserReview(context, payload = {}) {
     error.status = 400;
     throw error;
   }
-  // Browser review needs the complete generated package. Large customer builds can
-  // exceed the short metadata timeout even though Supabase is still responding.
-  const row = await readBuildJobRuntimeById(context, jobId, PACKAGE_SUPABASE_TIMEOUT_MS);
+  const row = await readBuildJobReviewById(context, jobId);
   if (!row) {
     const error = new Error("Build job niet gevonden voor browsercontrole.");
     error.status = 404;
@@ -662,7 +665,9 @@ async function submitBrowserReview(context, payload = {}) {
     throw error;
   }
   assertCanSeeJourney(journeyRow, context.admin);
-  if (!isUsableGeneratedPackage(job.generatedPackage) || job.qualityReport?.passed !== true) {
+  const previewVersion = await readPreviewVersionBrowserReviewByBuildJobId(context, job.id);
+  const expectedArtifactHash = cleanArtifactHash(previewVersion?.packageChecksum || job.qualityReport?.browserRepair?.artifactHash);
+  if (!expectedArtifactHash || job.qualityReport?.passed !== true) {
     const error = new Error("De statische Quality Gate moet slagen voordat de browsercontrole kan worden verwerkt.");
     error.status = 409;
     error.code = "STATIC_QUALITY_REQUIRED";
@@ -673,18 +678,17 @@ async function submitBrowserReview(context, payload = {}) {
   const processed = processBrowserReview({
     staticReport: job.qualityReport,
     evidence,
-    generatedPackage: job.generatedPackage,
     previousQualityReport: job.qualityReport,
+    expectedArtifactHash,
   });
   if (processed.report.blockers.some((item) => item.id === "artifact_hash_mismatch")) {
     const error = new Error("Het browserbewijs hoort niet bij de actuele websitebuild.");
     error.status = 409;
     error.code = "BROWSER_ARTIFACT_MISMATCH";
-    error.expectedArtifactHash = artifactHashForPackage(job.generatedPackage);
+    error.expectedArtifactHash = expectedArtifactHash;
     throw error;
   }
 
-  const previewVersion = await readPreviewVersionRuntimeByBuildJobId(context, job.id);
   if (processed.report.passed) {
     const completedRecord = {
       status: "completed",
@@ -720,12 +724,25 @@ async function submitBrowserReview(context, payload = {}) {
     };
   }
 
-  const repair = applyAutomaticBrowserRepairs({ generatedPackage: job.generatedPackage, browserRepair: processed.browserRepair });
+  let repair = { generatedPackage: null, changed: false, applied: [] };
+  const automaticRepairPlanned = processed.browserRepair.retryAvailable
+    && processed.browserRepair.repairPlan.some((item) => item.automatic === true);
+  if (automaticRepairPlanned) {
+    const runtimeJob = normalizeBuildJob(await readBuildJobRuntimeById(context, job.id, PACKAGE_SUPABASE_TIMEOUT_MS));
+    if (!isUsableGeneratedPackage(runtimeJob.generatedPackage) || artifactHashForPackage(runtimeJob.generatedPackage) !== expectedArtifactHash) {
+      const error = new Error("Het opgeslagen websitepakket komt niet overeen met de gecontroleerde preview.");
+      error.status = 409;
+      error.code = "BROWSER_ARTIFACT_MISMATCH";
+      error.expectedArtifactHash = expectedArtifactHash;
+      throw error;
+    }
+    repair = applyAutomaticBrowserRepairs({ generatedPackage: runtimeJob.generatedPackage, browserRepair: processed.browserRepair });
+  }
   const retryAvailable = processed.browserRepair.retryAvailable && repair.changed;
   const repairedStaticReport = repair.changed
     ? runQualityCheck({ generatedPackage: repair.generatedPackage, journey: mapJourney(journeyRow) })
     : job.qualityReport;
-  const nextArtifactHash = artifactHashForPackage(repair.generatedPackage);
+  const nextArtifactHash = repair.changed ? artifactHashForPackage(repair.generatedPackage) : expectedArtifactHash;
   const nextBrowserRepair = {
     ...processed.browserRepair,
     status: retryAvailable ? "awaiting_recheck" : "manual_review_required",
@@ -1949,6 +1966,14 @@ async function readBuildJobById(context, id) {
   return rows[0] || null;
 }
 
+async function readBuildJobReviewById(context, id) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?select=${encodeURIComponent(BUILD_JOB_QUEUE_SCAN_FIELDS)}&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
 async function readBuildJobRuntimeById(context, id, timeoutMs = DEFAULT_SUPABASE_TIMEOUT_MS) {
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?select=${encodeURIComponent(BUILD_JOB_RUNTIME_FIELDS)}&id=eq.${encodeURIComponent(cleanText(id))}&limit=1`, {
     method: "GET",
@@ -1972,6 +1997,16 @@ async function readPreviewVersionRuntimeByBuildJobId(context, buildJobId) {
   const id = cleanText(buildJobId);
   if (!id) return null;
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=*&build_job_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] ? normalizePreviewVersion(rows[0]) : null;
+}
+
+async function readPreviewVersionBrowserReviewByBuildJobId(context, buildJobId) {
+  const id = cleanText(buildJobId);
+  if (!id) return null;
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=${encodeURIComponent(PREVIEW_BROWSER_REVIEW_FIELDS)}&build_job_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=1`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
   });

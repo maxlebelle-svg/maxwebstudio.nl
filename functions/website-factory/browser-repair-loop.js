@@ -10,10 +10,12 @@ function artifactHashForPackage(generatedPackage = {}) {
   return createHash("sha256").update(JSON.stringify(generatedPackage || {})).digest("hex");
 }
 
-function processBrowserReview({ staticReport = {}, evidence = {}, generatedPackage = {}, previousQualityReport = {} } = {}) {
-  const expectedArtifactHash = artifactHashForPackage(generatedPackage);
+function processBrowserReview({ staticReport = {}, evidence = {}, generatedPackage = {}, previousQualityReport = {}, expectedArtifactHash = "" } = {}) {
+  const trustedArtifactHash = /^[0-9a-f]{64}$/i.test(String(expectedArtifactHash || ""))
+    ? String(expectedArtifactHash).toLowerCase()
+    : artifactHashForPackage(generatedPackage);
   const report = evaluateBrowserReview({ staticReport, evidence });
-  if (report.artifactHash !== expectedArtifactHash) {
+  if (report.artifactHash !== trustedArtifactHash) {
     report.blockers.push({
       id: "artifact_hash_mismatch",
       reason: "artifact_hash_mismatch",
@@ -37,7 +39,7 @@ function processBrowserReview({ staticReport = {}, evidence = {}, generatedPacka
     retryAvailable,
     repairPlan,
     lastReviewedAt: report.reviewedAt,
-    artifactHash: expectedArtifactHash,
+    artifactHash: trustedArtifactHash,
   };
   return {
     report,
