@@ -794,7 +794,7 @@ async function submitBrowserReview(context, payload = {}) {
   if (previewVersion?.id) {
     await patchPreviewVersion(context, previewVersion.id, {
       ...(repair.changed ? {
-        generated_package: repair.generatedPackage,
+        generated_package: compactFactoryPreviewPackage(repair.generatedPackage),
         package_checksum: nextArtifactHash,
       } : {}),
       preview_score: processed.report.score,
