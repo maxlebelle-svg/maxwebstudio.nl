@@ -249,8 +249,14 @@ async function factoryRequest(action, payload = {}) {
   });
   const text = await response.text();
   let body = {};
-  try { body = text ? JSON.parse(text) : {}; } catch { throw new Error(`Factory gaf geen geldige JSON voor ${action}.`); }
-  if (!response.ok || body.success === false) throw new Error(body.error || `Factory ${action} mislukte met status ${response.status}.`);
+  try { body = text ? JSON.parse(text) : {}; } catch {
+    throw new Error(`Factory gaf geen geldige JSON voor ${action} (status ${response.status}, aanvraag ${response.headers.get("x-nf-request-id") || "onbekend"}).`);
+  }
+  if (!response.ok || body.success === false) {
+    const diagnostics = [body.code, body.phase, body.requestId].filter(Boolean).join(" · ");
+    const message = body.userMessage || body.message || body.error || `Factory ${action} mislukte met status ${response.status}.`;
+    throw new Error(`${message}${diagnostics ? ` (${diagnostics})` : ""}`);
+  }
   return body;
 }
 

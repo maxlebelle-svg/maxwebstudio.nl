@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { _private } = require("../functions/demo-preview");
-const { compactFactoryPreviewPackage, safePublicDemoAssetMap } = require("../functions/_factory-preview-storage");
+const { compactFactoryPreviewPackage, mergeFactoryPreviewPackage, safePublicDemoAssetMap } = require("../functions/_factory-preview-storage");
 
 test("internal Factory preview repairs a logo saved as the package entry file", () => {
   const previewPackage = {
@@ -82,4 +82,30 @@ test("Factory preview stores public demo images compactly and renders them from 
   const html = _private.inlinePreviewPackageAssets(compact.files[0].content, compact, { id: "journey", token: "token", source: "factory", previewVersionId: "version" });
   assert.match(html, /src="\/assets\/demo-images\/library\/finance\/hero\.png"/);
   assert.doesNotMatch(html, /api\/demo-preview|data:image/);
+});
+
+test("a repaired compact Factory preview overlays text changes onto the complete download package", () => {
+  const canonical = {
+    entryFile: "index.html",
+    meta: { previewSource: "website_factory", browserRepair: { attempt: 0 } },
+    files: [
+      { path: "index.html", content: '<link rel="stylesheet" href="styles.css"><img src="assets/hero.png">' },
+      { path: "styles.css", content: "body{color:red}" },
+      { path: "assets/hero.png", encoding: "base64", content: Buffer.from("hero").toString("base64") },
+    ],
+  };
+  const repairedPreview = {
+    ...canonical,
+    meta: { ...canonical.meta, browserRepair: { attempt: 1 }, previewStorage: { fullPackageSource: "website_build_jobs" } },
+    files: [
+      canonical.files[0],
+      { path: "styles.css", content: "body{color:green}/* repaired */" },
+    ],
+  };
+  const merged = mergeFactoryPreviewPackage(canonical, repairedPreview);
+  assert.equal(merged.files.length, 3);
+  assert.match(merged.files.find((file) => file.path === "styles.css").content, /repaired/);
+  assert.equal(merged.files.find((file) => file.path === "assets\/hero.png").content, canonical.files[2].content);
+  assert.equal(merged.meta.browserRepair.attempt, 1);
+  assert.equal(merged.meta.previewStorage, undefined);
 });

@@ -2,6 +2,7 @@ const { randomUUID } = require("crypto");
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { UUID, assertRequestedScope, assertStoredRelations } = require("./_preview-editor-access");
+const { mergeFactoryPreviewPackage } = require("./_factory-preview-storage");
 const {
   SOURCE_VALUES,
   createCompressedZip,
@@ -48,9 +49,12 @@ exports.handler = async (event) => {
     if (input.source && !requestedSource) throw zipError("PREVIEW_SOURCE_INVALID", "Gebruik factory of manual_zip als previewbron.", 400, "validate_preview_source");
     if (requestedSource && requestedSource !== source) throw zipError("PREVIEW_SOURCE_MISMATCH", "De gekozen previewbron hoort niet bij deze previewversie.", 409, "validate_preview_source");
     let downloadPackage = version.generated_package;
-    if (version.metadata?.previewStorage?.fullPackageSource === "website_build_jobs" && version.build_job_id) {
+    const previewStorage = version.generated_package?.meta?.previewStorage || version.metadata?.previewStorage || {};
+    if (previewStorage.fullPackageSource === "website_build_jobs" && version.build_job_id) {
       const buildJob = await readOne(context, "website_build_jobs", `select=generated_package&id=eq.${encodeURIComponent(version.build_job_id)}&limit=1`);
-      if (buildJob?.generated_package?.files?.length) downloadPackage = buildJob.generated_package;
+      if (buildJob?.generated_package?.files?.length) {
+        downloadPackage = mergeFactoryPreviewPackage(buildJob.generated_package, version.generated_package);
+      }
     }
     const prepared = preparePreviewPackage(downloadPackage);
     await validateStorageBucket(context);

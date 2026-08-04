@@ -75,6 +75,13 @@ function installStorageMock({ existing = false, versionSource = "manual_zip", cu
   const calls = [];
   const previewPackage = packageWith40Files();
   const sourcePackage = compactFactory ? { ...previewPackage, meta: { ...previewPackage.meta, previewSource: "website_factory" } } : previewPackage;
+  const previewGeneratedPackage = compactFactory ? {
+    ...sourcePackage,
+    files: sourcePackage.files
+      .filter((file) => file.path !== "assets/hero.png")
+      .map((file) => file.path === "styles.css" ? { ...file, content: `${file.content}\n/* repaired-preview */` } : file),
+    meta: { ...sourcePackage.meta, previewStorage: { fullPackageSource: "website_build_jobs" } },
+  } : sourcePackage;
   global.fetch = async (url, options = {}) => {
     calls.push({ url: String(url), method: options.method || "GET", body: options.body });
     if (String(url).includes("/rest/v1/website_preview_versions")) return jsonResponse([{
@@ -82,8 +89,8 @@ function installStorageMock({ existing = false, versionSource = "manual_zip", cu
       demo_journey_id: standalone ? null : IDS.journey,
       customer_id: customerId,
       build_job_id: compactFactory ? IDS.version : null,
-      generated_package: compactFactory ? { ...sourcePackage, files: sourcePackage.files.filter((file) => file.path !== "assets/hero.png") } : sourcePackage,
-      metadata: compactFactory ? { previewSource: versionSource, previewStorage: { fullPackageSource: "website_build_jobs" } } : { previewSource: versionSource },
+      generated_package: previewGeneratedPackage,
+      metadata: { previewSource: versionSource },
       version: 7,
       title: "Heel je Zelf",
     }]);
@@ -177,7 +184,10 @@ test("compact Factory previews rebuild the complete ZIP from the stored build pa
   assert.equal(response.statusCode, 200);
   assert.equal(body.fileCount, 40);
   assert(mock.calls.some((call) => call.url.includes("/rest/v1/website_build_jobs") && call.url.includes("select=generated_package")));
-  assert.equal(manualZip.extractZip(mock.uploads[0]).files.length, 40);
+  const extracted = manualZip.extractZip(mock.uploads[0]);
+  assert.equal(extracted.files.length, 40);
+  assert.match(extracted.files.find((file) => file.path === "styles.css").content.toString("utf8"), /repaired-preview/);
+  assert(extracted.files.some((file) => file.path === "assets/hero.png"));
 });
 
 test("customer-owned manual ZIP without a Demo Journey remains downloadable", async () => {
