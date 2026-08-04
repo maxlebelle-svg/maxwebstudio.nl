@@ -141,6 +141,7 @@ async function inspectViewport({ name, viewport, previewUrl, screenshotPath, job
     });
     await client.call("Page.navigate", { url: previewUrl });
     await waitForReady(client);
+    await prepareImagesForAudit(client);
     const audit = await evaluate(client, auditExpression());
     const shot = await client.call("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
     await writeFile(screenshotPath, Buffer.from(shot.data, "base64"));
@@ -174,6 +175,35 @@ async function inspectViewport({ name, viewport, previewUrl, screenshotPath, job
     client.close();
     await closeTarget(target.id).catch(() => null);
   }
+}
+
+async function prepareImagesForAudit(client) {
+  await evaluate(client, `new Promise((resolve) => {
+    const images = [...document.images];
+    images.forEach((image) => { image.loading = 'eager'; });
+    const pageHeight = Math.max(document.body?.scrollHeight || 0, document.documentElement.scrollHeight || 0);
+    const step = Math.max(320, Math.floor(innerHeight * 0.8));
+    let y = 0;
+    const finish = () => {
+      window.scrollTo(0, 0);
+      const pending = images.filter((image) => !image.complete);
+      if (!pending.length) return resolve(true);
+      let remaining = pending.length;
+      const settled = () => { remaining -= 1; if (remaining <= 0) resolve(true); };
+      pending.forEach((image) => {
+        image.addEventListener('load', settled, { once: true });
+        image.addEventListener('error', settled, { once: true });
+      });
+      setTimeout(() => resolve(true), 4000);
+    };
+    const advance = () => {
+      window.scrollTo(0, y);
+      y += step;
+      if (y <= pageHeight + step) return setTimeout(advance, 60);
+      setTimeout(finish, 120);
+    };
+    advance();
+  })`);
 }
 
 function auditExpression() {
