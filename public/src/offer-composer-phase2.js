@@ -15,7 +15,7 @@ const sequence = card.querySelector('[data-phase2-sequence]');
 const status = card.querySelector('[data-phase2-status]');
 const details = card.querySelector('[data-phase2-details]');
 
-button.addEventListener('click', requestSignature);
+button.addEventListener('click', handlePhase2Action);
 if (relationshipType && relationshipId) {
   refresh().finally(scheduleRefresh);
 } else {
@@ -52,6 +52,8 @@ async function refresh() {
 
 function render() {
   button.disabled = true;
+  button.textContent = 'Naar Signhost sturen';
+  button.dataset.phase2Mode = 'request';
   sequence.classList.remove('complete');
   sequence.classList.add('blocked');
   if (!state?.enabled) return renderMessage('De automatische onderteken- en betaalroute is in deze omgeving nog niet vrijgegeven.', true);
@@ -68,12 +70,43 @@ function render() {
       rejected: 'De klant heeft het ondertekenverzoek geweigerd.', expired: 'Het ondertekenverzoek is verlopen.',
       cancelled: 'Het ondertekenverzoek is geannuleerd.', failed: 'Het ondertekenverzoek vraagt aandacht.',
     }[signing.status] || 'Ondertekenstatus wordt gecontroleerd.';
+    if (signing.status === 'waiting_for_signer') {
+      button.textContent = 'Status bij Signhost controleren';
+      button.dataset.phase2Mode = 'reconcile';
+      button.disabled = pending;
+      return renderMessage(`${text} Controleer de providerstatus alleen handmatig als de klant al heeft getekend.`, false);
+    }
     return ['completed', 'signed_pending_processing'].includes(signing.status) ? complete(text) : renderMessage(text, signing.status === 'failed');
   }
   if (!state.interestConfirmed) return renderMessage('Beschikbaar zodra de klant “Ik wil verder praten” heeft bevestigd.', true);
   if (!['sent', 'viewed'].includes(state.version.status)) return renderMessage('De actuele offerteversie is nog niet definitief verzonden.', true);
   button.disabled = pending;
   renderMessage(`Klaar om versie ${state.version.version_number} definitief ter ondertekening te sturen.`, false);
+}
+
+function handlePhase2Action() {
+  return button.dataset.phase2Mode === 'reconcile' ? reconcileSignature() : requestSignature();
+}
+
+async function reconcileSignature() {
+  if (button.disabled || pending || !state?.signing) return;
+  const approved = window.confirm('Signhost wordt één keer gecontroleerd. Als de offerte daar ondertekend is, worden klantstatus, factuur, Mollie-testbetaallink en productieoverdracht automatisch aangemaakt. Nu controleren?');
+  if (!approved) return;
+  pending = true;
+  button.disabled = true;
+  renderMessage('De actuele status wordt één keer rechtstreeks bij Signhost gecontroleerd…', false);
+  const toast = typeof window.showToast === 'function' ? window.showToast('Signhost-status controleren…', 'info', { loading: true, persistent: true }) : null;
+  try {
+    const result = await request('POST', { action: 'reconcile_signature' });
+    await refresh();
+    toast?.update(result.reconciled ? 'De definitieve Signhost-status is verwerkt.' : 'Signhost wacht nog op de handtekening.', result.reconciled ? 'success' : 'info', { duration: 5000 });
+  } catch (error) {
+    renderMessage(error.message || 'De Signhost-status kon niet worden gecontroleerd.', true);
+    toast?.update(error.message || 'Signhost-controle mislukt.', 'error', { duration: 7000 });
+  } finally {
+    pending = false;
+    render();
+  }
 }
 
 async function requestSignature() {

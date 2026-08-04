@@ -116,6 +116,17 @@ async function createCommercialOfferTransaction(config, input) {
   });
 }
 
+async function getTransaction(config, transactionId) {
+  const id = clean(transactionId);
+  if (!id) throw coded("SIGNHOST_TRANSACTION_ID_REQUIRED", 400, "Het Signhost-transactienummer ontbreekt.");
+  return signhostRequest(config, `/api/transaction/${encodeURIComponent(id)}`);
+}
+
+function mapTransactionStatus(value) {
+  const status = Number(value);
+  return Number.isInteger(status) ? FINAL_STATUSES.get(status) || "waiting_for_signer" : "waiting_for_signer";
+}
+
 function commercialOfferReturnUrl(env = process.env, returnToken = "") {
   const raw = clean(env.URL || env.SITE_URL);
   try {
@@ -336,6 +347,8 @@ module.exports = {
   buildAgreementMetadata,
   downloadReceipt,
   downloadSignedPdf,
+  getTransaction,
+  mapTransactionStatus,
   normalizePhone,
   signhostConfig,
   signhostRequest,

@@ -5,11 +5,14 @@ const { rest: serviceRest } = require("./services/partnerOnboardingAccessService
 const {
   buildCommercialOfferMetadata,
   createCommercialOfferTransaction,
+  getTransaction,
+  mapTransactionStatus,
   signhostConfig,
   startTransaction,
   uploadFileMetadata,
   uploadPdf,
 } = require("./services/signhostService");
+const { processCommercialPostback } = require("./signhost-postback")._internal;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "sales"];
@@ -32,8 +35,10 @@ exports.handler = async (event) => {
     if (!UUID.test(clean(actor.id)) || !UUID.test(clean(actor.profileId))) throw problem(403, "ACTOR_INVALID", "De actieve beheerder kon niet veilig worden vastgesteld.");
     if (event.httpMethod === "GET") return json(200, { success: true, ...(await readState(event.queryStringParameters || {}, actor, config)) });
     const input = parseBody(event);
-    if (clean(input.action).toLowerCase() !== "request_signature") throw problem(400, "ACTION_INVALID", "Kies een geldige ondertekenactie.");
-    return await requestSignature(input, actor, config);
+    const action = clean(input.action).toLowerCase();
+    if (action === "request_signature") return await requestSignature(input, actor, config);
+    if (action === "reconcile_signature") return await reconcileSignature(event.queryStringParameters || {}, actor, config);
+    throw problem(400, "ACTION_INVALID", "Kies een geldige ondertekenactie.");
   } catch (error) {
     const status = Number(error.statusCode || error.status) || 500;
     console.error("Commercial signing action failed", { code: clean(error.code || "COMMERCIAL_SIGNING_FAILED"), status });
@@ -61,6 +66,43 @@ async function readState(query, actor, config) {
     enabled: providerEnabled(), relationship: mapRelationship(relationship), offer, version,
     signing: signings[0] || null, fulfilment: fulfilments[0] || null, interestConfirmed: Boolean(interest),
   };
+}
+
+async function reconcileSignature(query, actor, config) {
+  if (!providerEnabled()) throw problem(403, "COMMERCIAL_SIGNING_DISABLED", "De definitieve ondertekenroute is nog niet geactiveerd.");
+  const current = await readState(query, actor, config);
+  if (!current.offer?.current_version_id || !current.signing?.id) throw problem(409, "SIGNING_NOT_FOUND", "Er staat geen actief ondertekenverzoek klaar om te controleren.");
+  const signing = (await rest(config, `commercial_offer_signing_transactions?select=*&id=eq.${current.signing.id}&offer_version_id=eq.${current.offer.current_version_id}&limit=1`))[0];
+  if (!signing) throw problem(409, "SIGNING_NOT_FOUND", "Het ondertekenverzoek kon niet veilig worden teruggevonden.");
+  if (!clean(signing.provider_transaction_id)) throw problem(409, "SIGNHOST_TRANSACTION_MISSING", "Het Signhost-transactienummer ontbreekt bij dit verzoek.");
+
+  const providerTransaction = await getTransaction(signhostConfig(), signing.provider_transaction_id);
+  const providerStatus = Number(providerTransaction?.Status ?? providerTransaction?.status);
+  if (!Number.isInteger(providerStatus)) throw problem(502, "SIGNHOST_STATUS_INVALID", "Signhost gaf geen geldige transactiestatus terug.");
+  const mappedStatus = mapTransactionStatus(providerStatus);
+
+  // This is deliberately a one-shot staff action. Signhost recommends using
+  // postbacks instead of continuously polling its transaction endpoint.
+  if (mappedStatus !== "waiting_for_signer") {
+    await processCommercialPostback(
+      { url: config.url, service: config.key },
+      signing,
+      { status: providerStatus, mappedStatus },
+    );
+  } else {
+    await serviceRest(config.url, config.key, `commercial_offer_signing_transactions?id=eq.${signing.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ provider_status: providerStatus, updated_at: new Date().toISOString() }),
+    });
+  }
+
+  return json(200, {
+    success: true,
+    reconciled: mappedStatus !== "waiting_for_signer",
+    providerStatus,
+    ...(await readState(query, actor, config)),
+  });
 }
 
 async function requestSignature(input, actor, config) {
