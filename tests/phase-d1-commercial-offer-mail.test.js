@@ -54,13 +54,23 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
 test("proposal mail keeps the proven Outlook-safe Max Webstudio palette", () => {
   const mail = buildCommercialOfferMail({ ...base, mode: "test" });
   assert.match(mail.html, /class="mws-body" bgcolor="#030b14"/);
-  assert.match(mail.html, /class="mws-card" bgcolor="#071b2c"/);
+  assert.match(mail.html, /class="mws-card" bgcolor="#071b2c" background="https:\/\/maxwebstudio\.nl\/assets\/email\/mws-email-bg-card\.png"/);
+  assert.match(mail.html, /background-image:url\('https:\/\/maxwebstudio\.nl\/assets\/email\/mws-email-bg-card\.png'\)/);
+  assert.match(mail.html, /background="https:\/\/maxwebstudio\.nl\/assets\/email\/mws-email-bg-panel\.png"/);
   assert.match(mail.html, /class="mws-demo-primary" bgcolor="#155eef"/);
   assert.match(mail.html, /background:#071b2c/);
   assert.doesNotMatch(mail.html, /background-image:linear-gradient/);
   assert.doesNotMatch(mail.html, /@media\(prefers-color-scheme:dark\)/);
   assert.doesNotMatch(mail.html, /\[data-ogsc\]/);
   assert.doesNotMatch(mail.html, /#2563eb|#4b3a08/);
+});
+
+test("Outlook-safe brand background images are tiny local production assets", () => {
+  for (const name of ["outer", "card", "header", "panel"]) {
+    const asset = path.join(root, `public/assets/email/mws-email-bg-${name}.png`);
+    assert.equal(fs.existsSync(asset), true);
+    assert.ok(fs.statSync(asset).size < 2048);
+  }
 });
 
 test("proposal mail visibly reconciles the original amount, discount and final total", () => {
