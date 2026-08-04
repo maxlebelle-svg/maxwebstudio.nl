@@ -51,6 +51,18 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
 });
 
+test("proposal mail keeps the Max Webstudio palette in mobile dark-mode clients", () => {
+  const mail = buildCommercialOfferMail({ ...base, mode: "test" });
+  assert.match(mail.html, /class="mws-body" bgcolor="#030b14"/);
+  assert.match(mail.html, /class="mws-card" bgcolor="#071b2c"/);
+  assert.match(mail.html, /class="mws-demo-primary" bgcolor="#155eef"/);
+  assert.match(mail.html, /background-image:linear-gradient\(#155eef,#155eef\)/);
+  assert.match(mail.html, /@media\(prefers-color-scheme:dark\)/);
+  assert.match(mail.html, /\[data-ogsc\] \.mws-card/);
+  assert.match(mail.html, /-webkit-text-fill-color:#03111f/);
+  assert.doesNotMatch(mail.html, /#2563eb|#4b3a08/);
+});
+
 test("proposal mail visibly reconciles the original amount, discount and final total", () => {
   const discountedSnapshot = offerService.buildOfferVersion({ paymentChoice: "full", discountPercentage: 25, selections: [{ productId: "business_website" }, { productId: "care_basic" }] }, { id: "11111111-1111-4111-8111-111111111111", profileId: "22222222-2222-4222-8222-222222222222", role: "admin" });
   const mail = buildCommercialOfferMail({ ...base, snapshot: discountedSnapshot, mode: "preview" });
@@ -488,6 +500,7 @@ test("proposal mail uses the canonical Max Webstudio dark branding", () => {
   assert.match(mail.html, /bgcolor="#030b14"/);
   assert.match(mail.html, /BUILD BETTER ONLINE/);
   assert.match(mail.html, /#24d3ee/);
+  assert.match(mail.html, /bgcolor="#071b2c"/);
   assert.doesNotMatch(mail.html, /rgba\(/);
   assert.match(mail.html, /wa\.me\/31851305282/);
   assert.match(mail.html, /@media\(max-width:620px\)/);
