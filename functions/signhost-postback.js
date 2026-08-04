@@ -89,7 +89,11 @@ async function preserveCommercialArtifacts(context, signing) {
   return{signedDocumentPath:documentPath,signedDocumentSha256:crypto.createHash("sha256").update(document.bytes).digest("hex"),receiptPath,receiptSha256:crypto.createHash("sha256").update(receipt.bytes).digest("hex")};
 }
 
-async function commercialStorageUpload(context,path,bytes){const response=await fetch(`${context.url}/storage/v1/object/commercial-private-documents/${encodePath(path)}`,{method:"POST",headers:{apikey:context.service,Authorization:`Bearer ${context.service}`,"Content-Type":"application/pdf","x-upsert":"false"},body:bytes});if(!response.ok&&response.status!==409)throw coded("COMMERCIAL_SIGNING_ARTIFACT_STORAGE_FAILED",502,"Ondertekende offerte kon niet veilig worden opgeslagen.");}
+// Provider callbacks and manual reconciliation can legitimately replay after one
+// artifact was already stored. The path is deterministic and the bytes are
+// freshly downloaded from Signhost and PDF-validated above, so an upsert makes
+// the pair recoverable without creating a second document identity.
+async function commercialStorageUpload(context,path,bytes){const response=await fetch(`${context.url}/storage/v1/object/commercial-private-documents/${encodePath(path)}`,{method:"POST",headers:{apikey:context.service,Authorization:`Bearer ${context.service}`,"Content-Type":"application/pdf","x-upsert":"true"},body:bytes});if(!response.ok)throw coded(`COMMERCIAL_SIGNING_ARTIFACT_STORAGE_FAILED_${response.status}`,502,"Ondertekende offerte kon niet veilig worden opgeslagen.");}
 async function rpc(context,name,body){const response=await fetch(`${context.url}/rest/v1/rpc/${name}`,{method:"POST",headers:{apikey:context.service,Authorization:`Bearer ${context.service}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(body)});const data=await response.json().catch(()=>null);if(!response.ok)throw coded(data?.code||"COMMERCIAL_SIGNING_FINALIZE_FAILED",response.status,data?.message||"Ondertekening kon niet worden afgerond.");return data;}
 
 async function processSmokePostback(context, smoke, validation) {
