@@ -51,15 +51,15 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
 });
 
-test("proposal mail keeps the Max Webstudio palette in mobile dark-mode clients", () => {
+test("proposal mail keeps the proven Outlook-safe Max Webstudio palette", () => {
   const mail = buildCommercialOfferMail({ ...base, mode: "test" });
   assert.match(mail.html, /class="mws-body" bgcolor="#030b14"/);
   assert.match(mail.html, /class="mws-card" bgcolor="#071b2c"/);
   assert.match(mail.html, /class="mws-demo-primary" bgcolor="#155eef"/);
-  assert.match(mail.html, /background-image:linear-gradient\(#155eef,#155eef\)/);
-  assert.match(mail.html, /@media\(prefers-color-scheme:dark\)/);
-  assert.match(mail.html, /\[data-ogsc\] \.mws-card/);
-  assert.match(mail.html, /-webkit-text-fill-color:#03111f/);
+  assert.match(mail.html, /background:#071b2c/);
+  assert.doesNotMatch(mail.html, /background-image:linear-gradient/);
+  assert.doesNotMatch(mail.html, /@media\(prefers-color-scheme:dark\)/);
+  assert.doesNotMatch(mail.html, /\[data-ogsc\]/);
   assert.doesNotMatch(mail.html, /#2563eb|#4b3a08/);
 });
 
