@@ -37,7 +37,22 @@ async function main() {
   };
   try {
     const queue = await factoryRequest("get_browser_review_queue", { limit });
-    for (const queuedJob of queue.jobs || []) run.jobs.push(await reviewJob(queuedJob));
+    for (const queuedJob of queue.jobs || []) {
+      try {
+        run.jobs.push(await reviewJob(queuedJob));
+      } catch (error) {
+        const failure = {
+          jobId: String(queuedJob?.id || ""),
+          previewUrl: redactUrl(queuedJob?.previewUrl),
+          attempts: [],
+          status: "worker_error",
+          error: safeError(error),
+        };
+        run.jobs.push(failure);
+        await writeJson(path.join(outputRoot, safeName(failure.jobId), "worker-error.json"), failure);
+        console.error("Factory browserreview kon één preview niet afronden", { jobId: failure.jobId, error: failure.error });
+      }
+    }
     run.finishedAt = new Date().toISOString();
     run.status = run.jobs.every((job) => job.status === "passed") ? "passed" : run.jobs.length ? "attention_required" : "idle";
     await writeJson(path.join(outputRoot, "run.json"), run);
@@ -51,7 +66,7 @@ async function main() {
 async function reviewJob(initialJob) {
   let job = initialJob;
   let artifactHash = String(job.artifactHash || "");
-  const result = { jobId: job.id, previewUrl: absoluteUrl(job.previewUrl), attempts: [], status: "attention_required" };
+  const result = { jobId: job.id, previewUrl: redactUrl(job.previewUrl), attempts: [], status: "attention_required" };
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     if (!/^[0-9a-f]{64}$/i.test(artifactHash)) throw new Error(`Build ${job.id} mist een geldige artifact-hash.`);
     const evidence = await inspectPreview({
@@ -265,9 +280,16 @@ async function closeTarget(id) {
 }
 
 async function waitForReady(client) {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  let interactiveSince = 0;
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     const state = await evaluate(client, "document.readyState").catch(() => "loading");
     if (state === "complete") { await delay(500); return; }
+    if (state === "interactive") {
+      interactiveSince ||= Date.now();
+      if (Date.now() - interactiveSince >= 2000) return;
+    } else {
+      interactiveSince = 0;
+    }
     await delay(100);
   }
   throw new Error("Preview werd niet tijdig geladen.");
@@ -332,6 +354,17 @@ async function writeJson(file, value) {
 }
 
 function absoluteUrl(value = "") { return new URL(String(value || ""), `${baseUrl}/`).toString(); }
+function redactUrl(value = "") {
+  try {
+    const url = new URL(String(value || ""), `${baseUrl}/`);
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+function safeError(error) { return String(error?.message || "Browserreview mislukt.").replace(/https?:\/\/\S+/gi, "[url]").slice(0, 240); }
 function cleanUrl(value = "") { return String(value || "").trim().replace(/\/$/, ""); }
 function safeName(value = "") { return String(value || "job").replace(/[^a-z0-9-]+/gi, "-").replace(/^-+|-+$/g, "") || "job"; }
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
