@@ -73,8 +73,16 @@ async function init() {
 }
 
 function startComposerLoadToast() {
+  return startComposerProgress('Voorstelgegevens en prijzen laden…');
+}
+
+function startComposerProgress(message) {
   if (typeof window.showToast !== 'function') return null;
-  return window.showToast('Voorstelgegevens en prijzen laden…', 'info', { loading: true, persistent: true });
+  return window.showToast(message, 'info', { loading: true, persistent: true });
+}
+
+function finishComposerProgress(progressToast, message, type = 'success') {
+  progressToast?.update(message, type, { duration: type === 'error' ? 7000 : 3200 });
 }
 
 function waitForRelationship() {
@@ -120,6 +128,7 @@ function currentAdminRole() {
 async function runCommercialPreflight() {
   if (state.preflightPending || currentAdminRole() !== 'super_admin') return;
   state.preflightPending = true;
+  const progressToast = startComposerProgress('Releasecontrole wordt uitgevoerd…');
   elements.commercialPreflightRun.disabled = true;
   setCommercialPreflightResult({ state: 'running', message: 'Read-only controles worden uitgevoerd…', probes: [] });
   try {
@@ -138,8 +147,10 @@ async function runCommercialPreflight() {
       probes,
       checkedAt: new Date().toISOString(),
     });
+    finishComposerProgress(progressToast, passed ? 'Releasecontrole is succesvol afgerond.' : 'Releasecontrole is niet geslaagd.', passed ? 'success' : 'error');
   } catch {
     setCommercialPreflightResult({ state: 'fail', message: 'FAIL · preflight kon niet veilig worden voltooid.', probes: [], checkedAt: new Date().toISOString() });
+    finishComposerProgress(progressToast, 'Releasecontrole kon niet worden voltooid.', 'error');
   } finally {
     state.preflightPending = false;
     elements.commercialPreflightRun.disabled = false;
@@ -531,6 +542,7 @@ async function saveDraft() {
   if (previous?.snapshot_checksum_sha256 === state.snapshot.checksum && state.currentVersionStatus === 'draft') { state.dirty = false; renderStatus(); renderReadiness(); return showMessage('Deze exacte immutable conceptversie is al opgeslagen.', 'success'); }
   const documents = documentsForSave(activeDocuments(), state.selectedDocumentTypes);
   elements.saveDraft.disabled = true;
+  const progressToast = startComposerProgress('Conceptversie wordt veilig opgeslagen…');
   try {
     const result = await request('POST', {
       action: 'create_version',
@@ -554,7 +566,11 @@ async function saveDraft() {
     state.dirty = false;
     await reloadContext();
     showMessage(`Conceptversie ${result.offer.versionNumber} is immutable opgeslagen.`, 'success');
-  } catch (error) { showMessage(error.message, 'error'); }
+    finishComposerProgress(progressToast, `Conceptversie ${result.offer.versionNumber} is opgeslagen.`);
+  } catch (error) {
+    showMessage(error.message, 'error');
+    finishComposerProgress(progressToast, error.message || 'Conceptversie kon niet worden opgeslagen.', 'error');
+  }
   finally { elements.saveDraft.disabled = false; renderStatus(); renderReadiness(); }
 }
 
@@ -562,13 +578,18 @@ async function transition(targetStatus) {
   if (!state.currentVersionId) return;
   const reason = elements.changeReason.value.trim();
   if (targetStatus === 'revoked' && reason.length < 8) return showMessage('Intrekken vereist een duidelijke reden van minimaal 8 tekens.', 'warning');
+  const progressToast = startComposerProgress(targetStatus === 'ready_for_review' ? 'Versie wordt gereedgemaakt voor controle…' : 'Versie wordt veilig ingetrokken…');
   try {
     const result = await request('POST', { action: 'transition', offerVersionId: state.currentVersionId, targetStatus, reason: reason || null, actionKey: actionKey(targetStatus) });
     state.currentVersionStatus = result.offer.status;
     state.dirty = false;
     await reloadContext();
     showMessage(targetStatus === 'ready_for_review' ? 'Versie is gereed voor interne controle.' : 'Versie is ingetrokken en blijft als bewijs bestaan.', 'success');
-  } catch (error) { showMessage(error.message, 'error'); }
+    finishComposerProgress(progressToast, targetStatus === 'ready_for_review' ? 'Versie is gereed voor controle.' : 'Versie is ingetrokken.');
+  } catch (error) {
+    showMessage(error.message, 'error');
+    finishComposerProgress(progressToast, error.message || 'De status kon niet worden bijgewerkt.', 'error');
+  }
 }
 
 async function reloadContext() {
@@ -581,6 +602,7 @@ async function reloadContext() {
 async function openPreview() {
   if (!state.currentVersionId || elements.openPreview.disabled) return;
   elements.openPreview.disabled = true;
+  const progressToast = startComposerProgress('Exact mailvoorbeeld wordt opgebouwd…');
   try {
     const result = await request('POST', { action: 'preview_mail', offerVersionId: state.currentVersionId, actionKey: actionKey('preview') });
     state.lastPreview = result.preview;
@@ -590,8 +612,10 @@ async function openPreview() {
     elements.mailPreview.showModal();
     await reloadContext();
     showMessage('Het exacte servervoorbeeld is gecontroleerd en in de audittrail vastgelegd.', 'success');
+    finishComposerProgress(progressToast, 'Mailvoorbeeld is klaar.');
   } catch (error) {
     showMessage(error.message, 'error');
+    finishComposerProgress(progressToast, error.message || 'Mailvoorbeeld kon niet worden opgebouwd.', 'error');
     elements.composerMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   finally { renderPreviewAvailability(); }
@@ -600,11 +624,16 @@ async function openPreview() {
 async function sendTestMail() {
   if (elements.testMail.disabled) return;
   elements.testMail.disabled = true;
+  const progressToast = startComposerProgress('Testmail wordt gecontroleerd en verzonden…');
   try {
     const result = await request('POST', { action: 'test_mail', offerVersionId: state.currentVersionId, actionKey: actionKey('test-mail') });
     await reloadContext();
     showMessage(`TEST-mail is uitsluitend verzonden naar ${result.recipient}.`, 'success');
-  } catch (error) { showMessage(error.message, 'error'); }
+    finishComposerProgress(progressToast, 'Testmail is succesvol verzonden.');
+  } catch (error) {
+    showMessage(error.message, 'error');
+    finishComposerProgress(progressToast, error.message || 'Testmail kon niet worden verzonden.', 'error');
+  }
   finally { renderPreviewAvailability(); }
 }
 
@@ -702,6 +731,7 @@ async function revokeInterestAccess() {
   const reason = elements.revokeInterestReason.value.trim();
   if (state.revokeInterestPending || reason.length < 8 || reason.length > 500) return;
   state.revokeInterestPending = true;
+  const progressToast = startComposerProgress('Actieve klantlink wordt veilig ingetrokken…');
   elements.revokeInterestDialog.setAttribute('aria-busy', 'true');
   elements.confirmRevokeInterest.disabled = true;
   elements.cancelRevokeInterest.disabled = true;
@@ -721,10 +751,12 @@ async function revokeInterestAccess() {
     state.revokeInterestTrigger?.focus();
     state.revokeInterestTrigger = null;
     showMessage('De actieve interesselink is ingetrokken en gevoelige mailloginhoud is veilig verwijderd.', 'success');
+    finishComposerProgress(progressToast, 'De actieve klantlink is ingetrokken.');
   } catch (error) {
     try { await reloadContext(); } catch { /* De oorspronkelijke fout blijft leidend. */ }
     elements.revokeInterestResult.textContent = error.message;
     showMessage(error.message, 'error');
+    finishComposerProgress(progressToast, error.message || 'De actieve klantlink kon niet worden ingetrokken.', 'error');
   } finally {
     state.revokeInterestPending = false;
     elements.revokeInterestDialog.removeAttribute('aria-busy');
@@ -738,6 +770,7 @@ async function revokeInterestAccess() {
 async function sendDefinitiveMail() {
   if (state.definitiveRequestPending || state.definitiveRequestLocked || !elements.definitiveSendCheck.checked || elements.confirmDefinitiveSend.disabled) return;
   state.definitiveRequestPending = true;
+  const progressToast = startComposerProgress('Definitieve verzending wordt veilig verwerkt…');
   elements.definitiveSendDialog.setAttribute('aria-busy', 'true');
   elements.confirmDefinitiveSend.disabled = true;
   elements.cancelDefinitiveSend.disabled = true;
@@ -752,6 +785,7 @@ async function sendDefinitiveMail() {
     state.definitiveTrigger?.focus();
     state.definitiveTrigger = null;
     showMessage(state.offerPurpose === 'definitive_offer' ? 'De definitieve offerte is verzonden. De sale wordt pas gewonnen na de Signhost-handtekening.' : 'Het persoonlijke voorstel is verzonden. Interesse is nog geen contract, betaling of onboarding.', 'success');
+    finishComposerProgress(progressToast, state.offerPurpose === 'definitive_offer' ? 'Definitieve offerte is verzonden.' : 'Persoonlijk voorstel is verzonden.');
   } catch (error) {
     try { await reloadContext(); } catch { /* De oorspronkelijke fout blijft leidend. */ }
     const hasDispatch = Boolean(currentVersion()?.dispatches?.some((dispatch) => dispatch.dispatch_kind === 'definitive'));
@@ -761,6 +795,7 @@ async function sendDefinitiveMail() {
       ? 'De verzendstatus is opnieuw gecontroleerd. Uit veiligheid wordt deze actie niet blind herhaald; controleer eerst de auditstatus.'
       : error.message;
     showMessage(error.message, 'error');
+    finishComposerProgress(progressToast, error.message || 'De definitieve verzending kon niet worden voltooid.', 'error');
   } finally {
     state.definitiveRequestPending = false;
     elements.definitiveSendDialog.removeAttribute('aria-busy');

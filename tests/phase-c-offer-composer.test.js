@@ -377,10 +377,25 @@ test("40 preview failures are brought into view instead of failing invisibly", (
 
 test("41 Composer shows a top-right progress notification until initial loading is complete", () => {
   assert.match(html, /<script src="admin\/ui\/admin-toast\.js"><\/script>/);
-  assert.match(browser, /showToast\('Voorstelgegevens en prijzen laden…', 'info', \{ loading: true, persistent: true \}\)/);
+  assert.match(browser, /startComposerProgress\('Voorstelgegevens en prijzen laden…'\)/);
+  assert.match(browser, /showToast\(message, 'info', \{ loading: true, persistent: true \}\)/);
   assert.match(browser, /loadingToast\?\.update\('Voorstel Composer is klaar voor gebruik\.', 'success', \{ duration: 3200 \}\)/);
   assert.match(css, /\.offer-composer-page \.toast\.is-loading \.toast-progress/);
   assert.match(css, /@keyframes composer-loading-progress/);
+});
+
+test("41b Composer keeps the top-right progress notification visible during long-running actions", () => {
+  for (const message of [
+    'Conceptversie wordt veilig opgeslagen…',
+    'Versie wordt gereedgemaakt voor controle…',
+    'Exact mailvoorbeeld wordt opgebouwd…',
+    'Testmail wordt gecontroleerd en verzonden…',
+    'Definitieve verzending wordt veilig verwerkt…',
+    'Actieve klantlink wordt veilig ingetrokken…',
+    'Releasecontrole wordt uitgevoerd…',
+  ]) assert.match(browser, new RegExp(message.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(browser, /finishComposerProgress\(progressToast,/);
+  assert.match(browser, /duration: type === 'error' \? 7000 : 3200/);
 });
 
 test("42 every bound document can be opened and inspected before selection", () => {
