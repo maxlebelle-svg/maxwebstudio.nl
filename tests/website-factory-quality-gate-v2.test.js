@@ -37,16 +37,46 @@ test("Quality Gate v2 reports category scores and requires a later browser revie
 });
 
 test("bakery leads produce a specific preview instead of being blocked as generic fallback copy", () => {
-  const journey = { businessName: "Miolla", websiteUrl: "https://miolla.nl/", packageType: "starter" };
+  const journey = {
+    businessName: "Miolla",
+    websiteUrl: "https://miolla.nl/",
+    packageType: "starter",
+    websiteAnalysis: {
+      currentWebsite: {
+        title: "Huisgemaakte Zoetigheden Bestellen in Almere - Gratis Bezorging",
+        h1: "Huisgemaakte zoetigheden",
+        services: ["Taarten", "Macarons", "Cupcakes", "Meringuerol", "Honey Cake", "Bestellen en bezorgen"],
+        paragraphs: ["Taarten, macarons en cupcakes worden met aandacht gemaakt in onze thuisbakkerij in Almere."],
+        pricingItems: [
+          { name: "35 -", price: "€50", description: "onvolledige bronregel" },
+          { name: "Choco-karamel Cupcakes", price: "€27", description: "Verse cupcakes met chocolade en karamel." },
+        ],
+        socialUrls: [
+          "https://www.facebook.com/tr?id=123",
+          "https://www.facebook.com/miolla.nl",
+          "https://www.instagram.com/miolla.nl/",
+          "https://www.instagram.com/whatsapp/",
+        ],
+      },
+    },
+  };
   const generated = buildWebsitePackage({
     journey,
-    briefing: "Branche: Bakkerij en banket\nDiensten: Vers brood, Banket, Taarten op bestelling, Gebak\nCTA: Bekijk het assortiment",
-    version: 2,
+    briefing: "Branche: Bakkerij en patisserie\nRegio: Almere\nDiensten: Taarten, Macarons, Cupcakes, Meringuerol, Honey Cake, Bestellen en bezorgen\nCTA: Bekijk het assortiment",
+    version: 3,
   });
+  const html = generated.files.find((file) => file.path === "index.html").content;
   const report = runQualityCheck({ generatedPackage: generated, journey });
 
-  assert.equal(generated.meta.industryId, "restaurant");
-  assert.deepEqual(generated.meta.services.slice(0, 4), ["Vers brood", "Banket", "Taarten op bestelling", "Gebak"]);
+  assert.equal(generated.meta.industryId, "bakkerij");
+  assert.deepEqual(generated.meta.services.slice(0, 6), ["Taarten", "Macarons", "Cupcakes", "Meringuerol", "Honey Cake", "Bestellen en bezorgen"]);
+  assert.match(html, /Huisgemaakte zoetigheden|Huisgemaakte taarten/i);
+  assert.match(html, /Taarten|Macarons|Cupcakes/);
+  assert.match(html, /href="#diensten">Bekijk het assortiment/);
+  assert.match(html, /https:\/\/www\.facebook\.com\/miolla\.nl/);
+  assert.match(html, /https:\/\/www\.instagram\.com\/miolla\.nl\//);
+  assert.doesNotMatch(html, /Sfeer, reserveren|zin geeft om te reserveren|Kies uw project|wat u wilt laten maken|Afspraak inplannen|facebook\.com\/tr|instagram\.com\/whatsapp/i);
+  assert.doesNotMatch(html, /<h3>35 -<\/h3>/);
   assert.equal(generated.meta.contentQuality.genericFallbackUsed, false);
   assert.equal(report.checks.find((item) => item.id === "no_generic_fallback_copy").passed, true);
   assert.equal(report.passed, true);

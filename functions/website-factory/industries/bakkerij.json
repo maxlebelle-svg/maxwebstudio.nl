@@ -1,0 +1,42 @@
+{
+  "id": "bakkerij",
+  "key": "bakery",
+  "name": "Bakkerij & patisserie",
+  "label": "Thuisbakkerij en patisserie",
+  "aliases": ["bakker", "bakkerij", "thuisbakkerij", "patisserie", "taart", "taarten", "cupcakes", "macarons", "gebak"],
+  "tone": "warm, huisgemaakt, feestelijk en productgericht",
+  "colorHints": ["warm crème", "cacaobruin", "zacht roze", "framboos"],
+  "heroAngles": ["Huisgemaakte zoetigheden, vers op bestelling."],
+  "trustSignals": ["Huisgemaakt", "Vers op bestelling", "Duidelijk assortiment", "Persoonlijke service"],
+  "ctaExamples": ["Bekijk het assortiment", "Bestel of stel een vraag"],
+  "assetKeywords": ["bakery", "cake", "cupcake", "macaron", "patisserie", "dessert"],
+  "palette": {
+    "ink": "#2b1d20",
+    "brand": "#8f3f58",
+    "accent": "#d39157",
+    "soft": "#fff8f1",
+    "dark": "#321f25"
+  },
+  "copy": {
+    "eyebrow": "Taarten, cupcakes en macarons uit eigen bakkerij",
+    "hero": "Huisgemaakte zoetigheden, vers op bestelling.",
+    "intro": "Ontdek feestelijke taarten, cupcakes en macarons met aandacht gemaakt en persoonlijk geleverd.",
+    "cta": "Bekijk het assortiment",
+    "secondaryCta": "Bestellen of een vraag"
+  },
+  "services": ["Taarten", "Macarons", "Cupcakes", "Meringuerol", "Honey Cake", "Bestellen en bezorgen"],
+  "benefits": [
+    ["Huisgemaakt met aandacht", "Elke bestelling wordt vers en met zorg in de eigen bakkerij gemaakt."],
+    ["Voor ieder feestelijk moment", "Van cupcakes en macarons tot een complete taart voor een bijzondere gelegenheid."],
+    ["Duidelijk assortiment", "Bezoekers zien snel welke zoetigheden beschikbaar zijn en hoe ze kunnen bestellen."],
+    ["Persoonlijk contact", "Vragen over smaak, formaat of uitvoering kunnen eenvoudig worden besproken."]
+  ],
+  "process": [
+    ["Kies uw favoriet", "Bekijk taarten, cupcakes, macarons en andere huisgemaakte zoetigheden."],
+    ["Geef uw wensen door", "Bespreek smaak, formaat, gelegenheid en het gewenste moment."],
+    ["Vers bereid", "De bestelling wordt met aandacht en volgens afspraak klaargemaakt."],
+    ["Bezorgd of afgehaald", "U ontvangt duidelijk bericht over levering of het afgesproken afhaalmoment."]
+  ],
+  "preferredComponents": ["hero", "categorieen", "producten", "reviews", "over-ons", "bestellen", "contact"],
+  "assetSlots": ["hero-bakery", "taart", "cupcakes", "macarons"]
+}
