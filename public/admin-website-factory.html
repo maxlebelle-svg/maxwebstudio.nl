@@ -23874,7 +23874,7 @@
           const intelligence = currentJourney?.previewPackage?.websiteIntelligencePackage || currentJourney?.previewPackage?.websiteIntelligence || null;
           const researchReady = authoritative ? authoritative.researchReady === true : Boolean(intelligence && (intelligence.lastScannedAt || intelligence.aiBriefing || intelligence.websiteIntelligence || intelligence.websiteScanRaw));
           const scanReady = authoritative ? authoritative.scanReady === true : researchReady;
-          const qualityReport = latestJob?.qualityReport || activeVersion?.qualityReport || {};
+          const qualityReport = qualityReportForDisplay(latestJob, activeVersion);
           const customerPreviewReady = authoritative ? authoritative.customerPreviewReady === true : qualityReport?.readiness?.customerPreview === true;
           const buildCompleted = authoritative ? authoritative.buildCompleted === true : jobStatus === "completed" && previewRenderable;
           const state = authoritative?.state || (!briefingReady
@@ -25899,6 +25899,24 @@
           })[status] || "Geen build";
         }
 
+        function qualityReportForDisplay(latestJob = null, activeVersion = null) {
+          const storedReport = latestJob?.qualityReport || activeVersion?.qualityReport || {};
+          const metadata = activeVersion?.metadata || {};
+          const storedBrowserStatus = String(metadata.browserReviewStatus || "").trim();
+          const metadataBrowserReview = storedBrowserStatus
+            ? { status: storedBrowserStatus === "passed" ? "passed" : "failed" }
+            : {};
+          return {
+            ...storedReport,
+            browserReview: storedReport.browserReview || metadataBrowserReview,
+            browserRepair: storedReport.browserRepair || metadata.browserRepair || {},
+            readiness: {
+              ...(storedReport.readiness || {}),
+              customerPreview: storedReport.readiness?.customerPreview === true || metadata.customerPreviewReady === true,
+            },
+          };
+        }
+
         function renderBuildStatus() {
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
           const versions = buildHistory.previewVersions || [];
@@ -25908,7 +25926,7 @@
           const absoluteUrl = absolutePreviewUrl(previewUrl);
           const previewToken = journey?.previewToken || latest?.previewToken || activeVersion?.previewToken || "";
           const packageMeta = latest?.generatedPackage?.meta || activeVersion?.generatedPackage?.meta || latestPackageMeta();
-          const qualityReport = latest?.qualityReport || activeVersion?.qualityReport || {};
+          const qualityReport = qualityReportForDisplay(latest, activeVersion);
           const customerPreviewReady = qualityReport.readiness?.customerPreview === true;
           const generatedPages = Array.isArray(packageMeta.generatedPages) ? packageMeta.generatedPages : [];
           const generatedSections = Array.isArray(packageMeta.generatedSections || packageMeta.templateSections) ? (packageMeta.generatedSections || packageMeta.templateSections) : [];

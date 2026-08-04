@@ -180,4 +180,8 @@ test("the Factory endpoint and employee view expose the browser repair loop", ()
   assert.match(factoryView, /\["Browsercontrole", browserStatus\]/);
   assert.match(factoryView, /\["Reparatiepogingen"/);
   assert.match(factoryView, /\["Klantpreview", customerPreviewReady/);
+  assert.match(factoryView, /function qualityReportForDisplay\(latestJob = null, activeVersion = null\)/);
+  assert.match(factoryView, /metadata\.browserReviewStatus/);
+  assert.match(factoryView, /metadata\.customerPreviewReady === true/);
+  assert.match(factoryView, /metadata\.browserRepair \|\| \{\}/);
 });
