@@ -111,6 +111,10 @@
     {
       "manifest": "docs/release-readiness/commercial-offer-signhost-digest-repair/MANIFEST.json",
       "fileset": "docs/release-readiness/commercial-offer-signhost-digest-repair/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/commercial-offer-fulfilment-rpc-repair/MANIFEST.json",
+      "fileset": "docs/release-readiness/commercial-offer-fulfilment-rpc-repair/FILESET.json"
     }
   ]
 }

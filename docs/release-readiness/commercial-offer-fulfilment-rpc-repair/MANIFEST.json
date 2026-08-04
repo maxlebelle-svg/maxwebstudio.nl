@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-fulfilment-rpc-repair-2026-08-04",
+  "release": "Commercial offer fulfilment RPC and activation-order repair",
+  "status": "DEPLOYED_TO_PRODUCTION_WITH_SEPARATE_AUTHORIZATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/signhost-activation-before-fulfilment",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "separateRemoteExecutionAuthorized": true,
+  "productionAppliedAt": "2026-08-04T17:10:28Z",
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260804173000_repair_commercial_fulfilment_rpcs.sql"
+  ],
+  "scope": [
+    "restore the idempotent commercial fulfilment claim and finalize RPCs",
+    "restore service-role-only execution and refresh the PostgREST schema cache",
+    "preserve existing signed offer, customer, invoice and payment identities"
+  ],
+  "explicitlyExcluded": [
+    "new Signhost transactions",
+    "real Mollie payment execution",
+    "destructive table or customer-data changes"
+  ]
+}

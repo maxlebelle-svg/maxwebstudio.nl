@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-fulfilment-rpc-repair-2026-08-04",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260804173000_repair_commercial_fulfilment_rpcs.sql",
+      "bytes": 7407,
+      "sha256": "aa9b910bbba898b763248d47e27d9a07790b168dc8485f24a0521703b1a31c8e"
+    }
+  ]
+}
