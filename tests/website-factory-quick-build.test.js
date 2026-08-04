@@ -260,13 +260,15 @@ test("Heel je Zelf ambiguous asset write retries the same job and creates one re
     assert.equal(previewWrites.length, 1);
     assert.equal(buildPosts.length, 0);
     assert.equal(previewWrites[0].generated_package.meta.recoveryMarker, "production-package-was-reused");
-    assert.equal(validateGeneratedPackage(previewWrites[0].generated_package).passed, true);
+    assert.equal(previewWrites[0].generated_package.meta.previewStorage.mode, "compact_public_demo_assets");
+    assert.ok(Buffer.byteLength(JSON.stringify(previewWrites[0].generated_package)) < Buffer.byteLength(JSON.stringify(latePersistedPackage)));
     assert.equal(previewWrites[0].generated_package.meta.industryIntelligence.industry, "holistisch");
     assert.equal(previewWrites[0].generated_package.meta.industryIntelligence.subcategory, "energetische-praktijk");
     assert.equal(previewWrites[0].generated_package.meta.industryImageSelection.groupSlug, "holistisch");
     assert.doesNotMatch(JSON.stringify(previewWrites[0].generated_package.meta), /bouwbedrijf|timmerwerk|installatiebedrijf/);
     const response = sanitizeBuildResult(result);
-    assert.equal(response.job.fileCount, previewWrites[0].generated_package.files.length);
+    assert.equal(response.job.fileCount, latePersistedPackage.files.length);
+    assert.ok(response.job.fileCount > previewWrites[0].generated_package.files.length);
     assert.equal(response.job.entryFile, "index.html");
     assert.equal(response.job.industryIntelligence.industry, "holistisch");
     assert.equal(Object.hasOwn(response.job, "generatedPackage"), false);

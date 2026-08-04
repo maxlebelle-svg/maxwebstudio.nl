@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { _private } = require("../functions/demo-preview");
+const { compactFactoryPreviewPackage, safePublicDemoAssetMap } = require("../functions/_factory-preview-storage");
 
 test("internal Factory preview repairs a logo saved as the package entry file", () => {
   const previewPackage = {
@@ -61,4 +62,24 @@ test("internal Factory preview keeps srcset assets on the protected route", () =
   const html = _private.inlinePreviewPackageAssets(previewPackage.files[0].content, previewPackage, { id: "journey", token: "token", source: "factory", previewVersionId: "version" });
   assert.match(html, /srcset="\/api\/demo-preview\?[^\"]+file=assets%2Fsmall\.png 1x, \/api\/demo-preview\?[^\"]+file=assets%2Flarge\.png 2x"/);
   assert.doesNotMatch(html, /srcset="data:/);
+});
+
+test("Factory preview stores public demo images compactly and renders them from the safe library path", () => {
+  const fullPackage = {
+    entryFile: "index.html",
+    meta: {
+      heroImage: { src: "assets/hero.png", originalSrc: "/assets/demo-images/library/finance/hero.png" },
+    },
+    files: [
+      { path: "index.html", content: '<img src="assets/hero.png">' },
+      { path: "assets/hero.png", encoding: "base64", content: Buffer.alloc(800_000, 1).toString("base64") },
+    ],
+  };
+  const compact = compactFactoryPreviewPackage(fullPackage);
+  assert.equal(compact.files.length, 1);
+  assert.equal(compact.meta.previewStorage.fullPackageSource, "website_build_jobs");
+  assert.equal(safePublicDemoAssetMap(compact).get("assets/hero.png"), "/assets/demo-images/library/finance/hero.png");
+  const html = _private.inlinePreviewPackageAssets(compact.files[0].content, compact, { id: "journey", token: "token", source: "factory", previewVersionId: "version" });
+  assert.match(html, /src="\/assets\/demo-images\/library\/finance\/hero\.png"/);
+  assert.doesNotMatch(html, /api\/demo-preview|data:image/);
 });

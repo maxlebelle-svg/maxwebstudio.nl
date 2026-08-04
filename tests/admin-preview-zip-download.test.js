@@ -70,21 +70,24 @@ function installEnv() {
   process.env.PREVIEW_ZIP_STORAGE_BUCKET = "preview-zips";
 }
 
-function installStorageMock({ existing = false, versionSource = "manual_zip", customerId = IDS.customer, bucketPublic = false, uploadStatus = 200, standalone = false } = {}) {
+function installStorageMock({ existing = false, versionSource = "manual_zip", customerId = IDS.customer, bucketPublic = false, uploadStatus = 200, standalone = false, compactFactory = false } = {}) {
   const uploads = [];
   const calls = [];
   const previewPackage = packageWith40Files();
+  const sourcePackage = compactFactory ? { ...previewPackage, meta: { ...previewPackage.meta, previewSource: "website_factory" } } : previewPackage;
   global.fetch = async (url, options = {}) => {
     calls.push({ url: String(url), method: options.method || "GET", body: options.body });
     if (String(url).includes("/rest/v1/website_preview_versions")) return jsonResponse([{
       id: IDS.version,
       demo_journey_id: standalone ? null : IDS.journey,
       customer_id: customerId,
-      generated_package: previewPackage,
-      metadata: { previewSource: versionSource },
+      build_job_id: compactFactory ? IDS.version : null,
+      generated_package: compactFactory ? { ...sourcePackage, files: sourcePackage.files.filter((file) => file.path !== "assets/hero.png") } : sourcePackage,
+      metadata: compactFactory ? { previewSource: versionSource, previewStorage: { fullPackageSource: "website_build_jobs" } } : { previewSource: versionSource },
       version: 7,
       title: "Heel je Zelf",
     }]);
+    if (String(url).includes("/rest/v1/website_build_jobs")) return jsonResponse([{ generated_package: sourcePackage }]);
     if (String(url).includes("/rest/v1/demo_journeys")) {
       if (standalone) throw new Error("Standalone manual ZIP must not resolve a Demo Journey");
       return jsonResponse([{ id: IDS.journey, customer_id: customerId, business_name: "Heel je Zelf" }]);
@@ -165,6 +168,16 @@ test("existing content hash is reused without another upload", async () => {
   assert.equal(body.reused, true);
   assert.equal(body.zipBytes, 2468);
   assert.equal(mock.uploads.length, 0);
+});
+
+test("compact Factory previews rebuild the complete ZIP from the stored build package", async () => {
+  const mock = installStorageMock({ compactFactory: true, versionSource: "website_factory" });
+  const response = await zipRoute.handler(event({ source: "factory" }));
+  const body = JSON.parse(response.body);
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.fileCount, 40);
+  assert(mock.calls.some((call) => call.url.includes("/rest/v1/website_build_jobs") && call.url.includes("select=generated_package")));
+  assert.equal(manualZip.extractZip(mock.uploads[0]).files.length, 40);
 });
 
 test("customer-owned manual ZIP without a Demo Journey remains downloadable", async () => {

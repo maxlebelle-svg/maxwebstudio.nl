@@ -47,7 +47,12 @@ exports.handler = async (event) => {
     const requestedSource = normalizePreviewSource(input.source);
     if (input.source && !requestedSource) throw zipError("PREVIEW_SOURCE_INVALID", "Gebruik factory of manual_zip als previewbron.", 400, "validate_preview_source");
     if (requestedSource && requestedSource !== source) throw zipError("PREVIEW_SOURCE_MISMATCH", "De gekozen previewbron hoort niet bij deze previewversie.", 409, "validate_preview_source");
-    const prepared = preparePreviewPackage(version.generated_package);
+    let downloadPackage = version.generated_package;
+    if (version.metadata?.previewStorage?.fullPackageSource === "website_build_jobs" && version.build_job_id) {
+      const buildJob = await readOne(context, "website_build_jobs", `select=generated_package&id=eq.${encodeURIComponent(version.build_job_id)}&limit=1`);
+      if (buildJob?.generated_package?.files?.length) downloadPackage = buildJob.generated_package;
+    }
+    const prepared = preparePreviewPackage(downloadPackage);
     await validateStorageBucket(context);
     const contentHash = packageContentHash(prepared, source);
     const storagePath = `${previewVersionId}/${contentHash}.zip`;
