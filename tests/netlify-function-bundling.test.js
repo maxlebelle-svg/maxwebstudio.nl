@@ -11,6 +11,7 @@ test("Netlify bundles Factory functions with esbuild to avoid tracing the full d
     assert.match(section, /public\/assets\/demo-images\/library\/bouwbedrijf\/\*\*/);
     assert.match(section, /public\/assets\/demo-images\/library\/financieel-adviseur\/\*\*/);
     assert.match(section, /public\/assets\/demo-images\/library\/holistisch\/\*\*/);
+    assert.match(section, /public\/assets\/demo-images\/library\/restaurant\/\*\*/);
   }
   const previewAssetSection = config.slice(config.indexOf('[functions."admin-preview-image-assets"]'), config.indexOf("\n[", config.indexOf('[functions."admin-preview-image-assets"]') + 1));
   assert.match(previewAssetSection, /public\/assets\/demo-images\/library\/boomverzorging\/\*\*/);
