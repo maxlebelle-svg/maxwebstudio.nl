@@ -112,5 +112,6 @@ test("customer page requires authority and displays clickable versioned document
 test("verified signed postback stores both artifacts before portal activation",()=>{
   const postback=read("functions/signhost-postback.js"),activation=read("functions/services/commercialOfferActivationService.js");
   assert.match(postback,/preserveCommercialArtifacts/);assert.match(postback,/commercial_finalize_offer_signature_v1/);assert.match(postback,/activateSignedCommercialOffer/);assert.match(postback,/receiptSha256/);
+  assert.match(postback,/COMMERCIAL_ARTIFACT_PRESERVATION_FAILED/);assert.match(postback,/COMMERCIAL_SIGNATURE_FINALIZATION_FAILED/);
   assert.match(activation,/ensureCustomerAuthContext/);assert.match(activation,/createInviteOrResetLink/);assert.match(activation,/lead_status:"won"/);assert.doesNotMatch(activation,/password\s*:/i);
 });

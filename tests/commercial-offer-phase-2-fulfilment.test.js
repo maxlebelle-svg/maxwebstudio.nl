@@ -72,6 +72,9 @@ test("admin composer exposes signature only after confirmed interest", () => {
   assert.match(ui, /Naar Signhost sturen/);
   assert.match(ui, /Status bij Signhost controleren/);
   assert.match(ui, /Mollie-testbetaallink/);
+  assert.match(ui, /reconciliationError/);
+  assert.match(ui, /error\.code/);
+  assert.match(endpoint, /SIGNHOST_RECONCILE_/);
   assert.match(html, /offer-composer-phase2\.js/);
   assert.match(ui, /klantstatus, factuur, betaallink en productieoverdracht automatisch/i);
 });
