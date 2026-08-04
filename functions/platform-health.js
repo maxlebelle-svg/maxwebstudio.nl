@@ -8,7 +8,8 @@ const REQUIRED_ENV = [
   { key: "SUPABASE_SERVICE_ROLE_KEY", critical: true, label: "Supabase service role" },
   { key: "SUPABASE_ANON_KEY", critical: true, label: "Supabase anon key" },
   { key: "RESEND_API_KEY", critical: false, label: "Resend API key" },
-  { key: "RESEND_FROM_EMAIL", critical: false, label: "Resend from email" },
+  { key: "RESEND_WEBHOOK_SECRET", critical: false, label: "Resend webhook secret" },
+  { key: "FROM_EMAIL", critical: false, label: "Resend from email" },
   { key: "MOLLIE_API_KEY", critical: false, label: "Mollie API key" },
   { key: "SITE_URL", critical: false, label: "Platform URL" },
   { key: "ADMIN_TOKEN", critical: false, label: "Legacy admin token" },
@@ -27,7 +28,7 @@ const FUNCTION_CHECKS = [
   { id: "dashboard-metrics", label: "CEO dashboard metrics", file: "admin-dashboard-metrics.js", critical: false },
   { id: "customer-portal", label: "Customer portal", file: "client-auth-config.js", critical: false },
   { id: "storage", label: "Storage access", file: "invoice-download.js", critical: false },
-  { id: "uploads", label: "Uploads", file: "intake-storage.js", critical: false },
+  { id: "uploads", label: "Uploads", file: "customer-onboarding.js", critical: false },
   { id: "preview", label: "Preview environment", file: "demo-preview.js", critical: false },
   { id: "website-factory", label: "Website Factory", file: "website-factory.js", critical: false },
   { id: "website-factory-core", label: "Website Factory core", file: "_website-factory-core.js", critical: false },
@@ -218,7 +219,7 @@ function buildSubsystemChecks({ environment, supabase, functions, artifacts }) {
   const brainReady = artifactById.get("brain-ui");
   const ceoReady = artifactById.get("ceo-ui");
   const commandReady = artifactById.get("command-ui");
-  const resendMissing = environment.variables.some((item) => item.key === "RESEND_API_KEY" && !item.present);
+  const resendMissing = environment.variables.some((item) => ["RESEND_API_KEY", "RESEND_WEBHOOK_SECRET"].includes(item.key) && !item.present);
   const mollieMissing = environment.variables.some((item) => item.key === "MOLLIE_API_KEY" && !item.present);
   const storageReady = functionById.get("storage");
   const uploadReady = functionById.get("uploads");

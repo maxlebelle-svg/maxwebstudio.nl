@@ -362,7 +362,8 @@
             { key: "SUPABASE_SERVICE_ROLE_KEY", label: "Supabase service role", present: false, critical: true },
             { key: "SUPABASE_ANON_KEY", label: "Supabase anon key", present: false, critical: true },
             { key: "RESEND_API_KEY", label: "Resend API key", present: false, critical: false },
-            { key: "RESEND_FROM_EMAIL", label: "Resend from email", present: false, critical: false },
+            { key: "RESEND_WEBHOOK_SECRET", label: "Resend webhook secret", present: false, critical: false },
+            { key: "FROM_EMAIL", label: "Resend from email", present: false, critical: false },
             { key: "MOLLIE_API_KEY", label: "Mollie API key", present: false, critical: false },
             { key: "SITE_URL", label: "Platform URL", present: false, critical: false },
           ],
@@ -372,12 +373,16 @@
         const $ = (id) => document.getElementById(id);
 
         function readAdminBearer() {
-          try {
-            const session = JSON.parse(localStorage.getItem("maxwebstudioAdminSession") || "{}");
-            return session.accessToken || "";
-          } catch {
-            return "";
+          for (const key of ["mws_admin_supabase_session", "maxwebstudioCurrentSession", "maxwebstudioAdminSession"]) {
+            try {
+              const session = JSON.parse(localStorage.getItem(key) || "{}");
+              const token = session.accessToken || session.access_token || session.session?.access_token || "";
+              if (token) return token;
+            } catch {
+              // Ongeldige browserdata verleent nooit toegang.
+            }
           }
+          return "";
         }
 
         async function loadHealth() {

@@ -216,6 +216,13 @@
     Cache-Control = "no-store, max-age=0, must-revalidate"
 
 [[headers]]
+  for = "/onboarding.html"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0, must-revalidate"
+    Referrer-Policy = "no-referrer"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
   for = "/offerte-ondertekening-voltooid*"
   [headers.values]
     Cache-Control = "no-store, max-age=0, must-revalidate"

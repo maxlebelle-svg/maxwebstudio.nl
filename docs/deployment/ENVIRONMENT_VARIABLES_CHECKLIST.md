@@ -10,6 +10,7 @@ Status: invullen zonder waarden of secrets.
 | `SUPABASE_PROJECT_ID` | Projectcontrole voor test/prod scheiding | lokale testenv / Netlify env |  |
 | `ADMIN_TOKEN` | Admin function authorisatie | Netlify env |  |
 | `RESEND_API_KEY` | E-mails via Resend | Netlify env |  |
+| `RESEND_WEBHOOK_SECRET` | Ondertekening van Resend webhook-events controleren | Netlify env, nooit frontend |  |
 | `FROM_EMAIL` | Afzender e-mail | Netlify env |  |
 | `ADMIN_EMAIL` | Interne notificaties | Netlify env |  |
 | `DOMAIN_ORDER_ADMIN_EMAIL` | Optionele ontvanger voor nieuwe domeinreserveringen; valt terug op `ADMIN_EMAIL` | Netlify env |  |
