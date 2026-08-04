@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const zlib = require("node:zlib");
 
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
@@ -49,6 +50,30 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
   assert.match(mail.html, /Geldig tot en met/);
   assert.doesNotMatch(mail.text, /50%|€ 1\.750,00/);
   assert.match(mail.text, /nog geen digitale ondertekening of betalingsopdracht/i);
+});
+
+test("proposal mail preserves the original 23:04 design with exact Outlook-safe brand pixels", () => {
+  const mail = buildCommercialOfferMail({ ...base, mode: "test" });
+  assert.match(mail.html, /class="mws-card" bgcolor="#071b2c" background="https:\/\/maxwebstudio\.nl\/assets\/email\/mws-email-bg-card-071b2c-v2\.png"/);
+  assert.match(mail.html, /background:#071b2c url\('https:\/\/maxwebstudio\.nl\/assets\/email\/mws-email-bg-card-071b2c-v2\.png'\) repeat/);
+  assert.match(mail.html, /TESTMAIL — niet naar de klant verzonden/);
+  assert.match(mail.html, /background:#4b3a08/);
+  assert.doesNotMatch(mail.html, /linear-gradient|mws-primary-link|mws-test/);
+
+  const expectedPixels = { outer: "030b14", card: "071b2c", header: "061523", panel: "102a3d", sign: "08283b" };
+  for (const [name, expectedPixel] of Object.entries(expectedPixels)) {
+    const png = fs.readFileSync(path.join(root, `public/assets/email/mws-email-bg-${name}-${expectedPixel}-v2.png`));
+    const idat = [];
+    for (let offset = 8; offset < png.length;) {
+      const length = png.readUInt32BE(offset);
+      const type = png.toString("ascii", offset + 4, offset + 8);
+      if (type === "IDAT") idat.push(png.subarray(offset + 8, offset + 8 + length));
+      offset += length + 12;
+    }
+    const pixels = zlib.inflateSync(Buffer.concat(idat));
+    assert.equal(pixels[0], 0, `${name} must use a deterministic no-filter scanline`);
+    assert.equal(pixels.subarray(1, 4).toString("hex"), expectedPixel, `${name} has the wrong rendered color`);
+  }
 });
 
 test("proposal mail visibly reconciles the original amount, discount and final total", () => {
