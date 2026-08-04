@@ -134,6 +134,8 @@ test("activation repairs an existing converted test customer without an email",(
   const activation=read("functions/services/commercialOfferActivationService.js");
   assert.match(activation,/!clean\(rows\[0\]\.email\)&&clean\(lead\.email\)/);
   assert.match(activation,/patch\(context,"customers",`id=eq\.\$\{existingId\}`/);
+  assert.match(activation,/converted_customer_id:customerId/);
+  assert.doesNotMatch(activation,/(?:[{,])customer_id:customerId/);
 });
 
 test("Signhost checksum repair uses the deployed pgcrypto bytea signature",()=>{
