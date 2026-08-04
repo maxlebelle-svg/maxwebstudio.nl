@@ -177,6 +177,7 @@ test("the Factory endpoint and employee view expose the browser repair loop", ()
   assert.doesNotMatch(endpoint, /\.\.\.\(repair\.changed \? \{ generated_package: repair\.generatedPackage \} : \{\}\)/);
   assert.match(endpoint, /current_step: retryAvailable \? "browser_review_required" : "browser_review_failed"/);
   assert.match(endpoint, /customerPreviewReady: true/);
+  assert.match(endpoint, /const PREVIEW_SUMMARY_FIELDS = \[[\s\S]*"preview_score", "quality_report", "metadata"/);
   assert.match(factoryView, /\["Browsercontrole", browserStatus\]/);
   assert.match(factoryView, /\["Reparatiepogingen"/);
   assert.match(factoryView, /\["Klantpreview", customerPreviewReady/);
