@@ -8,6 +8,7 @@ const offerId = String(params.get('offerId') || '').trim();
 let state = null;
 let pending = false;
 let pollTimer = 0;
+let reconciliationError = '';
 
 const card = buildCard();
 const button = card.querySelector('[data-phase2-action]');
@@ -74,6 +75,7 @@ function render() {
       button.textContent = 'Status bij Signhost controleren';
       button.dataset.phase2Mode = 'reconcile';
       button.disabled = pending;
+      if (reconciliationError) return renderMessage(reconciliationError, true);
       return renderMessage(`${text} Controleer de providerstatus alleen handmatig als de klant al heeft getekend.`, false);
     }
     return ['completed', 'signed_pending_processing'].includes(signing.status) ? complete(text) : renderMessage(text, signing.status === 'failed');
@@ -92,6 +94,7 @@ async function reconcileSignature() {
   if (button.disabled || pending || !state?.signing) return;
   const approved = window.confirm('Signhost wordt één keer gecontroleerd. Als de offerte daar ondertekend is, worden klantstatus, factuur, Mollie-testbetaallink en productieoverdracht automatisch aangemaakt. Nu controleren?');
   if (!approved) return;
+  reconciliationError = '';
   pending = true;
   button.disabled = true;
   renderMessage('De actuele status wordt één keer rechtstreeks bij Signhost gecontroleerd…', false);
@@ -101,8 +104,9 @@ async function reconcileSignature() {
     await refresh();
     toast?.update(result.reconciled ? 'De definitieve Signhost-status is verwerkt.' : 'Signhost wacht nog op de handtekening.', result.reconciled ? 'success' : 'info', { duration: 5000 });
   } catch (error) {
-    renderMessage(error.message || 'De Signhost-status kon niet worden gecontroleerd.', true);
-    toast?.update(error.message || 'Signhost-controle mislukt.', 'error', { duration: 7000 });
+    const code = String(error.code || '').trim();
+    reconciliationError = `${error.message || 'De Signhost-status kon niet worden gecontroleerd.'}${code ? ` (${code})` : ''}`;
+    toast?.update(reconciliationError, 'error', { duration: 12000 });
   } finally {
     pending = false;
     render();
@@ -144,7 +148,7 @@ async function request(method, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data.success) throw new Error(data.error || 'De ondertekenactie is niet gelukt.');
+  if (!response.ok || !data.success) throw Object.assign(new Error(data.error || 'De ondertekenactie is niet gelukt.'), { code: String(data.code || '').trim() });
   return data;
 }
 

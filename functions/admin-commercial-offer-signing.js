@@ -76,7 +76,9 @@ async function reconcileSignature(query, actor, config) {
   if (!signing) throw problem(409, "SIGNING_NOT_FOUND", "Het ondertekenverzoek kon niet veilig worden teruggevonden.");
   if (!clean(signing.provider_transaction_id)) throw problem(409, "SIGNHOST_TRANSACTION_MISSING", "Het Signhost-transactienummer ontbreekt bij dit verzoek.");
 
-  const providerTransaction = await getTransaction(signhostConfig(), signing.provider_transaction_id);
+  let providerTransaction;
+  try { providerTransaction = await getTransaction(signhostConfig(), signing.provider_transaction_id); }
+  catch (error) { throw reconciliationError(error, "STATUS_READ"); }
   const providerStatus = Number(providerTransaction?.Status ?? providerTransaction?.status);
   if (!Number.isInteger(providerStatus)) throw problem(502, "SIGNHOST_STATUS_INVALID", "Signhost gaf geen geldige transactiestatus terug.");
   const mappedStatus = mapTransactionStatus(providerStatus);
@@ -84,11 +86,13 @@ async function reconcileSignature(query, actor, config) {
   // This is deliberately a one-shot staff action. Signhost recommends using
   // postbacks instead of continuously polling its transaction endpoint.
   if (mappedStatus !== "waiting_for_signer") {
-    await processCommercialPostback(
-      { url: config.url, service: config.key },
-      signing,
-      { status: providerStatus, mappedStatus },
-    );
+    try {
+      await processCommercialPostback(
+        { url: config.url, service: config.key },
+        signing,
+        { status: providerStatus, mappedStatus },
+      );
+    } catch (error) { throw reconciliationError(error, "PROCESSING"); }
   } else {
     await serviceRest(config.url, config.key, `commercial_offer_signing_transactions?id=eq.${signing.id}`, {
       method: "PATCH",
@@ -239,6 +243,10 @@ function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]
 function uuid(value, message) { const id = clean(value); if (!UUID.test(id)) throw problem(400, "ID_INVALID", message); return id; }
 function clean(value) { return String(value ?? "").trim(); }
 function problem(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }
+function reconciliationError(error, stage) {
+  const cause = clean(error?.code || "UNKNOWN").toUpperCase().replace(/[^A-Z0-9_]/g, "_").slice(0, 72);
+  return problem(Number(error?.statusCode || error?.status) || 502, `SIGNHOST_RECONCILE_${stage}_${cause}`.slice(0, 120), error?.message || "De Signhost-status kon niet veilig worden verwerkt.");
+}
 function json(statusCode, body) { return { statusCode, headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
 exports._private = { providerEnabled, environmentAllowed, pdfPageCount, assertRelationshipAccess };

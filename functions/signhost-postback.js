@@ -55,16 +55,21 @@ exports.handler = async (event) => {
 async function processCommercialPostback(context, signing, validation) {
   const status = validation.mappedStatus === "signed_pending_scan" ? "signed" : validation.mappedStatus;
   let artifacts = { signedDocumentPath:null, signedDocumentSha256:null, receiptPath:null, receiptSha256:null };
-  if (status === "signed" && (!signing.signed_document_path || !signing.receipt_path)) artifacts = await preserveCommercialArtifacts(context, signing);
-  const result = await rpc(context, "commercial_finalize_offer_signature_v1", {
-    input_signing_transaction_id:signing.id,
-    input_status:status,
-    input_provider_status:validation.status,
-    input_signed_document_path:artifacts.signedDocumentPath || signing.signed_document_path || null,
-    input_signed_document_sha256:artifacts.signedDocumentSha256 || signing.signed_document_sha256 || null,
-    input_receipt_path:artifacts.receiptPath || signing.receipt_path || null,
-    input_receipt_sha256:artifacts.receiptSha256 || signing.receipt_sha256 || null,
-  });
+  if (status === "signed" && (!signing.signed_document_path || !signing.receipt_path)) {
+    try { artifacts = await preserveCommercialArtifacts(context, signing); }
+    catch (error) { throw stageError(error, "COMMERCIAL_ARTIFACT_PRESERVATION_FAILED"); }
+  }
+  try {
+    await rpc(context, "commercial_finalize_offer_signature_v1", {
+      input_signing_transaction_id:signing.id,
+      input_status:status,
+      input_provider_status:validation.status,
+      input_signed_document_path:artifacts.signedDocumentPath || signing.signed_document_path || null,
+      input_signed_document_sha256:artifacts.signedDocumentSha256 || signing.signed_document_sha256 || null,
+      input_receipt_path:artifacts.receiptPath || signing.receipt_path || null,
+      input_receipt_sha256:artifacts.receiptSha256 || signing.receipt_sha256 || null,
+    });
+  } catch (error) { throw stageError(error, "COMMERCIAL_SIGNATURE_FINALIZATION_FAILED"); }
   if (status === "signed") {
     let activation = {};
     try { activation = await activateSignedCommercialOffer(context, { ...signing, status:"signed", signed_at:new Date().toISOString() }); }
@@ -180,6 +185,7 @@ function encodePath(value){return String(value).split("/").map(encodeURIComponen
 function parseSoft(value){try{const parsed=JSON.parse(value||"{}");return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{};}catch{return {};}}
 function clean(value){return String(value??"").trim();}
 function coded(code,status,message){return Object.assign(new Error(message),{code,status});}
+function stageError(error,stage){const cause=clean(error?.code||"UNKNOWN").toUpperCase().replace(/[^A-Z0-9_]/g,"_").slice(0,70);return coded(`${stage}_${cause}`.slice(0,120),Number(error?.status||error?.statusCode)||502,error?.message||"De ondertekening kon niet veilig worden afgerond.");}
 function ok(){return {statusCode:200,headers:{"Content-Type":"text/plain","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"},body:"OK"};}
 
 exports._test = { assertPdf, eventName, parseSoft, smokeStatus, processCommercialPostback };
