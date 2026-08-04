@@ -102,6 +102,21 @@ test("layout, overflow and form failures produce a deterministic repaired packag
   assert.notEqual(artifactHashForPackage(repaired.generatedPackage), artifactHashForPackage(pkg));
 });
 
+test("typography repair raises Factory social links to the browser-review minimum", () => {
+  const pkg = generatedPackage();
+  const result = processBrowserReview({
+    staticReport: { passed: true, score: 96 },
+    evidence: evidenceFor(pkg, ["mobile_typography", "tablet_typography", "desktop_typography"]),
+    generatedPackage: pkg,
+  });
+  const repaired = applyAutomaticBrowserRepairs({ generatedPackage: pkg, browserRepair: result.browserRepair });
+  const css = repaired.generatedPackage.files.find((file) => file.path === "styles.css").content;
+
+  assert.equal(repaired.changed, true);
+  assert.deepEqual(repaired.applied, ["typography_safety"]);
+  assert.match(css, /\.social-links a\{font-size:12px!important\}/);
+});
+
 test("runtime failures stay fail-closed instead of receiving a speculative repair", () => {
   const pkg = generatedPackage();
   const result = processBrowserReview({
