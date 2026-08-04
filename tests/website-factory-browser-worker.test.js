@@ -31,6 +31,11 @@ test("worker reviews mobile, tablet and desktop and submits immutable evidence",
   assert.match(worker, /Runtime\.exceptionThrown/);
   assert.match(worker, /unlabeledControls/);
   assert.match(worker, /brokenImages/);
+  assert.match(worker, /status: "worker_error"/);
+  assert.match(worker, /worker-error\.json/);
+  assert.match(worker, /redactUrl\(queuedJob\?\.previewUrl\)/);
+  assert.match(worker, /state === "interactive"/);
+  assert.match(worker, /attempt < 300/);
 });
 
 test("Factory exposes only eligible builds through the browser review queue", () => {
