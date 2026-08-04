@@ -646,7 +646,9 @@ async function submitBrowserReview(context, payload = {}) {
     error.status = 400;
     throw error;
   }
-  const row = await readBuildJobRuntimeById(context, jobId);
+  // Browser review needs the complete generated package. Large customer builds can
+  // exceed the short metadata timeout even though Supabase is still responding.
+  const row = await readBuildJobRuntimeById(context, jobId, PACKAGE_SUPABASE_TIMEOUT_MS);
   if (!row) {
     const error = new Error("Build job niet gevonden voor browsercontrole.");
     error.status = 404;
