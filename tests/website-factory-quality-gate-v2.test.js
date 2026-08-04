@@ -57,6 +57,11 @@ test("bakery leads produce a specific preview instead of being blocked as generi
           "https://www.instagram.com/miolla.nl/",
           "https://www.instagram.com/whatsapp/",
         ],
+        imageUrls: [
+          "https://cdn.example.test/miolla/taart.jpg?width=1200",
+          "https://static.whatsapp.net/rsrc.php/v4/yO/r/tracking.png",
+          "https://www.facebook.com/tr?id=123",
+        ],
       },
     },
   };
@@ -75,7 +80,12 @@ test("bakery leads produce a specific preview instead of being blocked as generi
   assert.match(html, /href="#diensten">Bekijk het assortiment/);
   assert.match(html, /https:\/\/www\.facebook\.com\/miolla\.nl/);
   assert.match(html, /https:\/\/www\.instagram\.com\/miolla\.nl\//);
-  assert.doesNotMatch(html, /Sfeer, reserveren|zin geeft om te reserveren|Kies uw project|wat u wilt laten maken|Afspraak inplannen|facebook\.com\/tr|instagram\.com\/whatsapp/i);
+  assert.match(html, /https:\/\/cdn\.example\.test\/miolla\/taart\.jpg\?width=1200/);
+  assert.doesNotMatch(html, /Sfeer, reserveren|zin geeft om te reserveren|Kies uw project|wat u wilt laten maken|Afspraak inplannen|facebook\.com\/tr|instagram\.com\/whatsapp|static\.whatsapp\.net/i);
+  assert.doesNotMatch(html, /style="grid-template-columns:repeat\(3,1fr\)"/);
+  const css = generated.files.find((file) => file.path === "styles.css").content;
+  assert.match(css, /\.services-count-6\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)\}/);
+  assert.match(css, /@media\(max-width:760px\)\{\.services-count-6\{grid-template-columns:minmax\(0,1fr\)\}\}/);
   assert.doesNotMatch(html, /<h3>35 -<\/h3>/);
   assert.equal(generated.meta.contentQuality.genericFallbackUsed, false);
   assert.equal(report.checks.find((item) => item.id === "no_generic_fallback_copy").passed, true);
