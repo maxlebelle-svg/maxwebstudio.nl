@@ -60,7 +60,7 @@ const PREVIEW_RECOVERY_FIELDS = [
 ].join(",");
 const PREVIEW_SUMMARY_FIELDS = [
   "id", "demo_journey_id", "build_job_id", "customer_id", "version", "title", "preview_url", "preview_token",
-  "preview_score", "metadata", "is_active", "status", "created_by", "created_at", "feedback_items", "approved_at",
+  "preview_score", "quality_report", "metadata", "is_active", "status", "created_by", "created_at", "feedback_items", "approved_at",
   "published_to_portal", "published_at",
 ].join(",");
 const PREVIEW_BROWSER_REVIEW_FIELDS = "id,build_job_id,package_checksum,metadata,is_active";
