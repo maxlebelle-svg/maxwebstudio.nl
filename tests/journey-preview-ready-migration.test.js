@@ -110,7 +110,7 @@ test("preview-ready v1 template is versioned, escaped, test-marked and uses only
   const rendered = renderJourneyMail(command);
   assert.equal(rendered.templateKey, "journey.preview_ready");
   assert.equal(rendered.templateVersion, 1);
-  assert.equal(rendered.subject, "[TEST] Uw nieuwe websitepreview staat klaar");
+  assert.equal(rendered.subject, "[TEST] Je nieuwe websitepreview staat klaar");
   assert.match(rendered.html, /A &amp; B/);
   assert.match(rendered.html, /width:0%/);
   assert.match(rendered.text, /preview\.html\?version=/);

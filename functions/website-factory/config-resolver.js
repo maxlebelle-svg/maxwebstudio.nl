@@ -108,7 +108,7 @@ const FALLBACK_INDUSTRIES = {
     palette: { brand: "#2563eb", accent: "#14b8a6", ink: "#132238", soft: "#f6f8fb" },
     copy: {
       hero: "Een lokale specialist die online direct professioneel overkomt.",
-      intro: "Voor bezoekers die snel willen begrijpen wat u doet, waarom ze u kunnen vertrouwen en hoe ze contact opnemen.",
+      intro: "Voor bezoekers die snel willen begrijpen wat je doet, waarom ze je kunnen vertrouwen en hoe ze contact opnemen.",
       eyebrow: "Service, vertrouwen en contact",
       cta: "Plan een kennismaking",
     },

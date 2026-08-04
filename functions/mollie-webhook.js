@@ -505,7 +505,7 @@ async function dispatchPaidConfirmation(supabaseUrl, serviceRoleKey, invoice, pa
     const profile = await fetchInvoiceProfile(supabaseUrl, serviceRoleKey, invoice.profile_id);
     const customer = commercialResult?.customer || await resolveInvoiceCustomer(supabaseUrl, serviceRoleKey, invoice, invoiceContext);
     const paymentContext = resolvePaymentPaidContext({ provider: "mollie", providerVerified: true, customerId: customer?.id, payment, invoice, invoiceContext });
-    const result = await paymentPaidService.dispatch({ customerId: customer?.id || "", invoiceId: invoice.id, paidAt: payment.paidAt || invoice.paid_at, recipient: profile?.email || "", firstName: profile?.name || profile?.company || "", invoiceLabel: invoice.invoice_number || invoice.title || "uw betaling", paymentContext, legacySend: async () => sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) });
+    const result = await paymentPaidService.dispatch({ customerId: customer?.id || "", invoiceId: invoice.id, paidAt: payment.paidAt || invoice.paid_at, recipient: profile?.email || "", firstName: profile?.name || profile?.company || "", invoiceLabel: invoice.invoice_number || invoice.title || "je betaling", paymentContext, legacySend: async () => sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) });
     console.log("Payment confirmation ownership resolved", { code: "PAYMENT_CONFIRMATION_OWNER", owner: result.owner, reason: result.reason, durable: result.durable === true, duplicate: result.duplicate === true, paymentEnvironment: paymentContext.environment, paymentType: paymentContext.paymentType });
     return result;
   } catch (error) {

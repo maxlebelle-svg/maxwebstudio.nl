@@ -26,7 +26,7 @@
   ],
   "services": ["Kantoorschoonmaak", "VvE onderhoud", "Oplevering", "Glasbewassing", "Periodiek onderhoud"],
   "trustSignals": ["Vaste planning", "Controleerbare kwaliteit", "Representatieve medewerkers", "Heldere afspraken"],
-  "ctaExamples": ["Vraag een schoonmaakofferte aan", "Plan een kennismaking", "Bespreek uw locatie"],
+  "ctaExamples": ["Vraag een schoonmaakofferte aan", "Plan een kennismaking", "Bespreek je locatie"],
   "assetKeywords": ["schoonmaak", "kantoor", "glasbewassing", "facility", "oplevering"],
   "preferredComponents": ["hero", "services", "process", "trust", "contact"],
   "assetSlots": ["hero-schoonmaak", "kantoor", "glasbewassing", "team"]

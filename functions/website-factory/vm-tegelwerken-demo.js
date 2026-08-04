@@ -50,7 +50,7 @@ const projects = [
     category: "Toilet renovatie",
     image: assets.toilet,
     summary: "Een compacte ruimte opnieuw opgebouwd met strak tegelwerk en verzorgde afwerking.",
-    detail: "Bij een toilet ziet u elk detail van dichtbij. Juist daarom zijn nette randen, hoeken, voegen en materiaalovergangen belangrijk.",
+    detail: "Bij een toilet zie je elk detail van dichtbij. Juist daarom zijn nette randen, hoeken, voegen en materiaalovergangen belangrijk.",
   },
 ];
 
@@ -257,7 +257,7 @@ function renderCraft() {
     <section class="craft section dark">
       <div class="section-head reveal">
         <span class="eyebrow">Vakmanschap in detail</span>
-        <h2>Het verschil zit in wat u straks iedere dag ziet.</h2>
+        <h2>Het verschil zit in wat je straks iedere dag ziet.</h2>
       </div>
       <div class="detail-grid">
         ${[
@@ -280,9 +280,9 @@ function renderProcess() {
       </div>
       <div class="steps">
         ${[
-          ["01", "Kennismaken", "U vertelt wat er vernieuwd moet worden en deelt wensen, maten en eventueel foto's."],
+          ["01", "Kennismaken", "Je vertelt wat er vernieuwd moet worden en deelt wensen, maten en eventueel foto's."],
           ["02", "Bekijken en adviseren", "De situatie, gewenste afwerking en materiaalkeuzes worden besproken."],
-          ["03", "Duidelijke offerte", "U ontvangt een passend voorstel voor het afgesproken werk."],
+          ["03", "Duidelijke offerte", "Je ontvangt een passend voorstel voor het afgesproken werk."],
           ["04", "Vakkundige uitvoering", "Het werk wordt zorgvuldig gerealiseerd en netjes afgewerkt."],
         ].map(([number, title, text]) => `<article class="step reveal"><span>${number}</span><h3>${title}</h3><p>${text}</p></article>`).join("")}
       </div>
@@ -310,8 +310,8 @@ function renderCta() {
       <div class="cta-panel reveal">
         <span class="eyebrow" data-mws-field="eyebrow">Offerte aanvragen</span>
         <h2 data-mws-field="title">Plannen voor nieuw tegelwerk of een renovatie?</h2>
-        <p data-mws-field="description">Vertel kort om welke ruimte het gaat. Deel uw wensen en eventueel enkele foto's, dan kan Van Meetelen Tegelwerken gericht contact met u opnemen.</p>
-        <div class="hero-actions" data-mws-field="form"><a class="button" href="offerte.html">Start uw aanvraag</a><a class="button secondary dark-button" href="${company.phoneHref}">Bel ${company.phone}</a></div>
+        <p data-mws-field="description">Vertel kort om welke ruimte het gaat. Deel je wensen en eventueel enkele foto's, dan kan Van Meetelen Tegelwerken gericht contact met je opnemen.</p>
+        <div class="hero-actions" data-mws-field="form"><a class="button" href="offerte.html">Start je aanvraag</a><a class="button secondary dark-button" href="${company.phoneHref}">Bel ${company.phone}</a></div>
       </div>
     </section>
   `;
@@ -350,7 +350,7 @@ function renderQuoteForm() {
         <label>Postcode<input name="zip" autocomplete="postal-code" required></label>
         <label>Plaats<input name="plaats" autocomplete="address-level2" required></label>
         <label>Gewenste startperiode<input name="startperiode" aria-label="Bijvoorbeeld voorjaar of nog flexibel"></label>
-        <label class="wide">Toelichting<textarea name="toelichting" rows="4" aria-label="Beschrijf kort de ruimte en wat u wilt laten doen."></textarea></label>
+        <label class="wide">Toelichting<textarea name="toelichting" rows="4" aria-label="Beschrijf kort de ruimte en wat je wilt laten doen."></textarea></label>
       `)}
       ${formStep("4", "Foto's", `
         <p class="form-note wide">Upload is voorbereid in de interface. Voor verzending via deze statische demo opent de aanvraag als e-mail; foto's kunnen daarna direct worden meegestuurd.</p>
@@ -469,7 +469,7 @@ function renderCss() {
 }
 
 function renderScript() {
-  return `const header=document.querySelector("[data-header]");const toggle=document.querySelector("[data-menu-toggle]");const mobile=document.querySelector("[data-mobile-nav]");toggle?.addEventListener("click",()=>{const open=mobile.classList.toggle("is-open");toggle.setAttribute("aria-expanded",String(open));});const observer=new IntersectionObserver((entries)=>entries.forEach((entry)=>{if(entry.isIntersecting)entry.target.classList.add("is-visible");}),{threshold:.12});document.querySelectorAll(".reveal").forEach((item)=>observer.observe(item));const form=document.getElementById("quoteForm");const requestForm=form;if(form){let step=0;const steps=[...form.querySelectorAll(".form-step")];const prev=form.querySelector("[data-prev]");const next=form.querySelector("[data-next]");const status=form.querySelector(".form-status");const render=()=>{steps.forEach((item,index)=>item.classList.toggle("is-active",index===step));form.classList.toggle("is-last",step===steps.length-1);prev.disabled=step===0;status.textContent="";};const valid=()=>{const fields=[...steps[step].querySelectorAll("input,select,textarea")];const invalid=fields.find((field)=>!field.checkValidity());if(invalid){invalid.focus();status.textContent="Vul de verplichte velden in voordat u verdergaat.";return false;}return true;};prev.addEventListener("click",()=>{step=Math.max(0,step-1);render();});next.addEventListener("click",()=>{if(!valid())return;step=Math.min(steps.length-1,step+1);render();});requestForm.addEventListener("submit",(event)=>{event.preventDefault();if(!valid())return;const data=new FormData(form);const lines=["Nieuwe offerteaanvraag via VM Tegelwerken","",...["projectType","scope","zip","plaats","startperiode","toelichting","naam","telefoon","email","contactVoorkeur"].map((key)=>key+": "+(data.get(key)||"")),"","Foto's kunnen als bijlage op deze e-mail worden meegestuurd."];window.location.href="mailto:info@vmtegelwerken.nl?subject="+encodeURIComponent("Offerteaanvraag tegelwerk")+"&body="+encodeURIComponent(lines.join("\\n"));status.textContent="Uw e-mailprogramma wordt geopend met de aanvraag.";});render();}`;
+  return `const header=document.querySelector("[data-header]");const toggle=document.querySelector("[data-menu-toggle]");const mobile=document.querySelector("[data-mobile-nav]");toggle?.addEventListener("click",()=>{const open=mobile.classList.toggle("is-open");toggle.setAttribute("aria-expanded",String(open));});const observer=new IntersectionObserver((entries)=>entries.forEach((entry)=>{if(entry.isIntersecting)entry.target.classList.add("is-visible");}),{threshold:.12});document.querySelectorAll(".reveal").forEach((item)=>observer.observe(item));const form=document.getElementById("quoteForm");const requestForm=form;if(form){let step=0;const steps=[...form.querySelectorAll(".form-step")];const prev=form.querySelector("[data-prev]");const next=form.querySelector("[data-next]");const status=form.querySelector(".form-status");const render=()=>{steps.forEach((item,index)=>item.classList.toggle("is-active",index===step));form.classList.toggle("is-last",step===steps.length-1);prev.disabled=step===0;status.textContent="";};const valid=()=>{const fields=[...steps[step].querySelectorAll("input,select,textarea")];const invalid=fields.find((field)=>!field.checkValidity());if(invalid){invalid.focus();status.textContent="Vul de verplichte velden in voordat je verdergaat.";return false;}return true;};prev.addEventListener("click",()=>{step=Math.max(0,step-1);render();});next.addEventListener("click",()=>{if(!valid())return;step=Math.min(steps.length-1,step+1);render();});requestForm.addEventListener("submit",(event)=>{event.preventDefault();if(!valid())return;const data=new FormData(form);const lines=["Nieuwe offerteaanvraag via VM Tegelwerken","",...["projectType","scope","zip","plaats","startperiode","toelichting","naam","telefoon","email","contactVoorkeur"].map((key)=>key+": "+(data.get(key)||"")),"","Foto's kunnen als bijlage op deze e-mail worden meegestuurd."];window.location.href="mailto:info@vmtegelwerken.nl?subject="+encodeURIComponent("Offerteaanvraag tegelwerk")+"&body="+encodeURIComponent(lines.join("\\n"));status.textContent="Je e-mailprogramma wordt geopend met de aanvraag.";});render();}`;
 }
 
 function imageFiles() {

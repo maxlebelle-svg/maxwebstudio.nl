@@ -54,7 +54,7 @@ async function dispatch(input = {}, env, journeyRepository, websiteRepository, l
       subjectData: { label: text(input.websiteLabel) || "Website" },
       templateData: {
         firstName: text(input.firstName),
-        websiteLabel: text(input.websiteLabel) || "uw website",
+        websiteLabel: text(input.websiteLabel) || "je website",
         liveUrl: context.safeLiveUrl,
         portalUrl: context.safePortalCta,
         percentage: transition.after.percentage,

@@ -106,7 +106,7 @@ test("migration makes provider postback the only signed finalizer and keeps arti
 
 test("customer page requires authority and displays clickable versioned documents",()=>{
   const page=read("public/voorstel-ondertekenen.html");
-  assert.match(page,/authorityConfirmed/);assert.match(page,/bevoegd/);assert.match(page,/target="_blank"/);assert.match(page,/Authorization:`Bearer \$\{token\}`/);assert.match(page,/Signhost/);assert.doesNotMatch(page,/wachtwoord.{0,20}(?:verstuur|mail)/i);
+  assert.match(page,/authorityConfirmed/);assert.match(page,/bevoegd/);assert.match(page,/target="_blank"/);assert.match(page,/Authorization:\s*`Bearer \$\{token\}`/);assert.match(page,/Signhost/);assert.doesNotMatch(page,/wachtwoord.{0,20}(?:verstuur|mail)/i);
 });
 
 test("verified signed postback stores both artifacts before portal activation",()=>{

@@ -10,7 +10,7 @@ function createHandler(deps = {}) {
     if (!['GET', 'POST'].includes(event.httpMethod)) return response(405, { success: false, error: "Methode niet toegestaan." });
     const config = runtimeConfig(process.env);
     const bearer = getBearer(event);
-    if (!config.ready || !bearer) return response(401, { success: false, code: "AUTH_REQUIRED", error: "Log in om uw persoonlijke demo te bekijken." });
+    if (!config.ready || !bearer) return response(401, { success: false, code: "AUTH_REQUIRED", error: "Log in om je persoonlijke demo te bekijken." });
     try {
       const authUser = await getAuthUser(fetchImpl, config, bearer);
       const scope = await resolveLeadScope(fetchImpl, config, authUser.id);
@@ -60,7 +60,7 @@ async function handleAction({ event, fetchImpl, timeline, config, authUser, scop
   }
   if (action === "feedback") {
     const feedback = clean(payload.feedback).slice(0, 4000);
-    if (!feedback) throw httpError(400, "FEEDBACK_REQUIRED", "Vul uw feedback in.");
+    if (!feedback) throw httpError(400, "FEEDBACK_REQUIRED", "Vul je feedback in.");
     await patch(fetchImpl, config, "demo_journeys", { id: `eq.${scope.journey.id}`, lead_id: `eq.${scope.lead.id}` }, { feedback, demo_status: "feedback_ontvangen", updated_by: authUser.id, updated_at: at });
     await createDemoEvent(fetchImpl, config, scope, authUser, { type: "customer_feedback", title: "Feedback ontvangen", description: "De lead heeft feedback op de demo gegeven.", at });
     await safeTimeline(timeline, { leadId: scope.lead.id, eventType: "preview_feedback_received", title: "Demo-feedback ontvangen", description: "De lead heeft feedback op de eigen demo gegeven.", module: "lead_demo_portal", referenceType: "website_preview_version", referenceId: scope.previewVersion.id, actorName: clean(scope.lead.contact_name || scope.lead.name || authUser.email), actorRole: "lead", severity: "info", metadata: { dedupeKey: `lead-demo-feedback:${scope.journey.id}:${at}`, previewVersionId: scope.previewVersion.id } });
@@ -139,7 +139,7 @@ function sanitizeVersions(previewPackage) { const review = previewPackage && typ
 function previewUrl(journey, siteUrl) { const token = clean(journey.preview_token); if (token) return `${siteUrl}/.netlify/functions/demo-preview?id=${encodeURIComponent(journey.id)}&token=${encodeURIComponent(token)}`; try { const url = new URL(clean(journey.preview_url), `${siteUrl}/`); return url.origin === new URL(siteUrl).origin ? url.toString() : ""; } catch { return ""; } }
 function runtimeConfig(env) { const supabaseUrl = clean(env.SUPABASE_URL).replace(/\/$/, ""); const serviceKey = clean(env.SUPABASE_SERVICE_ROLE_KEY); const anonKey = clean(env.SUPABASE_ANON_KEY); const siteUrl = clean(env.SITE_URL || "https://maxwebstudio.nl").replace(/\/$/, ""); return { ready: Boolean(supabaseUrl && serviceKey && anonKey), supabaseUrl, serviceKey, anonKey, siteUrl }; }
 function getBearer(event) { const header = event.headers?.authorization || event.headers?.Authorization || ""; return header.startsWith("Bearer ") ? header.slice(7).trim() : ""; }
-async function getAuthUser(fetchImpl, config, bearer) { const data = await request(fetchImpl, `${config.supabaseUrl}/auth/v1/user`, { headers: { apikey: config.anonKey, Authorization: `Bearer ${bearer}` } }); if (!data?.id) throw httpError(401, "AUTH_INVALID", "Uw sessie is niet geldig."); return data; }
+async function getAuthUser(fetchImpl, config, bearer) { const data = await request(fetchImpl, `${config.supabaseUrl}/auth/v1/user`, { headers: { apikey: config.anonKey, Authorization: `Bearer ${bearer}` } }); if (!data?.id) throw httpError(401, "AUTH_INVALID", "Je sessie is niet geldig."); return data; }
 async function readOne(fetchImpl, config, table, filters) { const rows = await readMany(fetchImpl, config, table, filters); return rows[0] || null; }
 async function readMany(fetchImpl, config, table, filters) { return rest(fetchImpl, config, `${table}?${new URLSearchParams(filters)}`, { method: "GET" }); }
 async function patch(fetchImpl, config, table, filters, body) { return rest(fetchImpl, config, `${table}?${new URLSearchParams(filters)}`, { method: "PATCH", prefer: "return=representation", body }); }

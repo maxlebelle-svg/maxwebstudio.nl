@@ -10,20 +10,20 @@ const { createClientJourneyReadRepository } = require("./clientReadRepository");
 const { resolveClientAction } = require("./clientActionPolicy");
 
 const STEP_DESCRIPTIONS = Object.freeze({
-  order_received: "We hebben uw bestelling ontvangen en controleren de projectgegevens.",
+  order_received: "We hebben je bestelling ontvangen en controleren de projectgegevens.",
   payment_confirmed: "De betaling wordt gecontroleerd voordat het project verdergaat.",
-  onboarding_information: "We verzamelen de informatie die nodig is om uw project goed te starten.",
+  onboarding_information: "We verzamelen de informatie die nodig is om je project goed te starten.",
   content_ready: "De benodigde teksten, beelden en bestanden worden compleet gemaakt.",
-  website_build: "Uw website wordt ontworpen en technisch opgebouwd.",
-  customer_review: "Uw ontwerp staat klaar om rustig te beoordelen.",
+  website_build: "Je website wordt ontworpen en technisch opgebouwd.",
+  customer_review: "Je ontwerp staat klaar om rustig te beoordelen.",
   launch_checks: "We controleren techniek, inhoud en liveganginstellingen.",
-  handover: "We ronden de oplevering en overdracht van uw website af.",
+  handover: "We ronden de oplevering en overdracht van je website af.",
   lead_qualified: "We beoordelen de aanvraag en bepalen de beste vervolgstap.",
-  preview_intake: "We verzamelen de informatie voor uw persoonlijke websitepreview.",
-  preview_build: "Uw websitepreview wordt ontworpen en opgebouwd.",
-  preview_shared: "Uw preview staat klaar om te bekijken.",
-  preview_feedback: "Uw opmerkingen worden verzameld en verwerkt.",
-  preview_approved: "Uw preview wacht op uw akkoord.",
+  preview_intake: "We verzamelen de informatie voor je persoonlijke websitepreview.",
+  preview_build: "Je websitepreview wordt ontworpen en opgebouwd.",
+  preview_shared: "Je preview staat klaar om te bekijken.",
+  preview_feedback: "Je opmerkingen worden verzameld en verwerkt.",
+  preview_approved: "Je preview wacht op je akkoord.",
   commercial_agreement: "De opdracht wordt definitief afgestemd.",
   project_handover: "Het project wordt overgedragen aan het productieteam.",
 });
@@ -133,8 +133,8 @@ function visibleMilestones(steps) { return (Array.isArray(steps) ? steps : []).f
 function publicMilestone(step) { if (!step || typeof step !== "object") return null; return { key: text(step.key), label: text(step.label) || "Projectstap", phaseKey: text(step.phaseKey) || null, order: Number.isFinite(Number(step.order)) ? Number(step.order) : null, optional: step.optional === true, status: safeStepStatus(step.status), customerActionType: text(step.customerActionType) || "none" }; }
 function safeStepStatus(value) { const status = text(value).toLowerCase(); return ["pending", "ready", "in_progress", "blocked", "completed", "skipped"].includes(status) ? status : "pending"; }
 function publicContact(profile) { if (!profile?.id || text(profile.status || "active").toLowerCase() !== "active") return null; const metadata = profile.metadata && typeof profile.metadata === "object" ? profile.metadata : {}; const name = text(profile.name); if (!name) return null; return { name, role: text(metadata.jobTitle || metadata.job_title) || "Projectcontact", email: businessEmail(profile.email), phone: businessPhone(metadata.businessPhone || metadata.business_phone || metadata.phone), photoUrl: safePhotoUrl(metadata.avatarUrl || metadata.avatar_url || metadata.photoUrl || metadata.photo_url), fallback: false }; }
-function fallbackContact() { const settings = getCompanySettings(); return { name: "Team Max Webstudio", role: "Uw vaste webstudioteam", email: settings.primaryEmail, phone: settings.phoneDisplay, photoUrl: null, fallback: true }; }
-function productLabel(code, journeyType) { const normalized = text(code).toLowerCase(); const product = Object.values(PRODUCTS).find((item) => [item.code, item.id].map((value) => text(value).toLowerCase()).includes(normalized)); if (product?.name) return product.name; return text(journeyType).includes("preview") ? "Uw websitepreview" : "Uw websiteproject"; }
+function fallbackContact() { const settings = getCompanySettings(); return { name: "Team Max Webstudio", role: "Je vaste webstudioteam", email: settings.primaryEmail, phone: settings.phoneDisplay, photoUrl: null, fallback: true }; }
+function productLabel(code, journeyType) { const normalized = text(code).toLowerCase(); const product = Object.values(PRODUCTS).find((item) => [item.code, item.id].map((value) => text(value).toLowerCase()).includes(normalized)); if (product?.name) return product.name; return text(journeyType).includes("preview") ? "Je websitepreview" : "Je websiteproject"; }
 function businessEmail(value) { const email = text(value).toLowerCase(); return /^[^\s@]+@(?:[a-z0-9-]+\.)*maxwebstudio\.nl$/.test(email) ? email : null; }
 function businessPhone(value) { const phone = text(value); return /^[+\d][\d\s().-]{6,24}$/.test(phone) ? phone : null; }
 function safePhotoUrl(value) { const url = text(value); if (!url) return null; if (url.startsWith("/assets/") || url.startsWith("/images/")) return url; try { const parsed = new URL(url); return parsed.protocol === "https:" ? parsed.toString() : null; } catch { return null; } }

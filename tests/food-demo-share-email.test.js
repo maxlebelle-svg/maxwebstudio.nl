@@ -70,7 +70,7 @@ test("restaurant-demo-mail bevat beide vaste links en de QR-code", () => {
   assert.match(mail.html, /Bekijk de bestelwebsite/);
   assert.match(mail.html, /Open het restaurantportaal/);
   assert.match(mail.html, /silverado-demo-qr\.svg/);
-  assert.match(mail.text, /Voorkant voor uw klanten/);
+  assert.match(mail.text, /Voorkant voor je klanten/);
   assert.match(mail.text, /Restaurantportaal voor bestellingen en beheer/);
 });
 

@@ -69,7 +69,7 @@ const INDUSTRY_PROFILES = [
     process: [
       ["Opname", "Bespreek de ruimte, ondergrond, maatvoering en gewenste tegelstijl."],
       ["Advies", "Het bedrijf denkt mee over materiaal, legpatroon, voegkleur en afwerking."],
-      ["Offerte", "U ontvangt een duidelijke prijs en planning voor het tegelwerk."],
+      ["Offerte", "Je ontvangt een duidelijke prijs en planning voor het tegelwerk."],
       ["Uitvoering", "Het tegelwerk wordt strak gelegd, gevoegd en netjes opgeleverd."],
     ],
   }),
@@ -111,9 +111,9 @@ const INDUSTRY_PROFILES = [
       ["Offertegericht", "Telefoon en aanvraagmomenten blijven zichtbaar zonder opdringerig te worden."],
     ],
     process: [
-      ["Aanvraag", "Vertel kort wat u wilt laten maken en voeg belangrijke maten of foto's toe."],
+      ["Aanvraag", "Vertel kort wat je wilt laten maken en voeg belangrijke maten of foto's toe."],
       ["Advies", "Het bedrijf denkt mee over indeling, materiaal, planning en de slimste aanpak."],
-      ["Offerte", "U ontvangt een duidelijke offerte zonder vage posten of verrassingen achteraf."],
+      ["Offerte", "Je ontvangt een duidelijke offerte zonder vage posten of verrassingen achteraf."],
       ["Realisatie", "De uitvoering gebeurt netjes, professioneel en met oog voor de details."],
     ],
   }),
@@ -183,20 +183,20 @@ const INDUSTRY_PROFILES = [
     benefits: [
       ["Veilig uitgevoerd", "De aanpak begint met een duidelijke beoordeling van boom, omgeving en bereikbaarheid."],
       ["Vakkundig boomwerk", "Snoei, verzorging en verwijdering worden afgestemd op de situatie en het gewenste resultaat."],
-      ["Duidelijke afspraken", "U weet vooraf welke werkzaamheden nodig zijn en hoe het terrein wordt achtergelaten."],
+      ["Duidelijke afspraken", "Je weet vooraf welke werkzaamheden nodig zijn en hoe het terrein wordt achtergelaten."],
       ["Lokaal en betrokken", "Korte lijnen maken inspectie, planning en uitvoering overzichtelijk."],
     ],
     process: [
-      ["Situatie bespreken", "Vertel om welke boom of bomen het gaat en wat u wilt laten beoordelen."],
+      ["Situatie bespreken", "Vertel om welke boom of bomen het gaat en wat je wilt laten beoordelen."],
       ["Inspectie en advies", "De situatie, veiligheid en passende werkwijze worden vooraf duidelijk in kaart gebracht."],
-      ["Werk inplannen", "U ontvangt een heldere aanpak en planning voor het boomwerk."],
+      ["Werk inplannen", "Je ontvangt een heldere aanpak en planning voor het boomwerk."],
       ["Veilig uitvoeren", "Het werk wordt zorgvuldig uitgevoerd en de werkplek wordt netjes achtergelaten."],
     ],
   }),
   profile("garden", ["hovenier", "tuin", "tuinaanleg", "groen", "buitenruimte"], {
     label: "Tuin en buitenruimte",
     colors: { ink: "#17231b", brand: "#2f5d45", accent: "#d4a24a", soft: "#f2f4ed", dark: "#243b2d" },
-    hero: "Buitenruimte die voelt als verlengstuk van uw woning.",
+    hero: "Buitenruimte die voelt als verlengstuk van je woning.",
     intro: "Voor klanten die een tuin willen die klopt in ontwerp, aanleg en onderhoud.",
     eyebrow: "Tuinontwerp, aanleg en onderhoud",
     cta: "Tuinplan aanvragen",
@@ -239,10 +239,10 @@ const INDUSTRY_PROFILES = [
       ["Persoonlijk contact", "Vragen over smaak, formaat of uitvoering kunnen eenvoudig worden besproken."],
     ],
     process: [
-      ["Kies uw favoriet", "Bekijk taarten, cupcakes, macarons en andere huisgemaakte zoetigheden."],
-      ["Geef uw wensen door", "Bespreek smaak, formaat, gelegenheid en het gewenste moment."],
+      ["Kies je favoriet", "Bekijk taarten, cupcakes, macarons en andere huisgemaakte zoetigheden."],
+      ["Geef je wensen door", "Bespreek smaak, formaat, gelegenheid en het gewenste moment."],
       ["Vers bereid", "De bestelling wordt met aandacht en volgens afspraak klaargemaakt."],
-      ["Bezorgd of afgehaald", "U ontvangt duidelijk bericht over levering of het afgesproken afhaalmoment."],
+      ["Bezorgd of afgehaald", "Je ontvangt duidelijk bericht over levering of het afgesproken afhaalmoment."],
     ],
   }),
   profile("hospitality", ["restaurant", "horeca", "cafe", "hotel", "b&b", "reserveren"], {
@@ -269,7 +269,7 @@ const INDUSTRY_PROFILES = [
     label: "Lokale specialist",
     colors: { ink: "#132238", brand: "#2563eb", accent: "#14b8a6", soft: "#f6f8fb", dark: "#102033" },
     hero: "Een lokale specialist die online direct professioneel overkomt.",
-    intro: "Voor bezoekers die snel willen begrijpen wat u doet, waarom ze u kunnen vertrouwen en hoe ze contact opnemen.",
+    intro: "Voor bezoekers die snel willen begrijpen wat je doet, waarom ze je kunnen vertrouwen en hoe ze contact opnemen.",
     eyebrow: "Service, vertrouwen en contact",
     cta: "Plan een kennismaking",
     secondaryCta: "Bekijk diensten",
@@ -1527,9 +1527,9 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     quickActionTitle: "Afspraak inplannen",
     quickActionText: "Stuur meteen een verzoek",
     contactActionTitle: "Contactformulier",
-    contactActionText: "Vertel kort wat u wilt laten maken",
+    contactActionText: "Vertel kort wat je wilt laten maken",
     servicesEyebrow: "Waarmee kunnen we helpen?",
-    servicesTitle: "Kies uw project en bekijk verschillende oplossingen.",
+    servicesTitle: "Kies je project en bekijk verschillende oplossingen.",
     pricingEyebrow: "Pakketten & prijzen",
     pricingTitle: "Herkenbare prijzen direct meegenomen uit de huidige situatie.",
     pricingText: "Deze bedragen zijn voorbereid op basis van de bestaande website of intake. Controleer ze voor publicatie, zodat de nieuwe website precies aansluit op het actuele aanbod.",
@@ -1557,10 +1557,10 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     reviewTwoTitle: "\"De belangrijkste informatie staat meteen goed op volgorde.\"",
     reviewTwoText: "De combinatie van beeld, diensten en contactmomenten geeft vertrouwen vanaf de eerste klik.",
     contactEyebrow: "Vrijblijvende aanvraag",
-    contactTitle: "Maak het makkelijk: vertel wat u wilt en ontvang snel reactie.",
+    contactTitle: "Maak het makkelijk: vertel wat je wilt en ontvang snel reactie.",
     projectLabel: "Project",
-    messageLabel: "Wat wilt u laten doen?",
-    messagePlaceholder: "Vertel kort wat u wilt laten maken, wanneer u wilt starten en waar het project is.",
+    messageLabel: "Wat wil je laten doen?",
+    messagePlaceholder: "Vertel kort wat je wilt laten maken, wanneer je wilt starten en waar het project is.",
     subPageEyebrow: packageRules.label,
     subPageText: "presenteert hier extra informatie passend bij de gekozen website.",
     subPageIntro: "kan deze pagina later aanvullen met echte cases, foto's en klantreacties.",
@@ -1597,9 +1597,9 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       reviewTwoText: "Smaak, uitvoering en levering kunnen vooraf eenvoudig worden afgestemd.",
       contactEyebrow: "Bestelling of vraag",
       contactTitle: "Iets lekkers gezien of een taart op maat bespreken?",
-      projectLabel: "Waar heeft u interesse in?",
-      messageLabel: "Vertel uw wensen",
-      messagePlaceholder: "Vertel welke zoetigheid, smaak, formaat en datum u in gedachten heeft.",
+      projectLabel: "Waar heb je interesse in?",
+      messageLabel: "Vertel je wensen",
+      messagePlaceholder: "Vertel welke zoetigheid, smaak, formaat en datum je in gedachten heeft.",
       subPageEyebrow: "Huisgemaakte patisserie",
       subPageText: "presenteert hier het assortiment, productinformatie en de mogelijkheden voor maatwerk.",
       subPageIntro: "kan deze pagina aanvullen met actuele producten, smaken en bezorginformatie.",
@@ -1633,7 +1633,7 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       contactTitle: "Vertel om welke boom het gaat en ontvang gericht advies.",
       projectLabel: "Gewenste boomdienst",
       messageLabel: "Wat is de situatie?",
-      messagePlaceholder: "Beschrijf de boom, de locatie, eventuele schade of risico's en wanneer u geholpen wilt worden.",
+      messagePlaceholder: "Beschrijf de boom, de locatie, eventuele schade of risico's en wanneer je geholpen wilt worden.",
       subPageEyebrow: "Boomverzorging en boombeheer",
       subPageText: "presenteert hier extra informatie over inspectie, snoei, verwijdering en duurzaam boombeheer.",
       subPageIntro: "kan deze pagina later aanvullen met echte projecten, certificeringen en klantreacties.",
@@ -1646,12 +1646,12 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       quickActionTitle: "Kennismaking plannen",
       quickActionText: "Kies een rustig contactmoment",
       contactActionTitle: "Persoonlijk contact",
-      contactActionText: "Vertel kort waar u begeleiding bij zoekt",
+      contactActionText: "Vertel kort waar je begeleiding bij zoekt",
       servicesEyebrow: "Begeleiding en sessies",
-      servicesTitle: "Ontdek welke begeleiding bij u past.",
+      servicesTitle: "Ontdek welke begeleiding bij je past.",
       portfolioEyebrow: "Aanbod",
       portfolioTitle: "Rustige, persoonlijke ondersteuning op maat.",
-      portfolioCopy: "Bekijk per vorm van begeleiding wat u kunt verwachten en welke vervolgstap past.",
+      portfolioCopy: "Bekijk per vorm van begeleiding wat je kunt verwachten en welke vervolgstap past.",
       benefitsEyebrow: "Persoonlijke aandacht",
       benefitsTitle: "Een veilige eerste indruk die rust en vertrouwen geeft.",
       benefitsText: "De pagina maakt de werkwijze, persoonlijke afstemming en route naar een kennismaking helder zonder harde claims.",
@@ -1669,10 +1669,10 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       reviewsEyebrow: "Ervaringen",
       reviewsTitle: "Vertrouwen begint met herkenning en duidelijkheid.",
       contactEyebrow: "Vrijblijvend kennismaken",
-      contactTitle: "Vertel waar u naar zoekt en ontdek wat bij u past.",
+      contactTitle: "Vertel waar je naar zoekt en ontdek wat bij je past.",
       projectLabel: "Interesse in",
-      messageLabel: "Waar zoekt u begeleiding bij?",
-      messagePlaceholder: "Vertel kort waar u behoefte aan heeft en welk contactmoment prettig is.",
+      messageLabel: "Waar zoek je begeleiding bij?",
+      messagePlaceholder: "Vertel kort waar je behoefte aan heeft en welk contactmoment prettig is.",
       subPageEyebrow: "Persoonlijke begeleiding",
       subPageText: "presenteert hier extra informatie over sessies, werkwijze en persoonlijke afstemming.",
       subPageIntro: "kan deze pagina later aanvullen met echte praktijkinformatie en zorgvuldig verzamelde ervaringen.",
@@ -1685,9 +1685,9 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       quickActionTitle: "Behandeling plannen",
       quickActionText: "Kies een passend moment",
       contactActionTitle: "Persoonlijk huidadvies",
-      contactActionText: "Vertel kort waar uw huid behoefte aan heeft",
+      contactActionText: "Vertel kort waar je huid behoefte aan heeft",
       servicesEyebrow: "Behandelingen en advies",
-      servicesTitle: "Ontdek welke behandeling bij u past.",
+      servicesTitle: "Ontdek welke behandeling bij je past.",
       portfolioEyebrow: "Behandeling in beeld",
       portfolioTitle: "Rustige aandacht en deskundige verzorging.",
       portfolioCopy: "Kies een behandeling om de aanpak en het verwachte verloop te bekijken.",
@@ -1699,10 +1699,10 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       reviewsEyebrow: "Ervaringen",
       reviewsTitle: "Vertrouwen begint met aandacht en duidelijkheid.",
       contactEyebrow: "Afspraak of huidadvies",
-      contactTitle: "Vertel waar u naar zoekt en plan een passend moment.",
+      contactTitle: "Vertel waar je naar zoekt en plan een passend moment.",
       projectLabel: "Interesse in",
-      messageLabel: "Waar kunnen we u mee helpen?",
-      messagePlaceholder: "Vertel kort welke behandeling of welk advies u zoekt en welk contactmoment prettig is.",
+      messageLabel: "Waar kunnen we je mee helpen?",
+      messagePlaceholder: "Vertel kort welke behandeling of welk advies je zoekt en welk contactmoment prettig is.",
       subPageEyebrow: "Behandelingen en huidverzorging",
       subPageText: "presenteert hier extra informatie over behandelingen, advies en persoonlijke verzorging.",
       subPageIntro: "kan deze pagina later aanvullen met echte saloninformatie, foto's en zorgvuldig verzamelde ervaringen.",
@@ -1713,7 +1713,7 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     return {
       ...defaults,
       quickActionTitle: "Opname aanvragen",
-      quickActionText: "Stuur direct uw klus door",
+      quickActionText: "Stuur direct je klus door",
       contactActionTitle: "Timmerofferte",
       contactActionText: "Vertel wat er gemaakt moet worden",
       servicesEyebrow: "Timmerwerk en verbouw",
@@ -1732,9 +1732,9 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
       reviewsEyebrow: "Vertrouwen",
       reviewsTitle: "Een eerste indruk die vakwerk laat voelen.",
       contactEyebrow: "Klus of project bespreken",
-      contactTitle: "Klaar om uw klus strak aan te pakken?",
+      contactTitle: "Klaar om je klus strak aan te pakken?",
       projectLabel: "Soort timmerwerk",
-      messageLabel: "Wat wilt u laten maken?",
+      messageLabel: "Wat wil je laten maken?",
       messagePlaceholder: "Vertel kort of het gaat om zolder, dakkapel, vliering, overkapping, gevelbekleding, kozijnen of ander maatwerk.",
       subPageEyebrow: "Timmerwerk en maatwerk",
       subPageText: "presenteert hier extra informatie over timmerwerk, verbouw, afwerking en maatwerk.",
@@ -1880,7 +1880,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const secondaryCtaHref = /bel|telefoon|whatsapp|direct/i.test(secondaryCtaLabel) ? phoneHref : "#diensten";
   const emailHref = email ? `mailto:${escapeHtml(email)}` : "#contact";
   const primaryCtaHref = bakery ? "#diensten" : "#contact";
-  const cityLine = extractLocationText(region || industry) || "uw regio";
+  const cityLine = extractLocationText(region || industry) || "je regio";
   const sourceText = [currentWebsite.title, currentWebsite.metaDescription, currentWebsite.h1, ...(currentWebsite.paragraphs || [])].join(" ");
   const heroIntro = bakery && /gratis\s+bezorg/i.test(sourceText)
     ? `${profile.intro} Gratis bezorging in ${cityLine}.`
@@ -2119,14 +2119,14 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           </div>
         </div>
         <form class="preview-form" id="requestForm" data-mws-field="form" action="${emailHref}" method="get">
-          <label>Naam<input name="naam" placeholder="Uw naam" /></label>
+          <label>Naam<input name="naam" placeholder="Je naam" /></label>
           <label>Telefoonnummer<input name="telefoon" placeholder="Bijv. 06 12345678" /></label>
-          <label>E-mailadres<input name="email" placeholder="uw@email.nl" /></label>
+          <label>E-mailadres<input name="email" placeholder="naam@bedrijf.nl" /></label>
           <label>Gewenst contactmoment<input name="contactmoment" placeholder="Bijv. morgenmiddag" /></label>
           <label class="wide">${escapeHtml(demoCopy.projectLabel)}<select name="project">${displayedServices.map((service) => `<option>${escapeHtml(service)}</option>`).join("")}</select></label>
           <label class="wide">${escapeHtml(demoCopy.messageLabel)}<textarea name="bericht" placeholder="${escapeHtml(demoCopy.messagePlaceholder)}"></textarea></label>
           <button type="submit">${escapeHtml(cta)}</button>
-          <small>Na klikken opent uw mailprogramma met de aanvraag klaar om te versturen.</small>
+          <small>Na klikken opent je mailprogramma met de aanvraag klaar om te versturen.</small>
         </form>
       </section>
     </main>
@@ -2235,7 +2235,7 @@ function serviceText(service, profile = {}) {
     if (/meringue/.test(text)) return "Een luchtige meringuerol met een zachte vulling, vers bereid en mooi afgewerkt.";
     if (/honey|honing/.test(text)) return "Een karaktervolle laagjestaart met honing, met aandacht opgebouwd voor een volle smaak.";
     if (/taart|cake|gebak/.test(text)) return "Huisgemaakte taart voor verjaardag, feest of een ander bijzonder moment, met smaak en uitvoering in overleg.";
-    if (/bestel|bezorg|afhaal/.test(text)) return "Kies uw favoriet en stem datum, uitvoering en levering eenvoudig persoonlijk af.";
+    if (/bestel|bezorg|afhaal/.test(text)) return "Kies je favoriet en stem datum, uitvoering en levering eenvoudig persoonlijk af.";
   }
   if (/boominspectie|boomcontrole/.test(text)) return "De conditie en veiligheid van de boom worden zorgvuldig beoordeeld, inclusief een praktisch advies voor onderhoud of vervolgwerk.";
   if (/eikenprocessierups/.test(text)) return "Een gerichte aanpak om overlast van de eikenprocessierups veilig te beperken, afgestemd op boom, locatie en omgeving.";

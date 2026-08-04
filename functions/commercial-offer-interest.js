@@ -23,7 +23,7 @@ exports.handler = async (event) => {
       success: true,
       confirmed: result.confirmed === true,
       duplicate: result.duplicate === true,
-      message: "Met deze bevestiging geeft u aan dat u verder wilt praten over dit voorstel. Dit is nog geen digitale ondertekening of betalingsopdracht.",
+      message: "Met deze bevestiging geef je aan dat je verder wilt praten over dit voorstel. Dit is nog geen digitale ondertekening of betalingsopdracht.",
     });
   } catch (error) {
     const status = Number(error.statusCode) || 500;

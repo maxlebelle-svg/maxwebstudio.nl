@@ -64,7 +64,7 @@ const PROFILES = [
     preferredPhotoTags: WELLNESS_TAGS, forbiddenPhotoTags: BUILD_TAGS,
     services: ["Holistische coaching", "Energetische begeleiding", "Ontspanning en balans", "Mindfulness"],
     preferredSections: ["hero", "over-mij", "behandelingen", "werkwijze", "ervaringen", "tarieven", "contact"], forbiddenSections: ["projecten", "offerteprojecten", "bouwportfolio", "renovatiecases"],
-    ctaExamples: ["Plan een kennismaking", "Ontdek wat bij u past", "Neem rustig contact op", "Bekijk de werkwijze"],
+    ctaExamples: ["Plan een kennismaking", "Ontdek wat bij je past", "Neem rustig contact op", "Bekijk de werkwijze"],
     copyGuidelines: ["warm en concreet", "geen agressieve verkoop", "geen medische claims zonder expliciete bron"],
     primaryTopics: ["holistische begeleiding", "balans", "bewustwording"], keywords: ["holistische coaching", "energetische begeleiding", "mindfulness", "balans"], relatedTopics: ["persoonlijke groei", "ontspanning", "lichaam en geest"],
     recommendedTemplates: ["starter-one-page-v1", "business-multi-page-v1"], preferredLayouts: ["calm-storytelling", "personal-practice"],
@@ -105,7 +105,7 @@ const PROFILES = [
   profile("law-firm", {
     industry: "juridisch", subcategory: "advocaat", assetGroup: "advocaat", aliases: ["advocaat", "advocatenkantoor", "advocatuur", "juridisch"], positiveSignals: ["advocaat", "advocatenkantoor", "advocatuur", "juridisch advies", "rechtsgebied", "recht"], negativeSignals: ["beauty", "massage", "timmerwerk"],
     targetAudience: ["particulieren en organisaties met een juridische vraag"], personality: ["deskundig", "integer", "daadkrachtig"], tone: ["zakelijk", "helder", "vertrouwenwekkend"], visualStyle: ["professioneel", "rustig", "gezaghebbend"], colorPalette: ["#172033", "#294b6f", "#b79a62", "#f4f6f8"], preferredPhotoTags: ["law", "legal", "professional", "consultation", "office"], forbiddenPhotoTags: ["construction", "wellness", "beauty", "restaurant"],
-    services: ["Juridisch advies", "Zaakbeoordeling", "Persoonlijke intake"], preferredSections: ["hero", "expertise", "rechtsgebieden", "werkwijze", "team", "contact"], forbiddenSections: ["projecten", "behandelingen"], ctaExamples: ["Plan een intake", "Bespreek uw situatie"], primaryTopics: ["juridisch advies", "advocatuur"], keywords: ["advocaat", "juridisch advies", "advocatenkantoor"],
+    services: ["Juridisch advies", "Zaakbeoordeling", "Persoonlijke intake"], preferredSections: ["hero", "expertise", "rechtsgebieden", "werkwijze", "team", "contact"], forbiddenSections: ["projecten", "behandelingen"], ctaExamples: ["Plan een intake", "Bespreek je situatie"], primaryTopics: ["juridisch advies", "advocatuur"], keywords: ["advocaat", "juridisch advies", "advocatenkantoor"],
   }),
   profile("restaurant", {
     industry: "horeca", subcategory: "restaurant", assetGroup: "restaurant", aliases: ["restaurant", "eetcafe", "lunchroom", "brasserie"], positiveSignals: ["restaurant", "menu", "reserveren", "diner", "lunch", "chef", "gerecht"], negativeSignals: ["timmerwerk", "fysiotherapie", "zonnepanelen"],
@@ -145,7 +145,7 @@ const PROFILES = [
     services: ["Bomen snoeien", "Boominspectie", "Bomen verwijderen", "Stormschade", "Stobben frezen", "Boomadvies"],
     preferredSections: ["hero", "diensten", "veiligheid", "projecten", "werkwijze", "reviews", "werkgebied", "contact"],
     forbiddenSections: ["behandelingen", "consultancy", "productcatalogus"],
-    ctaExamples: ["Vraag een boominspectie aan", "Bespreek uw boomwerk", "Vraag vrijblijvend een offerte aan"],
+    ctaExamples: ["Vraag een boominspectie aan", "Bespreek je boomwerk", "Vraag vrijblijvend een offerte aan"],
     copyGuidelines: ["benadruk veiligheid zonder onbewezen certificeringen te noemen", "schrijf concreet over boomwerk en werkgebied"],
     primaryTopics: ["boomverzorging", "boomveiligheid", "boombeheer"],
     keywords: ["boomverzorging", "boomverzorger", "bomen snoeien", "boominspectie", "bomen verwijderen"],
@@ -171,7 +171,7 @@ const PROFILES = [
   profile("business-services", {
     industry: "zakelijke-dienstverlening", subcategory: "advies", assetGroup: "financieel-adviseur", aliases: ["zakelijke dienstverlening", "consultancy", "adviesbureau"], positiveSignals: ["zakelijke dienstverlening", "consultancy", "adviesbureau", "strategie", "organisatieadvies", "b2b"], negativeSignals: ["timmerwerk", "massage", "restaurant"],
     targetAudience: ["ondernemers en organisaties"], personality: ["deskundig", "professioneel", "resultaatgericht"], tone: ["zakelijk", "helder", "vertrouwenwekkend"], preferredPhotoTags: ["professional", "business", "consultation", "office", "team"], forbiddenPhotoTags: ["construction", "wellness", "beauty", "restaurant"],
-    services: ["Advies", "Strategie", "Begeleiding"], preferredSections: ["hero", "expertise", "diensten", "werkwijze", "cases", "contact"], ctaExamples: ["Plan een kennismaking", "Bespreek uw vraag"], primaryTopics: ["zakelijk advies", "strategie"], keywords: ["adviesbureau", "zakelijke dienstverlening"],
+    services: ["Advies", "Strategie", "Begeleiding"], preferredSections: ["hero", "expertise", "diensten", "werkwijze", "cases", "contact"], ctaExamples: ["Plan een kennismaking", "Bespreek je vraag"], primaryTopics: ["zakelijk advies", "strategie"], keywords: ["adviesbureau", "zakelijke dienstverlening"],
   }),
   profile("local-service", {
     industry: "lokale-dienstverlening", subcategory: "neutrale-lokale-dienstverlener", assetGroup: "neutral-professional", aliases: ["lokale dienstverlener"], positiveSignals: ["lokale dienstverlener", "servicebedrijf"], negativeSignals: [],

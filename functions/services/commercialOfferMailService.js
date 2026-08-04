@@ -47,7 +47,7 @@ function buildCommercialOfferMail(input = {}) {
   const discountTextLines = discountPercentage > 0 ? [`Eenmalig vóór korting: ${money(snapshot.oneTimeBeforeDiscountExVatCents)}`, `Korting (${discountPercentage}%): -${money(snapshot.discountExVatCents)}`] : [];
   const disclaimer = definitiveOffer
     ? "Controleer de offerte en voorwaarden zorgvuldig. Alleen ondertekening via Signhost maakt deze zakelijke offerte definitief; betaling, facturatie en abonnementen starten niet automatisch."
-    : "Met deze bevestiging geeft u aan dat u verder wilt praten over dit voorstel. Dit is nog geen digitale ondertekening of betalingsopdracht.";
+    : "Met deze bevestiging geef je aan dat je verder wilt praten over dit voorstel. Dit is nog geen digitale ondertekening of betalingsopdracht.";
   const banner = staging ? "STAGINGTEST — niet naar een echte klant verzenden" : test ? "TESTMAIL — niet naar de klant verzonden" : "";
   const customerAction = test || preview
     ? `<div style="margin-top:22px;padding:14px;border:1px dashed #47718f;border-radius:14px;color:#91a6bc;text-align:center;font-weight:800;">${test ? "TEST" : "VOORBEELD"}: de ${definitiveOffer ? "Signhost-ondertekenknop" : "interesseknop"} wordt pas in de definitieve klantmail geactiveerd</div>`

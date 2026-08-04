@@ -86,7 +86,7 @@ test("delen maakt geen customer, account, approval of payment write", async () =
 
 test("publieke demo-mail benoemt dat openbare weergave geen goedkeuring of betaling registreert", () => {
   const mail = buildPublicDemoShareMail({ contactName: "Lisanne", companyName: "Advies Post", previewUrl: "https://maxwebstudio.nl/preview/advies-post" });
-  assert.match(mail.text, /Ik hoor graag wat u ervan vindt/);
+  assert.match(mail.text, /Ik hoor graag wat je ervan vindt/);
   assert.match(mail.html, /registreert geen goedkeuring of betaling/);
   assert.doesNotMatch(mail.html, /account activeren|wachtwoord/i);
 });

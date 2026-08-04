@@ -97,8 +97,8 @@
     const previewUrl = text(input.publicPreviewUrl || input.previewUrl);
     if (!previewUrl) return "";
     const contactName = text(input.contactName) || "daar";
-    const companyName = text(input.companyName) || "uw bedrijf";
-    return `Hallo ${contactName},\n\nIk heb alvast een demo voor ${companyName} gemaakt.\n\nU kunt de website hier bekijken:\n${previewUrl}\n\nIk hoor graag wat u ervan vindt.`;
+    const companyName = text(input.companyName) || "je bedrijf";
+    return `Hallo ${contactName},\n\nIk heb alvast een demo voor ${companyName} gemaakt.\n\nJe kunt de website hier bekijken:\n${previewUrl}\n\nIk hoor graag wat je ervan vindt.`;
   }
 
   function whatsappUrl(input = {}) {

@@ -81,7 +81,7 @@ test("bakery leads produce a specific preview instead of being blocked as generi
   assert.match(html, /https:\/\/www\.facebook\.com\/miolla\.nl/);
   assert.match(html, /https:\/\/www\.instagram\.com\/miolla\.nl\//);
   assert.match(html, /https:\/\/cdn\.example\.test\/miolla\/taart\.jpg\?width=1200/);
-  assert.doesNotMatch(html, /Sfeer, reserveren|zin geeft om te reserveren|Kies uw project|wat u wilt laten maken|Afspraak inplannen|facebook\.com\/tr|instagram\.com\/whatsapp|static\.whatsapp\.net/i);
+  assert.doesNotMatch(html, /Sfeer, reserveren|zin geeft om te reserveren|Kies je project|wat je wilt laten maken|Afspraak inplannen|facebook\.com\/tr|instagram\.com\/whatsapp|static\.whatsapp\.net/i);
   assert.doesNotMatch(html, /style="grid-template-columns:repeat\(3,1fr\)"/);
   const css = generated.files.find((file) => file.path === "styles.css").content;
   assert.match(css, /\.services-count-6\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)\}/);
@@ -264,9 +264,9 @@ test("beauty output uses treatment language and includes the mobile overflow saf
   const html = generated.files.find((file) => file.path === "index.html").content;
   const css = generated.files.find((file) => file.path === "styles.css").content;
 
-  assert.match(html, /Ontdek welke behandeling bij u past/);
-  assert.match(html, /Waar kunnen we u mee helpen/);
-  assert.doesNotMatch(html, /Kies uw project|wat u wilt laten maken|waar het project is/i);
+  assert.match(html, /Ontdek welke behandeling bij je past/);
+  assert.match(html, /Waar kunnen we je mee helpen/);
+  assert.doesNotMatch(html, /Kies je project|wat je wilt laten maken|waar het project is/i);
   assert.match(css, /body\{overflow-x:hidden\}/);
   assert.match(css, /grid-template-columns:minmax\(0,1fr\)/);
   assert.match(css, /@media\(max-width:820px\)/);

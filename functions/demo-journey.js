@@ -123,7 +123,7 @@ async function readCustomerJourney(event) {
   const authHeader = event.headers.authorization || event.headers.Authorization || "";
   const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   if (!supabaseUrl || !anonKey || !serviceRoleKey || !bearer) {
-    return jsonResponse(401, { success: false, error: "Log in om uw projecttijdlijn te bekijken." });
+    return jsonResponse(401, { success: false, error: "Log in om je projecttijdlijn te bekijken." });
   }
 
   const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -176,7 +176,7 @@ async function saveCustomerFeedback(event) {
   const action = cleanText(payload.action || "feedback");
   const feedback = cleanText(payload.feedback || payload.comment);
   const structuredFeedback = normalizePreviewFeedback(payload);
-  if (!["approve_preview", "preview_opened"].includes(action) && !feedback && !structuredFeedback.length) return jsonResponse(400, { success: false, error: "Vul uw feedback in." });
+  if (!["approve_preview", "preview_opened"].includes(action) && !feedback && !structuredFeedback.length) return jsonResponse(400, { success: false, error: "Vul je feedback in." });
 
   const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
     method: "GET",
@@ -262,7 +262,7 @@ async function saveCustomerFeedback(event) {
     journeyId: current.id,
     type: action === "approve_preview" ? "preview_approved" : action === "preview_opened" ? "preview_opened" : "customer_feedback",
     title: action === "approve_preview" ? "Preview akkoord" : action === "preview_opened" ? "Preview bekeken" : "Feedback verwerken",
-    description: action === "approve_preview" ? "Uw akkoord is ontvangen. We bereiden livegang voor." : action === "preview_opened" ? "Uw preview is geopend." : "Uw opmerkingen zijn ontvangen.",
+    description: action === "approve_preview" ? "Je akkoord is ontvangen. We bereiden livegang voor." : action === "preview_opened" ? "Je preview is geopend." : "Je opmerkingen zijn ontvangen.",
     visible: true,
     createdBy: user.id,
   });
@@ -1491,78 +1491,78 @@ async function createEvent({ supabaseUrl, serviceRoleKey, journeyId, type, title
 function buildEmailTemplate(typeOrStatus = "", journey = {}) {
   const type = emailTypeFor(typeOrStatus);
   const name = cleanContactName(journey.contactName || journey.contact_name);
-  const greeting = name ? `Beste ${name},` : "Beste,";
-  const business = cleanText(journey.businessName || journey.business_name || "uw bedrijf");
+  const greeting = name ? `Hoi ${name},` : "Hoi,";
+  const business = cleanText(journey.businessName || journey.business_name || "je bedrijf");
   const preview = cleanText(journey.previewUrl || journey.preview_url);
   const previewLink = preview || "[previewlink]";
   const templates = {
     day1_received: {
-      subject: "Uw website-aanvraag is ontvangen",
-      body: `${greeting}\n\nBedankt voor uw aanvraag voor ${business}. We hebben uw gegevens ontvangen en zetten de eerste wensen om naar een helder websiteplan.\n\nVandaag controleren we vooral de basis: doelgroep, aanbod, gewenste uitstraling en de belangrijkste route naar contact. U hoeft nu niets extra's te doen.\n\nVoorbeeld: als u vooral meer offerteaanvragen wilt ontvangen, zorgen we dat de preview daar zichtbaar op stuurt.\n\nMorgen ontvangt u een korte update zodra het concept in voorbereiding is.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Je website-aanvraag is ontvangen",
+      body: `${greeting}\n\nBedankt voor je aanvraag voor ${business}. We hebben je gegevens ontvangen en zetten de eerste wensen om naar een helder websiteplan.\n\nVandaag controleren we vooral de basis: doelgroep, aanbod, gewenste uitstraling en de belangrijkste route naar contact. Je hoeft nu niets extra's te doen.\n\nVoorbeeld: als je vooral meer offerteaanvragen wilt ontvangen, zorgen we dat de preview daar zichtbaar op stuurt.\n\nMorgen ontvang je een korte update zodra het concept in voorbereiding is.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     day2_concept: {
-      subject: "Uw eerste websiteconcept wordt voorbereid",
-      body: `${greeting}\n\nWe zijn bezig met het eerste concept voor ${business}. We werken de structuur uit en letten op een sterke eerste indruk, duidelijke diensten, vertrouwen en een eenvoudige route naar contact.\n\nU hoeft nog niets te beoordelen. Deze stap is bedoeld om intern een goede basis neer te zetten voordat u meekijkt.\n\nVoorbeeld: we bepalen alvast welke onderdelen bovenaan moeten staan, zoals diensten, recensies, werkgebied of een duidelijke belknop.\n\nZodra de preview klaarstaat, ontvangt u de link om rustig mee te kijken.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Je eerste websiteconcept wordt voorbereid",
+      body: `${greeting}\n\nWe zijn bezig met het eerste concept voor ${business}. We werken de structuur uit en letten op een sterke eerste indruk, duidelijke diensten, vertrouwen en een eenvoudige route naar contact.\n\nJe hoeft nog niets te beoordelen. Deze stap is bedoeld om intern een goede basis neer te zetten voordat je meekijkt.\n\nVoorbeeld: we bepalen alvast welke onderdelen bovenaan moeten staan, zoals diensten, recensies, werkgebied of een duidelijke belknop.\n\nZodra de preview klaarstaat, ontvang je de link om rustig mee te kijken.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     day3_preview_ready: {
-      subject: "Uw eerste website-preview staat klaar",
-      body: `${greeting}\n\nUw eerste website-preview staat klaar. U kunt de preview hier bekijken:\n${previewLink}\n\nBekijk de preview gerust rustig en geef uw opmerkingen, wensen of correcties door. Het hoeft nog niet perfect te zijn; deze ronde is juist bedoeld om uw feedback goed mee te nemen.\n\nVoorbeeld: u kunt reageren met "de tekst bij diensten mag korter", "de foto's mogen persoonlijker" of "de contactknop mag duidelijker".\n\nNa uw reactie verwerken wij de feedback in de volgende versie.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Je eerste website-preview staat klaar",
+      body: `${greeting}\n\nJe eerste website-preview staat klaar. Je kunt de preview hier bekijken:\n${previewLink}\n\nBekijk de preview gerust rustig en geef je opmerkingen, wensen of correcties door. Het hoeft nog niet perfect te zijn; deze ronde is juist bedoeld om je feedback goed mee te nemen.\n\nVoorbeeld: je kunt reageren met "de tekst bij diensten mag korter", "de foto's mogen persoonlijker" of "de contactknop mag duidelijker".\n\nNa je reactie verwerken we de feedback in de volgende versie.\n\nGroet,\nMax Webstudio`,
     },
     day4_feedback_refinement: {
-      subject: "We verwerken uw feedback in de website",
-      body: `${greeting}\n\nWe zijn bezig met het verwerken van de feedback voor ${business}. Daarbij controleren we de teksten, contactgegevens, uitstraling, knoppen en de logische volgorde van de pagina.\n\nAls u nog een laatste punt ziet, kunt u dat vandaag nog doorgeven. Dan nemen we het mee voordat we de oplevering afronden.\n\nVoorbeeld: denk aan openingstijden, telefoonnummer, werkgebied, een dienst die ontbreekt of een zin die net anders moet.\n\nDaarna maken we de website klaar voor de laatste controle.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "We verwerken je feedback in de website",
+      body: `${greeting}\n\nWe zijn bezig met het verwerken van de feedback voor ${business}. Daarbij controleren we de teksten, contactgegevens, uitstraling, knoppen en de logische volgorde van de pagina.\n\nAls je nog een laatste punt ziet, kun je dat vandaag nog doorgeven. Dan nemen we het mee voordat we de oplevering afronden.\n\nVoorbeeld: denk aan openingstijden, telefoonnummer, werkgebied, een dienst die ontbreekt of een zin die net anders moet.\n\nDaarna maken we de website klaar voor de laatste controle.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     day5_delivery_ready: {
-      subject: "Uw website staat klaar voor de laatste controle",
-      body: `${greeting}\n\nDe website voor ${business} staat klaar voor de laatste controle. U kunt de laatste versie hier bekijken:\n${previewLink}\n\nControleer vooral of de inhoud klopt en of bezoekers makkelijk contact kunnen opnemen. Als alles akkoord is, plannen we de vervolgstap richting oplevering of livegang.\n\nVoorbeeld: bevestig gerust met "akkoord voor livegang" of stuur nog een laatste punt zoals "pas het mobiele nummer nog aan".\n\nNa uw akkoord ronden wij de oplevering netjes af.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Je website staat klaar voor de laatste controle",
+      body: `${greeting}\n\nDe website voor ${business} staat klaar voor de laatste controle. Je kunt de laatste versie hier bekijken:\n${previewLink}\n\nControleer vooral of de inhoud klopt en of bezoekers makkelijk contact kunnen opnemen. Als alles akkoord is, plannen we de vervolgstap richting oplevering of livegang.\n\nVoorbeeld: bevestig gerust met "akkoord voor livegang" of stuur nog een laatste punt zoals "pas het mobiele nummer nog aan".\n\nNa je akkoord ronden wij de oplevering netjes af.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     preview_updated: {
-      subject: "Uw website-preview is bijgewerkt",
-      body: `${greeting}\n\nWe hebben de preview voor ${business} bijgewerkt. U kunt de nieuwe versie hier bekijken:\n${previewLink}\n\nBekijk vooral de punten waar u feedback op gaf. Als alles klopt, kunt u akkoord geven voor livegang.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Je website-preview is bijgewerkt",
+      body: `${greeting}\n\nWe hebben de preview voor ${business} bijgewerkt. Je kunt de nieuwe versie hier bekijken:\n${previewLink}\n\nBekijk vooral de punten waar je feedback op gaf. Als alles klopt, kun je akkoord geven voor livegang.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     website_live: {
-      subject: "Uw website staat live",
-      body: `${greeting}\n\nGoed nieuws: de website voor ${business} staat live.\n\nWe controleren de eerste periode nog op bereikbaarheid, formulieren en belangrijke details. In uw klantportaal vindt u ook aanbevolen vervolgstappen.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Je website staat live",
+      body: `${greeting}\n\nGoed nieuws: de website voor ${business} staat live.\n\nWe controleren de eerste periode nog op bereikbaarheid, formulieren en belangrijke details. In je klantportaal vind je ook aanbevolen vervolgstappen.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     thank_you: {
       subject: "Bedankt voor de samenwerking",
-      body: `${greeting}\n\nBedankt voor het vertrouwen in Max Webstudio. We wensen u veel succes met de nieuwe website voor ${business}.\n\nAls u nog iets wilt verbeteren of uitbreiden, denken we graag mee.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `${greeting}\n\nBedankt voor het vertrouwen in Max Webstudio. We wensen je veel succes met de nieuwe website voor ${business}.\n\nAls je nog iets wilt verbeteren of uitbreiden, denken we graag mee.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     review_request: {
-      subject: "Wilt u uw ervaring delen?",
-      body: `${greeting}\n\nWe hopen dat u blij bent met de nieuwe website voor ${business}. Wilt u uw ervaring met Max Webstudio delen? Uw review helpt andere ondernemers om een goede keuze te maken.\n\nAlvast bedankt.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Wil je je ervaring delen?",
+      body: `${greeting}\n\nWe hopen dat je blij bent met de nieuwe website voor ${business}. Wil je je ervaring met Max Webstudio delen? Je review helpt andere ondernemers om een goede keuze te maken.\n\nAlvast bedankt.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     upsell_mail: {
-      subject: "Volgende groeistappen voor uw website",
+      subject: "Volgende groeistappen voor je website",
       body: `${greeting}\n\nNu de basis voor ${business} staat, kunnen we gericht verder groeien. Denk aan SEO, onderhoud, social media, advertenties, een AI-chatbot of Google Bedrijfsprofiel optimalisatie.\n\nWe zetten graag een passend voorstel klaar.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     online_30_days: {
       subject: "30 dagen online: eerste groeikansen",
-      body: `${greeting}\n\nUw website voor ${business} is nu ongeveer 30 dagen online. Dit is een goed moment om reviews, vindbaarheid en meetbare aanvragen te controleren.\n\nWe kunnen een korte groeicheck voor u klaarzetten.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `${greeting}\n\nJe website voor ${business} is nu ongeveer 30 dagen online. Dit is een goed moment om reviews, vindbaarheid en meetbare aanvragen te controleren.\n\nWe kunnen een korte groeicheck voor je klaarzetten.\n\nGroet,\nMax Webstudio`,
     },
     online_90_days: {
       subject: "90 dagen online: tijd voor optimalisatie",
       body: `${greeting}\n\nNa 90 dagen is er genoeg richting om slimmer te verbeteren. Denk aan SEO, extra landingspagina's, social media en conversie-optimalisatie.\n\nWe denken graag mee over de volgende stap.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     seo_report: {
-      subject: "SEO rapport voor uw website",
-      body: `${greeting}\n\nWe hebben een SEO-moment voor ${business} klaargezet. De belangrijkste kansen zitten meestal in zoekwoorden, paginatitels, lokale vindbaarheid en reviews.\n\nWilt u dat we dit verder uitwerken?\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "SEO rapport voor je website",
+      body: `${greeting}\n\nWe hebben een SEO-moment voor ${business} klaargezet. De belangrijkste kansen zitten meestal in zoekwoorden, paginatitels, lokale vindbaarheid en reviews.\n\nWil je dat we dit verder uitwerken?\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     growth_opportunity: {
-      subject: "Nieuwe groeikans voor uw website",
-      body: `${greeting}\n\nWe zien een nieuwe groeikans voor ${business}. Dit kan helpen om meer vertrouwen, vindbaarheid of aanvragen uit uw website te halen.\n\nReageer gerust als u wilt dat we dit voorstel concreet maken.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Nieuwe groeikans voor je website",
+      body: `${greeting}\n\nWe zien een nieuwe groeikans voor ${business}. Dit kan helpen om meer vertrouwen, vindbaarheid of aanvragen uit je website te halen.\n\nReageer gerust als je wilt dat we dit voorstel concreet maken.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     new_service_available: {
-      subject: "Nieuwe dienst beschikbaar voor uw website",
+      subject: "Nieuwe dienst beschikbaar voor je website",
       body: `${greeting}\n\nEr is een nieuwe dienst die goed kan aansluiten bij ${business}. Denk aan onderhoud, SEO, social media, AI-chatbot, telefonie of extra pagina's.\n\nWe zetten graag een passend voorstel klaar.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     upsell_campaign: {
       subject: "Groei-campagne voorstel",
-      body: `${greeting}\n\nWe kunnen een gerichte groeicampagne voor ${business} voorbereiden. Daarmee combineren we bijvoorbeeld SEO, reviews, social posts of advertenties.\n\nWilt u dat we een voorstel maken?\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `${greeting}\n\nWe kunnen een gerichte groeicampagne voor ${business} voorbereiden. Daarmee combineren we bijvoorbeeld SEO, reviews, social posts of advertenties.\n\nWil je dat we een voorstel maken?\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     anniversary_mail: {
-      subject: "Een jaar online met uw website",
-      body: `${greeting}\n\nUw website voor ${business} is alweer een mooie periode online. Dit is een sterk moment om de website, content, SEO en onderhoud opnieuw langs te lopen.\n\nWe denken graag mee over de volgende groeifase.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "Een jaar online met je website",
+      body: `${greeting}\n\nJe website voor ${business} is alweer een mooie periode online. Dit is een sterk moment om de website, content, SEO en onderhoud opnieuw langs te lopen.\n\nWe denken graag mee over de volgende groeifase.\n\nGroet,\nMax Webstudio`,
     },
   };
   return { type, to: cleanText(journey.email).toLowerCase(), ...templates[type] };
@@ -1570,7 +1570,7 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
 
 function buildUpsellProposalEmail({ journey = {}, savedDemoSite = {}, workflow = {} }) {
   const logoUrl = "https://maxwebstudio.nl/assets/email/maxwebstudio-logo-mark-light-v1.png";
-  const business = cleanText(savedDemoSite.businessName || journey.businessName || journey.business_name || "uw website");
+  const business = cleanText(savedDemoSite.businessName || journey.businessName || journey.business_name || "je website");
   const name = cleanContactName(journey.contactName || journey.contact_name);
   const greeting = name ? `Hoi ${name},` : "Hoi,";
   const items = Array.isArray(workflow.upsellItems) ? workflow.upsellItems : [];
@@ -1599,7 +1599,7 @@ Startdatum: ${startDate}
 Eenmalig: ${once} ex. btw
 Maandelijks: ${monthly} / maand ex. btw
 
-Wilt u akkoord geven of nog iets aanpassen? Reageer gerust op deze mail.
+Wil je akkoord geven of nog iets aanpassen? Reageer gerust op deze mail.
 
 Met vriendelijke groet,
 Max Webstudio`;
@@ -1619,14 +1619,14 @@ Max Webstudio`;
         </tr>
         <tr><td style="padding:30px 32px;">
           <p style="margin:0 0 14px;font-size:16px;">${escapeHtml(greeting)}</p>
-          <p style="margin:0 0 20px;color:#475569;font-size:16px;line-height:1.6;">We hebben de volgende extra diensten klaargezet voor <strong>${escapeHtml(business)}</strong>. Als u akkoord bent, kunnen we starten vanaf <strong>${escapeHtml(startDate)}</strong>.</p>
+          <p style="margin:0 0 20px;color:#475569;font-size:16px;line-height:1.6;">We hebben de volgende extra diensten klaargezet voor <strong>${escapeHtml(business)}</strong>. Als je akkoord bent, kunnen we starten vanaf <strong>${escapeHtml(startDate)}</strong>.</p>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows}</table>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;">
             <tr><td style="padding:18px 20px;color:#64748b;font-weight:800;">Startdatum</td><td align="right" style="padding:18px 20px;font-weight:900;">${escapeHtml(startDate)}</td></tr>
             <tr><td style="padding:0 20px 18px;color:#64748b;font-weight:800;">Eenmalig</td><td align="right" style="padding:0 20px 18px;font-weight:900;">${escapeHtml(once)} ex. btw</td></tr>
             <tr><td style="padding:0 20px 18px;color:#64748b;font-weight:800;">Maandelijks</td><td align="right" style="padding:0 20px 18px;color:#0f766e;font-weight:950;">${escapeHtml(monthly)} / maand ex. btw</td></tr>
           </table>
-          <p style="margin:24px 0 0;color:#475569;font-size:15px;line-height:1.6;">Wilt u akkoord geven of nog iets aanpassen? Reageer gerust op deze mail, dan zetten we de vervolgstap klaar.</p>
+          <p style="margin:24px 0 0;color:#475569;font-size:15px;line-height:1.6;">Wil je akkoord geven of nog iets aanpassen? Reageer gerust op deze mail, dan zetten we de vervolgstap klaar.</p>
         </td></tr>
         <tr><td style="padding:22px 32px;background:#f8fafc;color:#64748b;font-size:13px;font-weight:800;">MaxWebstudio.nl</td></tr>
       </table>
@@ -1714,14 +1714,14 @@ function customerTimelineStep(status = "") {
 
 function customerTimelineDescription(status = "") {
   return ({
-    aanvraag_ontvangen: "We hebben uw wensen ontvangen en gaan aan de slag.",
+    aanvraag_ontvangen: "We hebben je wensen ontvangen en gaan aan de slag.",
     briefing_klaar: "De informatie is verwerkt en de planning staat klaar.",
     intern_in_productie: "Het projectteam bereidt de eerste versie voor.",
     interne_preview_klaar: "De eerste versie wordt gecontroleerd.",
     preview_ingepland_voor_klant: "De preview wordt klaargezet voor verzending.",
-    preview_verstuurd: "U kunt de preview bekijken en feedback doorgeven.",
-    feedback_ontvangen: "Uw opmerkingen zijn ontvangen.",
-    aanpassingen_bezig: "We verwerken uw feedback zorgvuldig.",
+    preview_verstuurd: "Je kunt de preview bekijken en feedback doorgeven.",
+    feedback_ontvangen: "Je opmerkingen zijn ontvangen.",
+    aanpassingen_bezig: "We verwerken je feedback zorgvuldig.",
     definitieve_versie_klaar: "De laatste onderdelen worden afgerond.",
     belafspraak_gepland: "We nemen de laatste stappen samen door.",
     verkocht: "We bereiden de vervolgstappen richting livegang voor.",

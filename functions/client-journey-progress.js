@@ -20,7 +20,7 @@ function createHandler(dependencies = {}) {
       const status = error.statusCode || error.status || 500;
       const unauthorized = status === 401 || status === 403;
       log.error("client_progress_failed", { operation: "client_progress_read", result: "failed", source: "unavailable", durationMs: Date.now() - startedAt, errorCategory: safeCategory(error) });
-      return json(unauthorized ? 401 : 503, { success: false, error: unauthorized ? "Log opnieuw in om uw projectvoortgang te bekijken." : "Projectvoortgang is tijdelijk niet beschikbaar." });
+      return json(unauthorized ? 401 : 503, { success: false, error: unauthorized ? "Log opnieuw in om je projectvoortgang te bekijken." : "Projectvoortgang is tijdelijk niet beschikbaar." });
     }
   };
 }

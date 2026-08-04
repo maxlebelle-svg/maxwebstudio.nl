@@ -174,8 +174,8 @@ test("Energetisch remains canonical when generic briefing copy contains vertrouw
   assert.equal(generated.meta.industryImageSelection.groupSlug, "holistisch");
   assert.doesNotMatch(JSON.stringify(generated.meta.demoImageAssets), /bouwbedrijf|timmerwerk|installatiebedrijf/);
   const html = generated.files.find((file) => file.path === "index.html").content;
-  assert.match(html, /Ontdek welke begeleiding bij u past/);
-  assert.doesNotMatch(html, /Kies uw project|offerte|wat u wilt laten maken/i);
+  assert.match(html, /Ontdek welke begeleiding bij je past/);
+  assert.doesNotMatch(html, /Kies je project|offerte|wat je wilt laten maken/i);
 });
 
 test("new unknown build packages the neutral professional fallback", () => {

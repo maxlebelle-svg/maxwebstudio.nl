@@ -166,7 +166,7 @@ async function dispatchFeedbackConfirmation(customer, authUser, version, feedbac
       feedbackId: feedback.id,
       recipient: customer.email || authUser.email || "",
       firstName: firstName(customer.name || authUser.email || ""),
-      projectLabel: cleanText(version.title || customer.company || customer.company_name || "uw website"),
+      projectLabel: cleanText(version.title || customer.company || customer.company_name || "je website"),
       previewVersionLabel: `Preview V${version.version || 1}`,
       category: feedback.category,
       page: feedback.page,
@@ -369,7 +369,7 @@ async function resolveApprovalFinancialContext(context, customer, version) {
 
 async function dispatchApprovalConfirmation(customer, authUser, version, resolution, sideEffects) {
   try {
-    const result = await previewApprovedService.dispatch({ customerId: customer.id, previewVersionId: version.id, approvalReference: `${version.approved_at}:${version.approved_by_auth_user_id || authUser.id}`, approvedAt: version.approved_at, recipient: customer.email || authUser.email || "", firstName: firstName(customer.name || authUser.email || ""), projectLabel: cleanText(version.title || customer.company || customer.company_name || "uw website"), previewVersionLabel: `Preview V${version.version || 1}`, resolution, sideEffects, legacySend: async () => null });
+    const result = await previewApprovedService.dispatch({ customerId: customer.id, previewVersionId: version.id, approvalReference: `${version.approved_at}:${version.approved_by_auth_user_id || authUser.id}`, approvedAt: version.approved_at, recipient: customer.email || authUser.email || "", firstName: firstName(customer.name || authUser.email || ""), projectLabel: cleanText(version.title || customer.company || customer.company_name || "je website"), previewVersionLabel: `Preview V${version.version || 1}`, resolution, sideEffects, legacySend: async () => null });
     return { owner: result.owner, reason: result.reason, durable: result.durable === true, duplicate: result.duplicate === true, approvalReference: result.approvalReference || "", progressUpdated: result.progress?.updated === true, progressReason: result.progress?.reason || "" };
   } catch (error) {
     console.error("Preview approval confirmation skipped", { code: "APPROVAL_CONFIRMATION_FAILED", category: String(error?.code || error?.name || "unknown").slice(0, 80) });

@@ -1,10 +1,221 @@
 <!doctype html>
-<html lang="nl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer"><title>Offerte ondertekenen | Max Webstudio</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><style>
-body{margin:0;min-height:100vh;padding:24px;box-sizing:border-box;background:#061827;color:#f6f9fc;font-family:Inter,system-ui,sans-serif}.shell{width:min(860px,100%);margin:auto}.card{padding:clamp(22px,5vw,42px);border:1px solid #24445e;border-radius:24px;background:#0a2235;box-shadow:0 24px 70px rgba(0,0,0,.3)}h1{font-size:clamp(2rem,7vw,3.5rem);margin:.35em 0}.intro,p{color:#b5c8d6;line-height:1.65}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:24px 0}.box{padding:16px;border:1px solid #24445e;border-radius:13px;background:#071d2e}.wide{grid-column:1/-1}.label{display:block;color:#91a9bb;font-size:.78rem}.value{display:block;margin-top:5px;font-weight:800}.lines{margin:8px 0 0;padding-left:20px}.documents{display:grid;gap:9px;margin-top:10px}.documents a{padding:13px;border:1px solid #315674;border-radius:11px;color:#7dd3fc;text-decoration:none}.documents a:hover{text-decoration:underline}.notice{padding:16px;border-radius:12px;background:#123a2b;color:#bdf8dc}.form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:25px}.form label{color:#c9d7e8;font-weight:700}.form input{display:block;width:100%;box-sizing:border-box;margin-top:7px;padding:13px;border:1px solid #315674;border-radius:10px;background:#061827;color:#fff;font:inherit}.check{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start}.check input{width:auto;margin-top:4px}.button{grid-column:1/-1;width:100%;padding:16px;border:0;border-radius:11px;background:#18a979;color:#fff;font:inherit;font-weight:850;cursor:pointer}.button:disabled{opacity:.55}.status{font-weight:700}.hidden{display:none!important}@media(max-width:620px){body{padding:12px}.grid,.form{grid-template-columns:1fr}.wide,.check,.button{grid-column:auto}}
-</style></head><body><main class="shell"><section class="card"><img src="max-webstudio-logo-full.svg" width="210" alt="Max Webstudio"><h1>Controleer en onderteken je offerte</h1><p class="intro">Bekijk de bedragen en gekoppelde voorwaarden. Daarna opent de beveiligde ondertekening bij Signhost.</p><div id="content" class="hidden"><div class="grid"><div class="box"><span class="label">Voor</span><span class="value" id="company">—</span></div><div class="box"><span class="label">Geldig tot en met</span><span class="value" id="validity">—</span></div><div class="box wide"><span class="label">Producten en diensten</span><ul class="lines" id="lines"></ul></div><div class="box"><span class="label">Eenmalig excl. btw</span><span class="value" id="once">—</span></div><div class="box"><span class="label">Per maand excl. btw</span><span class="value" id="monthly">—</span></div><div class="box wide"><span class="label">Documenten en voorwaarden</span><div class="documents" id="documents"></div></div></div><p class="notice">Dit is altijd een zakelijke overeenkomst. Door ondertekening bevestig je bevoegd te zijn de onderneming te vertegenwoordigen. Betaling en abonnementen starten niet automatisch.</p><form class="form" id="form"><label>Volledige naam<input id="name" autocomplete="name" required maxlength="160"></label><label>Functie binnen het bedrijf<input id="role" autocomplete="organization-title" required maxlength="120" placeholder="Bijvoorbeeld eigenaar"></label><label>Mobiel nummer (optioneel, extra verificatie)<input id="phone" autocomplete="tel" inputmode="tel" placeholder="+31612345678"></label><label class="check"><input id="authority" type="checkbox" required><span>Ik handel zakelijk en verklaar bevoegd te zijn deze onderneming rechtsgeldig te vertegenwoordigen.</span></label><button class="button" id="start" type="submit">Veilig ondertekenen via Signhost</button></form></div><p id="status" class="status" role="status" aria-live="polite">Offerte veilig laden…</p></section></main><script>
-const token=new URLSearchParams(location.hash.slice(1)).get('token')||'';history.replaceState(null,'',location.pathname);const status=document.getElementById('status'),content=document.getElementById('content'),form=document.getElementById('form'),money=c=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(Number(c||0)/100);const esc=v=>String(v||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-async function request(method,body){const response=await fetch('/api/commercial-offer-signing',{method,headers:{Accept:'application/json',Authorization:`Bearer ${token}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});const data=await response.json();if(!response.ok||!data.success)throw new Error(data.error||'Ondertekening niet beschikbaar.');return data}
-function showSigning(signing){if(signing.status==='signed'){form.classList.add('hidden');status.textContent='Deze offerte is ondertekend. Je ontvangt per e-mail toegang tot het klantportaal.'}else if(signing.status==='waiting_for_signer'){form.classList.add('hidden');status.textContent='De ondertekening staat klaar. Signhost heeft ook een beveiligde uitnodiging per e-mail gestuurd.'}else if(['rejected','expired','cancelled','failed'].includes(signing.status)){form.classList.add('hidden');status.textContent='Deze ondertekening is niet meer actief. Neem contact op met Max Webstudio.'}else status.textContent='Controleer de gegevens en start daarna de beveiligde ondertekening.'}
-if(!token)status.textContent='Deze ondertekenlink is ongeldig.';else request('GET').then(data=>{const o=data.offer;document.getElementById('company').textContent=o.companyName;document.getElementById('validity').textContent=new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(`${o.validUntil}T12:00:00Z`));document.getElementById('once').textContent=money(o.oneTimeExVatCents);document.getElementById('monthly').textContent=`${money(o.recurringExVatCents)} p/m`;document.getElementById('lines').innerHTML=o.lines.map(x=>`<li>${esc(x.productName)} — ${money(x.subtotalExVatCents)}${x.componentType==='recurring'?' p/m':''}</li>`).join('');document.getElementById('documents').innerHTML=o.documents.map(x=>x.sourceUrl?`<a href="${esc(x.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(x.documentType)} · ${esc(x.versionCode)} bekijken</a>`:`<span>${esc(x.documentType)} · ${esc(x.versionCode)}</span>`).join('');document.getElementById('name').value=o.contactName||'';content.classList.remove('hidden');showSigning(data.signing)}).catch(e=>status.textContent=e.message);
-form.addEventListener('submit',async event=>{event.preventDefault();const button=document.getElementById('start');button.disabled=true;status.textContent='Beveiligde Signhost-ondertekening voorbereiden…';try{const data=await request('POST',{action:'start',signerName:document.getElementById('name').value,signerRole:document.getElementById('role').value,signerPhone:document.getElementById('phone').value,authorityConfirmed:document.getElementById('authority').checked});if(data.signing.redirectUrl)location.assign(data.signing.redirectUrl);else showSigning(data.signing)}catch(e){status.textContent=e.message;button.disabled=false}});
-</script></body></html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Offerte ondertekenen | Max Webstudio</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;padding:24px;background:#061827;color:#f6f9fc;font-family:Inter,system-ui,sans-serif}
+    .shell{width:min(860px,100%);margin:auto}
+    .card{padding:clamp(22px,5vw,42px);border:1px solid #24445e;border-radius:24px;background:#0a2235;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+    .brand-logo{display:block;width:234px;max-width:75%;height:auto;padding:10px 12px;border-radius:14px;background:#f6f9fc}
+    h1{margin:.35em 0;font-size:clamp(2rem,7vw,3.5rem);line-height:1.05}
+    h2{margin:0;font-size:clamp(1.55rem,4vw,2.15rem);line-height:1.18}
+    h3{margin:0 0 14px;font-size:1.08rem}
+    .intro,p{color:#b5c8d6;line-height:1.65}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:24px 0}
+    .box{min-width:0;padding:16px;border:1px solid #24445e;border-radius:13px;background:#071d2e}
+    .wide{grid-column:1/-1}
+    .label{display:block;color:#91a9bb;font-size:.78rem}
+    .value{display:block;margin-top:5px;font-weight:800;overflow-wrap:anywhere}
+    .lines{margin:8px 0 0;padding-left:20px}
+    .documents-intro{margin:8px 0 0;font-size:.9rem}
+    .documents{display:grid;gap:9px;margin-top:12px}
+    .documents a,.documents span{display:block;padding:13px;border:1px solid #315674;border-radius:11px;overflow-wrap:anywhere}
+    .documents a{color:#7dd3fc;text-decoration:none}
+    .documents a:hover{text-decoration:underline}
+    .documents span{color:#b5c8d6}
+    .notice{padding:16px;border-radius:12px;background:#123a2b;color:#bdf8dc}
+    .commitment{margin-top:28px;padding:clamp(20px,4vw,30px);border:1px solid #315674;border-radius:18px;background:#071d2e}
+    .eyebrow{margin:0 0 8px;color:#63ddf5;font-size:.76rem;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+    .commitment-copy{margin:12px 0 20px}
+    .expectations{padding:18px;border:1px solid #24445e;border-radius:14px;background:#0b263a}
+    .expectations ul{display:grid;gap:11px;margin:0;padding:0;list-style:none}
+    .expectations li{position:relative;padding-left:28px;color:#d7e4ed;line-height:1.5}
+    .expectations li::before{position:absolute;left:0;top:.05em;width:19px;height:19px;border-radius:50%;background:#18a979;color:#041a13;content:"✓";font-size:.78rem;font-weight:950;line-height:19px;text-align:center}
+    .agreement{margin:20px 0 0;padding:16px 18px;border-left:4px solid #24d3ee;border-radius:10px;background:#061827;color:#fff}
+    .form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:25px}
+    .form label{color:#c9d7e8;font-weight:700}
+    .form input{display:block;width:100%;margin-top:7px;padding:13px;border:1px solid #315674;border-radius:10px;background:#061827;color:#fff;font:inherit}
+    .check{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start}
+    .check input{width:auto;margin-top:4px}
+    .button{grid-column:1/-1;width:100%;padding:16px;border:0;border-radius:11px;background:#18a979;color:#041a13;font:inherit;font-weight:850;cursor:pointer}
+    .button:disabled{cursor:wait;opacity:.55}
+    .button:focus-visible,.form input:focus-visible,.documents a:focus-visible{outline:3px solid #7dd3fc;outline-offset:3px}
+    .status{font-weight:700}
+    .hidden{display:none!important}
+    @media(max-width:620px){body{padding:12px}.card{border-radius:18px}.grid,.form{grid-template-columns:1fr}.wide,.check,.button{grid-column:auto}.commitment{padding:18px}.expectations{padding:16px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="card" aria-labelledby="page-title">
+      <img class="brand-logo" src="max-webstudio-logo-full.svg" width="210" alt="Max Webstudio">
+      <h1 id="page-title">Controleer en onderteken je offerte</h1>
+      <p class="intro">Bekijk de opdracht, bedragen en gekoppelde documenten. Daarna opent de beveiligde ondertekening bij Signhost.</p>
+
+      <div id="content" class="hidden">
+        <div class="grid">
+          <div class="box"><span class="label">Voor</span><span class="value" id="company">—</span></div>
+          <div class="box"><span class="label">Geldig tot en met</span><span class="value" id="validity">—</span></div>
+          <div class="box wide"><span class="label">Producten en diensten</span><ul class="lines" id="lines"></ul></div>
+          <div class="box"><span class="label">Eenmalig excl. btw</span><span class="value" id="once">—</span></div>
+          <div class="box"><span class="label">Per maand excl. btw</span><span class="value" id="monthly">—</span></div>
+          <div class="box wide">
+            <span class="label">Offerte, overeenkomst en voorwaarden</span>
+            <p class="documents-intro">Bekijk de gekoppelde documenten rustig voordat je ondertekent.</p>
+            <div class="documents" id="documents"></div>
+          </div>
+        </div>
+
+        <p class="notice">Dit is altijd een zakelijke overeenkomst. Door te ondertekenen bevestig je dat je bevoegd bent de onderneming te vertegenwoordigen. Betaling en abonnementen starten niet automatisch.</p>
+
+        <section class="commitment" aria-labelledby="commitment-title">
+          <p class="eyebrow">Klaar om samen te starten</p>
+          <h2 id="commitment-title">Nog één stap en we kunnen beginnen</h2>
+          <p class="commitment-copy">Controleer de opdracht nog één keer rustig. Klopt alles? Zet dan je digitale handtekening. Vanaf dat moment gaan wij aan de slag en houden we je tijdens het hele traject op de hoogte via je persoonlijke klantportaal.</p>
+
+          <div class="expectations">
+            <h3>Dit mag je van ons verwachten</h3>
+            <ul>
+              <li>We realiseren je website volgens de gemaakte afspraken.</li>
+              <li>Je volgt de voortgang in je persoonlijke klantportaal.</li>
+              <li>Je kunt eenvoudig aangeven wat je anders wilt zien.</li>
+              <li>We verwerken je feedback en houden je op de hoogte van iedere belangrijke stap.</li>
+              <li>Je ontvangt automatisch bericht zodra er een nieuwe versie voor je klaarstaat.</li>
+              <li>We begeleiden je van de eerste demo tot en met de livegang van je website.</li>
+            </ul>
+          </div>
+
+          <p class="agreement" id="agreement-copy"><strong>Door hieronder digitaal te ondertekenen ga je akkoord met de opdracht, de bijbehorende offerte en de algemene voorwaarden.</strong></p>
+        </section>
+
+        <form class="form" id="form" aria-describedby="agreement-copy">
+          <label>Volledige naam<input id="name" autocomplete="name" required maxlength="160"></label>
+          <label>Functie binnen het bedrijf<input id="role" autocomplete="organization-title" required maxlength="120" placeholder="Bijvoorbeeld eigenaar"></label>
+          <label>Mobiel nummer (optioneel, extra verificatie)<input id="phone" autocomplete="tel" inputmode="tel" placeholder="+31612345678"></label>
+          <label class="check"><input id="authority" type="checkbox" required><span>Ik handel zakelijk en verklaar dat ik bevoegd ben deze onderneming rechtsgeldig te vertegenwoordigen.</span></label>
+          <button class="button" id="start" type="submit" aria-describedby="agreement-copy">Ja, laten we starten</button>
+        </form>
+      </div>
+
+      <p id="status" class="status" role="status" aria-live="polite">Offerte veilig laden…</p>
+    </section>
+  </main>
+
+  <script>
+    const token = new URLSearchParams(location.hash.slice(1)).get("token") || "";
+    history.replaceState(null, "", location.pathname);
+
+    const status = document.getElementById("status");
+    const content = document.getElementById("content");
+    const form = document.getElementById("form");
+    const money = (cents) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(cents || 0) / 100);
+    const escapeHtml = (value) => String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
+    const documentLabels = {
+      quote: "Offerte",
+      agreement: "Overeenkomst",
+      general_terms: "Algemene voorwaarden",
+      hosting_maintenance_terms: "Hosting- en onderhoudsvoorwaarden",
+      privacy_policy: "Privacyverklaring",
+      data_processing_agreement: "Verwerkersovereenkomst",
+      saas_terms: "SaaS-voorwaarden",
+      food_terms: "Food Factory-voorwaarden",
+      other: "Bijbehorend document",
+    };
+    let submissionPending = false;
+
+    async function request(method, body) {
+      const response = await fetch("/api/commercial-offer-signing", {
+        method,
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Ondertekening niet beschikbaar.");
+      return data;
+    }
+
+    function showSigning(signing) {
+      if (signing.status === "signed") {
+        form.classList.add("hidden");
+        status.textContent = "Deze offerte is ondertekend. Je ontvangt per e-mail toegang tot het klantportaal.";
+      } else if (signing.status === "waiting_for_signer") {
+        form.classList.add("hidden");
+        status.textContent = "De ondertekening staat klaar. Signhost heeft ook een beveiligde uitnodiging per e-mail gestuurd.";
+      } else if (["rejected", "expired", "cancelled", "failed"].includes(signing.status)) {
+        form.classList.add("hidden");
+        status.textContent = "Deze ondertekening is niet meer actief. Neem contact op met Max Webstudio.";
+      } else {
+        status.textContent = "Controleer de gegevens en start daarna de beveiligde ondertekening.";
+      }
+    }
+
+    function renderDocuments(documents) {
+      document.getElementById("documents").innerHTML = documents.map((document) => {
+        const label = documentLabels[document.documentType] || document.documentType;
+        const text = `${escapeHtml(label)} · ${escapeHtml(document.versionCode)}`;
+        return document.sourceUrl
+          ? `<a href="${escapeHtml(document.sourceUrl)}" target="_blank" rel="noopener noreferrer">${text} bekijken</a>`
+          : `<span>${text} · wordt in de beveiligde ondertekening getoond</span>`;
+      }).join("");
+    }
+
+    if (!token) {
+      status.textContent = "Deze ondertekenlink is ongeldig.";
+    } else {
+      request("GET").then((data) => {
+        const offer = data.offer;
+        document.getElementById("company").textContent = offer.companyName;
+        document.getElementById("validity").textContent = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${offer.validUntil}T12:00:00Z`));
+        document.getElementById("once").textContent = money(offer.oneTimeExVatCents);
+        document.getElementById("monthly").textContent = `${money(offer.recurringExVatCents)} p/m`;
+        document.getElementById("lines").innerHTML = offer.lines.map((line) => `<li>${escapeHtml(line.productName)} — ${money(line.subtotalExVatCents)}${line.componentType === "recurring" ? " p/m" : ""}</li>`).join("");
+        renderDocuments(offer.documents);
+        document.getElementById("name").value = offer.contactName || "";
+        content.classList.remove("hidden");
+        showSigning(data.signing);
+      }).catch((error) => { status.textContent = error.message; });
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (submissionPending) return;
+      submissionPending = true;
+      form.setAttribute("aria-busy", "true");
+      const button = document.getElementById("start");
+      button.disabled = true;
+      status.textContent = "Beveiligde Signhost-ondertekening voorbereiden…";
+      try {
+        const data = await request("POST", {
+          action: "start",
+          signerName: document.getElementById("name").value,
+          signerRole: document.getElementById("role").value,
+          signerPhone: document.getElementById("phone").value,
+          authorityConfirmed: document.getElementById("authority").checked,
+        });
+        if (data.signing.redirectUrl) {
+          status.textContent = "Signhost veilig openen…";
+          location.assign(data.signing.redirectUrl);
+        } else {
+          showSigning(data.signing);
+        }
+      } catch (error) {
+        status.textContent = error.message;
+        submissionPending = false;
+        form.removeAttribute("aria-busy");
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

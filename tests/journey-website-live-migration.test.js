@@ -173,8 +173,8 @@ test("flags off retain one safe legacy owner while unsafe URL has no mail owner"
 test("website live template is escaped, test-marked, factual and CTA-safe", () => {
   const command = validateMailCommand({ automationKey: "journey.website_live", templateKey: "journey.website_live", templateVersion: 1, journeyEventKey: "website.live:test", outboxIdempotencyKey: "website.live.email:test:v1", customerReference: CUSTOMER, journeyInstanceReference: INSTANCE, recipient: "test@example.com", replyToProfile: { email: "info@maxwebstudio.nl" }, subjectData: { label: "Voorbeeld & Partners" }, templateData: { firstName: "Max & Co", websiteLabel: "Voorbeeld & Partners", liveUrl: LIVE_URL, portalUrl: "https://maxwebstudio.nl/klantportaal.html", percentage: 95, currentPhase: "Nazorg", nextStep: "Wij controleren de livegang.", maintenanceState: "selected_not_activated", contactName: "Team Max Webstudio" }, actionUrl: LIVE_URL, metadata: { scenario: "website_live_test_customer", websiteReference: WEBSITE, projectReference: PROJECT, liveHostnameFingerprint: "abcdef1234567890" } }, { customerId: CUSTOMER, journeyInstanceId: INSTANCE, environment: "test" }, BASE_ENV);
   const rendered = renderJourneyMail(command);
-  assert.equal(rendered.subject, "[TEST] Uw website staat live");
-  assert.match(rendered.html, /Bekijk uw website/);
+  assert.equal(rendered.subject, "[TEST] Je website staat live");
+  assert.match(rendered.html, /Bekijk je website/);
   assert.match(rendered.html, /Voorbeeld &amp; Partners/);
   assert.match(rendered.text, new RegExp(LIVE_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(rendered.text, /wordt niet automatisch geactiveerd/);

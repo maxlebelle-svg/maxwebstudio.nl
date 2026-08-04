@@ -32,10 +32,10 @@
     ["Persoonlijk contact", "Vragen over smaak, formaat of uitvoering kunnen eenvoudig worden besproken."]
   ],
   "process": [
-    ["Kies uw favoriet", "Bekijk taarten, cupcakes, macarons en andere huisgemaakte zoetigheden."],
-    ["Geef uw wensen door", "Bespreek smaak, formaat, gelegenheid en het gewenste moment."],
+    ["Kies je favoriet", "Bekijk taarten, cupcakes, macarons en andere huisgemaakte zoetigheden."],
+    ["Geef je wensen door", "Bespreek smaak, formaat, gelegenheid en het gewenste moment."],
     ["Vers bereid", "De bestelling wordt met aandacht en volgens afspraak klaargemaakt."],
-    ["Bezorgd of afgehaald", "U ontvangt duidelijk bericht over levering of het afgesproken afhaalmoment."]
+    ["Bezorgd of afgehaald", "Je ontvangt duidelijk bericht over levering of het afgesproken afhaalmoment."]
   ],
   "preferredComponents": ["hero", "categorieen", "producten", "reviews", "over-ons", "bestellen", "contact"],
   "assetSlots": ["hero-bakery", "taart", "cupcakes", "macarons"]

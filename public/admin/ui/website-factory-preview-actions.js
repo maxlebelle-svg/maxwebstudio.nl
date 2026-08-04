@@ -119,9 +119,9 @@
     if (!previewUrl) return "";
     const contactName = text(input.contactName);
     const companyName = text(input.companyName);
-    if (contactName && companyName) return `Hallo ${contactName}, hierbij kunt u de demo voor ${companyName} bekijken:\n${previewUrl}\n\nIk hoor graag wat u ervan vindt.`;
-    if (companyName) return `Hallo, hierbij kunt u de demo voor ${companyName} bekijken:\n${previewUrl}\n\nLaat gerust weten wat u ervan vindt.`;
-    return `Hallo, hierbij kunt u de demo van uw nieuwe website bekijken:\n${previewUrl}\n\nLaat gerust weten wat u ervan vindt.`;
+    if (contactName && companyName) return `Hallo ${contactName}, hierbij kun je de demo voor ${companyName} bekijken:\n${previewUrl}\n\nIk hoor graag wat je ervan vindt.`;
+    if (companyName) return `Hallo, hierbij kun je de demo voor ${companyName} bekijken:\n${previewUrl}\n\nLaat gerust weten wat je ervan vindt.`;
+    return `Hallo, hierbij kun je de demo van je nieuwe website bekijken:\n${previewUrl}\n\nLaat gerust weten wat je ervan vindt.`;
   }
 
   function whatsappShareUrl(input = {}) {

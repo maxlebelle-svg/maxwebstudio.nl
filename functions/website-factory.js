@@ -1077,7 +1077,7 @@ async function startOnboardingFactoryPipeline(context, payload = {}) {
         previewVersionLabel: previewReview.activeVersion,
         recipient: records.customer?.email,
         firstName: cleanText(records.customer?.name).split(/\s+/)[0],
-        businessLabel: cleanText(records.customer?.company || records.customer?.name || records.project?.name || "uw website"),
+        businessLabel: cleanText(records.customer?.company || records.customer?.name || records.project?.name || "je website"),
         occurredAt: new Date().toISOString(),
         legacySend: () => sendPreviewLaunchMail(records, previewReview, "preview_ready", { ownership: "legacy", previewVersionReference: buildResult.previewVersion?.id || "" }),
       }).catch((error) => console.error("Preview ready mail skipped", { message: error.message }));
@@ -2569,7 +2569,7 @@ function blueprintPage(title, factoryInput, analysis) {
 function buildContentPlan({ factoryInput, analysis, blueprint }) {
   return {
     status: "prepared",
-    heroHeadline: `${factoryInput.businessName || "Uw bedrijf"} helpt klanten met ${analysis.keyServices[0] || analysis.industry}.`,
+    heroHeadline: `${factoryInput.businessName || "Je bedrijf"} helpt klanten met ${analysis.keyServices[0] || analysis.industry}.`,
     heroSubtitle: factoryInput.texts?.about || `Professioneel, duidelijk en gericht op ${analysis.audience}.`,
     sectionTitles: blueprint.pages.slice(0, 8).map((page) => ({ page: page.slug, title: page.title })),
     uspBlocks: analysis.usps.length ? analysis.usps : ["Heldere afspraken", "Professionele uitvoering", "Korte lijnen"],
@@ -2929,23 +2929,23 @@ function buildGrowthTasks(recommendations, start = new Date().toISOString()) {
 async function sendPreviewLaunchMail(records, review, type, ownershipMetadata = {}) {
   const to = cleanText(records.customer?.email);
   if (!to) return null;
-  const business = cleanText(records.customer?.company || records.customer?.name || records.project?.name || "uw website");
+  const business = cleanText(records.customer?.company || records.customer?.name || records.project?.name || "je website");
   const templates = {
     preview_ready: {
       subject: `Preview staat klaar voor ${business}`,
-      text: `Beste,\n\nDe eerste website-preview voor ${business} staat klaar. U kunt de preview bekijken en feedback geven via uw klantportaal.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      text: `Hoi,\n\nDe eerste website-preview voor ${business} staat klaar. Je kunt de preview bekijken en feedback geven via je klantportaal.\n\nGroet,\nMax Webstudio`,
     },
     preview_updated: {
       subject: `Preview bijgewerkt voor ${business}`,
-      text: `Beste,\n\nDe preview voor ${business} is bijgewerkt. U kunt opnieuw kijken en eventueel feedback geven in uw klantportaal.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      text: `Hoi,\n\nDe preview voor ${business} is bijgewerkt. Je kunt opnieuw kijken en eventueel feedback geven in je klantportaal.\n\nGroet,\nMax Webstudio`,
     },
     launch_started: {
       subject: `Livegang voorbereiding gestart voor ${business}`,
-      text: `Beste,\n\nWe zijn gestart met de livegangvoorbereiding. We controleren domein, SSL, formulieren, SEO en mobiele weergave.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      text: `Hoi,\n\nWe zijn gestart met de voorbereiding op de livegang. We controleren het domein, SSL, formulieren, SEO en de mobiele weergave.\n\nGroet,\nMax Webstudio`,
     },
     website_live: {
       subject: `${business} staat live`,
-      text: `Beste,\n\nGoed nieuws: de website staat live.${ownershipMetadata.liveUrl ? `\n\nBekijk de website: ${ownershipMetadata.liveUrl}` : ""}\n\nDe nazorg is gestart. In het klantportaal vindt u de actuele projectstatus en ondersteuning.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      text: `Hoi,\n\nGoed nieuws: de website staat live.${ownershipMetadata.liveUrl ? `\n\nBekijk de website: ${ownershipMetadata.liveUrl}` : ""}\n\nDe nazorg is gestart. In het klantportaal vind je de actuele projectstatus en ondersteuning.\n\nGroet,\nMax Webstudio`,
     },
   };
   const template = templates[type];

@@ -45,7 +45,7 @@ function coverPage({ snapshot, relationship, reference, companyName, totalPages 
     rightText("REFERENTIE",533,438,7,"F2",COLOR.muted),
     rightText(reference,533,409,12,"F2",COLOR.navy),
     rightText(`Geldig tot ${dateLabel(snapshot.validUntil)}`,533,380,9,"F1",COLOR.muted),
-    text("UW INVESTERING",42,286,7,"F2",[0.576,0.655,0.725]),
+    text("JE INVESTERING",42,286,7,"F2",[0.576,0.655,0.725]),
     text(money(snapshot.oneTimeExVatCents),42,244,28,"F2",COLOR.white),
     text(`eenmalig excl. btw na ${Number(snapshot.discountPercentage || 0)}% korting`,42,220,9.5,"F1",COLOR.softText),
     roundedRect(340,227,213,62,12,COLOR.slate),

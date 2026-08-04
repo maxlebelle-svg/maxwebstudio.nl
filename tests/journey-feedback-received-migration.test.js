@@ -185,12 +185,12 @@ test("feedback v1 template is test-marked, escaped, bounded at 0/70/100 and has 
     journeyEventKey: "preview.feedback_received:abcdef123", outboxIdempotencyKey: "preview.feedback_received.email:abcdef123:v1",
     customerReference: CUSTOMER, journeyInstanceReference: INSTANCE, recipient: "tester@example.com",
     replyToProfile: { email: "info@maxwebstudio.nl" }, subjectData: { label: "Test" },
-    templateData: { firstName: "Max", projectLabel: "Veilige Test BV", previewVersionLabel: "V2", feedbackCategory: "Tekstwijziging", feedbackPointCount: 1, submittedAt: "2026-07-13T12:30:00Z", percentage: 70, currentPhase: "Feedback verwerken", nextStep: "Wij verwerken uw wijzigingen" },
+    templateData: { firstName: "Max", projectLabel: "Veilige Test BV", previewVersionLabel: "V2", feedbackCategory: "Tekstwijziging", feedbackPointCount: 1, submittedAt: "2026-07-13T12:30:00Z", percentage: 70, currentPhase: "Feedback verwerken", nextStep: "We verwerken je wijzigingen" },
     actionUrl: "https://maxwebstudio.nl/klantportaal.html#website-review", metadata: { scenario: "feedback_received_test_customer", previewVersionReference: PREVIEW, feedbackReference: "abcdef1234567890" },
   };
   const command = validateMailCommand(base, { environment: "production", customerId: CUSTOMER }, ENV);
   const rendered = renderJourneyMail(command);
-  assert.equal(rendered.subject, "[TEST] We hebben uw feedback ontvangen");
+  assert.equal(rendered.subject, "[TEST] We hebben je feedback ontvangen");
   assert.match(rendered.html, /width:70%/);
   assert.match(rendered.text, /Bekijk status: https:\/\/maxwebstudio\.nl\/klantportaal\.html#website-review/);
   assert.match(renderJourneyMail({ ...command, templateData: { ...command.templateData, projectLabel: "A < B", percentage: -5 } }).html, /A &lt; B/);

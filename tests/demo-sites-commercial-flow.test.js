@@ -30,7 +30,7 @@ test("publieke WhatsApp-deelactie gebruikt de korte link en gewenste Nederlandse
   assert.match(message, /^Hallo Lisanne,/);
   assert.match(message, /alvast een demo voor Advies Post/);
   assert.match(message, /https:\/\/maxwebstudio\.nl\/preview\/advies-post/);
-  assert.match(decodeURIComponent(actions.whatsappUrl({ contactName: "Lisanne", companyName: "Advies Post", publicPreviewUrl: value.publicPreviewUrl })), /Ik hoor graag wat u ervan vindt/);
+  assert.match(decodeURIComponent(actions.whatsappUrl({ contactName: "Lisanne", companyName: "Advies Post", publicPreviewUrl: value.publicPreviewUrl })), /Ik hoor graag wat je ervan vindt/);
 });
 
 test("deelacties blijven geblokkeerd wanneer de publieke pointer niet exact de geselecteerde versie is", () => {
