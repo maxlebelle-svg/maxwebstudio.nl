@@ -29,7 +29,7 @@ function processBrowserReview({ staticReport = {}, evidence = {}, generatedPacka
 
   const previousAttempts = Math.max(0, Number(previousQualityReport?.browserRepair?.attempts || 0));
   const attempts = report.passed ? previousAttempts : previousAttempts + 1;
-  const repairPlan = report.passed ? [] : buildRepairPlan(report.blockers);
+  const repairPlan = report.passed ? [] : buildRepairPlan(report.blockers, report);
   const retryAvailable = !report.passed && attempts <= MAX_BROWSER_REPAIR_ATTEMPTS;
   const browserRepair = {
     version: "mws.browser-repair.v1",
@@ -53,9 +53,16 @@ function processBrowserReview({ staticReport = {}, evidence = {}, generatedPacka
   };
 }
 
-function buildRepairPlan(blockers = []) {
+function buildRepairPlan(blockers = [], report = {}) {
   const plan = [];
   const ids = new Set(blockers.map((item) => String(item?.id || "")));
+  const missingAssets = Object.values(report?.viewports || {}).some((viewport) => {
+    const details = String(viewport?.checks?.layout?.details || "");
+    return /\b[1-9]\d*\s+ontbrekende afbeeldingen\b/i.test(details);
+  });
+  if (missingAssets) {
+    return [{ id: "asset_repair", automatic: false, message: "Ontbrekende afbeeldingen vereisen herstel van de website-assets." }];
+  }
   if ([...ids].some((id) => /_(?:layout|overflow)$/.test(id))) {
     plan.push({ id: "responsive_safety", automatic: true, message: "Beperk brede elementen en herstel mobiel/tablet rastergedrag." });
   }
