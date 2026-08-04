@@ -36,6 +36,22 @@ test("Quality Gate v2 reports category scores and requires a later browser revie
   });
 });
 
+test("bakery leads produce a specific preview instead of being blocked as generic fallback copy", () => {
+  const journey = { businessName: "Miolla", websiteUrl: "https://miolla.nl/", packageType: "starter" };
+  const generated = buildWebsitePackage({
+    journey,
+    briefing: "Branche: Bakkerij en banket\nDiensten: Vers brood, Banket, Taarten op bestelling, Gebak\nCTA: Bekijk het assortiment",
+    version: 2,
+  });
+  const report = runQualityCheck({ generatedPackage: generated, journey });
+
+  assert.equal(generated.meta.industryId, "restaurant");
+  assert.deepEqual(generated.meta.services.slice(0, 4), ["Vers brood", "Banket", "Taarten op bestelling", "Gebak"]);
+  assert.equal(generated.meta.contentQuality.genericFallbackUsed, false);
+  assert.equal(report.checks.find((item) => item.id === "no_generic_fallback_copy").passed, true);
+  assert.equal(report.passed, true);
+});
+
 test("a critical failure blocks preview even when the weighted score remains high", () => {
   const generated = generatedPackage();
   const entry = generated.files.find((file) => file.path === "index.html");

@@ -22863,7 +22863,11 @@
           setLeadfinderMessage(error.message || "Demo-aanvraag lokaal voorbereid. Website Factory wordt geopend.", "warning");
         }
         sessionStorage.setItem("maxwebstudioPendingPreviewLead", JSON.stringify({ ...pendingLead, ...updates }));
-        const factoryParams = new URLSearchParams({ leadId: lead.id || "" });
+        const factoryParams = new URLSearchParams({
+          relationshipType: "lead",
+          relationshipId: lead.id || "",
+          leadId: lead.id || "",
+        });
         if (updates.contactName) factoryParams.set("contactName", updates.contactName);
         if (lead.companyName) factoryParams.set("companyName", lead.companyName);
         if (updates.websiteUrl) factoryParams.set("websiteUrl", updates.websiteUrl);
@@ -24910,7 +24914,11 @@
           sessionStorage.setItem("maxwebstudioPendingPreviewLead", JSON.stringify(lead));
           window.showToast?.(`Website Factory openen voor ${lead.companyName || "deze lead"}.`, "success");
           setLeadfinderMessage("Website Factory wordt geopend met deze lead.", "success");
-          const factoryParams = new URLSearchParams({ leadId: lead.id || "" });
+          const factoryParams = new URLSearchParams({
+            relationshipType: "lead",
+            relationshipId: lead.id || "",
+            leadId: lead.id || "",
+          });
           if (lead.companyName) factoryParams.set("companyName", lead.companyName);
           if (lead.websiteUrl) factoryParams.set("websiteUrl", lead.websiteUrl);
           if (lead.phone) factoryParams.set("phone", lead.phone);

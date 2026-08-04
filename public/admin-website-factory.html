@@ -21261,6 +21261,11 @@
             ctas: ["book", "route", "call", "whatsapp", "more_info"],
             services: [["lunch", "Lunch"], ["diner", "Diner"], ["reserveren", "Reserveren"], ["afhalen", "Afhalen"], ["bezorgen", "Bezorgen"], ["catering", "Catering"], ["private_dining", "Private dining"], ["arrangementen", "Arrangementen"], ["events", "Events"]],
           },
+          bakkerij: {
+            goals: ["route", "information", "leads", "trust", "appointment"],
+            ctas: ["route", "call", "whatsapp", "more_info", "book"],
+            services: [["brood", "Vers brood"], ["banket", "Banket"], ["taarten", "Taarten op bestelling"], ["gebak", "Gebak"], ["lunch", "Lunch"], ["bestellen", "Bestellen"], ["afhalen", "Afhalen"], ["catering", "Catering"]],
+          },
           fitness: {
             goals: ["appointment", "leads", "trust", "information"],
             ctas: ["trial", "appointment", "whatsapp", "more_info"],
@@ -22730,6 +22735,7 @@
           if (/hovenier|tuin|groen|tuinaanleg/.test(text)) return "hovenier";
           if (/schoonmaak|cleaning|vve|oplevering/.test(text)) return "schoonmaakbedrijf";
           if (/verhuis|verhuizing|transport|opslag/.test(text)) return "verhuisbedrijf";
+          if (/bakker|bakkerij|brood|banket|patisserie|patissier|taart|gebak/.test(text)) return "bakkerij";
           if (/restaurant|cafe|café|bar|lunch|food|eetcafe|eetcafé|snackbar/.test(text)) return "horeca";
           if (/fitness|sportschool|personal trainer|gym|yoga|pilates/.test(text)) return "fitness";
           if (/advocaat|juridisch|jurist|recht|advocatuur/.test(text)) return "juridisch";
@@ -24324,6 +24330,15 @@
         function fillFromLead(lead) {
           if (!lead) return;
           lead = mergePendingPreviewLead(lead);
+          const quickBusiness = document.getElementById("factory-quick-business");
+          const quickWebsite = document.getElementById("factory-quick-website");
+          const quickPlace = document.getElementById("factory-quick-place");
+          const leadBusinessName = lead.companyName || lead.company_name || lead.businessName || lead.business_name || lead.company || "";
+          const leadWebsiteUrl = lead.websiteUrl || lead.website_url || lead.website || "";
+          const leadPlace = lead.region || lead.city || lead.plaats || "";
+          if (quickBusiness && !quickBusiness.value) quickBusiness.value = leadBusinessName;
+          if (quickWebsite && !quickWebsite.value) quickWebsite.value = leadWebsiteUrl;
+          if (quickPlace && !quickPlace.value) quickPlace.value = leadPlace;
           if (!journey) {
             elements.business.value = lead.companyName || "";
             elements.contact.value = lead.contactName || lead.contact || "Onbekende contactpersoon";

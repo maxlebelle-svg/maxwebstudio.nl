@@ -88,6 +88,7 @@ const INTAKE_INDUSTRIES = Object.freeze({
   tegelzetbedrijf: "Tegelzetbedrijf",
   bouwbedrijf: "Bouwbedrijf",
   horeca: "Horeca en restaurant",
+  bakkerij: "Bakkerij en banket",
   automotive: "Autobedrijf en garage",
   schoonmaakbedrijf: "Schoonmaakbedrijf",
   verhuisbedrijf: "Verhuisbedrijf",
