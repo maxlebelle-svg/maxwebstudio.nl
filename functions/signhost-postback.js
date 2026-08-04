@@ -183,3 +183,4 @@ function coded(code,status,message){return Object.assign(new Error(message),{cod
 function ok(){return {statusCode:200,headers:{"Content-Type":"text/plain","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"},body:"OK"};}
 
 exports._test = { assertPdf, eventName, parseSoft, smokeStatus, processCommercialPostback };
+exports._internal = { processCommercialPostback };

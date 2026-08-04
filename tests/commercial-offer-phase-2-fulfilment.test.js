@@ -63,11 +63,15 @@ test("admin composer exposes signature only after confirmed interest", () => {
   const ui = read("public/src/offer-composer-phase2.js");
   const html = read("public/admin-offer-composer.html");
   assert.match(endpoint, /request_signature/);
+  assert.match(endpoint, /reconcile_signature/);
+  assert.match(endpoint, /getTransaction/);
   assert.match(endpoint, /commercial_reserve_signature_v1/);
   assert.match(endpoint, /SIGNABLE_DOCUMENT_INTEGRITY_FAILED/);
   assert.doesNotMatch(endpoint, /commercial_offer_signing_transactions\?select=[^`]*signing_origin/);
   assert.match(ui, /if \(!state\.interestConfirmed\)/);
   assert.match(ui, /Naar Signhost sturen/);
+  assert.match(ui, /Status bij Signhost controleren/);
+  assert.match(ui, /Mollie-testbetaallink/);
   assert.match(html, /offer-composer-phase2\.js/);
   assert.match(ui, /klantstatus, factuur, betaallink en productieoverdracht automatisch/i);
 });

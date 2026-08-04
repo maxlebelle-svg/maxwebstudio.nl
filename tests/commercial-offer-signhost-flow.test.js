@@ -5,7 +5,7 @@ const path = require("node:path");
 const { buildOfferVersion } = require("../functions/services/commercialOfferService");
 const { buildCommercialOfferMail } = require("../functions/services/commercialOfferMailService");
 const { generateCommercialOfferPdf } = require("../functions/services/commercialOfferPdfService");
-const { buildCommercialOfferMetadata, commercialOfferReturnUrl, createCommercialOfferReturnToken, transactionSignUrl, verifyCommercialOfferReturnToken } = require("../functions/services/signhostService");
+const { buildCommercialOfferMetadata, commercialOfferReturnUrl, createCommercialOfferReturnToken, mapTransactionStatus, transactionSignUrl, verifyCommercialOfferReturnToken } = require("../functions/services/signhostService");
 
 const root=path.join(__dirname,"..");
 const read=file=>fs.readFileSync(path.join(root,file),"utf8");
@@ -70,6 +70,17 @@ test("commercial return status uses a signed opaque transaction reference",()=>{
   assert.deepEqual(verifyCommercialOfferReturnToken(token,env),{valid:true,signingTransactionId:id});
   assert.equal(verifyCommercialOfferReturnToken(`${id}.${"0".repeat(64)}`,env).valid,false);
   assert.equal(commercialOfferReturnUrl(env,token),`https://maxwebstudio.nl/offerte-ondertekening-voltooid?status=${token}`);
+});
+
+test("manual reconciliation maps Signhost status without guessing a final state",()=>{
+  assert.equal(mapTransactionStatus(10),"waiting_for_signer");
+  assert.equal(mapTransactionStatus(20),"waiting_for_signer");
+  assert.equal(mapTransactionStatus(30),"signed_pending_scan");
+  assert.equal(mapTransactionStatus(40),"rejected");
+  assert.equal(mapTransactionStatus(50),"expired");
+  assert.equal(mapTransactionStatus(60),"cancelled");
+  assert.equal(mapTransactionStatus(70),"failed");
+  assert.equal(mapTransactionStatus("not-a-status"),"waiting_for_signer");
 });
 
 test("branded completion page never treats return parameters as proof",()=>{
