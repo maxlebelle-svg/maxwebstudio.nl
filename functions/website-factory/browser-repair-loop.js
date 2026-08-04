@@ -143,6 +143,7 @@ img,video{height:auto}
 body *{min-width:0}
 h1,h2,h3,p,a,button,label,li{overflow-wrap:anywhere}
 input,select,textarea,button{max-width:100%;font:inherit}
+.social-links a{font-size:12px!important}
 @media(max-width:820px){
   .container,.section-shell,.hero-inner,.contact-grid,.review-grid,.gallery-grid{width:min(100%,calc(100% - 32px));max-width:100%}
   .hero-inner,.contact-grid,.review-grid,.gallery-grid{grid-template-columns:minmax(0,1fr)!important}
