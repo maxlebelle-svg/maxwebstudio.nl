@@ -63,7 +63,13 @@ function render() {
   const fulfilment = state.fulfilment;
   if (fulfilment?.status === 'payment_pending') return complete('Ondertekend · factuur en Mollie-betaallink staan klaar · overdracht voorbereid.');
   if (['ready_for_production', 'completed'].includes(fulfilment?.status)) return complete('Betaald · opdracht is vrijgegeven voor productie.');
-  if (fulfilment?.status === 'failed') return renderMessage(`Ondertekend · automatische opvolging vraagt aandacht${fulfilment.last_error_code ? ` (${fulfilment.last_error_code})` : ''}.`, true);
+  if (fulfilment?.status === 'failed') {
+    button.textContent = 'Automatische opvolging hervatten';
+    button.dataset.phase2Mode = 'resume';
+    button.disabled = pending;
+    if (reconciliationError) return renderMessage(reconciliationError, true);
+    return renderMessage(`Ondertekend · automatische opvolging vraagt aandacht${fulfilment.last_error_code ? ` (${fulfilment.last_error_code})` : ''}. Veilig hervatten is mogelijk.`, true);
+  }
   if (signing) {
     const text = {
       creating: 'Ondertekenverzoek wordt voorbereid…', waiting_for_signer: 'Verstuurd · wacht op de handtekening van de klant.',
@@ -80,7 +86,7 @@ function render() {
     }
     if (signing.status === 'signed' && !fulfilment) {
       button.textContent = 'Automatische opvolging hervatten';
-      button.dataset.phase2Mode = 'reconcile';
+      button.dataset.phase2Mode = 'resume';
       button.disabled = pending;
       if (reconciliationError) return renderMessage(reconciliationError, true);
       return renderMessage('Ondertekening is bevestigd · klant, factuur en Mollie-testlink moeten nog worden klaargezet.', false);
@@ -94,7 +100,32 @@ function render() {
 }
 
 function handlePhase2Action() {
-  return button.dataset.phase2Mode === 'reconcile' ? reconcileSignature() : requestSignature();
+  if (button.dataset.phase2Mode === 'reconcile') return reconcileSignature();
+  if (button.dataset.phase2Mode === 'resume') return resumeFulfilment();
+  return requestSignature();
+}
+
+async function resumeFulfilment() {
+  if (button.disabled || pending || !state?.signing) return;
+  const approved = window.confirm('Hervat alleen de automatische opvolging voor deze bestaande ondertekening? Er wordt geen nieuwe Signhost-transactie aangemaakt en een bestaande factuur of betaling wordt veilig hergebruikt.');
+  if (!approved) return;
+  reconciliationError = '';
+  pending = true;
+  button.disabled = true;
+  renderMessage('Klant, factuur, Mollie-testlink en productieoverdracht worden veilig hervat…', false);
+  const toast = typeof window.showToast === 'function' ? window.showToast('Automatische opvolging hervatten…', 'info', { loading: true, persistent: true }) : null;
+  try {
+    await request('POST', { action: 'resume_fulfilment' });
+    await refresh();
+    toast?.update('De automatische opvolging is verwerkt.', 'success', { duration: 5000 });
+  } catch (error) {
+    const code = String(error.code || '').trim();
+    reconciliationError = `${error.message || 'De automatische opvolging kon niet worden hervat.'}${code ? ` (${code})` : ''}`;
+    toast?.update(reconciliationError, 'error', { duration: 12000 });
+  } finally {
+    pending = false;
+    render();
+  }
 }
 
 async function reconcileSignature() {

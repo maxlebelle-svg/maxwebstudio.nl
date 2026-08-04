@@ -121,10 +121,13 @@ test("verified signed postback stores both artifacts before portal activation",(
 });
 
 test("a signed transaction without fulfilment exposes an idempotent resume action",()=>{
-  const composer=read("public/src/offer-composer-phase2.js");
+  const composer=read("public/src/offer-composer-phase2.js"),endpoint=read("functions/admin-commercial-offer-signing.js");
   assert.match(composer,/signing\.status === 'signed' && !fulfilment/);
   assert.match(composer,/Automatische opvolging hervatten/);
-  assert.match(composer,/button\.dataset\.phase2Mode = 'reconcile'/);
+  assert.match(composer,/button\.dataset\.phase2Mode = 'resume'/);
+  assert.match(composer,/action: 'resume_fulfilment'/);
+  assert.match(endpoint,/action === "resume_fulfilment"/);
+  assert.match(endpoint,/await fulfilSignedCommercialOffer/);
 });
 
 test("Signhost checksum repair uses the deployed pgcrypto bytea signature",()=>{

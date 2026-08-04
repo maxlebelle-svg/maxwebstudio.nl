@@ -64,6 +64,8 @@ test("admin composer exposes signature only after confirmed interest", () => {
   const html = read("public/admin-offer-composer.html");
   assert.match(endpoint, /request_signature/);
   assert.match(endpoint, /reconcile_signature/);
+  assert.match(endpoint, /resume_fulfilment/);
+  assert.match(endpoint, /fulfilSignedCommercialOffer/);
   assert.match(endpoint, /getTransaction/);
   assert.match(endpoint, /commercial_reserve_signature_v1/);
   assert.match(endpoint, /SIGNABLE_DOCUMENT_INTEGRITY_FAILED/);
@@ -73,6 +75,7 @@ test("admin composer exposes signature only after confirmed interest", () => {
   assert.match(ui, /Status bij Signhost controleren/);
   assert.match(ui, /Mollie-testbetaallink/);
   assert.match(ui, /reconciliationError/);
+  assert.match(ui, /resumeFulfilment/);
   assert.match(ui, /error\.code/);
   assert.match(endpoint, /SIGNHOST_RECONCILE_/);
   assert.match(html, /offer-composer-phase2\.js/);

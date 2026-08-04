@@ -13,6 +13,7 @@ const {
   uploadPdf,
 } = require("./services/signhostService");
 const { processCommercialPostback } = require("./signhost-postback")._internal;
+const { fulfilSignedCommercialOffer } = require("./services/commercialOfferFulfilmentService");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "sales"];
@@ -38,6 +39,7 @@ exports.handler = async (event) => {
     const action = clean(input.action).toLowerCase();
     if (action === "request_signature") return await requestSignature(input, actor, config);
     if (action === "reconcile_signature") return await reconcileSignature(event.queryStringParameters || {}, actor, config);
+    if (action === "resume_fulfilment") return await resumeFulfilment(event.queryStringParameters || {}, actor, config);
     throw problem(400, "ACTION_INVALID", "Kies een geldige ondertekenactie.");
   } catch (error) {
     const status = Number(error.statusCode || error.status) || 500;
@@ -66,6 +68,26 @@ async function readState(query, actor, config) {
     enabled: providerEnabled(), relationship: mapRelationship(relationship), offer, version,
     signing: signings[0] || null, fulfilment: fulfilments[0] || null, interestConfirmed: Boolean(interest),
   };
+}
+
+async function resumeFulfilment(query, actor, config) {
+  const current = await readState(query, actor, config);
+  if (!current.offer?.current_version_id || !current.signing?.id) throw problem(409, "SIGNING_NOT_FOUND", "Er staat geen ondertekende offerte klaar om te verwerken.");
+  const signing = (await rest(config, `commercial_offer_signing_transactions?select=*&id=eq.${current.signing.id}&offer_version_id=eq.${current.offer.current_version_id}&limit=1`))[0];
+  if (!signing || !["signed", "signed_pending_processing", "completed"].includes(clean(signing.status))) {
+    throw problem(409, "SIGNING_NOT_COMPLETED", "Signhost heeft deze offerte nog niet als ondertekend bevestigd.");
+  }
+  const providerTransactionId = clean(signing.provider_transaction_id);
+  const providerStatus = Number(signing.provider_status);
+  if (!providerTransactionId || !Number.isInteger(providerStatus)) {
+    throw problem(409, "SIGNHOST_TRANSACTION_MISSING", "De bevestigde Signhost-transactie kon niet veilig worden teruggevonden.");
+  }
+  await fulfilSignedCommercialOffer(
+    { url: config.url, service: config.key },
+    providerTransactionId,
+    providerStatus,
+  );
+  return json(200, { success: true, resumed: true, ...(await readState(query, actor, config)) });
 }
 
 async function reconcileSignature(query, actor, config) {
