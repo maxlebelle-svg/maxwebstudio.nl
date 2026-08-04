@@ -115,5 +115,25 @@ test("verified signed postback stores both artifacts before portal activation",(
   assert.match(postback,/COMMERCIAL_ARTIFACT_PRESERVATION_FAILED/);assert.match(postback,/COMMERCIAL_SIGNATURE_FINALIZATION_FAILED/);
   assert.match(postback,/commercialStorageUpload[\s\S]*"x-upsert":"true"/);
   assert.match(postback,/COMMERCIAL_SIGNING_ARTIFACT_STORAGE_FAILED_\$\{response\.status\}/);
+  assert.match(postback,/Promise\.allSettled\(\[/);
+  assert.match(postback,/activateSignedCommercialOffer[\s\S]*fulfilSignedCommercialOffer/);
   assert.match(activation,/ensureCustomerAuthContext/);assert.match(activation,/createInviteOrResetLink/);assert.match(activation,/lead_status:"won"/);assert.doesNotMatch(activation,/password\s*:/i);
+});
+
+test("a signed transaction without fulfilment exposes an idempotent resume action",()=>{
+  const composer=read("public/src/offer-composer-phase2.js");
+  assert.match(composer,/signing\.status === 'signed' && !fulfilment/);
+  assert.match(composer,/Automatische opvolging hervatten/);
+  assert.match(composer,/button\.dataset\.phase2Mode = 'reconcile'/);
+});
+
+test("Signhost checksum repair uses the deployed pgcrypto bytea signature",()=>{
+  const sql=read("supabase/migrations/20260804155000_repair_commercial_signhost_digest_calls.sql");
+  assert.match(sql,/create or replace function public\.commercial_finalize_offer_signature_v1/);
+  assert.match(sql,/create or replace function public\.commercial_reserve_signature_v1/);
+  assert.match(sql,/extensions\.digest\(pg_catalog\.convert_to\(tx\.provider_transaction_id,'UTF8'\),'sha256'\)/);
+  assert.match(sql,/extensions\.digest\(pg_catalog\.convert_to\(lower\(btrim\(input_signer_email\)\),'UTF8'\),'sha256'\)/);
+  assert.doesNotMatch(sql,/extensions\.digest\(tx\.provider_transaction_id,/);
+  assert.match(sql,/grant execute[\s\S]*service_role/);
+  assert.doesNotMatch(sql,/grant execute[^;]*\b(?:anon|authenticated)\b/i);
 });

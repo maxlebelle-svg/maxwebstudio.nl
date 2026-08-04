@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-signhost-digest-repair-2026-08-04",
+  "release": "Commercial Signhost pgcrypto digest signature repair",
+  "status": "DEPLOYED_TO_PRODUCTION_WITH_SEPARATE_AUTHORIZATION",
+  "category": "existing-only/product",
+  "sourceBranch": "codex/signhost-digest-finalization-fix",
+  "remoteExecutionAuthorizedByThisManifest": false,
+  "requiresSeparateRemoteExecutionAuthorization": true,
+  "separateRemoteExecutionAuthorized": true,
+  "productionAppliedAt": "2026-08-04T16:23:36Z",
+  "migrationCount": 1,
+  "executionOrder": [
+    "supabase/migrations/20260804155000_repair_commercial_signhost_digest_calls.sql"
+  ],
+  "scope": [
+    "reconcile the partially installed staff-direct signing columns and constraints",
+    "replace the existing finalize RPC and create or replace the missing reserve RPC",
+    "adapt pgcrypto digest calls to the deployed bytea,text signature",
+    "preserve existing access checks, transitions and service-role-only execution"
+  ],
+  "explicitlyExcluded": [
+    "new tables or destructive column changes",
+    "new customer or invoice records",
+    "real Mollie payment execution"
+  ]
+}

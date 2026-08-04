@@ -71,11 +71,15 @@ async function processCommercialPostback(context, signing, validation) {
     });
   } catch (error) { throw stageError(error, "COMMERCIAL_SIGNATURE_FINALIZATION_FAILED"); }
   if (status === "signed") {
-    let activation = {};
-    try { activation = await activateSignedCommercialOffer(context, { ...signing, status:"signed", signed_at:new Date().toISOString() }); }
-    catch (error) { console.error("Signed commercial offer portal activation failed", { signingId:signing.id, code:error.code || "PORTAL_ACTIVATION_FAILED" }); }
-    try { await fulfilSignedCommercialOffer(context, signing.provider_transaction_id, validation.status); }
-    catch (error) { console.error("Signed commercial offer fulfilment failed", { signingId:signing.id, code:error.code || "COMMERCIAL_FULFILMENT_FAILED" }); }
+    // Start portal activation and commercial fulfilment together. A slow auth
+    // invitation must never prevent the idempotent invoice/Mollie handover from
+    // being claimed before the provider callback or manual reconcile times out.
+    const [activationResult, fulfilmentResult] = await Promise.allSettled([
+      activateSignedCommercialOffer(context, { ...signing, status:"signed", signed_at:new Date().toISOString() }),
+      fulfilSignedCommercialOffer(context, signing.provider_transaction_id, validation.status),
+    ]);
+    if (activationResult.status === "rejected") console.error("Signed commercial offer portal activation failed", { signingId:signing.id, code:activationResult.reason?.code || "PORTAL_ACTIVATION_FAILED" });
+    if (fulfilmentResult.status === "rejected") console.error("Signed commercial offer fulfilment failed", { signingId:signing.id, code:fulfilmentResult.reason?.code || "COMMERCIAL_FULFILMENT_FAILED" });
   }
 }
 
