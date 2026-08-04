@@ -54,11 +54,23 @@ test("server-rendered mail contains demo, internal QR, selected lines and exact 
 
 test("proposal mail preserves the original 23:04 design with exact Outlook-safe brand pixels", () => {
   const mail = buildCommercialOfferMail({ ...base, mode: "test" });
+  assert.match(mail.html, /assets\/email\/maxwebstudio-logo-mark-light-v1\.png/);
+  assert.doesNotMatch(mail.html, /assets\/maxwebstudio-logo-mark\.png|max-webstudio-logo-mollie-512\.png/);
   assert.match(mail.html, /class="mws-card" bgcolor="#071b2c" background="https:\/\/maxwebstudio\.nl\/assets\/email\/mws-email-bg-card-071b2c-v2\.png"/);
   assert.match(mail.html, /background:#071b2c url\('https:\/\/maxwebstudio\.nl\/assets\/email\/mws-email-bg-card-071b2c-v2\.png'\) repeat/);
   assert.match(mail.html, /TESTMAIL — niet naar de klant verzonden/);
   assert.match(mail.html, /background:#4b3a08/);
   assert.doesNotMatch(mail.html, /linear-gradient|mws-primary-link|mws-test/);
+
+  const logoSvg = fs.readFileSync(path.join(root, "public/assets/email/maxwebstudio-logo-mark-light-v1.svg"), "utf8");
+  assert.match(logoSvg, /fill="#ffffff"/);
+  assert.match(logoSvg, /fill="#08111e"/);
+  assert.match(logoSvg, /stroke="#2d5de7"/);
+  const logoPng = fs.readFileSync(path.join(root, "public/assets/email/maxwebstudio-logo-mark-light-v1.png"));
+  assert.equal(logoPng.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(logoPng.readUInt32BE(16), 256);
+  assert.equal(logoPng.readUInt32BE(20), 256);
+  assert.equal(logoPng[25], 6, "email logo must retain RGBA transparency around the white tile");
 
   const expectedPixels = { outer: "030b14", card: "071b2c", header: "061523", panel: "102a3d", sign: "08283b" };
   for (const [name, expectedPixel] of Object.entries(expectedPixels)) {
@@ -507,7 +519,7 @@ test("Silverado manual preview maps computer to the restaurant portal and mobile
 test("proposal mail uses the canonical Max Webstudio dark branding", () => {
   const mail = buildCommercialOfferMail({ ...base, mode: "test" });
   assert.match(mail.html, /supported-color-schemes/);
-  assert.match(mail.html, /assets\/maxwebstudio-logo-mark\.png/);
+  assert.match(mail.html, /assets\/email\/maxwebstudio-logo-mark-light-v1\.png/);
   assert.match(mail.html, /class="mws-card"/);
   assert.match(mail.html, /#030b14/);
   assert.match(mail.html, /bgcolor="#030b14"/);

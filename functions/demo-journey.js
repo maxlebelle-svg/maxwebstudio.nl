@@ -1569,7 +1569,7 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
 }
 
 function buildUpsellProposalEmail({ journey = {}, savedDemoSite = {}, workflow = {} }) {
-  const logoUrl = "https://maxwebstudio.nl/assets/maxwebstudio-logo-mark.png";
+  const logoUrl = "https://maxwebstudio.nl/assets/email/maxwebstudio-logo-mark-light-v1.png";
   const business = cleanText(savedDemoSite.businessName || journey.businessName || journey.business_name || "uw website");
   const name = cleanContactName(journey.contactName || journey.contact_name);
   const greeting = name ? `Hoi ${name},` : "Hoi,";

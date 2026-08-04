@@ -83,7 +83,7 @@ function validateMailStudioPayload(payload = {}) {
   const html = String(payload.html || "");
   const checks = [
     ["<!doctype html", "De volledige HTML-template ontbreekt."],
-    ["max-webstudio-logo-mark.svg", "Het Max Webstudio-logo ontbreekt in de verzend-HTML."],
+    ["maxwebstudio-logo-mark-light-v1.png", "Het Max Webstudio-logo ontbreekt in de verzend-HTML."],
     ["class=\"mws-cta\"", "De CTA ontbreekt in de verzend-HTML."],
     ["info@maxwebstudio.nl", "De footer/contactregel ontbreekt in de verzend-HTML."],
     ["wa.me/31851305282", "De WhatsApp-knop ontbreekt in de verzend-HTML."],

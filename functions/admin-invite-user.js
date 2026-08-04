@@ -268,7 +268,7 @@ function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPart
   const safeName = escapeHtml(firstName);
   const safeRole = escapeHtml(roleLabel);
   const safeLink = escapeHtml(actionLink);
-  const logoUrl = "https://maxwebstudio.nl/max-webstudio-logo-mollie-512.png";
+  const logoUrl = "https://maxwebstudio.nl/assets/email/maxwebstudio-logo-mark-light-v1.png";
   return `<!doctype html>
 <html lang="nl">
   <body style="margin:0;background:#07121f;font-family:Inter,Arial,sans-serif;color:#102033;">

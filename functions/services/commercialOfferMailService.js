@@ -1,6 +1,6 @@
 const DEFAULT_SUPPORT_EMAIL = "info@maxwebstudio.nl";
 const SITE_URL = "https://maxwebstudio.nl";
-const LOGO_URL = `${SITE_URL}/assets/maxwebstudio-logo-mark.png`;
+const LOGO_URL = `${SITE_URL}/assets/email/maxwebstudio-logo-mark-light-v1.png`;
 const EMAIL_BACKGROUNDS = Object.freeze({
   outer: `${SITE_URL}/assets/email/mws-email-bg-outer-030b14-v2.png`,
   card: `${SITE_URL}/assets/email/mws-email-bg-card-071b2c-v2.png`,
