@@ -605,7 +605,22 @@ function isBrowserReviewQueueCandidate(job) {
   return job.qualityReport?.passed === true
     && job.qualityReport?.readiness?.customerPreview !== true
     && (firstReviewRequired || repairedBuildRequiresRecheck)
-    && Boolean(job.previewUrl);
+    && isCompleteBrowserReviewPreviewUrl(job);
+}
+
+function isCompleteBrowserReviewPreviewUrl(job = {}) {
+  try {
+    const url = new URL(cleanText(job.previewUrl), "https://maxwebstudio.nl/");
+    const routeAllowed = ["/.netlify/functions/demo-preview", "/api/demo-preview"].includes(url.pathname);
+    return routeAllowed
+      && url.searchParams.get("id") === cleanText(job.demoJourneyId)
+      && url.searchParams.get("token") === cleanText(job.previewToken)
+      && Boolean(cleanText(job.previewToken))
+      && url.searchParams.get("source") === "factory"
+      && url.searchParams.get("previewVersionId") === cleanText(job.id);
+  } catch {
+    return false;
+  }
 }
 
 function cleanArtifactHash(value) {
@@ -3120,5 +3135,5 @@ module.exports = {
   runBuildJob,
   sanitizeBuildResult,
   startOnboardingFactoryPipeline,
-  _private: { searchRows, deriveFactoryServerState, selectCanonicalBuildJob, prepareEditorPackageBestEffort, markEditorCapabilityReadOnly, isUsableGeneratedPackage, mergeCustomerManualPreviewVersions },
+  _private: { searchRows, deriveFactoryServerState, selectCanonicalBuildJob, prepareEditorPackageBestEffort, markEditorCapabilityReadOnly, isUsableGeneratedPackage, isCompleteBrowserReviewPreviewUrl, mergeCustomerManualPreviewVersions },
 };

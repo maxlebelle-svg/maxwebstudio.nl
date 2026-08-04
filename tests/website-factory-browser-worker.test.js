@@ -11,6 +11,7 @@ const workerPath = path.join(root, "scripts/website-factory-browser-worker.mjs")
 const worker = fs.readFileSync(workerPath, "utf8");
 const endpoint = fs.readFileSync(path.join(root, "functions/website-factory.js"), "utf8");
 const workflow = fs.readFileSync(path.join(root, ".github/workflows/website-factory-browser-worker.yml"), "utf8");
+const { _private } = require("../functions/website-factory");
 
 test("browser worker is dependency-free and exposes a safe configuration check", () => {
   const help = spawnSync(process.execPath, [workerPath, "--help"], { cwd: root, encoding: "utf8" });
@@ -36,6 +37,10 @@ test("worker reviews mobile, tablet and desktop and submits immutable evidence",
   assert.match(worker, /redactUrl\(queuedJob\?\.previewUrl\)/);
   assert.match(worker, /state === "interactive"/);
   assert.match(worker, /attempt < 300/);
+  assert.match(worker, /await prepareImagesForAudit\(client\)/);
+  assert.match(worker, /image\.loading = 'eager'/);
+  assert.match(worker, /window\.scrollTo\(0, y\)/);
+  assert.match(worker, /image\.addEventListener\('error', settled/);
 });
 
 test("Factory exposes only eligible builds through the browser review queue", () => {
@@ -56,6 +61,19 @@ test("Factory exposes only eligible builds through the browser review queue", ()
   assert.doesNotMatch(endpoint, /readBuildJobRuntimeById\(context, candidate\.id/);
   assert.match(endpoint, /order: "updated_at\.desc"/);
   assert.doesNotMatch(endpoint, /limit: String\(requestedLimit \* 3\)/);
+});
+
+test("browser queue rejects incomplete or stale preview links", () => {
+  const job = {
+    id: "11111111-1111-4111-8111-111111111111",
+    demoJourneyId: "22222222-2222-4222-8222-222222222222",
+    previewToken: "safe-preview-token",
+  };
+  const complete = `/.netlify/functions/demo-preview?id=${job.demoJourneyId}&token=${job.previewToken}&source=factory&previewVersionId=${job.id}`;
+  assert.equal(_private.isCompleteBrowserReviewPreviewUrl({ ...job, previewUrl: complete }), true);
+  assert.equal(_private.isCompleteBrowserReviewPreviewUrl({ ...job, previewUrl: "/.netlify/functions/demo-preview" }), false);
+  assert.equal(_private.isCompleteBrowserReviewPreviewUrl({ ...job, previewUrl: complete.replace(job.previewToken, "stale-token") }), false);
+  assert.equal(_private.isCompleteBrowserReviewPreviewUrl({ ...job, previewUrl: complete.replace("source=factory", "source=manual_zip") }), false);
 });
 
 test("scheduled workflow is bounded, serialized and preserves its evidence", () => {
