@@ -48,6 +48,7 @@ Belangrijke variabelen:
 - `BASE_URL`
 - `EMAIL_PROVIDER`
 - `RESEND_API_KEY`
+- `RESEND_WEBHOOK_SECRET`
 - `FROM_EMAIL`
 - `ADMIN_EMAIL`
 - `ADMIN_TOKEN`
@@ -65,8 +66,8 @@ Belangrijke endpoints:
 
 - `/.netlify/functions/commercial-order`
 - `/.netlify/functions/mollie-webhook`
-- `/.netlify/functions/submit-onboarding`
-- `/.netlify/functions/admin-intakes`
+- `/.netlify/functions/customer-onboarding` (canonieke, ingelogde klantflow)
+- `/.netlify/functions/submit-onboarding` (beveiligde brug voor de bestaande premium wizard)
 
 `/.netlify/functions/create-payment` is legacy. In productie hoort deze route standaard 410 terug te geven, tenzij `ALLOW_LEGACY_CREATE_PAYMENT=true` expliciet tijdelijk is gezet voor een gecontroleerde overgang.
 

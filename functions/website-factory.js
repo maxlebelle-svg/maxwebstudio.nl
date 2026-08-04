@@ -552,40 +552,51 @@ async function getBrowserReviewQueueResponse(context, payload) {
     throw error;
   }
   const requestedLimit = Math.max(1, Math.min(10, Number(payload.limit || 5)));
-  const query = new URLSearchParams({
-    select: BUILD_JOB_RUNTIME_FIELDS,
-    status: "in.(completed,quality_check)",
-    order: "updated_at.asc",
-    limit: String(requestedLimit * 3),
-  });
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
-    method: "GET",
-    headers: restHeaders(context.serviceRoleKey),
-    timeoutMs: PACKAGE_SUPABASE_TIMEOUT_MS,
-  });
-  const jobs = rows
-    .map(normalizeBuildJob)
-    .filter((job) => {
-      const firstReviewRequired = job.currentStep === "completed"
-        && job.qualityReport?.browserReview?.required === true
-        && job.qualityReport?.browserReview?.status === "not_run"
-        && job.qualityReport?.readiness?.reason === "browser_review_required";
-      const repairedBuildRequiresRecheck = job.currentStep === "browser_review_required"
-        && job.qualityReport?.browserRepair?.status === "awaiting_recheck";
-      return job.qualityReport?.passed === true
-        && job.qualityReport?.readiness?.customerPreview !== true
-        && (firstReviewRequired || repairedBuildRequiresRecheck)
-        && Boolean(job.previewUrl)
-        && isUsableGeneratedPackage(job.generatedPackage);
-    })
-    .slice(0, requestedLimit)
-    .map(sanitizeBuildJob);
+  const pageSize = Math.max(50, requestedLimit * 10);
+  const maxScannedRows = 1000;
+  const jobs = [];
+  let offset = 0;
+
+  // Filter niet pas na één kleine databasepagina. Oudere, niet-geschikte jobs
+  // mogen nieuwe geldige browserreviews nooit permanent uit de wachtrij duwen.
+  while (jobs.length < requestedLimit && offset < maxScannedRows) {
+    const query = new URLSearchParams({
+      select: BUILD_JOB_RUNTIME_FIELDS,
+      status: "in.(completed,quality_check)",
+      order: "updated_at.asc",
+      limit: String(pageSize),
+      offset: String(offset),
+    });
+    const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
+      method: "GET",
+      headers: restHeaders(context.serviceRoleKey),
+      timeoutMs: PACKAGE_SUPABASE_TIMEOUT_MS,
+    });
+    jobs.push(...rows.map(normalizeBuildJob).filter(isBrowserReviewQueueCandidate).slice(0, requestedLimit - jobs.length));
+    if (rows.length < pageSize) break;
+    offset += pageSize;
+  }
+  const sanitizedJobs = jobs.map(sanitizeBuildJob);
   return jsonResponse(200, {
     success: true,
     schemaVersion: "mws.browser-review-queue.v1",
-    jobs,
-    count: jobs.length,
+    jobs: sanitizedJobs,
+    count: sanitizedJobs.length,
   });
+}
+
+function isBrowserReviewQueueCandidate(job) {
+  const firstReviewRequired = job.currentStep === "completed"
+    && job.qualityReport?.browserReview?.required === true
+    && job.qualityReport?.browserReview?.status === "not_run"
+    && job.qualityReport?.readiness?.reason === "browser_review_required";
+  const repairedBuildRequiresRecheck = job.currentStep === "browser_review_required"
+    && job.qualityReport?.browserRepair?.status === "awaiting_recheck";
+  return job.qualityReport?.passed === true
+    && job.qualityReport?.readiness?.customerPreview !== true
+    && (firstReviewRequired || repairedBuildRequiresRecheck)
+    && Boolean(job.previewUrl)
+    && isUsableGeneratedPackage(job.generatedPackage);
 }
 
 async function generatePackageResponse(context, payload) {

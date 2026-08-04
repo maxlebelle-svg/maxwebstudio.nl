@@ -43,6 +43,10 @@ test("Factory exposes only eligible builds through the browser review queue", ()
   assert.match(endpoint, /qualityReport\?\.readiness\?\.reason === "browser_review_required"/);
   assert.match(endpoint, /qualityReport\?\.browserRepair\?\.status === "awaiting_recheck"/);
   assert.match(endpoint, /isUsableGeneratedPackage\(job\.generatedPackage\)/);
+  assert.match(endpoint, /offset: String\(offset\)/);
+  assert.match(endpoint, /while \(jobs\.length < requestedLimit && offset < maxScannedRows\)/);
+  assert.match(endpoint, /pageSize = Math\.max\(50, requestedLimit \* 10\)/);
+  assert.doesNotMatch(endpoint, /limit: String\(requestedLimit \* 3\)/);
 });
 
 test("scheduled workflow is bounded, serialized and preserves its evidence", () => {

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Premium project wizard | Max Webstudio</title>
     <meta name="description" content="Vul de premium project wizard in voor Max Webstudio." />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -253,7 +254,15 @@
     </main>
 
     <script type="module" src="src/services/companySettingsDomService.js"></script>
-    <script>
+    <script type="module">
+      import { getSession } from "./src/services/supabaseAuthProvider.js";
+
+      const authResult = await getSession();
+      const onboardingAccessToken = authResult?.session?.access_token || "";
+      if (!onboardingAccessToken) {
+        const next = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
+        window.location.replace(`/login.html?mode=client&next=${next}`);
+      }
       const storageKey = "maxwebstudio:onboarding";
       const form = document.querySelector("#intake-form");
       const steps = [...document.querySelectorAll(".intake-step")];
@@ -480,7 +489,10 @@
         try {
           const response = await fetch("/.netlify/functions/submit-onboarding", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${onboardingAccessToken}`,
+            },
             body: JSON.stringify(await getSubmissionData()),
           });
           const result = await response.json();
