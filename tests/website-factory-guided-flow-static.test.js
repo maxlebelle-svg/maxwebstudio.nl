@@ -6,6 +6,7 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const factory = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
+const sales = fs.readFileSync(path.join(root, "public/admin-sales.html"), "utf8");
 const demoSites = fs.readFileSync(path.join(root, "public/admin-demo-sites.html"), "utf8");
 const backend = fs.readFileSync(path.join(root, "functions/demo-journey.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
@@ -77,6 +78,19 @@ test("Quick Build accepts a business name or valid website without requiring the
   assert.doesNotMatch(factory, /const waitForJourney = window\.setInterval/);
   assert.match(backend, /buildQuickFactoryBriefing\(sourceJourney\)/);
   assert.match(backend, /code: "FACTORY_IDENTITY_REQUIRED"/);
+});
+
+test("Maak demo opens a canonical lead workspace and prefills the visible Quick Build identity", () => {
+  assert.ok((sales.match(/relationshipType:\s*"lead"/g) || []).length >= 2);
+  assert.ok((sales.match(/relationshipId:\s*lead\.id \|\| ""/g) || []).length >= 2);
+  const fillFromLead = factory.slice(factory.indexOf("function fillFromLead(lead)"), factory.indexOf("async function ensureJourneyForLead"));
+  assert.match(fillFromLead, /factory-quick-business/);
+  assert.match(fillFromLead, /factory-quick-website/);
+  assert.match(fillFromLead, /factory-quick-place/);
+  assert.match(fillFromLead, /quickBusiness && !quickBusiness\.value/);
+  assert.match(fillFromLead, /quickWebsite && !quickWebsite\.value/);
+  assert.match(factory, /bakker\|bakkerij\|brood\|banket\|patisserie/);
+  assert.match(factory, /return "bakkerij"/);
 });
 
 test("image generation never fakes a provider result in production", () => {

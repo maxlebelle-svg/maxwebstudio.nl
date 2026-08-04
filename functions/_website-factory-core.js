@@ -223,7 +223,7 @@ const INDUSTRY_PROFILES = [
     secondaryCta: "Bekijk behandelingen",
     services: ["Behandelingen", "Stylingadvies", "Afspraak maken", "Arrangementen", "Verzorging"],
   }),
-  profile("hospitality", ["restaurant", "horeca", "cafe", "hotel", "b&b", "reserveren"], {
+  profile("hospitality", ["restaurant", "horeca", "cafe", "hotel", "b&b", "reserveren", "bakker", "bakkerij", "brood", "banket", "patisserie", "patissier", "taart", "gebak"], {
     label: "Horeca en hospitality",
     colors: { ink: "#201a17", brand: "#6f3429", accent: "#d6a458", soft: "#fbf5ec", dark: "#261b15" },
     hero: "Een eerste indruk die direct zin geeft om te reserveren.",

@@ -25,7 +25,7 @@ const INDUSTRY_ALIASES = [
   ["timmerwerk", /\b(timmerwerk|timmerwerken|timmerbedrijf|timmerman|maatwerk|zolder|zolderverbouwing|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn|kozijnen)\b/i],
   ["bouw", /\b(aannemer|bouw|renovatie|timmerbedrijf|timmer|dakopbouw|aanbouw|badkamer|kozijn)\b/i],
   ["hovenier", /\b(tuin|hovenier|tuinaanleg|groen|buitenruimte)\b/i],
-  ["restaurant", /\b(restaurant|horeca|cafe|hotel|b&b|reserveren)\b/i],
+  ["restaurant", /\b(restaurant|horeca|cafe|hotel|b&b|reserveren|bakker|bakkerij|brood|banket|patisserie|patissier|taart|gebak)\b/i],
   ["kapper", /\b(kapper|kapsalon|barber|salon|styling)\b/i],
   ["makelaar", /\b(makelaar|vastgoed|woning|taxatie|verkoop|aankoop)\b/i],
   ["installateur", /\b(installateur|installatie|zonnepanelen|warmtepomp|airco|elektra|loodgieter|laadpaal)\b/i],
