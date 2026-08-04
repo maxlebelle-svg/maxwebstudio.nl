@@ -12,6 +12,7 @@ const { createWebsiteLiveService } = require("./journey/websiteLive/service");
 const { prepareHeroEditorPackage } = require("./_preview-editor-hero");
 const { prepareImageEditorPackage } = require("./_preview-editor-image");
 const { prepareTextEditorPackage } = require("./_preview-editor-text");
+const { compactFactoryPreviewPackage } = require("./_factory-preview-storage");
 const { randomUUID, createHash } = require("crypto");
 const {
   applyAutomaticBrowserRepairs,
@@ -1858,6 +1859,7 @@ async function createPreviewVersion(context, payload = {}) {
   const files = Array.isArray(generatedPackage.files) ? generatedPackage.files : [];
   const entryFile = cleanText(generatedPackage.entryFile || generatedPackage.meta?.entryFile || "index.html");
   const renderValidation = payload.renderValidation || payload.render_validation || validateGeneratedPackage(generatedPackage);
+  const storedPreviewPackage = compactFactoryPreviewPackage(generatedPackage);
   const entryExists = files.some((file) => cleanText(file?.path) === entryFile);
   const editorManifestAvailable = Number(generatedPackage.meta?.editorManifest?.version || 0) === 1;
   const sectionMarkersAvailable = files.some((file) => /\.html?$/i.test(cleanText(file?.path)) && /data-mws-section-id/i.test(cleanText(file?.content)));
@@ -1874,7 +1876,7 @@ async function createPreviewVersion(context, payload = {}) {
     preview_token: cleanText(payload.previewToken || payload.preview_token),
     preview_score: Number(payload.previewScore || payload.preview_score || 0),
     quality_report: payload.qualityReport || payload.quality_report || {},
-    generated_package: generatedPackage,
+    generated_package: storedPreviewPackage,
     package_checksum: createHash("sha256").update(JSON.stringify(generatedPackage)).digest("hex"),
     metadata: {
       ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
