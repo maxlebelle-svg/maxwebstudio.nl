@@ -420,7 +420,7 @@ function buildCurrentWebsiteSnapshot(html, context = {}) {
     .filter((item) => item.length >= 35);
   const pricingItems = extractPricingItems(raw);
   const imageUrls = extractImageUrls(raw, baseUrl).slice(0, 8);
-  const socialUrls = extractUrls(raw, /(https?:\/\/(?:www\.)?(?:instagram|facebook|linkedin|youtube|youtu\.be|tiktok)\.com\/[^"'<\s)]+)/gi, 8);
+  const socialUrls = extractSocialAnchorUrls(raw, baseUrl, 8);
   return {
     sourceUrl: baseUrl,
     title: cleanExtractedText(context.titleText),
@@ -550,7 +550,7 @@ function extractContactData(html, baseUrl = "") {
     .filter((item) => !/example|sentry|schema|wix|wordpress/i.test(item));
   const phones = uniqueMatches(text, /(?:\+31|0031|0)\s?(?:6|7[0-9]|8[0-9]|[1-5][0-9])(?:[\s().-]?\d){7,9}/g, 8);
   const addresses = uniqueMatches(text, /\b[A-ZÀ-Ÿ][a-zà-ÿ.' -]{2,40}\s+\d{1,4}[a-z]?\s*,?\s+[1-9]\d{3}\s?[A-Z]{2}\s+[A-ZÀ-Ÿ][a-zà-ÿ.' -]{2,40}/g, 4);
-  const socialUrls = extractUrls(raw, /(https?:\/\/(?:www\.)?(?:instagram|facebook|linkedin|youtube|youtu\.be|tiktok)\.com\/[^"'<\s)]+)/gi, 12);
+  const socialUrls = extractSocialAnchorUrls(raw, baseUrl, 12);
   const openingHours = uniqueMatches(text, /\b(?:maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma\.?|di\.?|wo\.?|do\.?|vr\.?|za\.?|zo\.?)\s*[:\-]?\s*\d{1,2}[:.]\d{2}\s*[-–]\s*\d{1,2}[:.]\d{2}/gi, 8);
   return {
     emails,
@@ -1088,6 +1088,31 @@ function extractUrls(html, pattern, limit = 8) {
   return items;
 }
 
+function extractSocialAnchorUrls(html, baseUrl = "", limit = 8) {
+  const allowedDomains = ["instagram.com", "facebook.com", "linkedin.com", "youtube.com", "youtu.be", "tiktok.com"];
+  const seenPlatforms = new Set();
+  const urls = [];
+  const pattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi;
+  let match;
+  while ((match = pattern.exec(String(html || ""))) && urls.length < limit) {
+    try {
+      const href = decodeEntities(match[1]);
+      const url = new URL(href, baseUrl || undefined);
+      const domain = allowedDomains.find((item) => url.hostname === item || url.hostname.endsWith(`.${item}`));
+      if (url.protocol !== "https:" || !domain || seenPlatforms.has(domain)) continue;
+      const path = url.pathname.toLowerCase();
+      if (/\/(?:tr|plugins|dialog|sharer|share|accounts|developer|whatsapp)(?:\/|$)/.test(path)) continue;
+      if (/(?:pixel|tracking|redirect|share)=/i.test(url.search)) continue;
+      seenPlatforms.add(domain);
+      url.hash = "";
+      urls.push(url.toString());
+    } catch {
+      // Ignore malformed or non-web links found in the source markup.
+    }
+  }
+  return urls;
+}
+
 function absolutizeUrl(value = "", baseUrl = "") {
   const raw = String(value || "").trim();
   if (!raw || raw.startsWith("data:")) return "";
@@ -1229,3 +1254,5 @@ function jsonResponse(statusCode, body) {
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };
 }
+
+exports._private = { extractSocialAnchorUrls };

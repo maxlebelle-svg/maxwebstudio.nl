@@ -223,7 +223,29 @@ const INDUSTRY_PROFILES = [
     secondaryCta: "Bekijk behandelingen",
     services: ["Behandelingen", "Stylingadvies", "Afspraak maken", "Arrangementen", "Verzorging"],
   }),
-  profile("hospitality", ["restaurant", "horeca", "cafe", "hotel", "b&b", "reserveren", "bakker", "bakkerij", "brood", "banket", "patisserie", "patissier", "taart", "gebak"], {
+  profile("bakery", ["bakker", "bakkerij", "thuisbakkerij", "patisserie", "patissier", "taart", "taarten", "gebak", "cupcake", "cupcakes", "macaron", "macarons"], {
+    label: "Thuisbakkerij en patisserie",
+    colors: { ink: "#2b1d20", brand: "#8f3f58", accent: "#d39157", soft: "#fff8f1", dark: "#321f25" },
+    hero: "Huisgemaakte zoetigheden, vers op bestelling.",
+    intro: "Ontdek feestelijke taarten, cupcakes en macarons met aandacht gemaakt en persoonlijk geleverd.",
+    eyebrow: "Taarten, cupcakes en macarons uit eigen bakkerij",
+    cta: "Bekijk het assortiment",
+    secondaryCta: "Bestellen of een vraag",
+    services: ["Taarten", "Macarons", "Cupcakes", "Meringuerol", "Honey Cake", "Bestellen en bezorgen"],
+    benefits: [
+      ["Huisgemaakt met aandacht", "Elke bestelling wordt vers en met zorg in de eigen bakkerij gemaakt."],
+      ["Voor ieder feestelijk moment", "Van cupcakes en macarons tot een complete taart voor een bijzondere gelegenheid."],
+      ["Duidelijk assortiment", "Bezoekers zien snel welke zoetigheden beschikbaar zijn en hoe ze kunnen bestellen."],
+      ["Persoonlijk contact", "Vragen over smaak, formaat of uitvoering kunnen eenvoudig worden besproken."],
+    ],
+    process: [
+      ["Kies uw favoriet", "Bekijk taarten, cupcakes, macarons en andere huisgemaakte zoetigheden."],
+      ["Geef uw wensen door", "Bespreek smaak, formaat, gelegenheid en het gewenste moment."],
+      ["Vers bereid", "De bestelling wordt met aandacht en volgens afspraak klaargemaakt."],
+      ["Bezorgd of afgehaald", "U ontvangt duidelijk bericht over levering of het afgesproken afhaalmoment."],
+    ],
+  }),
+  profile("hospitality", ["restaurant", "horeca", "cafe", "hotel", "b&b", "reserveren"], {
     label: "Horeca en hospitality",
     colors: { ink: "#201a17", brand: "#6f3429", accent: "#d6a458", soft: "#fbf5ec", dark: "#261b15" },
     hero: "Een eerste indruk die direct zin geeft om te reserveren.",
@@ -655,6 +677,7 @@ function normalizePricingPackage(item = {}, services = []) {
   const price = normalizePriceText(rawPrice || cleanText(item.sourceText || "").match(pricePattern())?.[0]);
   if (!price) return null;
   const serviceFallback = serviceList.find((service) => cleanText(item.sourceText || item.description || "").toLowerCase().includes(String(service).toLowerCase()));
+  if (rawName && !/[a-zà-ÿ]{3}/i.test(rawName) && !serviceFallback) return null;
   const name = cleanText(rawName || serviceFallback || "Pakket").replace(/\s+/g, " ").slice(0, 70);
   const description = cleanText(item.description || item.sourceText || "Prijs gevonden op basis van de huidige website of intake. Controleer voor publicatie.").slice(0, 170);
   return {
@@ -1489,6 +1512,11 @@ function isBeautyProfile(profile = {}) {
   return /beauty|schoonheid|salon|kapper|huidverzorging/.test(text);
 }
 
+function isBakeryProfile(profile = {}) {
+  const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""} ${profile?.name || ""}`.toLowerCase();
+  return /bakery|bakker|bakkerij|patisserie/.test(text);
+}
+
 function isTreeCareProfile(profile = {}) {
   const text = `${profile?.key || ""} ${profile?.id || ""} ${profile?.label || ""}`.toLowerCase();
   return /boomverzorging|boombeheer|boomspecialist|tree-care|arborist/.test(text);
@@ -1538,6 +1566,46 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     subPageIntro: "kan deze pagina later aanvullen met echte cases, foto's en klantreacties.",
     footerLabel: packageRules.label,
   };
+  if (isBakeryProfile(profile)) {
+    return {
+      ...defaults,
+      quickActionTitle: "Bekijk het assortiment",
+      quickActionText: "Taarten, macarons, cupcakes en meer",
+      contactActionTitle: "Bestellen of maatwerk",
+      contactActionText: "Vraag naar smaak, formaat of bezorgmoment",
+      servicesEyebrow: "Vers uit de eigen bakkerij",
+      servicesTitle: "Huisgemaakte zoetigheden voor ieder feestelijk moment.",
+      pricingEyebrow: "Assortiment & prijzen",
+      pricingTitle: "Productprijzen uit het actuele assortiment.",
+      pricingText: "De getoonde prijzen komen uit de bestaande webshop. Controleer varianten en beschikbaarheid voor publicatie.",
+      portfolioEyebrow: "Assortiment in beeld",
+      portfolioTitle: "Bekijk de mogelijkheden per zoetigheid.",
+      portfolioCopy: "Kies een categorie om bijpassende producten en smaken te bekijken.",
+      benefitsEyebrow: "Waarom deze bakkerij",
+      benefitsTitle: "Huisgemaakt, persoonlijk en feestelijk.",
+      benefitsText: "Van de eerste keuze tot het afgesproken bezorgmoment blijft bestellen helder en persoonlijk.",
+      sourceEyebrow: "Het echte assortiment als basis",
+      sourceTitle: "Herkenbare producten, warmer gepresenteerd.",
+      sourceText: "Deze preview gebruikt de bestaande webshop, productcategorieën en fotografie als vertrekpunt.",
+      processEyebrow: "Zo werkt bestellen",
+      processTitle: "Van favoriete zoetigheid tot een vers bereide bestelling.",
+      reviewsEyebrow: "Ervaringen",
+      reviewsTitle: "Klanten over de huisgemaakte zoetigheden.",
+      reviewOneTitle: "Vers gemaakt en met aandacht verzorgd.",
+      reviewOneText: "Het assortiment en de bestelroute geven direct een betrouwbare en persoonlijke indruk.",
+      reviewTwoTitle: "Een feestelijke bestelling zonder onduidelijkheid.",
+      reviewTwoText: "Smaak, uitvoering en levering kunnen vooraf eenvoudig worden afgestemd.",
+      contactEyebrow: "Bestelling of vraag",
+      contactTitle: "Iets lekkers gezien of een taart op maat bespreken?",
+      projectLabel: "Waar heeft u interesse in?",
+      messageLabel: "Vertel uw wensen",
+      messagePlaceholder: "Vertel welke zoetigheid, smaak, formaat en datum u in gedachten heeft.",
+      subPageEyebrow: "Huisgemaakte patisserie",
+      subPageText: "presenteert hier het assortiment, productinformatie en de mogelijkheden voor maatwerk.",
+      subPageIntro: "kan deze pagina aanvullen met actuele producten, smaken en bezorginformatie.",
+      footerLabel: "Huisgemaakte taarten, cupcakes en macarons",
+    };
+  }
   if (isTreeCareProfile(profile)) {
     return {
       ...defaults,
@@ -1723,6 +1791,13 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
 
 function navigationLinks(packageRules = PACKAGE_RULES.starter, profile = {}) {
   if (packageRules.navigation === "scroll") {
+    if (isBakeryProfile(profile)) {
+      return [
+        { href: "#diensten", label: "Assortiment" },
+        { href: "#werkwijze", label: "Zo werkt bestellen" },
+        { href: "#contact", label: "Bestellen" },
+      ];
+    }
     if (isDrivingSchoolProfile(profile)) {
       return [
         { href: "#diensten", label: "Rijlessen" },
@@ -1763,7 +1838,10 @@ function normalizeSocialLinks(values = []) {
       const url = new URL(cleanText(value));
       const match = platforms.find(([domain]) => url.hostname === domain || url.hostname.endsWith(`.${domain}`));
       if (url.protocol !== "https:" || !match) return null;
-      const key = `${match[1]}:${url.toString()}`;
+      const path = url.pathname.toLowerCase();
+      if (/\/(?:tr|plugins|dialog|sharer|share|accounts|developer|whatsapp)(?:\/|$)/.test(path)) return null;
+      if (/(?:pixel|tracking|redirect|share)=/i.test(url.search)) return null;
+      const key = match[1];
       if (seen.has(key)) return null;
       seen.add(key);
       return { url: url.toString(), label: match[1] };
@@ -1775,13 +1853,19 @@ function normalizeSocialLinks(values = []) {
 
 function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, region = "", preferSixServiceGrid = false, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {}, googleReviews = [], googleRating = "", googleRatingTotal = "", googleMapsUrl = "" }) {
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
+  const bakery = isBakeryProfile(profile);
   const demoCopy = demoCopyForIndustry(profile, packageRules);
   const navLinks = navigationLinks(packageRules, profile).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
   const phoneHref = phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact";
   const secondaryCtaLabel = profile.secondaryCta || "Bel direct";
   const secondaryCtaHref = /bel|telefoon|whatsapp|direct/i.test(secondaryCtaLabel) ? phoneHref : "#diensten";
   const emailHref = email ? `mailto:${escapeHtml(email)}` : "#contact";
+  const primaryCtaHref = bakery ? "#diensten" : "#contact";
   const cityLine = extractLocationText(region || industry) || "uw regio";
+  const sourceText = [currentWebsite.title, currentWebsite.metaDescription, currentWebsite.h1, ...(currentWebsite.paragraphs || [])].join(" ");
+  const heroIntro = bakery && /gratis\s+bezorg/i.test(sourceText)
+    ? `${profile.intro} Gratis bezorging in ${cityLine}.`
+    : (profile.intro || description);
   const logoAsset = assetPath(siteAssets, "logo", "");
   const faviconAsset = assetPath(siteAssets, "favicon", "");
   const ogAsset = assetPath(siteAssets, "og", "");
@@ -1914,7 +1998,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
     <link rel="stylesheet" href="styles.css" />
     <script type="application/ld+json">${JSON.stringify({
       "@context": "https://schema.org",
-      "@type": "LocalBusiness",
+      "@type": bakery ? "Bakery" : "LocalBusiness",
       name: businessName,
       url: siteUrl,
       telephone: phone || undefined,
@@ -1931,7 +2015,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         ${navLinks}
       </nav>
       <div class="nav-contact"><a class="nav-phone" href="${escapeHtml(phoneHref)}">${escapeHtml(phone || cta)}</a>${socialLinks.length ? `<div class="social-links">${socialLinkHtml}</div>` : ""}</div>
-      <a class="nav-cta" href="#contact">${escapeHtml(cta)}</a>
+      <a class="nav-cta" href="${escapeHtml(primaryCtaHref)}">${escapeHtml(cta)}</a>
     </header>
     <main id="top">
       <section class="hero" data-mws-section-id="home.hero" data-mws-section-type="hero" data-mws-section-label="Hero">
@@ -1940,22 +2024,22 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         <div class="hero-copy">
           <span class="eyebrow" data-mws-field="eyebrow">${escapeHtml(profile.eyebrow || style)}</span>
           <h1 data-mws-field="title">${escapeHtml(profile.hero)}</h1>
-          <p data-mws-field="description">${escapeHtml(profile.intro || description)}</p>
+          <p data-mws-field="description">${escapeHtml(heroIntro)}</p>
           <div class="hero-actions">
-            <a class="button" data-mws-field="primary-cta" href="#contact">${escapeHtml(cta)}</a>
+            <a class="button" data-mws-field="primary-cta" href="${escapeHtml(primaryCtaHref)}">${escapeHtml(cta)}</a>
             <a class="button secondary" data-mws-field="secondary-cta" href="${escapeHtml(secondaryCtaHref)}">${escapeHtml(secondaryCtaLabel)}</a>
           </div>
           <div class="hero-proof">
-            <span><strong>${services.length}</strong> specialisaties</span>
+            <span><strong>${services.length}</strong> ${bakery ? "categorieën" : "specialisaties"}</span>
             <span><strong>${packageRules.pages.length}</strong> ${escapeHtml(statLabel)}</span>
-            <span><strong>${escapeHtml(cityLine)}</strong> werkgebied</span>
+            <span><strong>${escapeHtml(cityLine)}</strong> ${bakery ? "bezorggebied" : "werkgebied"}</span>
           </div>
         </div>
       </section>
 
       <section class="contact-bar" aria-label="Snelle contactacties">
-        <a href="${escapeHtml(phoneHref)}"><strong>Direct bellen</strong><span>${escapeHtml(phone || "Telefoon toevoegen")}</span></a>
-        <a href="#contact"><strong>${escapeHtml(demoCopy.quickActionTitle)}</strong><span>${escapeHtml(demoCopy.quickActionText)}</span></a>
+        <a href="${escapeHtml(bakery && !phone ? emailHref : phoneHref)}"><strong>${bakery && !phone ? "Persoonlijk contact" : "Direct bellen"}</strong><span>${escapeHtml(phone || email || "Contact opnemen")}</span></a>
+        <a href="${bakery ? "#diensten" : "#contact"}"><strong>${escapeHtml(demoCopy.quickActionTitle)}</strong><span>${escapeHtml(demoCopy.quickActionText)}</span></a>
         <a href="#contact"><strong>${escapeHtml(demoCopy.contactActionTitle)}</strong><span>${escapeHtml(demoCopy.contactActionText)}</span></a>
       </section>
 
@@ -2071,7 +2155,9 @@ function renderCss() {
 }
 
 function renderScript({ businessName, email, services, industryProfile = null }) {
-  const portfolioCopy = isDrivingSchoolProfile(industryProfile)
+  const portfolioCopy = isBakeryProfile(industryProfile)
+    ? (service) => `Bekijk ${service.toLowerCase()} uit het huisgemaakte assortiment en bespreek smaak, formaat en gewenst moment.`
+    : isDrivingSchoolProfile(industryProfile)
     ? (service) => `${service} krijgt eigen uitleg, passend beeld en een directe route naar proefles of pakketadvies.`
     : (service) => `${service} krijgt een eigen visuele presentatie, korte uitleg en een directe route naar aanvraag of contact.`;
   const portfolio = Object.fromEntries(services.slice(0, 6).map((service) => [service, {
@@ -2105,7 +2191,7 @@ if (form) {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const data = new FormData(form);
-    const subject = "Aanvraag via ${escapeJs(businessName)}";
+    const subject = "${isBakeryProfile(industryProfile) ? "Bestelling of vraag" : "Aanvraag"} via ${escapeJs(businessName)}";
     const body = [
       "Naam: " + (data.get("naam") || ""),
       "Telefoon: " + (data.get("telefoon") || ""),
@@ -2123,6 +2209,14 @@ if (form) {
 
 function serviceText(service, profile = {}) {
   const text = String(service || "").toLowerCase();
+  if (isBakeryProfile(profile)) {
+    if (/macaron/.test(text)) return "Kleurrijke macarons met een verfijnde vulling, huisgemaakt voor een feestelijk moment of als smakelijk cadeau.";
+    if (/cupcake/.test(text)) return "Verse cupcakes met een feestelijke afwerking, verkrijgbaar in verschillende smaken en uitvoeringen.";
+    if (/meringue/.test(text)) return "Een luchtige meringuerol met een zachte vulling, vers bereid en mooi afgewerkt.";
+    if (/honey|honing/.test(text)) return "Een karaktervolle laagjestaart met honing, met aandacht opgebouwd voor een volle smaak.";
+    if (/taart|cake|gebak/.test(text)) return "Huisgemaakte taart voor verjaardag, feest of een ander bijzonder moment, met smaak en uitvoering in overleg.";
+    if (/bestel|bezorg|afhaal/.test(text)) return "Kies uw favoriet en stem datum, uitvoering en levering eenvoudig persoonlijk af.";
+  }
   if (/boominspectie|boomcontrole/.test(text)) return "De conditie en veiligheid van de boom worden zorgvuldig beoordeeld, inclusief een praktisch advies voor onderhoud of vervolgwerk.";
   if (/eikenprocessierups/.test(text)) return "Een gerichte aanpak om overlast van de eikenprocessierups veilig te beperken, afgestemd op boom, locatie en omgeving.";
   if (/aanplant/.test(text)) return "Van boomkeuze tot standplaats en eerste verzorging: een gezonde start die past bij de beschikbare ruimte.";
