@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentifier": "commercial-offer-signhost-digest-repair-2026-08-04",
+  "fileCount": 1,
+  "files": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260804155000_repair_commercial_signhost_digest_calls.sql",
+      "bytes": 9553,
+      "sha256": "f00c4fec191683c31ae97e6d03c0419a2e77b01ddb8f6c86b6a9de40ae4f5177"
+    }
+  ]
+}

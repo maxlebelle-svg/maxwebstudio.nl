@@ -78,6 +78,13 @@ function render() {
       if (reconciliationError) return renderMessage(reconciliationError, true);
       return renderMessage(`${text} Controleer de providerstatus alleen handmatig als de klant al heeft getekend.`, false);
     }
+    if (signing.status === 'signed' && !fulfilment) {
+      button.textContent = 'Automatische opvolging hervatten';
+      button.dataset.phase2Mode = 'reconcile';
+      button.disabled = pending;
+      if (reconciliationError) return renderMessage(reconciliationError, true);
+      return renderMessage('Ondertekening is bevestigd · klant, factuur en Mollie-testlink moeten nog worden klaargezet.', false);
+    }
     return ['completed', 'signed_pending_processing'].includes(signing.status) ? complete(text) : renderMessage(text, signing.status === 'failed');
   }
   if (!state.interestConfirmed) return renderMessage('Beschikbaar zodra de klant “Ik wil verder praten” heeft bevestigd.', true);

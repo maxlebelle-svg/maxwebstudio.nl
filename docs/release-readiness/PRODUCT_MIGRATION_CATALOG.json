@@ -107,6 +107,10 @@
     {
       "manifest": "docs/release-readiness/commercial-offer-signing-recipient-binding/MANIFEST.json",
       "fileset": "docs/release-readiness/commercial-offer-signing-recipient-binding/FILESET.json"
+    },
+    {
+      "manifest": "docs/release-readiness/commercial-offer-signhost-digest-repair/MANIFEST.json",
+      "fileset": "docs/release-readiness/commercial-offer-signhost-digest-repair/FILESET.json"
     }
   ]
 }
