@@ -22,7 +22,16 @@ async function activateSignedCommercialOffer(context, signing) {
 
 async function ensureCustomerFromLead(context,lead,offer,signing){
   const existingId=clean(lead.converted_customer_id||lead.customer_id);
-  if(existingId){const rows=await rest(context,`customers?select=*&id=eq.${existingId}&limit=1`);if(rows[0])return rows[0];}
+  if(existingId){
+    const rows=await rest(context,`customers?select=*&id=eq.${existingId}&limit=1`);
+    if(rows[0]){
+      if(!clean(rows[0].email)&&clean(lead.email)){
+        const patched=await patch(context,"customers",`id=eq.${existingId}`,{email:clean(lead.email).toLowerCase(),updated_at:new Date().toISOString()});
+        return patched[0]||{...rows[0],email:clean(lead.email).toLowerCase()};
+      }
+      return rows[0];
+    }
+  }
   const email=clean(lead.email).toLowerCase();
   if(email){const existing=await rest(context,`customers?select=*&email=eq.${encodeURIComponent(email)}&limit=1`);if(existing[0]){await markLeadWon(context,lead,existing[0].id,offer,signing);return existing[0];}}
   const now=new Date().toISOString();const customerRows=await rest(context,"customers",{method:"POST",body:{id:crypto.randomUUID(),name:clean(lead.contact_name||lead.name||lead.company_name||lead.company),company:clean(lead.company_name||lead.company||lead.name),email,phone:clean(lead.phone),website:clean(lead.website||lead.website_url),package:"Maatwerk",status:"onboarding",portal_status:"prepared",metadata:{createdBy:"commercial_offer_signhost_postback",createdFromLeadId:lead.id,signedOfferId:offer.id,signedOfferVersionId:signing.offer_version_id,signedAt:signing.signed_at||now},updated_at:now}});

@@ -127,7 +127,13 @@ test("a signed transaction without fulfilment exposes an idempotent resume actio
   assert.match(composer,/button\.dataset\.phase2Mode = 'resume'/);
   assert.match(composer,/action: 'resume_fulfilment'/);
   assert.match(endpoint,/action === "resume_fulfilment"/);
-  assert.match(endpoint,/await fulfilSignedCommercialOffer/);
+  assert.match(endpoint,/await activateSignedCommercialOffer[\s\S]*await fulfilSignedCommercialOffer/);
+});
+
+test("activation repairs an existing converted test customer without an email",()=>{
+  const activation=read("functions/services/commercialOfferActivationService.js");
+  assert.match(activation,/!clean\(rows\[0\]\.email\)&&clean\(lead\.email\)/);
+  assert.match(activation,/patch\(context,"customers",`id=eq\.\$\{existingId\}`/);
 });
 
 test("Signhost checksum repair uses the deployed pgcrypto bytea signature",()=>{

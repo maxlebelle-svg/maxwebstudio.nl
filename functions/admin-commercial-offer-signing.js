@@ -14,6 +14,7 @@ const {
 } = require("./services/signhostService");
 const { processCommercialPostback } = require("./signhost-postback")._internal;
 const { fulfilSignedCommercialOffer } = require("./services/commercialOfferFulfilmentService");
+const { activateSignedCommercialOffer } = require("./services/commercialOfferActivationService");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ROLES = ["super_admin", "admin", "sales_manager", "sales_partner", "sales"];
@@ -82,8 +83,14 @@ async function resumeFulfilment(query, actor, config) {
   if (!providerTransactionId || !Number.isInteger(providerStatus)) {
     throw problem(409, "SIGNHOST_TRANSACTION_MISSING", "De bevestigde Signhost-transactie kon niet veilig worden teruggevonden.");
   }
+  const serviceContext = { url: config.url, service: config.key };
+  await activateSignedCommercialOffer(serviceContext, {
+    ...signing,
+    status: "signed",
+    signed_at: signing.signed_at || new Date().toISOString(),
+  });
   await fulfilSignedCommercialOffer(
-    { url: config.url, service: config.key },
+    serviceContext,
     providerTransactionId,
     providerStatus,
   );
@@ -138,6 +145,7 @@ async function requestSignature(input, actor, config) {
   const signerName = clean(input.signerName || context.relationship.contactName || context.relationship.companyName);
   const signerEmail = clean(input.signerEmail || context.relationship.email).toLowerCase();
   if (!validEmail(signerEmail) || signerName.length < 2 || signerName.length > 160) throw problem(400, "SIGNER_INVALID", "Controleer de naam en het e-mailadres van de ondertekenaar.");
+  await persistSignerEmailIfMissing(context, signerEmail, config);
   const reservation = await rpc(config, "commercial_reserve_signature_v1", {
     input_actor_profile_id: actor.profileId,
     input_actor_auth_user_id: actor.id,
@@ -173,6 +181,16 @@ async function requestSignature(input, actor, config) {
     }).catch(() => {});
     throw error;
   }
+}
+
+async function persistSignerEmailIfMissing(context, signerEmail, config) {
+  if (validEmail(context.relationship.email)) return;
+  const table = context.offer.relationship_type === "lead" ? "leads" : "customers";
+  await serviceRest(config.url, config.key, `${table}?id=eq.${context.offer.relationship_id}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ email: signerEmail, updated_at: new Date().toISOString() }),
+  });
 }
 
 async function loadSigningContext(offerVersionId, actor, config) {

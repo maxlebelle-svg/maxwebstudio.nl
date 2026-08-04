@@ -66,6 +66,8 @@ test("admin composer exposes signature only after confirmed interest", () => {
   assert.match(endpoint, /reconcile_signature/);
   assert.match(endpoint, /resume_fulfilment/);
   assert.match(endpoint, /fulfilSignedCommercialOffer/);
+  assert.match(endpoint, /activateSignedCommercialOffer[\s\S]*fulfilSignedCommercialOffer/);
+  assert.match(endpoint, /persistSignerEmailIfMissing/);
   assert.match(endpoint, /getTransaction/);
   assert.match(endpoint, /commercial_reserve_signature_v1/);
   assert.match(endpoint, /SIGNABLE_DOCUMENT_INTEGRITY_FAILED/);
@@ -80,6 +82,15 @@ test("admin composer exposes signature only after confirmed interest", () => {
   assert.match(endpoint, /SIGNHOST_RECONCILE_/);
   assert.match(html, /offer-composer-phase2\.js/);
   assert.match(ui, /klantstatus, factuur, betaallink en productieoverdracht automatisch/i);
+});
+
+test("production repair restores both idempotent fulfilment RPCs to the API schema", () => {
+  const sql = read("supabase/migrations/20260804173000_repair_commercial_fulfilment_rpcs.sql");
+  assert.match(sql, /create or replace function public\.commercial_claim_signed_fulfilment_v1/);
+  assert.match(sql, /create or replace function public\.commercial_finalize_fulfilment_v1/);
+  assert.match(sql, /grant execute[\s\S]*service_role/);
+  assert.match(sql, /notify pgrst,'reload schema'/);
+  assert.doesNotMatch(sql, /grant execute[^;]*\b(?:anon|authenticated)\b/i);
 });
 
 test("Signhost and Mollie webhooks complete the two provider halves", () => {
