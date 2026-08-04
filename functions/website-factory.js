@@ -744,20 +744,25 @@ async function submitBrowserReview(context, payload = {}) {
   const automaticRepairPlanned = processed.browserRepair.retryAvailable
     && processed.browserRepair.repairPlan.some((item) => item.automatic === true);
   if (automaticRepairPlanned) {
-    const runtimeJob = normalizeBuildJob(await readBuildJobRuntimeById(context, job.id, PACKAGE_SUPABASE_TIMEOUT_MS));
-    if (!isUsableGeneratedPackage(runtimeJob.generatedPackage) || artifactHashForPackage(runtimeJob.generatedPackage) !== expectedArtifactHash) {
+    const runtimePreview = await readPreviewVersionRuntimeByBuildJobId(context, job.id);
+    let repairSource = runtimePreview?.generatedPackage;
+    const previewMatches = isUsableGeneratedPackage(repairSource)
+      && cleanArtifactHash(runtimePreview?.packageChecksum) === expectedArtifactHash;
+    if (!previewMatches) {
+      const runtimeJob = normalizeBuildJob(await readBuildJobRuntimeById(context, job.id, PACKAGE_SUPABASE_TIMEOUT_MS));
+      repairSource = runtimeJob.generatedPackage;
+    }
+    if (!isUsableGeneratedPackage(repairSource) || (!previewMatches && artifactHashForPackage(repairSource) !== expectedArtifactHash)) {
       const error = new Error("Het opgeslagen websitepakket komt niet overeen met de gecontroleerde preview.");
       error.status = 409;
       error.code = "BROWSER_ARTIFACT_MISMATCH";
       error.expectedArtifactHash = expectedArtifactHash;
       throw error;
     }
-    repair = applyAutomaticBrowserRepairs({ generatedPackage: runtimeJob.generatedPackage, browserRepair: processed.browserRepair });
+    repair = applyAutomaticBrowserRepairs({ generatedPackage: repairSource, browserRepair: processed.browserRepair });
   }
   const retryAvailable = processed.browserRepair.retryAvailable && repair.changed;
-  const repairedStaticReport = repair.changed
-    ? runQualityCheck({ generatedPackage: repair.generatedPackage, journey: mapJourney(journeyRow) })
-    : job.qualityReport;
+  const repairedStaticReport = job.qualityReport;
   const nextArtifactHash = repair.changed ? artifactHashForPackage(repair.generatedPackage) : expectedArtifactHash;
   const nextBrowserRepair = {
     ...processed.browserRepair,
@@ -778,7 +783,6 @@ async function submitBrowserReview(context, payload = {}) {
     progress: retryAvailable ? 88 : 92,
     preview_score: processed.report.score,
     quality_report: nextQualityReport,
-    ...(repair.changed ? { generated_package: repair.generatedPackage } : {}),
     error_message: retryAvailable
       ? `Automatische reparatie toegepast. Browsercontrole ${nextBrowserRepair.attempts + 1} is vereist.`
       : "Browsercontrole blijft afgekeurd en vereist handmatige beoordeling.",
@@ -790,11 +794,12 @@ async function submitBrowserReview(context, payload = {}) {
       blockers: processed.report.blockers.map((item) => item.id),
     }),
   };
-  await patchBuildJob(context, job.id, nextRecord);
+  let repairedPreviewPackage = null;
   if (previewVersion?.id) {
+    repairedPreviewPackage = repair.changed ? compactFactoryPreviewPackage(repair.generatedPackage) : null;
     await patchPreviewVersion(context, previewVersion.id, {
       ...(repair.changed ? {
-        generated_package: compactFactoryPreviewPackage(repair.generatedPackage),
+        generated_package: repairedPreviewPackage,
         package_checksum: nextArtifactHash,
       } : {}),
       preview_score: processed.report.score,
@@ -805,10 +810,12 @@ async function submitBrowserReview(context, payload = {}) {
         browserReviewedAt: processed.report.reviewedAt,
         customerPreviewReady: false,
         browserRepair: nextBrowserRepair,
+        ...(repairedPreviewPackage?.meta?.previewStorage ? { previewStorage: repairedPreviewPackage.meta.previewStorage } : {}),
       },
       updated_at: new Date().toISOString(),
     });
   }
+  await patchBuildJob(context, job.id, nextRecord);
   return {
     buildJob: sanitizeBuildJob(normalizeBuildJob({ ...row, ...nextRecord })),
     browserReview: processed.report,
@@ -1888,6 +1895,7 @@ async function createPreviewVersion(context, payload = {}) {
       renderValidatedAt: renderValidation.passed ? new Date().toISOString() : "",
       editorManifestAvailable,
       sectionMarkersAvailable,
+      ...(storedPreviewPackage?.meta?.previewStorage ? { previewStorage: storedPreviewPackage.meta.previewStorage } : {}),
     },
     is_active: true,
     status: "internal",

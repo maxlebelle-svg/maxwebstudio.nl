@@ -41,4 +41,30 @@ function compactFactoryPreviewPackage(generatedPackage = {}) {
   };
 }
 
-module.exports = { compactFactoryPreviewPackage, safePublicDemoAssetMap };
+function mergeFactoryPreviewPackage(canonicalPackage = {}, previewPackage = {}) {
+  const canonicalFiles = Array.isArray(canonicalPackage?.files) ? canonicalPackage.files : [];
+  const previewFiles = Array.isArray(previewPackage?.files) ? previewPackage.files : [];
+  if (!canonicalFiles.length) return previewPackage;
+  if (!previewFiles.length) return canonicalPackage;
+
+  const previewByPath = new Map(previewFiles.map((file) => [cleanPath(file?.path), file]));
+  const mergedFiles = canonicalFiles.map((file) => previewByPath.get(cleanPath(file?.path)) || file);
+  const canonicalPaths = new Set(canonicalFiles.map((file) => cleanPath(file?.path)));
+  for (const file of previewFiles) {
+    if (!canonicalPaths.has(cleanPath(file?.path))) mergedFiles.push(file);
+  }
+
+  const previewMeta = previewPackage?.meta && typeof previewPackage.meta === "object" ? previewPackage.meta : {};
+  const { previewStorage: _previewStorage, ...contentMeta } = previewMeta;
+  return {
+    ...canonicalPackage,
+    ...previewPackage,
+    files: mergedFiles,
+    meta: {
+      ...(canonicalPackage?.meta || {}),
+      ...contentMeta,
+    },
+  };
+}
+
+module.exports = { compactFactoryPreviewPackage, mergeFactoryPreviewPackage, safePublicDemoAssetMap };

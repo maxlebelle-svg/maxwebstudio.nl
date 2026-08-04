@@ -158,7 +158,8 @@ test("the Factory endpoint and employee view expose the browser repair loop", ()
   assert.match(endpoint, /BROWSER_ARTIFACT_MISMATCH/);
   assert.match(endpoint, /readBuildJobReviewById\(context, jobId\)/);
   assert.match(endpoint, /automaticRepairPlanned/);
-  assert.match(endpoint, /generated_package: compactFactoryPreviewPackage\(repair\.generatedPackage\)/);
+  assert.match(endpoint, /repairedPreviewPackage = repair\.changed \? compactFactoryPreviewPackage\(repair\.generatedPackage\) : null/);
+  assert.doesNotMatch(endpoint, /\.\.\.\(repair\.changed \? \{ generated_package: repair\.generatedPackage \} : \{\}\)/);
   assert.match(endpoint, /current_step: retryAvailable \? "browser_review_required" : "browser_review_failed"/);
   assert.match(endpoint, /customerPreviewReady: true/);
   assert.match(factoryView, /\["Browsercontrole", browserStatus\]/);
