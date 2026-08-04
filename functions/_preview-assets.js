@@ -71,7 +71,9 @@ function binaryAssetResponse({ event = {}, buffer = Buffer.alloc(0), contentType
 function rewriteHtmlAssetAttributes(value = "", { currentFile = "index.html", route } = {}) {
   if (typeof route !== "function") return String(value || "");
   return String(value || "").replace(/\b(src|href|poster|srcset|imagesrcset)\s*=\s*(["'])([\s\S]*?)\2/gi, (match, attribute, quote, reference) => {
-    const rewritten = /srcset$/i.test(attribute) ? rewriteSrcset(reference, { currentFile, route }) : rewriteSingleReference(reference, { currentFile, route });
+    const rewritten = /srcset$/i.test(attribute)
+      ? rewriteSrcset(reference, { currentFile, route, attribute })
+      : rewriteSingleReference(reference, { currentFile, route, attribute });
     return rewritten === reference ? match : `${attribute}=${quote}${rewritten}${quote}`;
   });
 }
@@ -94,12 +96,12 @@ function rewriteSrcset(value = "", options = {}) {
   }).join(",");
 }
 
-function rewriteSingleReference(value = "", { currentFile = "index.html", route } = {}) {
+function rewriteSingleReference(value = "", { currentFile = "index.html", route, attribute = "" } = {}) {
   const reference = String(value || "").trim();
   if (/^(?:data:|javascript:)/i.test(reference)) return "";
   if (!reference || shouldRemainExternal(reference)) return value;
   const resolved = resolveRelativePreviewPath(reference, currentFile);
-  return resolved ? route(resolved) : "";
+  return resolved ? route(resolved, { attribute }) : "";
 }
 
 function resolveRelativePreviewPath(value = "", currentFile = "index.html") {

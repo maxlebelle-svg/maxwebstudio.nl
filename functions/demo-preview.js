@@ -100,7 +100,7 @@ exports.handler = async (event) => {
   const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
   const resolvedPreviewVersionId = cleanText(previewVersion?.id || requestedPreviewVersionId);
   let content = file?.path?.endsWith(".html")
-    ? rewritePreviewHtml(inlinePreviewPackageAssets(fileContent, previewPackage, { id, token, source: resolvedSource, previewVersionId: resolvedPreviewVersionId }), id, token, resolvedSource, resolvedPreviewVersionId, file.path)
+    ? inlinePreviewPackageAssets(fileContent, previewPackage, { id, token, source: resolvedSource, previewVersionId: resolvedPreviewVersionId, currentFile: file.path })
     : file?.path?.endsWith(".css")
       ? rewritePreviewAssetReferences(fileContent, id, token, resolvedSource, resolvedPreviewVersionId, file.path)
     : fileContent;
@@ -190,16 +190,47 @@ function resolvePreviewFilePath(value = {}, requestedFilePath = "") {
 function inlinePreviewPackageAssets(html = "", previewPackage = {}, context = {}) {
   const files = Array.isArray(previewPackage?.files) ? previewPackage.files : [];
   const fileMap = new Map(files.map((file) => [cleanRelativePath(file?.path), file]).filter(([path]) => path));
-  const inlineCss = (css = "") => rewritePreviewAssetReferences(String(css || ""), context.id, context.token, context.source, context.previewVersionId);
-  return String(html || "")
+  const dataUriCache = new Map();
+  const maxInlineAssetBytes = 1_500_000;
+  // Count every inserted data URI, including repeated CSS references. This
+  // keeps the final HTML response safely below Netlify's 6 MB response cap.
+  const maxInlineEncodedBytes = 4_500_000;
+  let inlineEncodedBytes = 0;
+  const fallbackRoute = (path) => previewAssetUrl(path, context.id, context.token, context.source, context.previewVersionId);
+  const assetRoute = (path, options = {}) => {
+    const normalizedPath = cleanRelativePath(path);
+    if (/srcset$/i.test(cleanText(options.attribute))) return fallbackRoute(normalizedPath);
+    if (dataUriCache.has(normalizedPath)) {
+      const cached = dataUriCache.get(normalizedPath);
+      if (inlineEncodedBytes + Buffer.byteLength(cached, "utf8") > maxInlineEncodedBytes) return fallbackRoute(normalizedPath);
+      inlineEncodedBytes += Buffer.byteLength(cached, "utf8");
+      return cached;
+    }
+    const asset = fileMap.get(normalizedPath);
+    const contentType = contentTypeFor(asset?.path || normalizedPath).split(";")[0];
+    if (!asset || (!contentType.startsWith("image/") && !contentType.startsWith("font/"))) return fallbackRoute(normalizedPath);
+    const bytes = asset.encoding === "base64"
+      ? Buffer.from(cleanText(asset.content), "base64")
+      : Buffer.from(String(asset.content || ""), "utf8");
+    if (!bytes.length || bytes.length > maxInlineAssetBytes) return fallbackRoute(normalizedPath);
+    const dataUri = `data:${contentType};base64,${bytes.toString("base64")}`;
+    if (inlineEncodedBytes + Buffer.byteLength(dataUri, "utf8") > maxInlineEncodedBytes) return fallbackRoute(normalizedPath);
+    inlineEncodedBytes += Buffer.byteLength(dataUri, "utf8");
+    dataUriCache.set(normalizedPath, dataUri);
+    return dataUri;
+  };
+  const htmlWithInlineStyleAssets = rewriteCssAssetReferences(String(html || ""), { currentFile: context.currentFile || "index.html", route: assetRoute });
+  const rendered = htmlWithInlineStyleAssets
     .replace(/<link([^>]+?)href=["']([^"']+\.css)["']([^>]*)>/gi, (match, _before, assetPath) => {
       const asset = fileMap.get(cleanRelativePath(assetPath));
-      return asset ? `<style data-preview-asset="${escapeHtml(cleanRelativePath(assetPath))}">${inlineCss(fileContentFor(asset))}</style>` : match;
+      const css = asset ? rewriteCssAssetReferences(fileContentFor(asset), { currentFile: cleanRelativePath(assetPath), route: assetRoute }) : "";
+      return asset ? `<style data-preview-asset="${escapeHtml(cleanRelativePath(assetPath))}">${css}</style>` : match;
     })
     .replace(/<script([^>]+?)src=["']([^"']+\.js)["']([^>]*)><\/script>/gi, (match, _before, assetPath) => {
       const asset = fileMap.get(cleanRelativePath(assetPath));
       return asset ? `<script data-preview-asset="${escapeHtml(cleanRelativePath(assetPath))}">${fileContentFor(asset)}<\/script>` : match;
     });
+  return rewriteHtmlAssetAttributes(rendered, { currentFile: context.currentFile || "index.html", route: assetRoute });
 }
 
 function cleanRelativePath(value = "") {

@@ -212,7 +212,7 @@ function auditExpression() {
     const label = (el) => el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')||el.labels?.[0]?.innerText||el.title||el.innerText||el.value||'';
     const all=[...document.querySelectorAll('body *')].filter(visible);
     const overflowElements=all.filter(el=>{const r=el.getBoundingClientRect();return r.right>innerWidth+2||r.left<-2;}).slice(0,25).map(el=>el.tagName.toLowerCase()+'.'+String(el.className||'').split(' ').slice(0,2).join('.'));
-    const clippedElements=all.filter(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return (s.overflow==='hidden'||s.overflowX==='hidden')&&el.scrollWidth>el.clientWidth+4&&r.width>20;}).slice(0,25).map(el=>el.tagName.toLowerCase());
+    const clippedElements=all.filter(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return s.textOverflow!=='ellipsis'&&(s.overflow==='hidden'||s.overflowX==='hidden')&&el.scrollWidth>el.clientWidth+4&&r.width>20;}).slice(0,25).map(el=>el.tagName.toLowerCase());
     const overlapRisks=[...document.querySelectorAll('[style*="position: fixed"],.fixed,.sticky')].filter(visible).filter(el=>el.getBoundingClientRect().height>innerHeight*.45).map(el=>el.tagName.toLowerCase());
     const tinyText=all.filter(el=>el.children.length===0&&String(el.textContent||'').trim()&&parseFloat(getComputedStyle(el).fontSize)<12).slice(0,25).map(el=>String(el.textContent||'').trim().slice(0,40));
     const controls=[...document.querySelectorAll('input:not([type=hidden]),select,textarea')].filter(visible);

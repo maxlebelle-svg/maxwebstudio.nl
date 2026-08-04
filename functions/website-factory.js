@@ -62,7 +62,7 @@ const PREVIEW_SUMMARY_FIELDS = [
   "preview_score", "metadata", "is_active", "status", "created_by", "created_at", "feedback_items", "approved_at",
   "published_to_portal", "published_at",
 ].join(",");
-const PREVIEW_BROWSER_REVIEW_FIELDS = "id,build_job_id,package_checksum,metadata";
+const PREVIEW_BROWSER_REVIEW_FIELDS = "id,build_job_id,package_checksum,metadata,is_active";
 const RESUMABLE_BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "retryable"]);
 const DEFAULT_SUPABASE_TIMEOUT_MS = 8000;
 const PACKAGE_SUPABASE_TIMEOUT_MS = 30000;
@@ -581,7 +581,7 @@ async function getBrowserReviewQueueResponse(context, payload) {
       if (jobs.length >= requestedLimit) break;
       const previewVersion = await readPreviewVersionBrowserReviewByBuildJobId(context, candidate.id);
       const artifactHash = cleanArtifactHash(previewVersion?.packageChecksum || candidate.qualityReport?.browserRepair?.artifactHash);
-      if (artifactHash) jobs.push({ ...candidate, artifactHash });
+      if (artifactHash && previewVersion?.isActive === true) jobs.push({ ...candidate, artifactHash });
     }
     if (rows.length < pageSize) break;
     offset += pageSize;

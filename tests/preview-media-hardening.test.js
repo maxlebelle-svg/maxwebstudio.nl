@@ -136,7 +136,7 @@ test("Factory renderer rewrites and ranges media for the exact preview version",
   const base = { id: IDS.journey, token, source: "factory", previewVersionId: IDS.version };
   const page = await factoryRenderer.handler({ httpMethod: "GET", headers: {}, queryStringParameters: base });
   const partial = await factoryRenderer.handler({ httpMethod: "GET", headers: { Range: "bytes=4-7" }, queryStringParameters: { ...base, file: "assets/hollink-hero-small.mp4" } });
-  assert.match(page.body, /file=assets%2Fhero-poster\.jpeg/);
+  assert.match(page.body, /poster="data:image\/jpeg;base64,/);
   assert.match(page.body, /file=assets%2Fhollink-hero-small\.mp4/);
   assert.equal(partial.statusCode, 206);
   assert.equal(partial.headers["Content-Type"], "video/mp4");

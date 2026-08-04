@@ -41,6 +41,7 @@ test("worker reviews mobile, tablet and desktop and submits immutable evidence",
   assert.match(worker, /image\.loading = 'eager'/);
   assert.match(worker, /window\.scrollTo\(0, y\)/);
   assert.match(worker, /image\.addEventListener\('error', settled/);
+  assert.match(worker, /s\.textOverflow!==\'ellipsis\'/);
 });
 
 test("Factory exposes only eligible builds through the browser review queue", () => {
@@ -57,7 +58,8 @@ test("Factory exposes only eligible builds through the browser review queue", ()
   assert.match(endpoint, /pageSize = Math\.max\(50, requestedLimit \* 10\)/);
   assert.match(endpoint, /select: BUILD_JOB_QUEUE_SCAN_FIELDS/);
   assert.match(endpoint, /readPreviewVersionBrowserReviewByBuildJobId\(context, candidate\.id\)/);
-  assert.match(endpoint, /PREVIEW_BROWSER_REVIEW_FIELDS = "id,build_job_id,package_checksum,metadata"/);
+  assert.match(endpoint, /PREVIEW_BROWSER_REVIEW_FIELDS = "id,build_job_id,package_checksum,metadata,is_active"/);
+  assert.match(endpoint, /previewVersion\?\.isActive === true/);
   assert.doesNotMatch(endpoint, /readBuildJobRuntimeById\(context, candidate\.id/);
   assert.match(endpoint, /order: "updated_at\.desc"/);
   assert.doesNotMatch(endpoint, /limit: String\(requestedLimit \* 3\)/);
