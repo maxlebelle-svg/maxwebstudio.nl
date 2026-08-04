@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js"></script>
   </head>
-  <body class="admin-body" data-shared-admin-sidebar="true">
+  <body class="admin-body website-factory-page" data-shared-admin-sidebar="true">
     <main class="admin-crm-shell">
       <div id="admin-sidebar-root" aria-live="polite"></div>
       <section id="admin-sidebar-session-panel" class="mws-sidebar-session-panel" aria-label="Sessiebeheer" hidden>
@@ -22632,6 +22632,7 @@
         }
 
         async function analyzeWebsiteForFactory() {
+          reportFactoryProcessStage("Bestaande website analyseren");
           const website = knownWebsiteUrl();
           if (!website) {
             setMessage(elements.message, "Vul eerst de bestaande website URL in, of werk handmatig verder zonder scan.", "warning");
@@ -24677,6 +24678,12 @@
           });
         }
 
+        function reportFactoryProcessStage(label = "") {
+          const cleanLabel = String(label || "").trim();
+          if (!cleanLabel) return;
+          window.dispatchEvent(new CustomEvent("factory:process-stage", { detail: { label: cleanLabel } }));
+        }
+
         async function quickBuild(input = {}) {
           const businessName = String(input.businessName || "").trim();
           const websiteUrl = String(input.websiteUrl || "").trim();
@@ -24727,6 +24734,7 @@
           saveIntakeLocally();
           renderIntakeFields();
 
+          reportFactoryProcessStage("Bedrijfsgegevens en briefing opslaan");
           // A quick build must never reuse an older lead briefing after the employee changes the identity or wishes.
           if (elements.briefing) elements.briefing.value = buildBriefing();
           const savedJourney = await saveJourney();
@@ -24757,6 +24765,7 @@
               }
             }
           }
+          reportFactoryProcessStage("Ontwerp en preview bouwen");
           const result = await generatePreview(currentPackageType(), { surface: "quick" });
           if (!result) {
             const error = lastFactoryActionError || new Error("De previewbuild is niet gestart.");
@@ -27303,6 +27312,66 @@
           }
         }
 
+        let activeFactoryProcessIndicator = null;
+
+        function formatFactoryElapsed(milliseconds = 0) {
+          const totalSeconds = Math.max(0, Math.floor(Number(milliseconds || 0) / 1000));
+          const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+          const seconds = String(totalSeconds % 60).padStart(2, "0");
+          return `${minutes}:${seconds}`;
+        }
+
+        function startFactoryProcessIndicator(initialLabel = "Website Factory voorbereiden") {
+          activeFactoryProcessIndicator?.cancel?.();
+          const startedAt = Date.now();
+          let currentLabel = String(initialLabel || "Website Factory voorbereiden").trim();
+          let timer = 0;
+          let stopped = false;
+          let controller = null;
+          const toast = window.showToast?.(`${currentLabel} · 00:00`, "info", { persistent: true, loading: true });
+          const render = () => {
+            if (stopped) return;
+            toast?.update(`${currentLabel} · ${formatFactoryElapsed(Date.now() - startedAt)}`, "info", { persistent: true, loading: true });
+          };
+          const stop = () => {
+            if (stopped) return false;
+            stopped = true;
+            window.clearInterval(timer);
+            if (activeFactoryProcessIndicator === controller) activeFactoryProcessIndicator = null;
+            return true;
+          };
+          controller = {
+            stage(label = "") {
+              const cleanLabel = String(label || "").trim();
+              if (cleanLabel) currentLabel = cleanLabel;
+              render();
+              return controller;
+            },
+            complete(message = "Preview klaar voor controle.") {
+              if (!stop()) return controller;
+              toast?.update(message, "success", { duration: 3600 });
+              return controller;
+            },
+            fail(message = "De Website Factory kon de verwerking niet afronden.") {
+              if (!stop()) return controller;
+              toast?.update(message, "error", { duration: 7000 });
+              return controller;
+            },
+            cancel() {
+              if (!stop()) return controller;
+              toast?.close?.();
+              return controller;
+            },
+          };
+          activeFactoryProcessIndicator = controller;
+          timer = window.setInterval(render, 1000);
+          return controller;
+        }
+
+        window.addEventListener("factory:process-stage", (event) => {
+          activeFactoryProcessIndicator?.stage?.(event.detail?.label || "");
+        });
+
         async function runQuickBuild() {
           const business = value("#factory-quick-business");
           const website = value("#factory-quick-website");
@@ -27316,12 +27385,15 @@
           if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
           if (retryButton) retryButton.hidden = true;
           if (message) message.textContent = "Demo-aanvraag opslaan en previewbuild starten…";
+          const processIndicator = startFactoryProcessIndicator("Website Factory voorbereiden");
           try {
             const result = await window.WebsiteFactoryRuntime.quickBuild({ businessName: business, websiteUrl: website, place: value("#factory-quick-place"), wishes: value("#factory-quick-wishes") });
             const version = result?.previewVersion?.version || result?.buildJob?.previewVersion || result?.buildStatus?.previewVersion || "";
             const ready = result?.previewVersion?.renderable === true || Boolean(window.WebsiteFactoryRuntime?.getState?.().hasPreview);
             const warning = Array.isArray(result?.warnings) ? result.warnings.filter(Boolean)[0] : "";
-            if (message) message.textContent = [ready ? `Preview klaar${version ? ` als versie ${version}` : ""}.` : `Previewbuild gestart${version ? ` voor versie ${version}` : ""}.`, warning].filter(Boolean).join(" ");
+            const resultMessage = [ready ? `Preview klaar${version ? ` als versie ${version}` : ""}.` : `Previewbuild gestart${version ? ` voor versie ${version}` : ""}.`, warning].filter(Boolean).join(" ");
+            if (message) message.textContent = resultMessage;
+            processIndicator.complete(resultMessage || "Previewbuild is gestart.");
             syncFactoryMode(ready);
             if (ready) activateFactoryTab("preview");
           } catch (error) {
@@ -27334,6 +27406,7 @@
               : responseJson.message || error?.message || "De previewbuild kon niet worden gestart.";
             const cleanMessage = String(concreteMessage).replace(/\s*Request-id:\s*[A-Z0-9-]+/gi, "").trim();
             if (message) message.textContent = [cleanMessage, phase ? `Fase: ${phase}.` : "", requestId ? `Request-id: ${requestId}` : ""].filter(Boolean).join(" ");
+            processIndicator.fail(cleanMessage);
             if (retryButton) retryButton.hidden = false;
           } finally {
             if (button) { button.disabled = false; button.setAttribute("aria-busy", "false"); }

@@ -230,3 +230,19 @@ test("build history links every completed job to its stored preview version", ()
   assert.match(renderBuildStatus, /Number\(version\?\.version \|\| 0\) === Number\(job\.previewVersion \|\| 0\)/);
   assert.doesNotMatch(renderBuildStatus, /job === latest \? capability : \{ versionStored: false/);
 });
+
+test("quick build shows a timed top-right process indicator with real Factory stages", () => {
+  assert.match(factory, /<body class="admin-body website-factory-page"/);
+  assert.match(factory, /function startFactoryProcessIndicator\(/);
+  assert.match(factory, /function formatFactoryElapsed\(/);
+  assert.match(factory, /\{ persistent: true, loading: true \}/);
+  for (const stage of [
+    "Bedrijfsgegevens en briefing opslaan",
+    "Bestaande website analyseren",
+    "Ontwerp en preview bouwen",
+  ]) assert.match(factory, new RegExp(stage));
+  assert.match(factory, /processIndicator\.complete\(/);
+  assert.match(factory, /processIndicator\.fail\(/);
+  assert.match(styles, /\.website-factory-page \.toast\.is-loading \.toast-progress/);
+  assert.match(styles, /@keyframes factoryLoadingProgress/);
+});
