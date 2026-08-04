@@ -115,6 +115,25 @@ test("runtime failures stay fail-closed instead of receiving a speculative repai
   assert.ok(result.browserRepair.repairPlan.some((item) => item.id === "runtime_repair" && item.automatic === false));
 });
 
+test("missing image assets require manual repair instead of a speculative CSS rewrite", () => {
+  const pkg = generatedPackage();
+  const evidence = evidenceFor(pkg, ["mobile_layout", "mobile_typography"]);
+  evidence.viewports.mobile.checks.layout.details = "0 afgekapte elementen; 0 overlaprisico's; 25 ontbrekende afbeeldingen.";
+  const result = processBrowserReview({
+    staticReport: { passed: true },
+    evidence,
+    generatedPackage: pkg,
+  });
+  const repaired = applyAutomaticBrowserRepairs({ generatedPackage: pkg, browserRepair: result.browserRepair });
+
+  assert.deepEqual(result.browserRepair.repairPlan, [{
+    id: "asset_repair",
+    automatic: false,
+    message: "Ontbrekende afbeeldingen vereisen herstel van de website-assets.",
+  }]);
+  assert.equal(repaired.changed, false);
+});
+
 test("the repair loop stops after the configured number of automatic attempts", () => {
   const pkg = generatedPackage();
   const previousQualityReport = { browserRepair: { attempts: MAX_BROWSER_REPAIR_ATTEMPTS } };
