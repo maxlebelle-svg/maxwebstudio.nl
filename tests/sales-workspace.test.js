@@ -11,6 +11,7 @@ const salesCss = fs.readFileSync(path.resolve(__dirname, "../public/admin/styles
 const leadFinderSource = fs.readFileSync(path.resolve(__dirname, "../public/src/services/leadFinderService.js"), "utf8");
 const apiSource = fs.readFileSync(path.resolve(__dirname, "../functions/admin-leads.js"), "utf8");
 const migration = fs.readFileSync(path.resolve(__dirname, "../supabase/migration-drafts/026_sales_workspace_normalized_fields.sql"), "utf8");
+const proposalSentMigration = fs.readFileSync(path.resolve(__dirname, "../supabase/migrations/20260805210000_sync_definitive_offer_dispatch_to_lead.sql"), "utf8");
 const favoritesFilterHarness = fs.readFileSync(path.resolve(__dirname, "fixtures/sales-workspace-favorites-filter.html"), "utf8");
 
 const now = new Date("2026-07-15T12:00:00+02:00");
@@ -26,6 +27,7 @@ const requiredSmartViews = [
   ["business_cards", "Visitekaartjes"],
   ["interested", "Geïnteresseerd"], ["callback", "Terugbellen"], ["voicemail", "Voicemails"],
   ["not_interested", "Niet geïnteresseerd"], ["demos", "Demo’s"], ["payment", "Wacht op betaling"],
+  ["proposal_sent", "Voorstel verstuurd"],
   ["won", "Gewonnen"], ["lost", "Verloren"], ["archived", "Gearchiveerd"],
 ];
 
@@ -128,7 +130,20 @@ test("handmatig indeelbare vakken sluiten algemene en datumweergaven uit", () =>
   const values = model.MANUAL_SMART_VIEWS.map(({ value }) => value);
   assert(!values.includes("all"));
   assert(!values.includes("today"));
+  assert(!values.includes("proposal_sent"));
   ["new", "business_cards", "interested", "callback", "voicemail", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"].forEach((value) => assert(values.includes(value)));
+});
+
+test("een provider-bevestigd definitief voorstel vult automatisch Voorstel verstuurd", () => {
+  const sentLead = { leadStatus: "proposal_sent", pipelineStage: "awaiting_feedback", metadata: { manualSmartView: "callback" } };
+  assert.equal(model.matchesSmartView(sentLead, "proposal_sent", now), true);
+  assert.equal(model.matchesSmartView({ leadStatus: "new", pipelineStage: "new" }, "proposal_sent", now), false);
+  assert.equal(model.matchesSmartView({ ...sentLead, leadStatus: "won", wonAt: "2026-07-15T10:00:00Z" }, "proposal_sent", now), false);
+  assert.equal(model.matchesSmartView({ ...sentLead, leadStatus: "lost", lostAt: "2026-07-15T10:00:00Z" }, "proposal_sent", now), false);
+  assert.match(proposalSentMigration, /new\.dispatch_kind <> 'definitive'/);
+  assert.match(proposalSentMigration, /new\.status <> 'sent'/);
+  assert.match(proposalSentMigration, /lead_status = ['\"]?proposal_sent['\"]?/);
+  assert.match(proposalSentMigration, /lead_status not in \('won', 'lost', 'customer'\)/);
 });
 
 test("handmatige invoer bewaart Visitekaartjes via het beveiligde leadcontract", () => {

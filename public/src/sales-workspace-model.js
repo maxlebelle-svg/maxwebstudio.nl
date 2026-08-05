@@ -36,11 +36,11 @@
     ["all", "Alle leads"], ["today", "Vandaag actie"], ["new", "Nieuwe leads"],
     ["business_cards", "Visitekaartjes"],
     ["interested", "Geïnteresseerd"], ["callback", "Terugbellen"], ["voicemail", "Voicemails"],
-    ["not_interested", "Niet geïnteresseerd"], ["demos", "Demo’s"], ["payment", "Wacht op betaling"],
+    ["not_interested", "Niet geïnteresseerd"], ["demos", "Demo’s"], ["proposal_sent", "Voorstel verstuurd"], ["payment", "Wacht op betaling"],
     ["won", "Gewonnen"], ["lost", "Verloren"], ["archived", "Gearchiveerd"],
     ["hot", "Warme leads"], ["customers", "Klanten"], ["closed", "Afgesloten"],
   ].map(([value, label]) => Object.freeze({ value, label })));
-  const MANUAL_SMART_VIEWS = Object.freeze(SMART_VIEWS.filter(({ value }) => !["all", "today"].includes(value)));
+  const MANUAL_SMART_VIEWS = Object.freeze(SMART_VIEWS.filter(({ value }) => !["all", "today", "proposal_sent"].includes(value)));
   const MANUAL_SMART_VIEW_VALUES = new Set(MANUAL_SMART_VIEWS.map(({ value }) => value));
 
   const FAVORITE_WRITE_ROLES = new Set(["super_admin", "admin", "sales_manager", "sales_partner"]);
@@ -121,6 +121,7 @@
     if (view === "not_interested") return item.interestLevel === "not_interested";
     if (view === "hot") return item.interestLevel === "hot" || item.leadScore >= 80;
     if (view === "demos") return ["demo_planned", "demo_in_progress", "demo_sent", "awaiting_feedback"].includes(item.pipelineStage);
+    if (view === "proposal_sent") return item.leadStatus === "proposal_sent" && !isArchivedLead(item) && !isLostLead(item) && !isWonLead(item);
     if (view === "payment") return item.pipelineStage === "awaiting_payment";
     if (view === "won") return isWonLead(item);
     if (view === "lost") return isLostLead(item);
