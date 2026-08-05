@@ -41,6 +41,13 @@ test("signed offer fulfilment uses immutable version totals", () => {
   assert.equal(fulfilment.packageLabel({ lines: [{ componentType: "one_time", productName: "Business website" }, { componentType: "recurring", productName: "Care" }] }), "Business website");
 });
 
+test("signed-offer fulfilment never reuses a checkout from the other Mollie environment", () => {
+  assert.equal(fulfilment.invoiceMatchesMollieEnvironment({ environment: "test", is_demo: true }, { testMode: false }), false);
+  assert.equal(fulfilment.invoiceMatchesMollieEnvironment({ environment: "production", is_demo: false }, { testMode: false }), true);
+  assert.equal(fulfilment.invoiceMatchesMollieEnvironment({ environment: "test", is_demo: true }, { testMode: true }), true);
+  assert.equal(fulfilment.invoiceMatchesMollieEnvironment({ environment: "production", is_demo: false }, { testMode: true }), false);
+});
+
 test("pre-payment customer state stays inside the canonical CRM schema", () => {
   const service = read("functions/services/commercialOfferFulfilmentService.js");
   assert.match(service, /status: existing\?\.status \|\| "onboarding"/);

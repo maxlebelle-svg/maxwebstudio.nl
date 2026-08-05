@@ -10,6 +10,8 @@ const INVOICE_FIELDS = [
   "mollie_checkout_url",
   "mollie_payment_status",
   "mollie_payment_expires_at",
+  "environment",
+  "is_demo",
   "customer_id",
 ].join(",");
 const terminalMollieStatuses = new Set(["paid", "failed", "expired", "canceled"]);
@@ -41,7 +43,7 @@ exports.handler = async (event) => {
       return jsonResponse(400, { success: false, error: "Factuurbedrag moet groter zijn dan 0." });
     }
 
-    if (hasReusableCheckout(invoice)) {
+    if (hasReusableCheckout(invoice, config)) {
       return jsonResponse(200, {
         success: true,
         reused: true,
@@ -271,11 +273,14 @@ function normalizeInvoice(row) {
   };
 }
 
-function hasReusableCheckout(invoice) {
+function hasReusableCheckout(invoice, config = {}) {
   const checkoutUrl = cleanText(invoice.mollie_checkout_url);
   const paymentId = cleanText(invoice.mollie_payment_id);
   const paymentStatus = cleanText(invoice.mollie_payment_status || invoice.status).toLowerCase();
   if (!checkoutUrl || !paymentId) return false;
+  const environment = cleanText(invoice.environment).toLowerCase();
+  const invoiceIsTest = invoice.is_demo === true || environment === "test";
+  if (config.testMode ? !invoiceIsTest : invoiceIsTest || !["production", "live"].includes(environment)) return false;
   const expiresAt = cleanText(invoice.mollie_payment_expires_at);
   if (expiresAt) {
     const expiryDate = new Date(expiresAt);
@@ -283,6 +288,8 @@ function hasReusableCheckout(invoice) {
   }
   return !terminalMollieStatuses.has(paymentStatus);
 }
+
+exports._private = { readConfig, hasReusableCheckout };
 
 async function safeCreateTimeline(input) {
   try {

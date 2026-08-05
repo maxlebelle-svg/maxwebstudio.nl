@@ -23,9 +23,13 @@ async function fulfilSignedCommercialOffer(context, providerTransactionId, provi
         factoryProjectId: factoryProject?.id || null,
       });
     }
-    const invoice = claim.invoiceId
+    let invoice = claim.invoiceId
       ? await fetchOne(context, `invoices?select=*&id=eq.${encodeURIComponent(claim.invoiceId)}&limit=1`)
       : await ensureInvoice(context, identity, customer, commercial, payment, claim);
+    const paymentConfig = mollieConfig();
+    if (invoice && !invoiceMatchesMollieEnvironment(invoice, paymentConfig)) {
+      invoice = await ensureInvoice(context, identity, customer, commercial, payment, claim);
+    }
     const mollie = await ensureMolliePayment(context, invoice, identity, commercial, payment, claim);
     return finalize(context, claim.runId, "payment_pending", {
       customerId: customer.id,
@@ -217,10 +221,10 @@ async function ensureInvoice(context, identity, customer, commercial, payment, c
 }
 
 async function ensureMolliePayment(context, invoice, identity, commercial, payment, claim) {
-  if (clean(invoice.mollie_payment_id) && clean(invoice.mollie_checkout_url) && !["failed", "expired", "canceled"].includes(clean(invoice.mollie_payment_status))) {
+  const config = mollieConfig();
+  if (invoiceMatchesMollieEnvironment(invoice, config) && clean(invoice.mollie_payment_id) && clean(invoice.mollie_checkout_url) && !["failed", "expired", "canceled"].includes(clean(invoice.mollie_payment_status))) {
     return { paymentId: invoice.mollie_payment_id, checkoutUrl: invoice.mollie_checkout_url, reused: true };
   }
-  const config = mollieConfig();
   const response = await fetch("https://api.mollie.com/v2/payments", {
     method: "POST",
     headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
@@ -288,6 +292,11 @@ function mollieConfig() {
   if ((!testMode || mode !== "test") && !liveAllowed) throw coded("COMMERCIAL_MOLLIE_LIVE_BLOCKED", 403, "Live betalingen zijn nog niet vrijgegeven.");
   return { apiKey, mode, testMode, siteUrl };
 }
+function invoiceMatchesMollieEnvironment(invoice = {}, config = {}) {
+  const environment = clean(invoice.environment).toLowerCase();
+  const invoiceIsTest = invoice.is_demo === true || environment === "test";
+  return config.testMode ? invoiceIsTest : !invoiceIsTest && ["production", "live"].includes(environment);
+}
 function assertEnabled() { if (clean(process.env.COMMERCIAL_OFFER_POST_SIGNATURE_ENABLED).toLowerCase() !== "true") throw coded("COMMERCIAL_POST_SIGNATURE_DISABLED", 403, "De automatisering na ondertekening is nog niet geactiveerd."); }
 function packageLabel(snapshot = {}) { const names = (Array.isArray(snapshot.lines) ? snapshot.lines : []).filter((line) => line.componentType === "one_time").map((line) => clean(line.productName)).filter(Boolean); return names.slice(0, 3).join(" + ") || "Max Webstudio opdracht"; }
 function invoiceLines(snapshot, payment, paymentChoice) {
@@ -313,5 +322,5 @@ function coded(code, status, message) { return Object.assign(new Error(message),
 
 module.exports = {
   fulfilSignedCommercialOffer,
-  _private: { paymentAmounts, relationshipIdentity, packageLabel, invoiceLines, orderId, mollieConfig, safeCode },
+  _private: { paymentAmounts, relationshipIdentity, packageLabel, invoiceLines, orderId, mollieConfig, invoiceMatchesMollieEnvironment, safeCode },
 };

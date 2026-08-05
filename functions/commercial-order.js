@@ -46,7 +46,7 @@ exports.handler = async (event) => {
     const input = validatePayload(rawPayload, event);
     input.testOrder = Boolean(config.testMode);
     const existingInvoice = await fetchExistingOrderInvoice(config, input.orderId);
-    if (existingInvoice?.mollie_checkout_url && ["draft", "sent", "payment_pending", "open"].includes(cleanText(existingInvoice.status || existingInvoice.mollie_payment_status).toLowerCase())) {
+    if (hasReusableOrderCheckout(existingInvoice, config)) {
       return jsonResponse(200, {
         success: true,
         checkoutUrl: cleanText(existingInvoice.mollie_checkout_url),
@@ -146,10 +146,7 @@ function readConfig(options = {}) {
   const mollieMode = cleanText(process.env.MOLLIE_MODE || "test").toLowerCase();
   const configuredTestKey = process.env.MOLLIE_TEST_API_KEY;
   const configuredDefaultKey = process.env.MOLLIE_API_KEY;
-  const publicCheckoutTestPayments = publicCheckout && Boolean(configuredTestKey);
-  const mollieApiKey = publicCheckoutTestPayments
-    ? configuredTestKey
-    : (mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey);
+  const mollieApiKey = mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey;
   const siteUrl = (process.env.SITE_URL || getCompanySettings().websiteUrl || "").replace(/\/$/, "");
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -158,18 +155,10 @@ function readConfig(options = {}) {
   if (!mollieApiKey || !siteUrl || !supabaseUrl || !serviceRoleKey) {
     return { success: false, response: jsonResponse(500, { success: false, error: "Nieuwe opdracht kan nog niet worden afgerekend." }) };
   }
-  if (publicCheckout && !testMode) {
-    console.error("Public checkout blocked without Mollie test key", {
-      mollieMode,
-      hasMollieTestApiKey: Boolean(configuredTestKey),
-      defaultKeyPrefix: keyPrefix(configuredDefaultKey),
-    });
-    return { success: false, response: jsonResponse(403, { success: false, error: "Testbetaling kan nog niet worden gestart. Neem contact op met Max Webstudio." }) };
-  }
-  if (!publicCheckout && (mollieMode !== "test" || !testMode) && !livePaymentsAllowed) {
+  if ((mollieMode !== "test" || !testMode) && !livePaymentsAllowed) {
     return { success: false, response: jsonResponse(403, { success: false, error: "Betalingen staan nog in testmodus." }) };
   }
-  return { success: true, mollieApiKey, siteUrl, supabaseUrl, serviceRoleKey, mollieMode, testMode, publicCheckoutTestPayments };
+  return { success: true, mollieApiKey, siteUrl, supabaseUrl, serviceRoleKey, mollieMode, testMode, publicCheckout };
 }
 
 function validatePayload(payload = {}, event = {}) {
@@ -388,6 +377,8 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
     status: "draft",
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
     notes,
+    environment: input.testOrder ? "test" : "production",
+    is_demo: Boolean(input.testOrder),
     updated_at: new Date().toISOString(),
   });
 }
@@ -435,9 +426,29 @@ async function createMolliePayment(config, invoice, input, totals) {
 async function fetchExistingOrderInvoice(config, orderId) {
   const safeOrderId = cleanText(orderId);
   if (!safeOrderId) return null;
-  const fields = "id,invoice_number,title,total,status,notes,mollie_payment_id,mollie_checkout_url,mollie_payment_status";
+  const fields = "id,invoice_number,title,total,status,notes,environment,is_demo,mollie_payment_id,mollie_checkout_url,mollie_payment_status,mollie_payment_expires_at";
   const filter = `notes=ilike.*${encodeURIComponent(safeOrderId)}*`;
   return fetchSingle(config, "invoices", fields, filter).catch(() => null);
+}
+
+function invoicePaymentEnvironment(invoice = {}) {
+  const notes = cleanText(invoice.notes);
+  const environment = cleanText(invoice.environment).toLowerCase();
+  if (invoice.is_demo === true || environment === "test" || /TESTORDER\s*-\s*Mollie testbetaling/i.test(notes) || /"testOrder"\s*:\s*true/i.test(notes)) return "test";
+  if (["production", "live"].includes(environment)) return "live";
+  return "";
+}
+
+function hasReusableOrderCheckout(invoice, config = {}) {
+  if (!invoice?.mollie_checkout_url || !invoice?.mollie_payment_id) return false;
+  const status = cleanText(invoice.mollie_payment_status || invoice.status).toLowerCase();
+  if (!["draft", "sent", "payment_pending", "open"].includes(status)) return false;
+  const expiresAt = cleanText(invoice.mollie_payment_expires_at);
+  if (expiresAt) {
+    const expiry = new Date(expiresAt);
+    if (!Number.isNaN(expiry.getTime()) && expiry.getTime() <= Date.now()) return false;
+  }
+  return invoicePaymentEnvironment(invoice) === (config.testMode ? "test" : "live");
 }
 
 async function fetchSingle(config, table, fields, filter) {
@@ -627,13 +638,6 @@ function cleanText(value) {
   return String(value || "").trim();
 }
 
-function keyPrefix(value) {
-  const key = cleanText(value);
-  if (key.startsWith("test_")) return "test_";
-  if (key.startsWith("live_")) return "live_";
-  return key ? "unknown" : "missing";
-}
-
 function parsePayload(body) {
   try {
     return JSON.parse(body || "{}");
@@ -646,4 +650,4 @@ function jsonResponse(statusCode, body) {
   return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(body) };
 }
 
-exports._private = { validatePayload };
+exports._private = { validatePayload, readConfig, invoicePaymentEnvironment, hasReusableOrderCheckout };
