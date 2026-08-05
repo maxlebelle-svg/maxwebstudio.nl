@@ -11,6 +11,7 @@ const browser = read("public/src/offer-composer.js");
 const css = read("public/src/offer-composer.css");
 const endpoint = read("functions/admin-commercial-offers.js");
 const migration = read("supabase/migrations/20260730150000_commercial_offer_foundation.sql");
+const discountPersistenceMigration = read("supabase/migrations/20260805154500_fix_commercial_offer_discount_persistence.sql");
 const catalog = require("../functions/_commercial-catalog");
 const offers = require("../functions/services/commercialOfferService");
 const documents = require("../functions/services/commercialDocumentRegistry");
@@ -187,6 +188,17 @@ test("15g every Composer action shows a visible elapsed timer below browser over
   assert.match(browser, /window\.setInterval/);
   assert.match(css, /\.offer-composer-page \.toast-region\s*\{[^}]*top:\s*92px/s);
   assert.match(css, /z-index:\s*2147483000/);
+});
+
+test("15h the database persists every approved discount against pre-discount line totals", () => {
+  assert.match(discountPersistenceMigration, /expected_discount_percentage not in \(0,10,15,20,25,50,75\)/);
+  assert.match(discountPersistenceMigration, /expected_discount := round\(expected_one_time_before_discount::numeric \* expected_discount_percentage \/ 100\)::bigint/);
+  assert.match(discountPersistenceMigration, /expected_one_time := expected_one_time_before_discount - expected_discount/);
+  assert.match(discountPersistenceMigration, /oneTimeBeforeDiscountExVatCents/);
+  assert.match(discountPersistenceMigration, /discountExVatCents/);
+  assert.match(discountPersistenceMigration, /expected_one_time_vat := round\(expected_one_time::numeric \* 21 \/ 100\)::bigint/);
+  assert.match(discountPersistenceMigration, /when 'fixed_deposit' then least\(coalesce\(\(input_snapshot->>'fixedDepositExVatCents'\)::bigint,0\),expected_one_time\)/);
+  assert.match(discountPersistenceMigration, /grant execute on function public\.commercial_create_offer_version_v1[\s\S]*to service_role/);
 });
 
 test("16 cents and VAT formatting preserve nineteen euros ninety-five", async () => {
