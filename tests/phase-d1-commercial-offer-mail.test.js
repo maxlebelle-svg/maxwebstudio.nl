@@ -198,7 +198,7 @@ test("database enforces preview then successful test then definitive send", () =
   assert.match(migration, /Test mail cannot create an interest token/);
   assert.match(migration, /Successful test mail evidence is required/);
   assert.match(browser, /previewed && tested/);
-  assert.match(html, /Pas na geslaagde testmail/);
+  assert.match(html, /Blijft altijd een handmatige actie/);
 });
 
 test("mail dispatches are idempotent, rate limited and provider ambiguity is not retried", () => {

@@ -252,6 +252,23 @@ test("21 definitive send starts disabled and requires preview plus successful te
   assert.match(endpoint, /PHASE_B_TRANSITION_BLOCKED/);
 });
 
+test("21b one save starts the safe automatic preparation chain while definitive send stays manual", () => {
+  assert.match(html, /id="save-draft"[^>]*>Opslaan en voorbereiden</);
+  assert.match(html, /Opent automatisch na opslaan/);
+  assert.match(html, /Wordt automatisch veilig verzonden/);
+  assert.match(html, /Blijft altijd een handmatige actie/);
+  const saveHandler = browser.match(/async function saveDraft\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  assert.match(saveHandler, /await prepareSavedProposal\(progressToast\)/);
+  const automaticFlow = browser.match(/async function prepareSavedProposal\(progressToast\) \{[\s\S]*?\n\}/)?.[0] || "";
+  assert.match(automaticFlow, /targetStatus: 'ready_for_review'/);
+  assert.match(automaticFlow, /action: 'preview_mail'/);
+  assert.match(automaticFlow, /elements\.mailPreview\.showModal\(\)/);
+  assert.match(automaticFlow, /action: 'test_mail'/);
+  assert.doesNotMatch(automaticFlow, /definitive_send|sendDefinitiveMail|openDefinitiveSendDialog/);
+  assert.match(browser, /function automaticActionKey\(action\) \{ return `composer:auto:\$\{action\}:\$\{state\.currentVersionId\}`; \}/);
+  assert.match(browser, /if \(!hasSuccessfulDispatch\('test'\)\)/);
+});
+
 test("22 substantive content change produces a new immutable checksum", () => {
   const first = offers.buildOfferVersion({ paymentChoice: "none", selections: [{ productId: "starter_site" }] }, actor);
   const second = offers.buildOfferVersion({ paymentChoice: "none", selections: [{ productId: "starter_site" }, { productId: "social_profile_set" }] }, actor);

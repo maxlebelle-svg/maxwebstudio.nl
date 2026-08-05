@@ -43,6 +43,7 @@ const state = {
   calculatedPricingRevision: -1,
   editRevision: 0,
   savePending: false,
+  automaticPreparationPending: false,
   dirty: false,
   lastPreview: null,
   definitiveRequestPending: false,
@@ -620,40 +621,98 @@ async function saveDraft() {
     if (exactExisting) {
       applyPersistedVersion(exactExisting, savedRevision);
       clearPendingSave();
-      showMessage('Deze exacte immutable conceptversie is al opgeslagen.', 'success');
-      finishComposerProgress(progressToast, 'De bestaande conceptversie is geselecteerd.');
-      return;
+      progressToast?.update('Stap 1 van 4 · Bestaande conceptversie is veilig geselecteerd…', 'info', { loading: true, persistent: true });
+    } else {
+      const pendingSave = reusablePendingSave(draft);
+      const actionKeyValue = pendingSave?.actionKey || actionKey('version');
+      const startedAtMs = pendingSave?.startedAtMs || Date.now();
+      const payload = {
+        action: 'create_version',
+        relationshipType: routeContext.relationshipType,
+        relationshipId: routeContext.relationshipId,
+        offerId: state.currentOfferId || null,
+        title,
+        demoJourneyId: state.selectedDemoId || null,
+        factoryProjectId: state.selectedFactoryProjectId || null,
+        paymentChoice: state.paymentChoice,
+        offerPurpose: state.offerPurpose,
+        discountPercentage: state.discountPercentage,
+        selections: selectionsFromState(state, state.data.actor),
+        documents,
+        changeReason: elements.changeReason.value.trim() || null,
+        actionKey: actionKeyValue,
+      };
+      rememberPendingSave({ actionKey: actionKeyValue, startedAtMs, draft });
+      progressToast?.update('Stap 1 van 4 · Conceptversie wordt veilig opgeslagen…', 'info', { loading: true, persistent: true });
+      const saved = await createVersionWithRecovery(payload, { ...draft, minimumCreatedAtMs: startedAtMs - 10000 }, savedRevision, progressToast);
+      clearPendingSave();
+      showMessage(saved.recovered ? `Conceptversie ${saved.versionNumber} is opgeslagen; de vertraagde serverbevestiging is hersteld.` : `Conceptversie ${saved.versionNumber} is immutable opgeslagen.`, 'success');
     }
-    const pendingSave = reusablePendingSave(draft);
-    const actionKeyValue = pendingSave?.actionKey || actionKey('version');
-    const startedAtMs = pendingSave?.startedAtMs || Date.now();
-    const payload = {
-      action: 'create_version',
-      relationshipType: routeContext.relationshipType,
-      relationshipId: routeContext.relationshipId,
-      offerId: state.currentOfferId || null,
-      title,
-      demoJourneyId: state.selectedDemoId || null,
-      factoryProjectId: state.selectedFactoryProjectId || null,
-      paymentChoice: state.paymentChoice,
-      offerPurpose: state.offerPurpose,
-      discountPercentage: state.discountPercentage,
-      selections: selectionsFromState(state, state.data.actor),
-      documents,
-      changeReason: elements.changeReason.value.trim() || null,
-      actionKey: actionKeyValue,
-    };
-    rememberPendingSave({ actionKey: actionKeyValue, startedAtMs, draft });
-    progressToast?.update('Conceptversie wordt veilig opgeslagen…', 'info', { loading: true, persistent: true });
-    const saved = await createVersionWithRecovery(payload, { ...draft, minimumCreatedAtMs: startedAtMs - 10000 }, savedRevision, progressToast);
-    clearPendingSave();
-    showMessage(saved.recovered ? `Conceptversie ${saved.versionNumber} is opgeslagen; de vertraagde serverbevestiging is hersteld.` : `Conceptversie ${saved.versionNumber} is immutable opgeslagen.`, 'success');
-    finishComposerProgress(progressToast, `Conceptversie ${saved.versionNumber} is opgeslagen.`);
+    await prepareSavedProposal(progressToast);
   } catch (error) {
     showMessage(error.message, 'error');
     finishComposerProgress(progressToast, error.message || 'Conceptversie kon niet worden opgeslagen.', 'error');
   }
   finally { state.savePending = false; elements.saveDraft.disabled = false; renderStatus(); renderReadiness(); }
+}
+
+async function prepareSavedProposal(progressToast) {
+  if (!state.currentVersionId || state.dirty || state.automaticPreparationPending) return false;
+  state.automaticPreparationPending = true;
+  let step = 'gereedmaken voor controle';
+  try {
+    progressToast?.update('Stap 2 van 4 · Versie wordt gereedgemaakt voor controle…', 'info', { loading: true, persistent: true });
+    if (state.currentVersionStatus === 'draft') {
+      const result = await request('POST', {
+        action: 'transition',
+        offerVersionId: state.currentVersionId,
+        targetStatus: 'ready_for_review',
+        reason: elements.changeReason.value.trim() || null,
+        actionKey: automaticActionKey('ready-for-review'),
+      });
+      state.currentVersionStatus = result.offer.status;
+      state.dirty = false;
+      await reloadContext();
+    }
+    if (state.currentVersionStatus !== 'ready_for_review') throw userProblem('De opgeslagen versie heeft geen geldige controlestatus.');
+
+    step = 'mailvoorbeeld openen';
+    progressToast?.update('Stap 3 van 4 · Exact mailvoorbeeld wordt automatisch geopend…', 'info', { loading: true, persistent: true });
+    const previewResult = await request('POST', {
+      action: 'preview_mail',
+      offerVersionId: state.currentVersionId,
+      actionKey: automaticActionKey('preview'),
+    });
+    applyMailPreview(previewResult);
+    if (!elements.mailPreview.open) elements.mailPreview.showModal();
+    await reloadContext();
+
+    step = 'testmail verzenden';
+    progressToast?.update('Stap 4 van 4 · Testmail wordt automatisch naar jou verzonden…', 'info', { loading: true, persistent: true });
+    let testRecipient = state.data?.actor?.email || 'jouw geverifieerde beheeradres';
+    if (!hasSuccessfulDispatch('test')) {
+      const testResult = await request('POST', {
+        action: 'test_mail',
+        offerVersionId: state.currentVersionId,
+        actionKey: automaticActionKey('test-mail'),
+      });
+      testRecipient = testResult.recipient || testRecipient;
+      await reloadContext();
+    }
+    if (!hasSuccessfulDispatch('test')) throw userProblem('De mailprovider heeft de automatische testmail nog niet als verzonden bevestigd.');
+
+    showMessage(`Voorstel is gereed voor controle en de TEST-mail is uitsluitend verzonden naar ${testRecipient}. Controleer het voorbeeld en verstuur de echte klantmail daarna handmatig.`, 'success');
+    finishComposerProgress(progressToast, 'Voorbeeld geopend en testmail verzonden. Definitief verzenden staat klaar.');
+    return true;
+  } catch (error) {
+    try { await reloadContext(); } catch { /* De oorspronkelijke stapfout blijft leidend. */ }
+    showMessage(`Het concept is opgeslagen, maar de automatische stap “${step}” is gestopt: ${error.message}`, 'error');
+    finishComposerProgress(progressToast, `Automatische voorbereiding stopte bij ${step}.`, 'error');
+    return false;
+  } finally {
+    state.automaticPreparationPending = false;
+    renderPreviewAvailability();
+  }
 }
 
 async function ensureCurrentSnapshot() {
@@ -777,10 +836,7 @@ async function openPreview() {
   const progressToast = startComposerProgress('Exact mailvoorbeeld wordt opgebouwd…');
   try {
     const result = await request('POST', { action: 'preview_mail', offerVersionId: state.currentVersionId, actionKey: actionKey('preview') });
-    state.lastPreview = result.preview;
-    elements.previewSubject.textContent = result.preview.subject;
-    elements.previewFrame.srcdoc = result.preview.html;
-    elements.manualMailText.value = `${result.manualFallback.subject}\n\n${result.manualFallback.text}`;
+    applyMailPreview(result);
     elements.mailPreview.showModal();
     await reloadContext();
     showMessage('Het exacte servervoorbeeld is gecontroleerd en in de audittrail vastgelegd.', 'success');
@@ -791,6 +847,13 @@ async function openPreview() {
     elements.composerMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   finally { renderPreviewAvailability(); }
+}
+
+function applyMailPreview(result) {
+  state.lastPreview = result.preview;
+  elements.previewSubject.textContent = result.preview.subject;
+  elements.previewFrame.srcdoc = result.preview.html;
+  elements.manualMailText.value = `${result.manualFallback.subject}\n\n${result.manualFallback.text}`;
 }
 
 async function sendTestMail() {
@@ -993,6 +1056,7 @@ function activeDocuments() {
 function selectedIds() { return [state.websiteProductId, state.careProductId, ...state.addOnIds].filter(Boolean); }
 function effectiveRecipientEmail() { return String(state.recipientEmail || '').trim().toLowerCase(); }
 function currentVersion() { return state.data?.history?.flatMap((offer) => offer.versions || []).find((version) => version.id === state.currentVersionId); }
+function hasSuccessfulDispatch(kind) { return Boolean(currentVersion()?.dispatches?.some((dispatch) => dispatch.dispatch_kind === kind && dispatch.status === 'sent')); }
 function productChoice(product, name, selected) { const once = product.components.find((item) => item.type === 'one_time'); const recurring = product.components.find((item) => item.type === 'recurring'); return `<label class="choice-card"><input type="radio" name="${name}" value="${product.id}" ${selected === product.id ? 'checked' : ''}/><strong>${escapeHtml(product.name)}</strong><span>${escapeHtml(product.description)}</span><small>${escapeHtml(classificationLabel(product.classification))}</small><span class="choice-price">${once ? money(once.amountExVatCents ?? once.startingAmountExVatCents) : money(recurring?.amountExVatCents ?? recurring?.startingAmountExVatCents, { monthly: true })} excl. btw${product.fixedDepositExVatCents ? ` · aanbetaling ${money(product.fixedDepositExVatCents)}` : ''}</span></label>`; }
 function choiceNone(name, label, checked) { return `<label class="choice-card"><input type="radio" name="${name}" value="" ${checked ? 'checked' : ''}/><strong>${label}</strong><span>Geen keuze voor deze categorie.</span><span class="choice-price">${money(0)}</span></label>`; }
 function componentTag(component) { const value = component.amountExVatCents ?? component.startingAmountExVatCents; return `<span>${component.type === 'recurring' ? 'Per maand' : 'Eenmalig'} · ${component.amountExVatCents == null ? 'vanaf ' : ''}${money(value, { monthly: component.type === 'recurring' })}</span>`; }
@@ -1004,6 +1068,7 @@ function setSequence(element, complete, blocked) { element.classList.toggle('com
 function formatDate(value) { const date = new Date(value || ''); return Number.isNaN(date.getTime()) ? value || '—' : date.toLocaleString('nl-NL'); }
 function formatDateOnly(value) { const date = new Date(`${value || ''}T12:00:00Z`); return Number.isNaN(date.getTime()) ? value || '—' : new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date); }
 function actionKey(action) { return `composer:${action}:${crypto.randomUUID()}`; }
+function automaticActionKey(action) { return `composer:auto:${action}:${state.currentVersionId}`; }
 function setText(key, value) { elements[key].textContent = value || '—'; }
 function camel(value) { return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); }
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]); }
