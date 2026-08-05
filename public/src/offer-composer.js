@@ -5,6 +5,9 @@ import {
   composerReadiness,
   documentsForSave,
   definitiveConfirmationDetails,
+  draftFingerprint,
+  findMatchingDraftVersion,
+  formatElapsedTime,
   money,
   parseComposerContext,
   parseEuroToCents,
@@ -34,6 +37,12 @@ const state = {
   currentVersionId: '',
   currentVersionStatus: '',
   calculating: false,
+  calculationPromise: null,
+  calculationRequestId: 0,
+  pricingRevision: 0,
+  calculatedPricingRevision: -1,
+  editRevision: 0,
+  savePending: false,
   dirty: false,
   lastPreview: null,
   definitiveRequestPending: false,
@@ -78,7 +87,28 @@ function startComposerLoadToast() {
 
 function startComposerProgress(message) {
   if (typeof window.showToast !== 'function') return null;
-  return window.showToast(message, 'info', { loading: true, persistent: true });
+  const startedAt = Date.now();
+  let activeMessage = message;
+  let timer = 0;
+  const toast = window.showToast(`${activeMessage} · ${formatElapsedTime(0)}`, 'info', { loading: true, persistent: true });
+  const stopTimer = () => { window.clearInterval(timer); timer = 0; };
+  const controller = {
+    update(nextMessage = activeMessage, nextType = 'info', nextOptions = {}) {
+      activeMessage = nextMessage;
+      if (nextOptions.loading || nextOptions.persistent) {
+        toast?.update(`${activeMessage} · ${formatElapsedTime(Date.now() - startedAt)}`, nextType, { ...nextOptions, loading: true, persistent: true });
+      } else {
+        stopTimer();
+        toast?.update(activeMessage, nextType, nextOptions);
+      }
+      return controller;
+    },
+    close() { stopTimer(); toast?.close(); },
+  };
+  timer = window.setInterval(() => {
+    toast?.update(`${activeMessage} · ${formatElapsedTime(Date.now() - startedAt)}`, 'info', { loading: true, persistent: true });
+  }, 1000);
+  return controller;
 }
 
 function finishComposerProgress(progressToast, message, type = 'success') {
@@ -412,7 +442,7 @@ function renderReadiness() {
   const readiness = composerReadiness({ snapshot: state.snapshot, documents: activeDocuments(), selectedDocumentTypes: state.selectedDocumentTypes, email: effectiveRecipientEmail() });
   const savedCurrentVersion = Boolean(currentVersion() && !state.dirty);
   const savedDraft = savedCurrentVersion && state.currentVersionStatus === 'draft';
-  elements.readyReview.disabled = !(readiness.readyForReview && savedDraft);
+  elements.readyReview.disabled = state.savePending || !(readiness.readyForReview && savedDraft);
   elements.revokeVersion.disabled = !(state.currentVersionId && ['draft', 'ready_for_review'].includes(state.currentVersionStatus));
   elements.readinessList.innerHTML = [
     [Boolean(state.snapshot), 'Serverberekening beschikbaar'],
@@ -470,9 +500,9 @@ function renderPreviewAvailability() {
   const signingTransaction = version?.signingTransactions?.[0];
   const definitiveOffer = state.offerPurpose === 'definitive_offer';
   const providerReady = !definitiveOffer || state.data?.capabilities?.providersEnabled;
-  elements.openPreview.disabled = !(sendReady && state.data?.capabilities?.previewMail);
-  elements.testMail.disabled = !(sendReady && previewed && state.data?.capabilities?.testMail);
-  elements.definitiveSend.disabled = !((sendReady || (resendReady && !interestConfirmed && !signingTransaction)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend && providerReady);
+  elements.openPreview.disabled = state.savePending || !(sendReady && state.data?.capabilities?.previewMail);
+  elements.testMail.disabled = state.savePending || !(sendReady && previewed && state.data?.capabilities?.testMail);
+  elements.definitiveSend.disabled = state.savePending || !((sendReady || (resendReady && !interestConfirmed && !signingTransaction)) && previewed && tested && validRecipientEmail(effectiveRecipientEmail()) && state.data?.capabilities?.definitiveSend && providerReady);
   elements.revokeInterest.disabled = !((activeInterestTokens.length || (activeSigningTokens.length && !signingTransaction)) && state.data?.capabilities?.revokeInterest && !state.revokeInterestPending);
   elements.interestAccessSummary.textContent = definitiveOffer
     ? signingTransaction ? `Signhost-status: ${statusLabel(signingTransaction.status)}${signingTransaction.signed_at ? ` · ${formatDate(signingTransaction.signed_at)}` : ''}` : activeSigningTokens.length ? `Actieve ondertekenlink · geldig tot ${formatDate(activeSigningTokens[0].expires_at)}` : providerReady ? 'Geen actieve ondertekenlink.' : 'Signhost is nog niet geconfigureerd.'
@@ -518,33 +548,86 @@ function syncPaymentAvailability() {
   if (selected) selected.checked = true;
 }
 
-function changed() { markDirty(); window.clearTimeout(calculationTimer); calculationTimer = window.setTimeout(calculate, 180); }
-function markDirty() { state.dirty = true; renderStatus(); renderReadiness(); }
+function changed() {
+  state.pricingRevision += 1;
+  markDirty();
+  window.clearTimeout(calculationTimer);
+  calculationTimer = window.setTimeout(calculate, 180);
+}
+function markDirty() { state.editRevision += 1; state.dirty = true; renderStatus(); renderReadiness(); }
 
-async function calculate() {
+function calculate() {
+  const requestId = ++state.calculationRequestId;
+  const pricingRevision = state.pricingRevision;
   const selections = selectionsFromState(state, state.data.actor);
-  if (!selections.length) { state.snapshot = null; renderSummary(); renderDocuments(); renderReadiness(); return; }
+  if (!selections.length) {
+    state.snapshot = null;
+    state.calculatedPricingRevision = pricingRevision;
+    state.calculating = false;
+    state.calculationPromise = null;
+    renderSummary(); renderDocuments(); renderReadiness();
+    return Promise.resolve(null);
+  }
   state.calculating = true; renderSummary();
-  try {
-    const data = await request('POST', { action: 'prepare_snapshot', offerPurpose: state.offerPurpose, paymentChoice: state.paymentChoice, discountPercentage: state.discountPercentage, selections });
-    state.snapshot = data.snapshot;
-    renderDocuments(); renderSummary(); renderReadiness();
-  } catch (error) {
-    state.snapshot = null; showMessage(error.message, 'error'); renderSummary(); renderReadiness();
-  } finally { state.calculating = false; }
+  const pending = (async () => {
+    try {
+      const data = await request('POST', { action: 'prepare_snapshot', offerPurpose: state.offerPurpose, paymentChoice: state.paymentChoice, discountPercentage: state.discountPercentage, selections });
+      if (requestId !== state.calculationRequestId || pricingRevision !== state.pricingRevision) return null;
+      state.snapshot = data.snapshot;
+      state.calculatedPricingRevision = pricingRevision;
+      renderDocuments(); renderSummary(); renderReadiness();
+      return data.snapshot;
+    } catch (error) {
+      if (requestId === state.calculationRequestId && pricingRevision === state.pricingRevision) {
+        state.snapshot = null; showMessage(error.message, 'error'); renderSummary(); renderReadiness();
+      }
+      return null;
+    } finally {
+      if (requestId === state.calculationRequestId) {
+        state.calculating = false;
+        if (state.calculationPromise === pending) state.calculationPromise = null;
+        renderSummary();
+      }
+    }
+  })();
+  state.calculationPromise = pending;
+  return pending;
 }
 
 async function saveDraft() {
-  if (!state.snapshot) return showMessage('Kies minimaal één product en wacht op de serverberekening.', 'warning');
-  const title = elements.offerTitle.value.trim();
-  if (title.length < 2) return showMessage('Geef het voorstel een duidelijke titel.', 'warning');
-  const previous = currentVersion();
-  if (previous?.snapshot_checksum_sha256 === state.snapshot.checksum && state.currentVersionStatus === 'draft') { state.dirty = false; renderStatus(); renderReadiness(); return showMessage('Deze exacte immutable conceptversie is al opgeslagen.', 'success'); }
-  const documents = documentsForSave(activeDocuments(), state.selectedDocumentTypes);
+  if (state.savePending) return;
+  state.savePending = true;
   elements.saveDraft.disabled = true;
+  renderReadiness();
   const progressToast = startComposerProgress('Conceptversie wordt veilig opgeslagen…');
   try {
-    const result = await request('POST', {
+    progressToast?.update('Actuele prijzen en korting worden gecontroleerd…', 'info', { loading: true, persistent: true });
+    const snapshot = await ensureCurrentSnapshot();
+    if (!snapshot) throw userProblem('Kies minimaal één product en wacht op de serverberekening.');
+    const title = elements.offerTitle.value.trim();
+    if (title.length < 2) throw userProblem('Geef het voorstel een duidelijke titel.');
+    const documents = documentsForSave(activeDocuments(), state.selectedDocumentTypes);
+    const savedRevision = state.editRevision;
+    const draft = {
+      offerId: state.currentOfferId || '',
+      title,
+      demoJourneyId: state.selectedDemoId || '',
+      factoryProjectId: state.selectedFactoryProjectId || '',
+      snapshotChecksum: snapshot.checksum,
+      documents,
+    };
+    const exactExisting = state.currentOfferId ? findMatchingDraftVersion(state.data?.history, draft) : null;
+    if (exactExisting) {
+      applyPersistedVersion(exactExisting, savedRevision);
+      clearPendingSave();
+      showMessage('Deze exacte immutable conceptversie is al opgeslagen.', 'success');
+      finishComposerProgress(progressToast, 'De bestaande conceptversie is geselecteerd.');
+      return;
+    }
+    const pendingSave = reusablePendingSave(draft);
+    const actionKeyValue = pendingSave?.actionKey || actionKey('version');
+    const startedAtMs = pendingSave?.startedAtMs || Date.now();
+    const payload = {
       action: 'create_version',
       relationshipType: routeContext.relationshipType,
       relationshipId: routeContext.relationshipId,
@@ -558,21 +641,110 @@ async function saveDraft() {
       selections: selectionsFromState(state, state.data.actor),
       documents,
       changeReason: elements.changeReason.value.trim() || null,
-      actionKey: actionKey('version'),
-    });
-    state.currentOfferId = result.offer.offerId;
-    state.currentVersionId = result.offer.offerVersionId;
-    state.currentVersionStatus = result.offer.status;
-    state.dirty = false;
-    await reloadContext();
-    showMessage(`Conceptversie ${result.offer.versionNumber} is immutable opgeslagen.`, 'success');
-    finishComposerProgress(progressToast, `Conceptversie ${result.offer.versionNumber} is opgeslagen.`);
+      actionKey: actionKeyValue,
+    };
+    rememberPendingSave({ actionKey: actionKeyValue, startedAtMs, draft });
+    progressToast?.update('Conceptversie wordt veilig opgeslagen…', 'info', { loading: true, persistent: true });
+    const saved = await createVersionWithRecovery(payload, { ...draft, minimumCreatedAtMs: startedAtMs - 10000 }, savedRevision, progressToast);
+    clearPendingSave();
+    showMessage(saved.recovered ? `Conceptversie ${saved.versionNumber} is opgeslagen; de vertraagde serverbevestiging is hersteld.` : `Conceptversie ${saved.versionNumber} is immutable opgeslagen.`, 'success');
+    finishComposerProgress(progressToast, `Conceptversie ${saved.versionNumber} is opgeslagen.`);
   } catch (error) {
     showMessage(error.message, 'error');
     finishComposerProgress(progressToast, error.message || 'Conceptversie kon niet worden opgeslagen.', 'error');
   }
-  finally { elements.saveDraft.disabled = false; renderStatus(); renderReadiness(); }
+  finally { state.savePending = false; elements.saveDraft.disabled = false; renderStatus(); renderReadiness(); }
 }
+
+async function ensureCurrentSnapshot() {
+  window.clearTimeout(calculationTimer);
+  calculationTimer = 0;
+  if (state.calculationPromise) await state.calculationPromise;
+  if (!state.snapshot || state.calculatedPricingRevision !== state.pricingRevision) return calculate();
+  return state.snapshot;
+}
+
+async function createVersionWithRecovery(payload, draft, savedRevision, progressToast) {
+  try {
+    const result = await request('POST', payload);
+    return confirmSavedVersion(result, savedRevision);
+  } catch (firstError) {
+    if (!isAmbiguousSaveError(firstError)) throw firstError;
+    progressToast?.update('De serverbevestiging duurt langer; de opslag wordt gecontroleerd…', 'info', { loading: true, persistent: true });
+    const firstRecovery = await reconcileSavedDraft(draft, savedRevision, [0, 700, 1600]);
+    if (firstRecovery) return firstRecovery;
+    progressToast?.update('Dezelfde opslag wordt één keer veilig hervat…', 'info', { loading: true, persistent: true });
+    try {
+      const retried = await request('POST', payload);
+      return confirmSavedVersion(retried, savedRevision);
+    } catch (retryError) {
+      if (!isAmbiguousSaveError(retryError)) throw retryError;
+      const finalRecovery = await reconcileSavedDraft(draft, savedRevision, [500, 1500, 3000]);
+      if (finalRecovery) return finalRecovery;
+      throw userProblem('De serverbevestiging duurt nog te lang. Je invoer is behouden. Wacht even en klik daarna één keer opnieuw op Concept opslaan; dezelfde opslagreferentie wordt veilig hergebruikt.');
+    }
+  }
+}
+
+async function confirmSavedVersion(result, savedRevision) {
+  state.currentOfferId = result.offer.offerId;
+  state.currentVersionId = result.offer.offerVersionId;
+  state.currentVersionStatus = result.offer.status;
+  await reloadContext();
+  const version = currentVersion();
+  if (!version || version.snapshot_checksum_sha256 !== result.offer.snapshotChecksum) throw userProblem('De opgeslagen versie kon niet betrouwbaar worden bevestigd. De invoer is behouden.');
+  applyPersistedVersion({ offer: state.data.history.find((offer) => offer.id === state.currentOfferId), version }, savedRevision);
+  return { versionNumber: result.offer.versionNumber, recovered: Boolean(result.offer.duplicate) };
+}
+
+async function reconcileSavedDraft(draft, savedRevision, delays) {
+  for (const waitMs of delays) {
+    if (waitMs) await delay(waitMs);
+    try {
+      const data = await request('GET', null, { relationshipType: routeContext.relationshipType, relationshipId: routeContext.relationshipId });
+      state.data = data;
+      const match = findMatchingDraftVersion(data.history, draft);
+      if (match) {
+        applyPersistedVersion(match, savedRevision);
+        renderHistory(); renderStatus(); renderReadiness();
+        return { versionNumber: match.version.version_number, recovered: true };
+      }
+    } catch { /* Een volgende controle of de veilige retry blijft beschikbaar. */ }
+  }
+  return null;
+}
+
+function applyPersistedVersion(match, savedRevision) {
+  if (!match?.offer || !match?.version) return;
+  state.currentOfferId = match.offer.id;
+  state.currentVersionId = match.version.id;
+  state.currentVersionStatus = match.version.status;
+  state.dirty = state.editRevision !== savedRevision;
+  rememberOfferInUrl(match.offer.id);
+}
+
+function pendingSaveKey() { return `mws:offer-composer:pending-save:${routeContext.relationshipType}:${routeContext.relationshipId}`; }
+function rememberPendingSave(value) {
+  try { window.sessionStorage.setItem(pendingSaveKey(), JSON.stringify({ ...value, fingerprint: draftFingerprint(value.draft) })); } catch { /* Geheugenherstel is aanvullend; server-idempotentie blijft leidend. */ }
+}
+function reusablePendingSave(draft) {
+  try {
+    const value = JSON.parse(window.sessionStorage.getItem(pendingSaveKey()) || 'null');
+    if (!value?.actionKey || value.fingerprint !== draftFingerprint(draft) || Date.now() - Number(value.startedAtMs || 0) > 30 * 60 * 1000) return null;
+    return value;
+  } catch { return null; }
+}
+function clearPendingSave() { try { window.sessionStorage.removeItem(pendingSaveKey()); } catch { /* no-op */ } }
+function rememberOfferInUrl(offerId) {
+  if (!offerId || routeContext.offerId === offerId) return;
+  routeContext.offerId = offerId;
+  const url = new URL(window.location.href);
+  url.searchParams.set('offerId', offerId);
+  window.history.replaceState(window.history.state, '', url);
+}
+function isAmbiguousSaveError(error) { return !Number(error?.status) || Number(error.status) >= 500; }
+function userProblem(message) { return Object.assign(new Error(message), { status: 400, code: 'COMPOSER_INPUT' }); }
+function delay(ms) { return new Promise((resolve) => window.setTimeout(resolve, ms)); }
 
 async function transition(targetStatus) {
   if (!state.currentVersionId) return;

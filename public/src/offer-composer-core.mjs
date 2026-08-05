@@ -179,6 +179,64 @@ export function statusLabel(value = '') {
   return ({ draft: 'Concept', ready_for_review: 'Gereed voor controle', revoked: 'Ingetrokken', superseded: 'Vervangen', sent: 'Verzonden', viewed: 'Bekeken', interested: 'Interesse bevestigd', signed: 'Ondertekend', payment_pending: 'Betaling open', paid: 'Betaald', accepted: 'Geaccepteerd', expired: 'Verlopen', declined: 'Afgewezen', failed: 'Mislukt' })[value] || value || 'Onbekend';
 }
 
+export function formatElapsedTime(elapsedMs = 0) {
+  const totalSeconds = Math.max(0, Math.floor(Number(elapsedMs || 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+export function draftFingerprint(draft = {}) {
+  const normalized = normalizeDraft(draft);
+  return JSON.stringify({
+    offerId: normalized.offerId,
+    title: normalized.title,
+    demoJourneyId: normalized.demoJourneyId,
+    factoryProjectId: normalized.factoryProjectId,
+    snapshotChecksum: normalized.snapshotChecksum,
+    documents: normalized.documents,
+  });
+}
+
+export function findMatchingDraftVersion(history = [], draft = {}) {
+  const expected = normalizeDraft(draft);
+  if (!expected.snapshotChecksum || !expected.title) return null;
+  const minimumCreatedAtMs = Number(draft.minimumCreatedAtMs || 0);
+  for (const offer of Array.isArray(history) ? history : []) {
+    if (expected.offerId && clean(offer?.id) !== expected.offerId) continue;
+    if (clean(offer?.title) !== expected.title) continue;
+    if (clean(offer?.demo_journey_id) !== expected.demoJourneyId) continue;
+    if (clean(offer?.factory_project_id) !== expected.factoryProjectId) continue;
+    const version = (offer?.versions || []).find((item) => clean(item?.id) === clean(offer?.current_version_id));
+    if (!version || clean(version.status) !== 'draft') continue;
+    if (clean(version.snapshot_checksum_sha256 || version.snapshot?.checksum).toLowerCase() !== expected.snapshotChecksum) continue;
+    if (JSON.stringify(normalizeDocuments(version.documents)) !== JSON.stringify(expected.documents)) continue;
+    const createdAtMs = Date.parse(version.created_at || '');
+    if (minimumCreatedAtMs && (!Number.isFinite(createdAtMs) || createdAtMs < minimumCreatedAtMs)) continue;
+    return { offer, version };
+  }
+  return null;
+}
+
+function normalizeDraft(draft = {}) {
+  return {
+    offerId: clean(draft.offerId),
+    title: clean(draft.title),
+    demoJourneyId: clean(draft.demoJourneyId),
+    factoryProjectId: clean(draft.factoryProjectId),
+    snapshotChecksum: clean(draft.snapshotChecksum).toLowerCase(),
+    documents: normalizeDocuments(draft.documents),
+  };
+}
+
+function normalizeDocuments(documents = []) {
+  return (Array.isArray(documents) ? documents : []).map((document) => ({
+    documentType: clean(document?.documentType || document?.document_type).toLowerCase(),
+    versionCode: clean(document?.versionCode || document?.version_code),
+    checksumSha256: clean(document?.checksumSha256 || document?.checksum_sha256).toLowerCase(),
+  })).sort((left, right) => `${left.documentType}:${left.versionCode}:${left.checksumSha256}`.localeCompare(`${right.documentType}:${right.versionCode}:${right.checksumSha256}`));
+}
+
 function validOptionalUuid(value) { return UUID.test(String(value || '')) ? String(value) : ''; }
 function normalizeRole(value) { return clean(value).toLowerCase().replace(/[\s-]+/g, '_'); }
 function clean(value) { return String(value || '').trim(); }

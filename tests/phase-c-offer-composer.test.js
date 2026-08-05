@@ -151,6 +151,44 @@ test("15d discount is immutable input and restored by Composer", async () => {
   assert.match(browser, /discountPercentage: state\.discountPercentage/);
 });
 
+test("15e Composer ignores stale price responses and recalculates immediately before saving", () => {
+  assert.match(browser, /pricingRevision !== state\.pricingRevision/);
+  assert.match(browser, /await ensureCurrentSnapshot\(\)/);
+  assert.match(browser, /state\.calculatedPricingRevision !== state\.pricingRevision/);
+  assert.match(browser, /const snapshot = await ensureCurrentSnapshot\(\)/);
+});
+
+test("15f a delayed 502 confirmation is recovered with the same idempotency key", async () => {
+  const { draftFingerprint, findMatchingDraftVersion } = await corePromise;
+  const documents = [{ documentType: "quote", versionCode: "offer-v1", checksumSha256: "a".repeat(64) }];
+  const draft = { title: "Silverado met korting", snapshotChecksum: "b".repeat(64), demoJourneyId: relationId, documents };
+  const version = {
+    id: "44444444-4444-4444-8444-444444444444",
+    status: "draft",
+    created_at: "2026-08-05T07:15:35.000Z",
+    snapshot_checksum_sha256: draft.snapshotChecksum,
+    documents: [{ document_type: "quote", version_code: "offer-v1", checksum_sha256: "a".repeat(64) }],
+  };
+  const offer = { id: "55555555-5555-4555-8555-555555555555", title: draft.title, demo_journey_id: relationId, factory_project_id: null, current_version_id: version.id, versions: [version] };
+  assert.equal(findMatchingDraftVersion([offer], { ...draft, minimumCreatedAtMs: Date.parse("2026-08-05T07:15:30.000Z") })?.version.id, version.id);
+  assert.equal(findMatchingDraftVersion([offer], { ...draft, snapshotChecksum: "c".repeat(64) }), null);
+  assert.equal(findMatchingDraftVersion([offer], { ...draft, minimumCreatedAtMs: Date.parse("2026-08-05T07:16:00.000Z") }), null);
+  assert.equal(draftFingerprint(draft), draftFingerprint({ ...draft, documents: [...documents].reverse() }));
+  assert.match(browser, /const actionKeyValue = pendingSave\?\.actionKey \|\| actionKey\('version'\)/);
+  assert.match(browser, /const retried = await request\('POST', payload\)/);
+  assert.match(browser, /rememberPendingSave\(\{ actionKey: actionKeyValue/);
+});
+
+test("15g every Composer action shows a visible elapsed timer below browser overlays", async () => {
+  const { formatElapsedTime } = await corePromise;
+  assert.equal(formatElapsedTime(0), "00:00");
+  assert.equal(formatElapsedTime(65_999), "01:05");
+  assert.match(browser, /formatElapsedTime\(Date\.now\(\) - startedAt\)/);
+  assert.match(browser, /window\.setInterval/);
+  assert.match(css, /\.offer-composer-page \.toast-region\s*\{[^}]*top:\s*92px/s);
+  assert.match(css, /z-index:\s*2147483000/);
+});
+
 test("16 cents and VAT formatting preserve nineteen euros ninety-five", async () => {
   const { money, parseEuroToCents } = await corePromise;
   assert.equal(parseEuroToCents("€ 19,95"), 1995);
@@ -378,7 +416,7 @@ test("40 preview failures are brought into view instead of failing invisibly", (
 test("41 Composer shows a top-right progress notification until initial loading is complete", () => {
   assert.match(html, /<script src="admin\/ui\/admin-toast\.js"><\/script>/);
   assert.match(browser, /startComposerProgress\('Voorstelgegevens en prijzen laden…'\)/);
-  assert.match(browser, /showToast\(message, 'info', \{ loading: true, persistent: true \}\)/);
+  assert.match(browser, /showToast\(`\$\{activeMessage\} · \$\{formatElapsedTime\(0\)\}`, 'info', \{ loading: true, persistent: true \}\)/);
   assert.match(browser, /loadingToast\?\.update\('Voorstel Composer is klaar voor gebruik\.', 'success', \{ duration: 3200 \}\)/);
   assert.match(css, /\.offer-composer-page \.toast\.is-loading \.toast-progress/);
   assert.match(css, /@keyframes composer-loading-progress/);
