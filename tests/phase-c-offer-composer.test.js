@@ -351,6 +351,12 @@ test("30 responsive Composer collapses safely and has keyboard focus states", ()
   assert.doesNotMatch(css, /min-width:\s*(?:[89]\d{2}|\d{4,})px/);
 });
 
+test("30b price summary heading stacks cleanly without overlapping the catalog version", () => {
+  assert.match(html, /class="summary-heading"/);
+  assert.match(css, /\.summary-card > div\.summary-heading\{display:grid;grid-template-columns:minmax\(0,1fr\);align-items:start;justify-items:start/);
+  assert.match(css, /\.summary-card > div\.summary-heading strong\{[^}]*max-width:100%;[^}]*text-align:left;[^}]*overflow-wrap:anywhere/);
+});
+
 test("31 missing email warns but does not block draft pricing", async () => {
   const { composerReadiness } = await corePromise;
   const snapshot = offers.buildOfferVersion({ paymentChoice: "none", selections: [{ productId: "starter_site" }] }, actor);
