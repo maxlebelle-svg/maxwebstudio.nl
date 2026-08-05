@@ -26,7 +26,7 @@ const callDispositionByOutcome = new Map([
 ]);
 const interestLevels = new Set(["hot", "interested", "unsure", "not_interested"]);
 const leadPriorities = new Set(["high", "normal", "low"]);
-const manualSmartViews = new Set(["new", "business_cards", "interested", "callback", "voicemail", "not_interested", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"]);
+const manualSmartViews = new Set(["new", "business_cards", "interested", "callback", "voicemail", "not_interested", "demos", "proposal_sent", "payment", "won", "lost", "archived", "hot", "customers", "closed"]);
 const assignableStaffRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
 const assignableProfileStatuses = new Set(["active", "invited", "pending"]);
 const allowedStatuses = new Set([

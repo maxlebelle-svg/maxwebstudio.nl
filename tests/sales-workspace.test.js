@@ -126,12 +126,12 @@ test("visitekaartjes zijn een expliciete categorie en worden niet automatisch ge
   assert.equal(model.smartViewCounts([businessCardLead, { pipelineStage: "new" }], now).business_cards, 1);
 });
 
-test("handmatig indeelbare vakken sluiten algemene en datumweergaven uit", () => {
+test("handmatig indeelbare vakken sluiten alleen algemene en datumweergaven uit", () => {
   const values = model.MANUAL_SMART_VIEWS.map(({ value }) => value);
   assert(!values.includes("all"));
   assert(!values.includes("today"));
-  assert(!values.includes("proposal_sent"));
-  ["new", "business_cards", "interested", "callback", "voicemail", "demos", "payment", "won", "lost", "archived", "hot", "customers", "closed"].forEach((value) => assert(values.includes(value)));
+  ["new", "business_cards", "interested", "callback", "voicemail", "demos", "proposal_sent", "payment", "won", "lost", "archived", "hot", "customers", "closed"].forEach((value) => assert(values.includes(value)));
+  assert.equal(leadsApi._test.manualSmartViews.has("proposal_sent"), true);
 });
 
 test("een provider-bevestigd definitief voorstel vult automatisch Voorstel verstuurd", () => {
@@ -144,6 +144,19 @@ test("een provider-bevestigd definitief voorstel vult automatisch Voorstel verst
   assert.match(proposalSentMigration, /new\.status <> 'sent'/);
   assert.match(proposalSentMigration, /lead_status = ['\"]?proposal_sent['\"]?/);
   assert.match(proposalSentMigration, /lead_status not in \('won', 'lost', 'customer'\)/);
+});
+
+test("Groeperen kan een lead handmatig bij Voorstel verstuurd plaatsen", () => {
+  const manuallyGrouped = { leadStatus: "new", pipelineStage: "new", metadata: { manualSmartView: "proposal_sent" } };
+  assert.equal(model.normalizeLead(manuallyGrouped).manualSmartView, "proposal_sent");
+  assert.equal(model.matchesSmartView(manuallyGrouped, "proposal_sent", now), true);
+  assert.equal(model.matchesSmartView(manuallyGrouped, "new", now), false);
+  const record = leadsApi._test.leadPayload(
+    { companyName: "Handmatig voorstel", manualSmartView: "proposal_sent" },
+    { id: "11111111-1111-4111-8111-111111111111", email: "max@example.test", role: "super_admin" },
+    { create: true },
+  );
+  assert.equal(record.metadata.manualSmartView, "proposal_sent");
 });
 
 test("handmatige invoer bewaart Visitekaartjes via het beveiligde leadcontract", () => {
