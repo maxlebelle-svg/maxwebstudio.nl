@@ -30,7 +30,7 @@ exports.handler = async (event) => {
     if (recipientMode && relationshipId) {
       if (!["lead", "customer"].includes(relationshipType)) return json(400, { success: false, code: "INVALID_TYPE", error: "Kies een geldige lead of klant." });
       const row = await readEntity(context, relationshipType, relationshipId);
-      if (!row || isUnavailable(row)) return json(404, { success: false, code: "NOT_FOUND", error: "De actieve relatie bestaat niet meer of is niet beschikbaar." });
+      if (!row || isUnavailableForActor(context.admin, row)) return json(404, { success: false, code: "NOT_FOUND", error: "De actieve relatie bestaat niet meer of is niet beschikbaar." });
       if (!canAccess(context.admin, relationshipType, row)) return json(403, { success: false, code: "FORBIDDEN", error: "Je hebt geen toegang tot deze relatie." });
       const result = mapResult(relationshipType, row);
       if (!result.email) return json(422, { success: false, code: "EMAIL_MISSING", error: "De actieve relatie heeft geen e-mailadres en kan niet worden geselecteerd." });
@@ -76,7 +76,7 @@ async function listRecentEntity(context, entityType, limit, offset = 0) {
   }));
   const fulfilled = attempts.find((attempt) => attempt.status === "fulfilled");
   if (!fulfilled) throw Object.assign(new Error("Recent relationship query failed."), { status: 503, code: "QUERY_FAILED", phase: `recent_${table}` });
-  return fulfilled.value.filter((row) => !isUnavailable(row) && canAccess(context.admin, entityType, row)).map((row) => mapResult(entityType, row));
+  return fulfilled.value.filter((row) => !isUnavailableForActor(context.admin, row) && canAccess(context.admin, entityType, row)).map((row) => mapResult(entityType, row));
 }
 
 async function searchEntity(context, entityType, query, limit, offset = 0) {
@@ -100,7 +100,7 @@ async function searchEntity(context, entityType, query, limit, offset = 0) {
     throw error;
   }
   return [...new Map(fulfilled.flatMap((attempt) => attempt.value).filter((row) => row?.id).map((row) => [row.id, row])).values()]
-    .filter((row) => !isUnavailable(row) && canAccess(context.admin, entityType, row))
+    .filter((row) => !isUnavailableForActor(context.admin, row) && canAccess(context.admin, entityType, row))
     .map((row) => mapResult(entityType, row));
 }
 
@@ -117,7 +117,7 @@ async function searchScopedEntity(context, entityType, query, limit) {
   const fulfilled = attempts.filter((attempt) => attempt.status === "fulfilled");
   if (!fulfilled.length) throw Object.assign(new Error("Scoped relationship search failed."), { status: 503, code: "QUERY_FAILED", phase: `search_${table}_scope` });
   return [...new Map(fulfilled.flatMap((attempt) => attempt.value).filter((row) => row?.id).map((row) => [row.id, row])).values()]
-    .filter((row) => matchesQuery(row, query) && !isUnavailable(row) && canAccess(context.admin, entityType, row))
+    .filter((row) => matchesQuery(row, query) && !isUnavailableForActor(context.admin, row) && canAccess(context.admin, entityType, row))
     .slice(0, limit)
     .map((row) => mapResult(entityType, row));
 }
@@ -188,13 +188,19 @@ function mapResult(entityType, row = {}) {
   };
 }
 
-function isUnavailable(row = {}) {
+function isUnavailable(row = {}, { includeTesting = false } = {}) {
   const meta = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
   const status = clean(row.status || row.portal_status).toLowerCase();
   const environment = clean(row.environment || meta.environment).toLowerCase();
-  return Boolean(row.archived_at || row.deleted_at || row.is_demo || row.is_test || meta.archivedAt || meta.archived_at || meta.deletedAt || meta.deleted_at || meta.isDemo || meta.is_demo || meta.isTest || meta.is_test)
-    || ["archived", "gearchiveerd", "deleted", "inactive"].includes(status)
+  const testing = Boolean(row.is_demo || row.is_test || meta.isDemo || meta.is_demo || meta.isTest || meta.is_test)
     || ["demo", "test", "testing"].includes(environment);
+  return Boolean(row.archived_at || row.deleted_at || meta.archivedAt || meta.archived_at || meta.deletedAt || meta.deleted_at)
+    || ["archived", "gearchiveerd", "deleted", "inactive"].includes(status)
+    || (!includeTesting && testing);
+}
+
+function isUnavailableForActor(admin = {}, row = {}) {
+  return isUnavailable(row, { includeTesting: ELEVATED_ROLES.has(normalizeRole(admin.role)) });
 }
 
 function exactMatch(row, query) { const needle = clean(query).toLowerCase(); return Boolean(needle) && [row.companyName, row.email].map((value) => clean(value).toLowerCase()).includes(needle); }
@@ -205,4 +211,4 @@ function clean(value) { return String(value || "").trim(); }
 function queryParams(event) { if (event.rawQuery) return new URLSearchParams(event.rawQuery); const params = new URLSearchParams(); Object.entries(event.queryStringParameters || {}).forEach(([key, value]) => { if (value != null) params.set(key, value); }); return params; }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(body) }; }
 
-exports._test = { canAccess, exactMatch, isUnavailable, listRecentEntity, mapResult, matchesQuery, ownershipFilter, ownershipVariants, readEntity, relationshipTimestamp, searchEntity, searchScopedEntity };
+exports._test = { canAccess, exactMatch, isUnavailable, isUnavailableForActor, listRecentEntity, mapResult, matchesQuery, ownershipFilter, ownershipVariants, readEntity, relationshipTimestamp, searchEntity, searchScopedEntity };

@@ -48,6 +48,16 @@
   status = 200
 
 [[redirects]]
+  from = "/admin"
+  to = "/admin-login.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/"
+  to = "/admin-login.html"
+  status = 200
+
+[[redirects]]
   from = "/admin-login"
   to = "/admin-login.html"
   status = 200
@@ -258,6 +268,17 @@
   for = "/src/*"
   [headers.values]
     Cache-Control = "no-cache, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/admin-service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/admin.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0, must-revalidate"
+    Content-Type = "application/manifest+json; charset=utf-8"
 
 [[headers]]
   for = "/admin/ui/*"

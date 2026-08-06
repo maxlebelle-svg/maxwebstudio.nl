@@ -4,9 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Admin CRM | Max Webstudio</title>
-    <meta name="description" content="Interne CRM-omgeving van Max Web Studio voor klanten, websites en wijzigingsverzoeken." />
+    <title>Sales | Max Webstudio Admin</title>
+    <meta name="description" content="Beveiligde salesomgeving van Max Webstudio Admin." />
+    <meta name="theme-color" content="#061522" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MWS Admin" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/admin-icon-192.png" />
+    <link rel="manifest" href="/admin.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -19,6 +25,7 @@
     <script src="admin/config/sidebar-navigation.js" defer></script>
     <script src="admin/components/admin-sidebar.js" defer></script>
     <script src="admin/ui/admin-sidebar-dashboard-pilot.js" defer></script>
+    <script type="module" src="/src/admin-app-install.js?v=20260806-admin-app"></script>
     <script src="src/sales-workspace-model.js?v=20260801-business-cards"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
@@ -140,7 +147,7 @@
               <span>Dagelijkse workflow</span>
             </div>
             <div class="settings-actions admin-action-strip">
-              <a class="button secondary admin-action-card accent-blue" href="admin-lead-generator.html#leadfinder-form"><span aria-hidden="true">+</span><strong>Nieuwe lead</strong></a>
+              <a class="button secondary admin-action-card accent-blue" href="#leadfinder-form"><span aria-hidden="true">+</span><strong>Nieuwe lead</strong></a>
               <button class="button primary admin-action-card accent-cyan" id="open-new-customer-quick" type="button"><span aria-hidden="true">◎</span><strong>Lead opvolgen</strong></button>
               <a class="button secondary admin-action-card accent-blue" href="#leadfinder-list"><span aria-hidden="true">↗</span><strong>Mijn leads</strong></a>
               <a class="button secondary admin-action-card accent-green" href="admin-klanten.html"><span aria-hidden="true">●</span><strong>Actieve klanten</strong></a>
@@ -309,7 +316,7 @@
               <p class="admin-section-intro">Overzicht en beheer van al je leads</p>
             </div>
             <div class="sales-cockpit-actions">
-              <a class="button primary" href="admin-lead-generator.html#leadfinder-form">+ Nieuwe lead</a>
+              <a class="button primary" href="#leadfinder-form">+ Nieuwe lead</a>
               <a class="button secondary" href="admin-lead-generator.html">Lead Generator</a>
               <a class="button secondary" href="#leadfinder-detail">Sales workflow</a>
               <button class="button secondary" id="leadfinder-focus-search" type="button">Snel zoeken</button>
@@ -362,7 +369,7 @@
                 <label for="leadfinder-follow-up">Opvolgdatum<input id="leadfinder-follow-up" type="date" /></label>
                 <label for="leadfinder-source">Acquisitiekanaal<select id="leadfinder-source"><option value="">Onbekend</option><option value="website">Website</option><option value="email">E-mail</option><option value="outbound_sales">Actieve acquisitie</option><option value="referral">Aanbeveling</option><option value="phone">Telefoon</option><option value="social">Social media</option><option value="partner">Partner</option><option value="manual">Handmatig</option><option value="import">Import</option><option value="other">Overig</option></select></label>
                 <label for="leadfinder-sourced-by">Ingebracht door<select id="leadfinder-sourced-by"><option value="">Onbekend</option><option value="self">Mijzelf</option></select></label>
-                <label for="leadfinder-smart-view">Slimme weergave<select id="leadfinder-smart-view"></select></label>
+                <label for="leadfinder-smart-view">Categorie<select id="leadfinder-smart-view"></select></label>
                 <label class="admin-profile-wide" for="leadfinder-notes">Notities<textarea id="leadfinder-notes" placeholder="Waarom is dit een kans? Welke websiteproblemen zijn zichtbaar?"></textarea></label>
               </div>
               <div class="admin-profile-actions">
@@ -9578,26 +9585,32 @@
         }
 
         function currentCustomerDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "supabase-read";
         }
 
         function currentWebsiteDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "supabase-read";
         }
 
         function currentProjectDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "supabase-read";
         }
 
         function currentQuoteDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "supabase-read";
         }
 
         function currentInvoiceDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "supabase-read";
         }
 
         function currentSubscriptionDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return subscriptionDataModeSelect.value || readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "supabase-read";
         }
 
@@ -17835,7 +17848,7 @@
         }
 
         function focusSalesLeadForm() {
-          if (window.maxwebstudioAdminPage?.page !== "lead-generator") {
+          if (!["sales", "lead-generator"].includes(window.maxwebstudioAdminPage?.page || "")) {
             window.location.href = "admin-lead-generator.html#leadfinder-form";
             return;
           }

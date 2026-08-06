@@ -59,7 +59,8 @@ test("shared sidebar styles cover every normal admin page and exclude explicit e
   for (const tone of ["success", "info", "purple", "warning", "danger"]) assert.match(css, new RegExp(`is-${tone}`));
   assert.match(css, /\.admin-body \.admin-crm-shell \{ grid-template-columns: 288px minmax\(0, 1fr\); \}/);
   assert.match(css, /data-shared-admin-sidebar="true"\] \.admin-page-search \{ flex: 0 0 auto; \}/);
-  assert.match(css, /@media \(max-width: 820px\) \{ \.admin-body \.admin-crm-shell \{ grid-template-columns: 1fr; \}/);
+  assert.match(css, /@media \(max-width: 820px\)[\s\S]*\.admin-body \.admin-crm-shell \{ grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(css, /mws-admin-sidebar-v2\.is-mobile-open/);
   assert.match(css, /prefers-reduced-motion/);
   Object.keys(NORMAL_ADMIN_PAGES).forEach((file) => {
     const html = read(`public/${file}`);
