@@ -28,6 +28,13 @@ test("admin asset contract is safe and retains useful customer context", () => {
   assert.equal(asset.metadata, undefined);
 });
 
+test("admin downloads allow only the configured private ZIP vault or the normal asset vault", () => {
+  const context = { zipBucket: "preview-zips" };
+  assert.equal(backend.downloadBucket(context, { metadata: { storageBucket: "preview-zips" } }), "preview-zips");
+  assert.equal(backend.downloadBucket(context, { metadata: { storageBucket: "attacker-bucket" } }), "relationship-assets");
+  assert.equal(backend.downloadBucket(context, {}), "relationship-assets");
+});
+
 test("premium branding uses the secured customer asset source and explicit approval", () => {
   for (const id of ["portal-branding-logo-preview", "portal-branding-foundation", "portal-branding-assets", "portal-branding-approve", "portal-branding-logo-open"]) assert.match(portal, new RegExp(`id="${id}"`));
   assert.match(portal, /portalRelationshipAssets\.filter/);

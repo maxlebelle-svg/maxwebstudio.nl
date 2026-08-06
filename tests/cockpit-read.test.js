@@ -38,6 +38,17 @@ test("cockpit bridge returns sanitized production records and filters demo data"
   assert.equal(body.leads[0].nextAction, "Voorstel nabellen");
   assert.equal(body.projects[0].customerName, "QuantumBouw");
   assert.equal(body.proposals[0].relationshipName, "QuantumBouw");
+  assert.deepEqual(body.files[0], {
+    id: "file-1",
+    relationshipType: "lead",
+    relationshipId: "lead-1",
+    name: "quantumbouw-website.zip",
+    mimeType: "application/zip",
+    sizeBytes: 2048,
+    category: "document",
+    status: "new",
+    createdAt: "2026-08-05T11:00:00.000Z",
+  });
   assert.deepEqual(body.summary, { openLeads: 1, followUpsDue: 1, proposalsReady: 1, projectsAttention: 1 });
 
   const serialized = JSON.stringify(body);
@@ -121,6 +132,10 @@ function fixtures() {
     customers: [{ id: "customer-1", company: "QuantumBouw", status: "active" }],
     projects: [{ id: "project-1", customer_id: "customer-1", name: "Nieuwe website", status: "attention", phase: "feedback", progress: 70 }],
     commercial_offers: [{ id: "offer-1", title: "Business Website", status: "ready_for_review", relationship_type: "lead", relationship_id: "lead-1" }],
+    files: [
+      { id: "file-1", lead_id: "lead-1", original_filename: "quantumbouw-website.zip", mime_type: "application/zip", size_bytes: 2048, category: "document", status: "new", created_at: "2026-08-05T11:00:00.000Z", storage_path: "private/never-return" },
+      { id: "file-demo", lead_id: "lead-demo", original_filename: "demo.zip", mime_type: "application/zip", environment: "demo" },
+    ],
   };
 }
 

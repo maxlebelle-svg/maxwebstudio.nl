@@ -111,11 +111,12 @@ async function downloadAsset(context, assetId, params) {
   if (!UUID.test(assetId)) return json(400, { success: false, code: "INVALID_ASSET", error: "Kies een geldig bestand." });
   const relationship = relationshipFrom(params);
   if (!relationship) return json(400, { success: false, code: "RELATIONSHIP_REQUIRED", error: "Selecteer eerst een actieve lead of klant." });
-  const asset = (await rest(context, `files?select=id,customer_id,lead_id,name,original_filename,storage_path,mime_type,status&id=eq.${assetId}&limit=1`, { method: "GET", phase: "download_lookup" }))?.[0];
+  const asset = (await rest(context, `files?select=id,customer_id,lead_id,name,original_filename,storage_path,mime_type,status,metadata&id=eq.${assetId}&limit=1`, { method: "GET", phase: "download_lookup" }))?.[0];
   if (!asset?.storage_path || ["archived", "replaced", "deleted"].includes(clean(asset.status).toLowerCase())) return json(404, { success: false, code: "NOT_FOUND", error: "Dit bestand is niet beschikbaar." });
   const assetRelationshipId = relationship.relationshipType === "lead" ? asset.lead_id : asset.customer_id;
   if (assetRelationshipId !== relationship.relationshipId) return json(404, { success: false, code: "NOT_FOUND", error: "Dit bestand is niet beschikbaar." });
-  const result = await fetch(`${context.url}/storage/v1/object/sign/${BUCKET}/${encodeStoragePath(asset.storage_path)}`, {
+  const storageBucket = downloadBucket(context, asset);
+  const result = await fetch(`${context.url}/storage/v1/object/sign/${encodeURIComponent(storageBucket)}/${encodeStoragePath(asset.storage_path)}`, {
     method: "POST",
     headers: serviceHeaders(context),
     body: JSON.stringify({ expiresIn: 60 }),
@@ -191,11 +192,12 @@ async function rest(context, path, options = {}) {
 }
 function upstream(code, status, message, phase, response, data) { return Object.assign(new Error(message), { code, status, phase, databaseCode: clean(data?.code), technicalMessage: clean(data?.message || data?.msg), details: clean(data?.details), hint: clean(data?.hint), upstreamStatus: response?.status }); }
 function serviceHeaders(context, extra = {}) { return { apikey: context.key, Authorization: `Bearer ${context.key}`, Accept: "application/json", "Content-Type": "application/json", ...extra }; }
-function config() { const url = clean(process.env.SUPABASE_URL).replace(/\/$/, ""); const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY); if (!url || !key) throw Object.assign(new Error("Assetbeheer is tijdelijk niet beschikbaar."), { status: 503 }); return { url, key }; }
+function config() { const url = clean(process.env.SUPABASE_URL).replace(/\/$/, ""); const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY); const zipBucket = clean(process.env.PREVIEW_ZIP_STORAGE_BUCKET || "preview-zips"); if (!url || !key || !/^[a-z0-9][a-z0-9_-]{1,62}$/.test(zipBucket)) throw Object.assign(new Error("Assetbeheer is tijdelijk niet beschikbaar."), { status: 503 }); return { url, key, zipBucket }; }
 function queryParams(event) { if (event.rawQuery) return new URLSearchParams(event.rawQuery); const params = new URLSearchParams(); Object.entries(event.queryStringParameters || {}).forEach(([key, value]) => { if (value != null) params.set(key, value); }); return params; }
 function encodeStoragePath(value) { return clean(value).split("/").map(encodeURIComponent).join("/"); }
 function safeDownloadName(value) { return clean(value || "bestand").replace(/[\u0000-\u001f\u007f]/g, "").replace(/[\\/]/g, "-").slice(0, 255) || "bestand"; }
+function downloadBucket(context, asset = {}) { const requested = clean(asset.metadata?.storageBucket); return requested && requested === context.zipBucket ? requested : BUCKET; }
 function clean(value) { return String(value ?? "").trim(); }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }, body: JSON.stringify(body) }; }
 
-exports._test = { safe, ACTIONS, buildFilters, safeDownloadName };
+exports._test = { safe, ACTIONS, buildFilters, downloadBucket, safeDownloadName };

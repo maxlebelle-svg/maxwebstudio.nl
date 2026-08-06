@@ -53,6 +53,7 @@ function createHandler(dependencies = {}) {
       safeRead("customers", () => readRows(context, "customers", { limit, order: "updated_at.desc.nullslast" })),
       safeRead("projects", () => readRows(context, "projects", { limit, order: "updated_at.desc.nullslast" })),
       safeRead("proposals", () => readRows(context, "commercial_offers", { limit, order: "updated_at.desc.nullslast" })),
+      safeRead("files", () => readRows(context, "files", { limit, order: "created_at.desc.nullslast" })),
     ]);
 
     const unavailable = resources.filter((resource) => !resource.ok).map((resource) => resource.name);
@@ -63,6 +64,7 @@ function createHandler(dependencies = {}) {
     const leadLabels = new Map(leads.map((lead) => [lead.id, lead.companyName]));
     const projects = rows.projects.filter((row) => !isDemo(row)).map((row) => mapProject(row, customerLabels));
     const proposals = rows.proposals.filter((row) => !isDemo(row)).map((row) => mapProposal(row, { leadLabels, customerLabels }));
+    const files = rows.files.filter((row) => !isDemo(row)).map(mapFile).filter((file) => file.relationshipId);
     const generatedAt = now().toISOString();
 
     return json(200, {
@@ -76,8 +78,26 @@ function createHandler(dependencies = {}) {
       leads,
       projects,
       proposals,
+      files,
     }, headers);
   };
+}
+
+function mapFile(row = {}) {
+  const leadId = clean(row.lead_id);
+  const customerId = clean(row.customer_id);
+  const relationshipType = leadId ? "lead" : customerId ? "customer" : "";
+  return compact({
+    id: clean(row.id),
+    relationshipType,
+    relationshipId: leadId || customerId,
+    name: first(row.original_filename, row.name, "Bestand"),
+    mimeType: clean(row.mime_type).toLowerCase(),
+    sizeBytes: safeSize(row.size_bytes),
+    category: first(row.category, "document"),
+    status: first(row.status, "new"),
+    createdAt: iso(row.created_at),
+  });
 }
 
 async function safeRead(name, reader) {
@@ -241,6 +261,11 @@ function boundedProgress(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return undefined;
   return Math.max(0, Math.min(100, Math.round(parsed)));
+}
+
+function safeSize(value) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
 }
 
 function dateOnly(value) {
