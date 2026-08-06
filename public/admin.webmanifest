@@ -1,0 +1,26 @@
+{
+  "name": "Max Webstudio Admin",
+  "short_name": "MWS Admin",
+  "id": "/admin",
+  "description": "Beveiligde interne sales- en beheeromgeving van Max Webstudio.",
+  "lang": "nl-NL",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#061522",
+  "icons": [
+    {
+      "src": "/admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
