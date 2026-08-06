@@ -36,6 +36,8 @@ test("cockpit bridge returns sanitized production records and filters demo data"
   assert.equal(body.leads.length, 1);
   assert.equal(body.leads[0].companyName, "QuantumBouw");
   assert.equal(body.leads[0].nextAction, "Voorstel nabellen");
+  assert.equal(body.leads[0].demoAvailable, true);
+  assert.equal(body.leads[0].demoUrl, "https://preview.maxwebstudio.nl/quantumbouw-preview");
   assert.equal(body.projects[0].customerName, "QuantumBouw");
   assert.equal(body.proposals[0].relationshipName, "QuantumBouw");
   assert.deepEqual(body.proposals[0], {
@@ -86,6 +88,21 @@ test("one unavailable table produces a controlled partial snapshot", async () =>
   assert.deepEqual(body.unavailable, ["proposals"]);
   assert.deepEqual(body.proposals, []);
   assert.equal(body.leads.length, 1);
+});
+
+test("revoked or malformed demo publications are never exposed to the Cockpit", async () => {
+  const state = fixtures();
+  state.public_preview_publications = [
+    { relationship_type: "lead", relationship_id: "lead-1", public_slug: "ingetrokken-preview", enabled: false, revoked_at: "2026-08-05T11:00:00.000Z" },
+    { relationship_type: "lead", relationship_id: "lead-1", public_slug: "https://unsafe.example/token", enabled: true, revoked_at: null },
+  ];
+  const handler = createHandler(deps(state));
+  const result = await handler(event({ token: TOKEN }));
+  const body = JSON.parse(result.body);
+
+  assert.equal(result.statusCode, 200);
+  assert.equal(body.leads[0].demoAvailable, false);
+  assert.equal(body.leads[0].demoUrl, undefined);
 });
 
 test("missing or weak endpoint configuration fails closed", async () => {
@@ -153,6 +170,10 @@ function fixtures() {
     files: [
       { id: "file-1", lead_id: "lead-1", original_filename: "quantumbouw-website.zip", mime_type: "application/zip", size_bytes: 2048, category: "document", status: "new", created_at: "2026-08-05T11:00:00.000Z", storage_path: "private/never-return" },
       { id: "file-demo", lead_id: "lead-demo", original_filename: "demo.zip", mime_type: "application/zip", environment: "demo" },
+    ],
+    public_preview_publications: [
+      { id: "publication-1", relationship_type: "lead", relationship_id: "lead-1", public_slug: "quantumbouw-preview", enabled: true, revoked_at: null, updated_at: "2026-08-05T09:30:00.000Z" },
+      { id: "publication-revoked", relationship_type: "lead", relationship_id: "lead-demo", public_slug: "oude-demo-preview", enabled: false, revoked_at: "2026-08-05T08:00:00.000Z" },
     ],
   };
 }
