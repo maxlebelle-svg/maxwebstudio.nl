@@ -30,3 +30,25 @@ Everything else is rejected. The endpoint does not create, delete, archive, win 
 - `COCKPIT_WRITE_TOKEN`
 
 Keep all four server-side. Never paste their values into Base44 chat, source code, screenshots or documentation.
+
+## Proposal control bridge
+
+`/.netlify/functions/cockpit-offers` is a separate, deliberately staged route for
+an existing production proposal. It reuses the canonical Max Webstudio proposal
+mail engine; Base44 does not compose or deliver email itself.
+
+The only permitted sequence is:
+
+1. `preview`: records and returns the canonical server preview plus a short-lived token.
+2. `test`: requires that preview token and sends only to the verified admin profile.
+3. `send`: requires the test token and the exact typed confirmation `VERSTUUR`.
+
+Every stage is bound to the same lead, offer, immutable current version and stored
+customer email. Base44 cannot provide or override the definitive recipient. Tokens
+expire after 30 minutes and may exist only in backend memory for the active flow;
+never store them in a Base44 table, browser storage or logs. Demo leads, stale
+versions, non-binding prices and incomplete proposals fail closed before delivery.
+
+The route also needs `ADMIN_EMAIL`, or the optional `COCKPIT_ACTOR_EMAIL`, to resolve
+one active Max Webstudio admin profile. Keep that value server-side alongside the
+four variables above.

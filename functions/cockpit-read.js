@@ -53,6 +53,7 @@ function createHandler(dependencies = {}) {
       safeRead("customers", () => readRows(context, "customers", { limit, order: "updated_at.desc.nullslast" })),
       safeRead("projects", () => readRows(context, "projects", { limit, order: "updated_at.desc.nullslast" })),
       safeRead("proposals", () => readRows(context, "commercial_offers", { limit, order: "updated_at.desc.nullslast" })),
+      safeRead("proposalVersions", () => readRows(context, "commercial_offer_versions", { limit, order: "updated_at.desc.nullslast" })),
       safeRead("files", () => readRows(context, "files", { limit, order: "created_at.desc.nullslast" })),
     ]);
 
@@ -63,7 +64,8 @@ function createHandler(dependencies = {}) {
     const leads = rows.leads.filter((row) => !isDemo(row)).map(mapLead);
     const leadLabels = new Map(leads.map((lead) => [lead.id, lead.companyName]));
     const projects = rows.projects.filter((row) => !isDemo(row)).map((row) => mapProject(row, customerLabels));
-    const proposals = rows.proposals.filter((row) => !isDemo(row)).map((row) => mapProposal(row, { leadLabels, customerLabels }));
+    const proposalVersions = new Map(rows.proposalVersions.map((version) => [clean(version.id), version]));
+    const proposals = rows.proposals.filter((row) => !isDemo(row)).map((row) => mapProposal(row, { leadLabels, customerLabels, proposalVersions }));
     const files = rows.files.filter((row) => !isDemo(row)).map(mapFile).filter((file) => file.relationshipId);
     const generatedAt = now().toISOString();
 
@@ -182,6 +184,10 @@ function mapProposal(row = {}, labels = {}) {
   const relationshipName = relationshipType === "lead"
     ? labels.leadLabels?.get(relationshipId)
     : labels.customerLabels?.get(relationshipId);
+  const currentVersionId = clean(row.current_version_id);
+  const version = labels.proposalVersions?.get(currentVersionId) || {};
+  const versionStatus = first(version.status);
+  const hasNonBindingLines = Boolean(version.has_non_binding_lines);
   return compact({
     id: clean(row.id),
     title: first(row.title, "Voorstel"),
@@ -189,6 +195,14 @@ function mapProposal(row = {}, labels = {}) {
     relationshipType,
     relationshipId,
     relationshipName: relationshipName || "",
+    currentVersionId,
+    versionNumber: safePositiveInteger(version.version_number),
+    versionStatus,
+    oneTimeExVatCents: safeCents(version.one_time_ex_vat_cents),
+    recurringExVatCents: safeCents(version.recurring_ex_vat_cents),
+    dueNowInclVatCents: safeCents(version.due_now_incl_vat_cents),
+    hasNonBindingLines,
+    sendReady: Boolean(currentVersionId && versionStatus === "ready_for_review" && !hasNonBindingLines),
     updatedAt: iso(row.updated_at || row.created_at),
   });
 }
@@ -266,6 +280,16 @@ function boundedProgress(value) {
 function safeSize(value) {
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function safeCents(value) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function safePositiveInteger(value) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function dateOnly(value) {
