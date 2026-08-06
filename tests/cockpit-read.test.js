@@ -38,6 +38,23 @@ test("cockpit bridge returns sanitized production records and filters demo data"
   assert.equal(body.leads[0].nextAction, "Voorstel nabellen");
   assert.equal(body.projects[0].customerName, "QuantumBouw");
   assert.equal(body.proposals[0].relationshipName, "QuantumBouw");
+  assert.deepEqual(body.proposals[0], {
+    id: "offer-1",
+    title: "Business Website",
+    status: "ready_for_review",
+    relationshipType: "lead",
+    relationshipId: "lead-1",
+    relationshipName: "QuantumBouw",
+    currentVersionId: "version-1",
+    versionNumber: 2,
+    versionStatus: "ready_for_review",
+    oneTimeExVatCents: 189500,
+    recurringExVatCents: 3500,
+    dueNowInclVatCents: 68728,
+    hasNonBindingLines: false,
+    sendReady: true,
+    updatedAt: "2026-08-05T10:30:00.000Z",
+  });
   assert.deepEqual(body.files[0], {
     id: "file-1",
     relationshipType: "lead",
@@ -131,7 +148,8 @@ function fixtures() {
     ],
     customers: [{ id: "customer-1", company: "QuantumBouw", status: "active" }],
     projects: [{ id: "project-1", customer_id: "customer-1", name: "Nieuwe website", status: "attention", phase: "feedback", progress: 70 }],
-    commercial_offers: [{ id: "offer-1", title: "Business Website", status: "ready_for_review", relationship_type: "lead", relationship_id: "lead-1" }],
+    commercial_offers: [{ id: "offer-1", title: "Business Website", status: "ready_for_review", relationship_type: "lead", relationship_id: "lead-1", current_version_id: "version-1", updated_at: "2026-08-05T10:30:00.000Z" }],
+    commercial_offer_versions: [{ id: "version-1", offer_id: "offer-1", version_number: 2, status: "ready_for_review", one_time_ex_vat_cents: "189500", recurring_ex_vat_cents: "3500", due_now_incl_vat_cents: "68728", has_non_binding_lines: false }],
     files: [
       { id: "file-1", lead_id: "lead-1", original_filename: "quantumbouw-website.zip", mime_type: "application/zip", size_bytes: 2048, category: "document", status: "new", created_at: "2026-08-05T11:00:00.000Z", storage_path: "private/never-return" },
       { id: "file-demo", lead_id: "lead-demo", original_filename: "demo.zip", mime_type: "application/zip", environment: "demo" },
