@@ -229,7 +229,7 @@
     const brand = element("a", "mws-sidebar-brand"); brand.href = "admin-dashboard.html"; brand.setAttribute("aria-label", "Max Webstudio admin dashboard");
     const brandLogo = element("img", "mws-sidebar-brand-logo"); brandLogo.src = "/max-webstudio-logo-mark.svg"; brandLogo.alt = ""; brandLogo.width = 54; brandLogo.height = 54;
     const brandFallback = element("span", "mws-sidebar-brand-mark", "M"); brandFallback.setAttribute("aria-hidden", "true");
-    const brandCopy = element("span", "mws-sidebar-brand-copy"); brandCopy.append(element("strong", "", "Max Webstudio"), element("small", "", "BUILD BETTER ONLINE"));
+    const brandCopy = element("span", "mws-sidebar-brand-copy"); brandCopy.append(element("strong", "", "Max Webstudio"), element("small", "", "ADMIN"));
     brandLogo.addEventListener("error", () => brand.classList.add("is-fallback"), { once: true });
     brand.append(brandLogo, brandFallback, brandCopy); sidebar.append(brand);
     const content = element("div", "mws-sidebar-content");
