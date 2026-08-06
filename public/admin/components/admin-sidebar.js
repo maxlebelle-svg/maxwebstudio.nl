@@ -231,9 +231,28 @@
     const brandFallback = element("span", "mws-sidebar-brand-mark", "M"); brandFallback.setAttribute("aria-hidden", "true");
     const brandCopy = element("span", "mws-sidebar-brand-copy"); brandCopy.append(element("strong", "", "Max Webstudio"), element("small", "", "ADMIN"));
     brandLogo.addEventListener("error", () => brand.classList.add("is-fallback"), { once: true });
-    brand.append(brandLogo, brandFallback, brandCopy); sidebar.append(brand);
+    brand.append(brandLogo, brandFallback, brandCopy);
+    const mobileHead = element("div", "mws-sidebar-mobile-head");
+    const mobileToggle = element("button", "mws-sidebar-mobile-toggle", "Menu");
+    mobileToggle.type = "button";
+    mobileToggle.setAttribute("aria-label", "Adminmenu openen");
+    mobileToggle.setAttribute("aria-expanded", "false");
+    mobileToggle.addEventListener("click", () => {
+      const open = sidebar.classList.toggle("is-mobile-open");
+      mobileToggle.textContent = open ? "Sluiten" : "Menu";
+      mobileToggle.setAttribute("aria-label", open ? "Adminmenu sluiten" : "Adminmenu openen");
+      mobileToggle.setAttribute("aria-expanded", String(open));
+    });
+    mobileHead.append(brand, mobileToggle); sidebar.append(mobileHead);
     const content = element("div", "mws-sidebar-content");
     config.forEach((section) => { if (section.type === "workspace") content.append(WorkspaceCard({ relationship, onSwitch: onSwitchWorkspace, onSelect: onSelectWorkspace, onClear: onClearWorkspace })); else content.append(SidebarSection({ section, activeId, badgeValues, relationship, canAccess })); });
+    content.addEventListener("click", (event) => {
+      if (!event.target.closest?.("a")) return;
+      sidebar.classList.remove("is-mobile-open");
+      mobileToggle.textContent = "Menu";
+      mobileToggle.setAttribute("aria-label", "Adminmenu openen");
+      mobileToggle.setAttribute("aria-expanded", "false");
+    });
     sidebar.append(content, UserProfileMenu({ user, perspective, actions: profileActions }));
     return sidebar;
   }

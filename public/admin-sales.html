@@ -9585,26 +9585,32 @@
         }
 
         function currentCustomerDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "supabase-read";
         }
 
         function currentWebsiteDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "supabase-read";
         }
 
         function currentProjectDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "supabase-read";
         }
 
         function currentQuoteDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "supabase-read";
         }
 
         function currentInvoiceDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "supabase-read";
         }
 
         function currentSubscriptionDataMode() {
+          if (!isDeveloperModeEnabled()) return "supabase-read";
           return subscriptionDataModeSelect.value || readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "supabase-read";
         }
 
