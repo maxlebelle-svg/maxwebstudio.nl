@@ -1,6 +1,7 @@
 const crypto = require("node:crypto");
+const { isValidPublicSlug, publicPreviewUrl } = require("./_public-preview");
 
-const RESPONSE_VERSION = "cockpit-read-v1";
+const RESPONSE_VERSION = "cockpit-read-v3";
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 250;
 const OPEN_LEAD_STATUSES = new Set([
@@ -55,13 +56,15 @@ function createHandler(dependencies = {}) {
       safeRead("proposals", () => readRows(context, "commercial_offers", { limit, order: "updated_at.desc.nullslast" })),
       safeRead("proposalVersions", () => readRows(context, "commercial_offer_versions", { limit, order: "updated_at.desc.nullslast" })),
       safeRead("files", () => readRows(context, "files", { limit, order: "created_at.desc.nullslast" })),
+      safeRead("previews", () => readRows(context, "public_preview_publications", { limit: MAX_LIMIT, order: "updated_at.desc.nullslast" })),
     ]);
 
     const unavailable = resources.filter((resource) => !resource.ok).map((resource) => resource.name);
     const rows = Object.fromEntries(resources.map((resource) => [resource.name, resource.rows]));
     const customers = rows.customers.filter((row) => !isDemo(row)).map(mapCustomer);
     const customerLabels = new Map(customers.map((customer) => [customer.id, customer.companyName]));
-    const leads = rows.leads.filter((row) => !isDemo(row)).map(mapLead);
+    const previewUrlsByLead = mapActiveLeadPreviewUrls(rows.previews, env.PUBLIC_PREVIEW_BASE_URL);
+    const leads = rows.leads.filter((row) => !isDemo(row)).map((row) => mapLead(row, previewUrlsByLead));
     const leadLabels = new Map(leads.map((lead) => [lead.id, lead.companyName]));
     const projects = rows.projects.filter((row) => !isDemo(row)).map((row) => mapProject(row, customerLabels));
     const proposalVersions = new Map(rows.proposalVersions.map((version) => [clean(version.id), version]));
@@ -136,8 +139,9 @@ async function readRows(context, table, options = {}) {
   return data;
 }
 
-function mapLead(row = {}) {
+function mapLead(row = {}, previewUrlsByLead = new Map()) {
   const metadata = object(row.metadata);
+  const demoUrl = previewUrlsByLead.get(clean(row.id)) || "";
   return compact({
     id: clean(row.id),
     companyName: first(row.company_name, row.company, row.business_name, row.name),
@@ -145,6 +149,8 @@ function mapLead(row = {}) {
     email: clean(row.email).toLowerCase(),
     phone: first(row.phone, row.phone_number, metadata.phone),
     websiteUrl: first(row.website_url, row.website, metadata.websiteUrl),
+    demoAvailable: Boolean(demoUrl),
+    demoUrl,
     status: first(row.lead_status, row.pipeline_stage, row.status, "new"),
     priority: first(row.priority, row.lead_priority, metadata.priority, "normal"),
     nextAction: first(row.next_action, row.next_action_label, metadata.nextAction),
@@ -152,6 +158,19 @@ function mapLead(row = {}) {
     lastContactAt: iso(row.last_contact_at || metadata.lastContactAt),
     updatedAt: iso(row.updated_at || row.created_at),
   });
+}
+
+function mapActiveLeadPreviewUrls(rows = [], baseUrl = "") {
+  const previews = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (clean(row.relationship_type).toLowerCase() !== "lead" || row.enabled !== true || row.revoked_at) continue;
+    const relationshipId = clean(row.relationship_id);
+    const slug = clean(row.public_slug);
+    if (!relationshipId || !isValidPublicSlug(slug) || previews.has(relationshipId)) continue;
+    const url = publicPreviewUrl(slug, baseUrl || undefined);
+    if (url) previews.set(relationshipId, url);
+  }
+  return previews;
 }
 
 function mapCustomer(row = {}) {

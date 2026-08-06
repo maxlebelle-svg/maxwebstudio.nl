@@ -18,6 +18,9 @@ actuele schermweergave en maakt geen tweede CRM-database.
 - De sleutel staat alleen in Netlify en in de beveiligde secrets van Base44.
 - De afzonderlijke `SUPABASE_COCKPIT_SECRET_KEY` verlaat Netlify nooit.
 - De response bevat alleen geschoonde Cockpit-velden en geen interne notities of metadata.
+- Bij een lead kan uitsluitend de intrekbare openbare demo-URL worden meegegeven wanneer
+  `public_preview_publications` voor die lead actief is. Interne preview-URL's, tokens,
+  versiegegevens en niet-gepubliceerde demo's blijven server-side.
 - Demo-records worden uitgefilterd en responses worden niet gecachet.
 
 ## Volgorde voor ingebruikname
@@ -47,6 +50,14 @@ actuele schermweergave en maakt geen tweede CRM-database.
 > logs of foutmeldingen. Sla de ontvangen productiegegevens niet op in Base44 en
 > voeg geen POST-, PATCH- of DELETE-acties toe. Als `partial` waar is, toon dan een
 > rustige melding dat een deel van de gegevens tijdelijk niet beschikbaar is.
+
+## Demo openen vanuit een lead
+
+Een lead met een actieve publicatie bevat `demoAvailable: true` en een `demoUrl` op
+`https://preview.maxwebstudio.nl/...`. Toon daarvoor op de leaddetailpagina de knop
+`Demo bekijken` en open de URL in een nieuw tabblad met `noopener,noreferrer`. Toon
+geen knop wanneer `demoAvailable` niet waar is. Bouw nooit zelf een preview-URL op en
+gebruik niet het gewone `websiteUrl`-veld als demo.
 
 ## Fase 2: pas na acceptatie van fase 1
 
