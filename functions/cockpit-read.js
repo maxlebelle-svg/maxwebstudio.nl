@@ -1,7 +1,7 @@
 const crypto = require("node:crypto");
-const { isValidPublicSlug, publicPreviewUrl } = require("./_public-preview");
+const { fallbackPreviewUrl, isValidPublicSlug } = require("./_public-preview");
 
-const RESPONSE_VERSION = "cockpit-read-v3";
+const RESPONSE_VERSION = "cockpit-read-v4";
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 250;
 const OPEN_LEAD_STATUSES = new Set([
@@ -63,7 +63,7 @@ function createHandler(dependencies = {}) {
     const rows = Object.fromEntries(resources.map((resource) => [resource.name, resource.rows]));
     const customers = rows.customers.filter((row) => !isDemo(row)).map(mapCustomer);
     const customerLabels = new Map(customers.map((customer) => [customer.id, customer.companyName]));
-    const previewUrlsByLead = mapActiveLeadPreviewUrls(rows.previews, env.PUBLIC_PREVIEW_BASE_URL);
+    const previewUrlsByLead = mapActiveLeadPreviewUrls(rows.previews, env.URL);
     const leads = rows.leads.filter((row) => !isDemo(row)).map((row) => mapLead(row, previewUrlsByLead));
     const leadLabels = new Map(leads.map((lead) => [lead.id, lead.companyName]));
     const projects = rows.projects.filter((row) => !isDemo(row)).map((row) => mapProject(row, customerLabels));
@@ -160,14 +160,14 @@ function mapLead(row = {}, previewUrlsByLead = new Map()) {
   });
 }
 
-function mapActiveLeadPreviewUrls(rows = [], baseUrl = "") {
+function mapActiveLeadPreviewUrls(rows = [], siteOrigin = "") {
   const previews = new Map();
   for (const row of Array.isArray(rows) ? rows : []) {
     if (clean(row.relationship_type).toLowerCase() !== "lead" || row.enabled !== true || row.revoked_at) continue;
     const relationshipId = clean(row.relationship_id);
     const slug = clean(row.public_slug);
     if (!relationshipId || !isValidPublicSlug(slug) || previews.has(relationshipId)) continue;
-    const url = publicPreviewUrl(slug, baseUrl || undefined);
+    const url = fallbackPreviewUrl(slug, siteOrigin || "https://maxwebstudio.nl");
     if (url) previews.set(relationshipId, url);
   }
   return previews;

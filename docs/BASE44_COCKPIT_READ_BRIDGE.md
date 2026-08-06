@@ -54,7 +54,7 @@ actuele schermweergave en maakt geen tweede CRM-database.
 ## Demo openen vanuit een lead
 
 Een lead met een actieve publicatie bevat `demoAvailable: true` en een `demoUrl` op
-`https://preview.maxwebstudio.nl/...`. Toon daarvoor op de leaddetailpagina de knop
+`https://maxwebstudio.nl/preview/...`. Toon daarvoor op de leaddetailpagina de knop
 `Demo bekijken` en open de URL in een nieuw tabblad met `noopener,noreferrer`. Toon
 geen knop wanneer `demoAvailable` niet waar is. Bouw nooit zelf een preview-URL op en
 gebruik niet het gewone `websiteUrl`-veld als demo.

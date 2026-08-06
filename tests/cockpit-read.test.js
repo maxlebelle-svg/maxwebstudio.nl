@@ -37,7 +37,7 @@ test("cockpit bridge returns sanitized production records and filters demo data"
   assert.equal(body.leads[0].companyName, "QuantumBouw");
   assert.equal(body.leads[0].nextAction, "Voorstel nabellen");
   assert.equal(body.leads[0].demoAvailable, true);
-  assert.equal(body.leads[0].demoUrl, "https://preview.maxwebstudio.nl/quantumbouw-preview");
+  assert.equal(body.leads[0].demoUrl, "https://maxwebstudio.nl/preview/quantumbouw-preview");
   assert.equal(body.projects[0].customerName, "QuantumBouw");
   assert.equal(body.proposals[0].relationshipName, "QuantumBouw");
   assert.deepEqual(body.proposals[0], {
